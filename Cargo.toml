@@ -14,7 +14,3 @@ optional = true
 
 [features]
 default = ["libc"]
-
-# This is a dummy feature that only exists to work around a Xargo issue.
-# User code should not enable it.
-stdbuild = []
