@@ -3836,13 +3836,6 @@ extern "C" {
     pub fn _unsetenv_r(arg1: *mut _reent, __string: *const ::libc::c_char) -> ::libc::c_int;
 }
 extern "C" {
-    pub fn posix_memalign(
-        arg1: *mut *mut ::libc::c_void,
-        arg2: usize,
-        arg3: usize,
-    ) -> ::libc::c_int;
-}
-extern "C" {
     pub fn _dtoa_r(
         arg1: *mut _reent,
         arg2: f64,
