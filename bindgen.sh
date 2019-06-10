@@ -15,7 +15,7 @@ set -euxo pipefail
 DEVKITPRO="/opt/devkitpro"
 DEVKITPPC="/opt/devkitpro/devkitPPC"
 
-bindgen "$DEVKITPRO/libogc/include/ogcsys.h" \
+bindgen wrapper.h \
     -o src/ogc.rs \
     --rust-target nightly \
     --use-core \

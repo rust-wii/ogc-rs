@@ -5,7 +5,7 @@ set DEVKITPRO="C:/devkitPro"
 set DEVKITPPC="C:/devkitPro/devkitPPC/powerpc-eabi/include"
 set CLANGINCLUDE="C:/Program Files/LLVM/lib/clang/8.0.0/include"
 
-bindgen "%DEVKITPRO%/libogc/include/ogcsys.h" ^
+bindgen wrapper.h ^
 -o src/ogc.rs ^
 --rust-target nightly ^
 --use-core ^
