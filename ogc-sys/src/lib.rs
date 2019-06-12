@@ -4,6 +4,4 @@
 #![feature(const_fn)]
 #![no_std]
 
-extern crate libc;
-
 include!("ogc.rs");

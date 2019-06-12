@@ -11,10 +11,6 @@ fi
 
 set -euxo pipefail
 
-# Variables
-DEVKITPRO="/opt/devkitpro"
-DEVKITPPC="/opt/devkitpro/devkitPPC"
-
 bindgen wrapper.h \
     -o src/ogc.rs \
     --rust-target nightly \
@@ -24,8 +20,8 @@ bindgen wrapper.h \
     --ctypes-prefix "::libc" \
     --no-prepend-enum-name \
     --generate "functions,types,vars" \
-    --blacklist-type "u(8|16|32|64)" \
-    --blacklist-type "i(8|16|32|64)" \
+    --blacklist-type "u(8|16|32|64|128)" \
+    --blacklist-type "i(8|16|32|64|128)" \
     --blacklist-type "f(32|64)" \
     -- \
     --target=powerpc-none-eabi \
