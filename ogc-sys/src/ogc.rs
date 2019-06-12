@@ -251,6 +251,141 @@ pub const WINT_MIN: u32 = 0;
 pub const TRUE: u32 = 1;
 pub const FALSE: u32 = 0;
 pub const ARGV_MAGIC: u32 = 1600221799;
+pub const DST_NONE: u32 = 0;
+pub const DST_USA: u32 = 1;
+pub const DST_AUST: u32 = 2;
+pub const DST_WET: u32 = 3;
+pub const DST_MET: u32 = 4;
+pub const DST_EET: u32 = 5;
+pub const DST_CAN: u32 = 6;
+pub const SBT_MAX: u64 = 9223372036854775807;
+pub const ITIMER_REAL: u32 = 0;
+pub const ITIMER_VIRTUAL: u32 = 1;
+pub const ITIMER_PROF: u32 = 2;
+pub const _CLOCKS_PER_SEC_: u32 = 1000;
+pub const CLOCKS_PER_SEC: u32 = 1000;
+pub const CLK_TCK: u32 = 1000;
+pub const SIGEV_NONE: u32 = 1;
+pub const SIGEV_SIGNAL: u32 = 2;
+pub const SIGEV_THREAD: u32 = 3;
+pub const SI_USER: u32 = 1;
+pub const SI_QUEUE: u32 = 2;
+pub const SI_TIMER: u32 = 3;
+pub const SI_ASYNCIO: u32 = 4;
+pub const SI_MESGQ: u32 = 5;
+pub const SA_NOCLDSTOP: u32 = 1;
+pub const MINSIGSTKSZ: u32 = 2048;
+pub const SIGSTKSZ: u32 = 8192;
+pub const SS_ONSTACK: u32 = 1;
+pub const SS_DISABLE: u32 = 2;
+pub const SIG_SETMASK: u32 = 0;
+pub const SIG_BLOCK: u32 = 1;
+pub const SIG_UNBLOCK: u32 = 2;
+pub const SIGHUP: u32 = 1;
+pub const SIGINT: u32 = 2;
+pub const SIGQUIT: u32 = 3;
+pub const SIGILL: u32 = 4;
+pub const SIGTRAP: u32 = 5;
+pub const SIGIOT: u32 = 6;
+pub const SIGABRT: u32 = 6;
+pub const SIGEMT: u32 = 7;
+pub const SIGFPE: u32 = 8;
+pub const SIGKILL: u32 = 9;
+pub const SIGBUS: u32 = 10;
+pub const SIGSEGV: u32 = 11;
+pub const SIGSYS: u32 = 12;
+pub const SIGPIPE: u32 = 13;
+pub const SIGALRM: u32 = 14;
+pub const SIGTERM: u32 = 15;
+pub const SIGURG: u32 = 16;
+pub const SIGSTOP: u32 = 17;
+pub const SIGTSTP: u32 = 18;
+pub const SIGCONT: u32 = 19;
+pub const SIGCHLD: u32 = 20;
+pub const SIGCLD: u32 = 20;
+pub const SIGTTIN: u32 = 21;
+pub const SIGTTOU: u32 = 22;
+pub const SIGIO: u32 = 23;
+pub const SIGPOLL: u32 = 23;
+pub const SIGXCPU: u32 = 24;
+pub const SIGXFSZ: u32 = 25;
+pub const SIGVTALRM: u32 = 26;
+pub const SIGPROF: u32 = 27;
+pub const SIGWINCH: u32 = 28;
+pub const SIGLOST: u32 = 29;
+pub const SIGUSR1: u32 = 30;
+pub const SIGUSR2: u32 = 31;
+pub const NSIG: u32 = 32;
+pub const CLOCK_ENABLED: u32 = 1;
+pub const CLOCK_DISABLED: u32 = 0;
+pub const CLOCK_ALLOWED: u32 = 1;
+pub const CLOCK_DISALLOWED: u32 = 0;
+pub const TIMER_ABSTIME: u32 = 4;
+pub const INVALID_SOCKET: i32 = -1;
+pub const SOCKET_ERROR: i32 = -1;
+pub const SOCK_STREAM: u32 = 1;
+pub const SOCK_DGRAM: u32 = 2;
+pub const SOCK_RAW: u32 = 3;
+pub const SO_DEBUG: u32 = 1;
+pub const SO_ACCEPTCONN: u32 = 2;
+pub const SO_REUSEADDR: u32 = 4;
+pub const SO_KEEPALIVE: u32 = 8;
+pub const SO_DONTROUTE: u32 = 16;
+pub const SO_BROADCAST: u32 = 32;
+pub const SO_USELOOPBACK: u32 = 64;
+pub const SO_LINGER: u32 = 128;
+pub const SO_OOBINLINE: u32 = 256;
+pub const SO_REUSEPORT: u32 = 512;
+pub const SO_SNDBUF: u32 = 4097;
+pub const SO_RCVBUF: u32 = 4098;
+pub const SO_SNDLOWAT: u32 = 4099;
+pub const SO_RCVLOWAT: u32 = 4100;
+pub const SO_SNDTIMEO: u32 = 4101;
+pub const SO_RCVTIMEO: u32 = 4102;
+pub const SO_ERROR: u32 = 4103;
+pub const SO_TYPE: u32 = 4104;
+pub const SOL_SOCKET: u32 = 65535;
+pub const AF_UNSPEC: u32 = 0;
+pub const AF_INET: u32 = 2;
+pub const PF_INET: u32 = 2;
+pub const PF_UNSPEC: u32 = 0;
+pub const IPPROTO_IP: u32 = 0;
+pub const IPPROTO_TCP: u32 = 6;
+pub const IPPROTO_UDP: u32 = 17;
+pub const INADDR_ANY: u32 = 0;
+pub const INADDR_BROADCAST: u32 = 4294967295;
+pub const MSG_DONTWAIT: u32 = 64;
+pub const IP_TOS: u32 = 1;
+pub const IP_TTL: u32 = 2;
+pub const IPTOS_TOS_MASK: u32 = 30;
+pub const IPTOS_LOWDELAY: u32 = 16;
+pub const IPTOS_THROUGHPUT: u32 = 8;
+pub const IPTOS_RELIABILITY: u32 = 4;
+pub const IPTOS_LOWCOST: u32 = 2;
+pub const IPTOS_MINCOST: u32 = 2;
+pub const IPTOS_PREC_MASK: u32 = 224;
+pub const IPTOS_PREC_NETCONTROL: u32 = 224;
+pub const IPTOS_PREC_INTERNETCONTROL: u32 = 192;
+pub const IPTOS_PREC_CRITIC_ECP: u32 = 160;
+pub const IPTOS_PREC_FLASHOVERRIDE: u32 = 128;
+pub const IPTOS_PREC_FLASH: u32 = 96;
+pub const IPTOS_PREC_IMMEDIATE: u32 = 64;
+pub const IPTOS_PREC_PRIORITY: u32 = 32;
+pub const IPTOS_PREC_ROUTINE: u32 = 0;
+pub const IOCPARM_MASK: u32 = 127;
+pub const IOC_VOID: u32 = 536870912;
+pub const IOC_OUT: u32 = 1073741824;
+pub const IOC_IN: u32 = 2147483648;
+pub const IOC_INOUT: u32 = 3221225472;
+pub const O_NONBLOCK: u32 = 2048;
+pub const TCP_NODELAY: u32 = 1;
+pub const TCP_KEEPALIVE: u32 = 2;
+pub const POLLIN: u32 = 1;
+pub const POLLPRI: u32 = 2;
+pub const POLLOUT: u32 = 4;
+pub const POLLERR: u32 = 8;
+pub const POLLHUP: u32 = 16;
+pub const POLLNVAL: u32 = 32;
 pub const DSPTASK_INIT: u32 = 0;
 pub const DSPTASK_RUN: u32 = 1;
 pub const DSPTASK_YIELD: u32 = 2;
@@ -355,65 +490,6 @@ pub const COLOR_MONEYGREEN: u32 = 3497447540;
 pub const COLOR_SKYBLUE: u32 = 3281634154;
 pub const COLOR_CREAM: u32 = 4202297986;
 pub const COLOR_MEDGRAY: u32 = 2692915327;
-pub const _CLOCKS_PER_SEC_: u32 = 1000;
-pub const CLOCKS_PER_SEC: u32 = 1000;
-pub const CLK_TCK: u32 = 1000;
-pub const SIGEV_NONE: u32 = 1;
-pub const SIGEV_SIGNAL: u32 = 2;
-pub const SIGEV_THREAD: u32 = 3;
-pub const SI_USER: u32 = 1;
-pub const SI_QUEUE: u32 = 2;
-pub const SI_TIMER: u32 = 3;
-pub const SI_ASYNCIO: u32 = 4;
-pub const SI_MESGQ: u32 = 5;
-pub const SA_NOCLDSTOP: u32 = 1;
-pub const MINSIGSTKSZ: u32 = 2048;
-pub const SIGSTKSZ: u32 = 8192;
-pub const SS_ONSTACK: u32 = 1;
-pub const SS_DISABLE: u32 = 2;
-pub const SIG_SETMASK: u32 = 0;
-pub const SIG_BLOCK: u32 = 1;
-pub const SIG_UNBLOCK: u32 = 2;
-pub const SIGHUP: u32 = 1;
-pub const SIGINT: u32 = 2;
-pub const SIGQUIT: u32 = 3;
-pub const SIGILL: u32 = 4;
-pub const SIGTRAP: u32 = 5;
-pub const SIGIOT: u32 = 6;
-pub const SIGABRT: u32 = 6;
-pub const SIGEMT: u32 = 7;
-pub const SIGFPE: u32 = 8;
-pub const SIGKILL: u32 = 9;
-pub const SIGBUS: u32 = 10;
-pub const SIGSEGV: u32 = 11;
-pub const SIGSYS: u32 = 12;
-pub const SIGPIPE: u32 = 13;
-pub const SIGALRM: u32 = 14;
-pub const SIGTERM: u32 = 15;
-pub const SIGURG: u32 = 16;
-pub const SIGSTOP: u32 = 17;
-pub const SIGTSTP: u32 = 18;
-pub const SIGCONT: u32 = 19;
-pub const SIGCHLD: u32 = 20;
-pub const SIGCLD: u32 = 20;
-pub const SIGTTIN: u32 = 21;
-pub const SIGTTOU: u32 = 22;
-pub const SIGIO: u32 = 23;
-pub const SIGPOLL: u32 = 23;
-pub const SIGXCPU: u32 = 24;
-pub const SIGXFSZ: u32 = 25;
-pub const SIGVTALRM: u32 = 26;
-pub const SIGPROF: u32 = 27;
-pub const SIGWINCH: u32 = 28;
-pub const SIGLOST: u32 = 29;
-pub const SIGUSR1: u32 = 30;
-pub const SIGUSR2: u32 = 31;
-pub const NSIG: u32 = 32;
-pub const CLOCK_ENABLED: u32 = 1;
-pub const CLOCK_DISABLED: u32 = 0;
-pub const CLOCK_ALLOWED: u32 = 1;
-pub const CLOCK_DISALLOWED: u32 = 0;
-pub const TIMER_ABSTIME: u32 = 4;
 pub const LWP_COND_NULL: u32 = 4294967295;
 pub const FEATURE_MEDIUM_CANREAD: u32 = 1;
 pub const FEATURE_MEDIUM_CANWRITE: u32 = 2;
@@ -3836,6 +3912,13 @@ extern "C" {
     pub fn _unsetenv_r(arg1: *mut _reent, __string: *const ::libc::c_char) -> ::libc::c_int;
 }
 extern "C" {
+    pub fn posix_memalign(
+        arg1: *mut *mut ::libc::c_void,
+        arg2: usize,
+        arg3: usize,
+    ) -> ::libc::c_int;
+}
+extern "C" {
     pub fn _dtoa_r(
         arg1: *mut _reent,
         arg2: f64,
@@ -3947,6 +4030,493 @@ pub struct __argv {
 }
 extern "C" {
     pub static mut __system_argv: *mut __argv;
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct timezone {
+    pub tz_minuteswest: ::libc::c_int,
+    pub tz_dsttime: ::libc::c_int,
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct bintime {
+    pub sec: time_t,
+    pub frac: u64,
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct itimerval {
+    pub it_interval: timeval,
+    pub it_value: timeval,
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct tm {
+    pub tm_sec: ::libc::c_int,
+    pub tm_min: ::libc::c_int,
+    pub tm_hour: ::libc::c_int,
+    pub tm_mday: ::libc::c_int,
+    pub tm_mon: ::libc::c_int,
+    pub tm_year: ::libc::c_int,
+    pub tm_wday: ::libc::c_int,
+    pub tm_yday: ::libc::c_int,
+    pub tm_isdst: ::libc::c_int,
+}
+extern "C" {
+    pub fn clock() -> clock_t;
+}
+extern "C" {
+    pub fn difftime(_time2: time_t, _time1: time_t) -> f64;
+}
+extern "C" {
+    pub fn mktime(_timeptr: *mut tm) -> time_t;
+}
+extern "C" {
+    pub fn time(_timer: *mut time_t) -> time_t;
+}
+extern "C" {
+    pub fn asctime(_tblock: *const tm) -> *mut ::libc::c_char;
+}
+extern "C" {
+    pub fn ctime(_time: *const time_t) -> *mut ::libc::c_char;
+}
+extern "C" {
+    pub fn gmtime(_timer: *const time_t) -> *mut tm;
+}
+extern "C" {
+    pub fn localtime(_timer: *const time_t) -> *mut tm;
+}
+extern "C" {
+    pub fn strftime(
+        _s: *mut ::libc::c_char,
+        _maxsize: usize,
+        _fmt: *const ::libc::c_char,
+        _t: *const tm,
+    ) -> usize;
+}
+extern "C" {
+    pub fn strftime_l(
+        _s: *mut ::libc::c_char,
+        _maxsize: usize,
+        _fmt: *const ::libc::c_char,
+        _t: *const tm,
+        _l: locale_t,
+    ) -> usize;
+}
+extern "C" {
+    pub fn asctime_r(arg1: *const tm, arg2: *mut ::libc::c_char) -> *mut ::libc::c_char;
+}
+extern "C" {
+    pub fn ctime_r(arg1: *const time_t, arg2: *mut ::libc::c_char) -> *mut ::libc::c_char;
+}
+extern "C" {
+    pub fn gmtime_r(arg1: *const time_t, arg2: *mut tm) -> *mut tm;
+}
+extern "C" {
+    pub fn localtime_r(arg1: *const time_t, arg2: *mut tm) -> *mut tm;
+}
+extern "C" {
+    pub fn tzset();
+}
+extern "C" {
+    pub fn _tzset_r(arg1: *mut _reent);
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct __tzrule_struct {
+    pub ch: ::libc::c_char,
+    pub m: ::libc::c_int,
+    pub n: ::libc::c_int,
+    pub d: ::libc::c_int,
+    pub s: ::libc::c_int,
+    pub __bindgen_padding_0: u32,
+    pub change: time_t,
+    pub offset: ::libc::c_long,
+    pub __bindgen_padding_1: u32,
+}
+pub type __tzrule_type = __tzrule_struct;
+#[repr(C)]
+#[repr(align(8))]
+#[derive(Debug, Copy, Clone)]
+pub struct __tzinfo_struct {
+    pub __tznorth: ::libc::c_int,
+    pub __tzyear: ::libc::c_int,
+    pub __tzrule: [__tzrule_type; 2usize],
+}
+pub type __tzinfo_type = __tzinfo_struct;
+extern "C" {
+    pub fn __gettzinfo() -> *mut __tzinfo_type;
+}
+extern "C" {
+    pub static mut _timezone: ::libc::c_long;
+}
+extern "C" {
+    pub static mut _daylight: ::libc::c_int;
+}
+extern "C" {
+    pub static mut _tzname: [*mut ::libc::c_char; 2usize];
+}
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub union sigval {
+    pub sival_int: ::libc::c_int,
+    pub sival_ptr: *mut ::libc::c_void,
+    _bindgen_union_align: u32,
+}
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub struct sigevent {
+    pub sigev_notify: ::libc::c_int,
+    pub sigev_signo: ::libc::c_int,
+    pub sigev_value: sigval,
+}
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub struct siginfo_t {
+    pub si_signo: ::libc::c_int,
+    pub si_code: ::libc::c_int,
+    pub si_value: sigval,
+}
+pub type _sig_func_ptr = ::core::option::Option<unsafe extern "C" fn(arg1: ::libc::c_int)>;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct sigaction {
+    pub sa_handler: _sig_func_ptr,
+    pub sa_mask: sigset_t,
+    pub sa_flags: ::libc::c_int,
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct sigaltstack {
+    pub ss_sp: *mut ::libc::c_void,
+    pub ss_flags: ::libc::c_int,
+    pub ss_size: usize,
+}
+pub type stack_t = sigaltstack;
+extern "C" {
+    pub fn sigprocmask(
+        arg1: ::libc::c_int,
+        arg2: *const sigset_t,
+        arg3: *mut sigset_t,
+    ) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn pthread_sigmask(
+        arg1: ::libc::c_int,
+        arg2: *const sigset_t,
+        arg3: *mut sigset_t,
+    ) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn kill(arg1: pid_t, arg2: ::libc::c_int) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn killpg(arg1: pid_t, arg2: ::libc::c_int) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn sigaction(
+        arg1: ::libc::c_int,
+        arg2: *const sigaction,
+        arg3: *mut sigaction,
+    ) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn sigaddset(arg1: *mut sigset_t, arg2: ::libc::c_int) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn sigdelset(arg1: *mut sigset_t, arg2: ::libc::c_int) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn sigismember(arg1: *const sigset_t, arg2: ::libc::c_int) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn sigfillset(arg1: *mut sigset_t) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn sigemptyset(arg1: *mut sigset_t) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn sigpending(arg1: *mut sigset_t) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn sigsuspend(arg1: *const sigset_t) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn sigwait(arg1: *const sigset_t, arg2: *mut ::libc::c_int) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn sigpause(arg1: ::libc::c_int) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn sigaltstack(arg1: *const stack_t, arg2: *mut stack_t) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn pthread_kill(arg1: pthread_t, arg2: ::libc::c_int) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn sigwaitinfo(arg1: *const sigset_t, arg2: *mut siginfo_t) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn sigtimedwait(
+        arg1: *const sigset_t,
+        arg2: *mut siginfo_t,
+        arg3: *const timespec,
+    ) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn sigqueue(arg1: pid_t, arg2: ::libc::c_int, arg3: sigval) -> ::libc::c_int;
+}
+pub type sig_atomic_t = ::libc::c_int;
+pub type sig_t = _sig_func_ptr;
+extern "C" {
+    pub fn _signal_r(arg1: *mut _reent, arg2: ::libc::c_int, arg3: _sig_func_ptr) -> _sig_func_ptr;
+}
+extern "C" {
+    pub fn _raise_r(arg1: *mut _reent, arg2: ::libc::c_int) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn signal(arg1: ::libc::c_int, arg2: _sig_func_ptr) -> _sig_func_ptr;
+}
+extern "C" {
+    pub fn raise(arg1: ::libc::c_int) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn psignal(arg1: ::libc::c_int, arg2: *const ::libc::c_char);
+}
+extern "C" {
+    pub fn clock_settime(clock_id: clockid_t, tp: *const timespec) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn clock_gettime(clock_id: clockid_t, tp: *mut timespec) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn clock_getres(clock_id: clockid_t, res: *mut timespec) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn timer_create(
+        clock_id: clockid_t,
+        evp: *mut sigevent,
+        timerid: *mut timer_t,
+    ) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn timer_delete(timerid: timer_t) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn timer_settime(
+        timerid: timer_t,
+        flags: ::libc::c_int,
+        value: *const itimerspec,
+        ovalue: *mut itimerspec,
+    ) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn timer_gettime(timerid: timer_t, value: *mut itimerspec) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn timer_getoverrun(timerid: timer_t) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn nanosleep(rqtp: *const timespec, rmtp: *mut timespec) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn utimes(__path: *const ::libc::c_char, __tvp: *const timeval) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn adjtime(arg1: *const timeval, arg2: *mut timeval) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn futimes(arg1: ::libc::c_int, arg2: *const timeval) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn lutimes(arg1: *const ::libc::c_char, arg2: *const timeval) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn settimeofday(arg1: *const timeval, arg2: *const timezone) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn getitimer(__which: ::libc::c_int, __value: *mut itimerval) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn setitimer(
+        __which: ::libc::c_int,
+        __value: *const itimerval,
+        __ovalue: *mut itimerval,
+    ) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn gettimeofday(__p: *mut timeval, __tz: *mut ::libc::c_void) -> ::libc::c_int;
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct linger {
+    pub l_onoff: ::libc::c_int,
+    pub l_linger: ::libc::c_int,
+}
+#[repr(C)]
+pub struct in_addr {
+    pub s_addr: u32,
+}
+#[repr(C)]
+pub struct sockaddr_in {
+    pub sin_len: u8,
+    pub sin_family: u8,
+    pub sin_port: u16,
+    pub sin_addr: in_addr,
+    pub sin_zero: [s8; 8usize],
+}
+#[repr(C)]
+pub struct sockaddr {
+    pub sa_len: u8,
+    pub sa_family: u8,
+    pub sa_data: [s8; 14usize],
+}
+#[repr(C)]
+pub struct hostent {
+    pub h_name: *mut ::libc::c_char,
+    pub h_aliases: *mut *mut ::libc::c_char,
+    pub h_addrtype: u16,
+    pub h_length: u16,
+    pub h_addr_list: *mut *mut ::libc::c_char,
+}
+#[repr(C)]
+pub struct pollsd {
+    pub socket: s32,
+    pub events: u32,
+    pub revents: u32,
+}
+extern "C" {
+    pub fn inet_addr(cp: *const ::libc::c_char) -> u32;
+}
+extern "C" {
+    pub fn inet_aton(cp: *const ::libc::c_char, addr: *mut in_addr) -> s8;
+}
+extern "C" {
+    pub fn inet_ntoa(addr: in_addr) -> *mut ::libc::c_char;
+}
+extern "C" {
+    pub fn if_config(
+        local_ip: *mut ::libc::c_char,
+        netmask: *mut ::libc::c_char,
+        gateway: *mut ::libc::c_char,
+        use_dhcp: bool,
+        max_retries: ::libc::c_int,
+    ) -> s32;
+}
+extern "C" {
+    pub fn if_configex(
+        local_ip: *mut in_addr,
+        netmask: *mut in_addr,
+        gateway: *mut in_addr,
+        use_dhcp: bool,
+        max_retries: ::libc::c_int,
+    ) -> s32;
+}
+extern "C" {
+    pub fn net_init() -> s32;
+}
+pub type netcallback =
+    ::core::option::Option<unsafe extern "C" fn(result: s32, usrdata: *mut ::libc::c_void) -> s32>;
+extern "C" {
+    pub fn net_init_async(cb: netcallback, usrdata: *mut ::libc::c_void) -> s32;
+}
+extern "C" {
+    pub fn net_get_status() -> s32;
+}
+extern "C" {
+    pub fn net_wc24cleanup();
+}
+extern "C" {
+    pub fn net_get_mac_address(mac_buf: *mut ::libc::c_void) -> s32;
+}
+extern "C" {
+    pub fn net_deinit();
+}
+extern "C" {
+    pub fn net_gethostip() -> u32;
+}
+extern "C" {
+    pub fn net_socket(domain: u32, type_: u32, protocol: u32) -> s32;
+}
+extern "C" {
+    pub fn net_bind(s: s32, name: *mut sockaddr, namelen: u32) -> s32;
+}
+extern "C" {
+    pub fn net_listen(s: s32, backlog: u32) -> s32;
+}
+extern "C" {
+    pub fn net_accept(s: s32, addr: *mut sockaddr, addrlen: *mut u32) -> s32;
+}
+extern "C" {
+    pub fn net_connect(s: s32, arg1: *mut sockaddr, arg2: u32) -> s32;
+}
+extern "C" {
+    pub fn net_write(s: s32, data: *const ::libc::c_void, size: s32) -> s32;
+}
+extern "C" {
+    pub fn net_send(s: s32, data: *const ::libc::c_void, size: s32, flags: u32) -> s32;
+}
+extern "C" {
+    pub fn net_sendto(
+        s: s32,
+        data: *const ::libc::c_void,
+        len: s32,
+        flags: u32,
+        to: *mut sockaddr,
+        tolen: u32,
+    ) -> s32;
+}
+extern "C" {
+    pub fn net_recv(s: s32, mem: *mut ::libc::c_void, len: s32, flags: u32) -> s32;
+}
+extern "C" {
+    pub fn net_recvfrom(
+        s: s32,
+        mem: *mut ::libc::c_void,
+        len: s32,
+        flags: u32,
+        from: *mut sockaddr,
+        fromlen: *mut u32,
+    ) -> s32;
+}
+extern "C" {
+    pub fn net_read(s: s32, mem: *mut ::libc::c_void, len: s32) -> s32;
+}
+extern "C" {
+    pub fn net_close(s: s32) -> s32;
+}
+extern "C" {
+    pub fn net_select(
+        maxfdp1: s32,
+        readset: *mut _types_fd_set,
+        writeset: *mut _types_fd_set,
+        exceptset: *mut _types_fd_set,
+        timeout: *mut timeval,
+    ) -> s32;
+}
+extern "C" {
+    pub fn net_setsockopt(
+        s: s32,
+        level: u32,
+        optname: u32,
+        optval: *const ::libc::c_void,
+        optlen: u32,
+    ) -> s32;
+}
+extern "C" {
+    pub fn net_ioctl(s: s32, cmd: u32, argp: *mut ::libc::c_void) -> s32;
+}
+extern "C" {
+    pub fn net_fcntl(s: s32, cmd: u32, flags: u32) -> s32;
+}
+extern "C" {
+    pub fn net_poll(sds: *mut pollsd, nsds: s32, timeout: s32) -> s32;
+}
+extern "C" {
+    pub fn net_shutdown(s: s32, how: u32) -> s32;
+}
+extern "C" {
+    pub fn net_gethostbyname(addrString: *const ::libc::c_char) -> *mut hostent;
 }
 #[doc = "\\typedef struct _dsp_task dsptask_t"]
 #[doc = "\\brief forward typdef to struct _dsp_task. This struture holds certain DSP task information for execution."]
@@ -5324,276 +5894,6 @@ extern "C" {
     #[doc = ""]
     #[doc = "\\return \\ref card_errors \"card error codes\""]
     pub fn CARD_SetGamecode(gamecode: *const ::libc::c_char) -> s32;
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct tm {
-    pub tm_sec: ::libc::c_int,
-    pub tm_min: ::libc::c_int,
-    pub tm_hour: ::libc::c_int,
-    pub tm_mday: ::libc::c_int,
-    pub tm_mon: ::libc::c_int,
-    pub tm_year: ::libc::c_int,
-    pub tm_wday: ::libc::c_int,
-    pub tm_yday: ::libc::c_int,
-    pub tm_isdst: ::libc::c_int,
-}
-extern "C" {
-    pub fn clock() -> clock_t;
-}
-extern "C" {
-    pub fn difftime(_time2: time_t, _time1: time_t) -> f64;
-}
-extern "C" {
-    pub fn mktime(_timeptr: *mut tm) -> time_t;
-}
-extern "C" {
-    pub fn time(_timer: *mut time_t) -> time_t;
-}
-extern "C" {
-    pub fn asctime(_tblock: *const tm) -> *mut ::libc::c_char;
-}
-extern "C" {
-    pub fn ctime(_time: *const time_t) -> *mut ::libc::c_char;
-}
-extern "C" {
-    pub fn gmtime(_timer: *const time_t) -> *mut tm;
-}
-extern "C" {
-    pub fn localtime(_timer: *const time_t) -> *mut tm;
-}
-extern "C" {
-    pub fn strftime(
-        _s: *mut ::libc::c_char,
-        _maxsize: usize,
-        _fmt: *const ::libc::c_char,
-        _t: *const tm,
-    ) -> usize;
-}
-extern "C" {
-    pub fn strftime_l(
-        _s: *mut ::libc::c_char,
-        _maxsize: usize,
-        _fmt: *const ::libc::c_char,
-        _t: *const tm,
-        _l: locale_t,
-    ) -> usize;
-}
-extern "C" {
-    pub fn asctime_r(arg1: *const tm, arg2: *mut ::libc::c_char) -> *mut ::libc::c_char;
-}
-extern "C" {
-    pub fn ctime_r(arg1: *const time_t, arg2: *mut ::libc::c_char) -> *mut ::libc::c_char;
-}
-extern "C" {
-    pub fn gmtime_r(arg1: *const time_t, arg2: *mut tm) -> *mut tm;
-}
-extern "C" {
-    pub fn localtime_r(arg1: *const time_t, arg2: *mut tm) -> *mut tm;
-}
-extern "C" {
-    pub fn tzset();
-}
-extern "C" {
-    pub fn _tzset_r(arg1: *mut _reent);
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct __tzrule_struct {
-    pub ch: ::libc::c_char,
-    pub m: ::libc::c_int,
-    pub n: ::libc::c_int,
-    pub d: ::libc::c_int,
-    pub s: ::libc::c_int,
-    pub __bindgen_padding_0: u32,
-    pub change: time_t,
-    pub offset: ::libc::c_long,
-    pub __bindgen_padding_1: u32,
-}
-pub type __tzrule_type = __tzrule_struct;
-#[repr(C)]
-#[repr(align(8))]
-#[derive(Debug, Copy, Clone)]
-pub struct __tzinfo_struct {
-    pub __tznorth: ::libc::c_int,
-    pub __tzyear: ::libc::c_int,
-    pub __tzrule: [__tzrule_type; 2usize],
-}
-pub type __tzinfo_type = __tzinfo_struct;
-extern "C" {
-    pub fn __gettzinfo() -> *mut __tzinfo_type;
-}
-extern "C" {
-    pub static mut _timezone: ::libc::c_long;
-}
-extern "C" {
-    pub static mut _daylight: ::libc::c_int;
-}
-extern "C" {
-    pub static mut _tzname: [*mut ::libc::c_char; 2usize];
-}
-#[repr(C)]
-#[derive(Copy, Clone)]
-pub union sigval {
-    pub sival_int: ::libc::c_int,
-    pub sival_ptr: *mut ::libc::c_void,
-    _bindgen_union_align: u32,
-}
-#[repr(C)]
-#[derive(Copy, Clone)]
-pub struct sigevent {
-    pub sigev_notify: ::libc::c_int,
-    pub sigev_signo: ::libc::c_int,
-    pub sigev_value: sigval,
-}
-#[repr(C)]
-#[derive(Copy, Clone)]
-pub struct siginfo_t {
-    pub si_signo: ::libc::c_int,
-    pub si_code: ::libc::c_int,
-    pub si_value: sigval,
-}
-pub type _sig_func_ptr = ::core::option::Option<unsafe extern "C" fn(arg1: ::libc::c_int)>;
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct sigaction {
-    pub sa_handler: _sig_func_ptr,
-    pub sa_mask: sigset_t,
-    pub sa_flags: ::libc::c_int,
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct sigaltstack {
-    pub ss_sp: *mut ::libc::c_void,
-    pub ss_flags: ::libc::c_int,
-    pub ss_size: usize,
-}
-pub type stack_t = sigaltstack;
-extern "C" {
-    pub fn sigprocmask(
-        arg1: ::libc::c_int,
-        arg2: *const sigset_t,
-        arg3: *mut sigset_t,
-    ) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn pthread_sigmask(
-        arg1: ::libc::c_int,
-        arg2: *const sigset_t,
-        arg3: *mut sigset_t,
-    ) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn kill(arg1: pid_t, arg2: ::libc::c_int) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn killpg(arg1: pid_t, arg2: ::libc::c_int) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn sigaction(
-        arg1: ::libc::c_int,
-        arg2: *const sigaction,
-        arg3: *mut sigaction,
-    ) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn sigaddset(arg1: *mut sigset_t, arg2: ::libc::c_int) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn sigdelset(arg1: *mut sigset_t, arg2: ::libc::c_int) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn sigismember(arg1: *const sigset_t, arg2: ::libc::c_int) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn sigfillset(arg1: *mut sigset_t) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn sigemptyset(arg1: *mut sigset_t) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn sigpending(arg1: *mut sigset_t) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn sigsuspend(arg1: *const sigset_t) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn sigwait(arg1: *const sigset_t, arg2: *mut ::libc::c_int) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn sigpause(arg1: ::libc::c_int) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn sigaltstack(arg1: *const stack_t, arg2: *mut stack_t) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn pthread_kill(arg1: pthread_t, arg2: ::libc::c_int) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn sigwaitinfo(arg1: *const sigset_t, arg2: *mut siginfo_t) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn sigtimedwait(
-        arg1: *const sigset_t,
-        arg2: *mut siginfo_t,
-        arg3: *const timespec,
-    ) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn sigqueue(arg1: pid_t, arg2: ::libc::c_int, arg3: sigval) -> ::libc::c_int;
-}
-pub type sig_atomic_t = ::libc::c_int;
-pub type sig_t = _sig_func_ptr;
-extern "C" {
-    pub fn _signal_r(arg1: *mut _reent, arg2: ::libc::c_int, arg3: _sig_func_ptr) -> _sig_func_ptr;
-}
-extern "C" {
-    pub fn _raise_r(arg1: *mut _reent, arg2: ::libc::c_int) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn signal(arg1: ::libc::c_int, arg2: _sig_func_ptr) -> _sig_func_ptr;
-}
-extern "C" {
-    pub fn raise(arg1: ::libc::c_int) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn psignal(arg1: ::libc::c_int, arg2: *const ::libc::c_char);
-}
-extern "C" {
-    pub fn clock_settime(clock_id: clockid_t, tp: *const timespec) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn clock_gettime(clock_id: clockid_t, tp: *mut timespec) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn clock_getres(clock_id: clockid_t, res: *mut timespec) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn timer_create(
-        clock_id: clockid_t,
-        evp: *mut sigevent,
-        timerid: *mut timer_t,
-    ) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn timer_delete(timerid: timer_t) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn timer_settime(
-        timerid: timer_t,
-        flags: ::libc::c_int,
-        value: *const itimerspec,
-        ovalue: *mut itimerspec,
-    ) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn timer_gettime(timerid: timer_t, value: *mut itimerspec) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn timer_getoverrun(timerid: timer_t) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn nanosleep(rqtp: *const timespec, rmtp: *mut timespec) -> ::libc::c_int;
 }
 #[doc = " \\typedef u32 cond_t"]
 #[doc = "\\brief typedef for the condition variable handle"]
