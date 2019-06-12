@@ -18,5 +18,11 @@
 #![crate_type = "rlib"]
 #![crate_name = "ogc"]
 
-/// Custom Error Type for functions in this library.
+pub use bitflags::bitflags;
+
+/// Custom Error Implementation
 pub mod error;
+pub use error::{OgcError, Result};
+
+/// Networking Implementation
+pub mod network;
