@@ -4,6 +4,11 @@ version = "0.1.0"
 authors = ["rust-wii"]
 edition = "2018"
 
+[lib]
+crate-type = ["rlib"]
+name = "ogc"
+
 [dependencies.ogc-sys]
 path = "../ogc-sys"
+version = "0.1.0"
 
