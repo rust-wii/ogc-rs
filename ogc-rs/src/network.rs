@@ -2,7 +2,8 @@
 //!
 //! This module implements a safe wrapper around the networking functions found in ``network.h``.
 
-use crate::{OgcError, Result, bitflags};
+use crate::{bitflags, raw_to_string, raw_to_strings, OgcError, Primitive, Result, ToPrimitive};
+use std::{ffi::c_void, ptr};
 
 bitflags! {
     /// Optional flags for sockets.
@@ -81,6 +82,33 @@ bitflags! {
     }
 }
 
+bitflags! {
+    /// Bits that may be set/returned in events and revents from net_poll
+    pub struct PollBits: u32 {
+        const POLLIN   = 0x0001;
+        const POLLPRI  = 0x0002;
+        const POLLOUT  = 0x0004;
+        const POLLERR  = 0x0008;
+        const POLLHUP  = 0x0010;
+        const POLLNVAL = 0x0020;
+    }
+}
+
+/// Protocol Families
+#[derive(Debug, Eq, PartialEq, Primitive)]
+pub enum ProtocolFamily {
+    AfUnspec = 0,
+    AfInet = 2,
+}
+
+/// Socket Types
+#[derive(Debug, Eq, PartialEq, Primitive)]
+pub enum SocketType {
+    SockStream = 1,
+    SockDgram = 2,
+    SockRaw = 3,
+}
+
 /// Non Blocking IO
 pub const O_NONBLOCK: u32 = 2048;
 
@@ -93,36 +121,19 @@ pub const TCP_KEEPALIVE: u32 = 0x02;
 
 /// Socket Error Codes
 pub const INVALID_SOCKET: i32 = !0;
-pub const SOCKET_ERROR: i32   = -1;
-
-/// Socket Types
-pub const SOCK_STREAM: u32 = 1;
-pub const SOCK_DGRAM: u32  = 2;
-pub const SOCK_RAW: u32    = 3;
+pub const SOCKET_ERROR: i32 = -1;
 
 /// Socket Levels
 pub const SOL_SOCKET: u32 = 0xffff;
 
 /// IP Protocols
-pub const IPPROTO_IP: u32  = 0;
+pub const IPPROTO_IP: u32 = 0;
 pub const IPPROTO_TCP: u32 = 6;
 pub const IPPROTO_UDP: u32 = 17;
 
 /// IP Protocol Levels
 pub const IP_TOS: u32 = 1;
 pub const IP_TTL: u32 = 2;
-
-/// Address Families
-pub const AF_UNSPEC: u32 = 0;
-pub const AF_INET: u32   = 2;
-
-/// Poll Results
-pub const POLLIN: u32   = 0x0001;
-pub const POLLPRI: u32  = 0x0002;
-pub const POLLOUT: u32  = 0x0004;
-pub const POLLERR: u32  = 0x0008;
-pub const POLLHUP: u32  = 0x0010;
-pub const POLLNVAL: u32 = 0x0020;
 
 /// Structure to hold the 32 bit address needed for ``sockaddr``.
 pub struct IPV4Address {
@@ -132,17 +143,17 @@ pub struct IPV4Address {
 
 /// Implementation to convert from a ``IPV4Address`` into a ``in_addr`` used by ogc_sys.
 impl Into<ogc_sys::in_addr> for &mut IPV4Address {
-    fn into(self) -> ogc_sys::in_addr { 
+    fn into(self) -> ogc_sys::in_addr {
         ogc_sys::in_addr {
-            s_addr: self.address
+            s_addr: self.address,
         }
     }
 }
 
 impl Into<*mut ogc_sys::in_addr> for &mut IPV4Address {
-    fn into(self) -> *mut ogc_sys::in_addr { 
+    fn into(self) -> *mut ogc_sys::in_addr {
         Box::into_raw(Box::new(ogc_sys::in_addr {
-            s_addr: self.address
+            s_addr: self.address,
         }))
     }
 }
@@ -152,7 +163,7 @@ pub struct AddressElements {
     // Length of the address.
     pub length: u8,
     // The address family.
-    pub family: u32,
+    pub family: ProtocolFamily,
     // A 16-bit port number in Network Byte Order.
     pub port: u16,
     // IPV4 Address.
@@ -164,13 +175,40 @@ pub struct SocketAddress {
     // Length of the address.
     pub length: u8,
     // The address family.
-    pub family: u32,
+    pub family: ProtocolFamily,
     // The address data.
-    pub data: [i8; 14]
+    pub data: [i8; 14],
 }
 
-/// This function converts the specified string in the Internet standard dot notation 
-/// to an integer value suitable for use as an Internet address. 
+/// Convert ``SocketAddress`` into a ``ogc_sys::sockaddr``.
+impl Into<*mut ogc_sys::sockaddr> for SocketAddress {
+    fn into(self) -> *mut ogc_sys::sockaddr {
+        Box::into_raw(Box::new(ogc_sys::sockaddr {
+            sa_len: self.length,
+            sa_family: self.family.to_u8().unwrap(),
+            sa_data: self.data,
+        }))
+    }
+}
+
+/// The hostent structure is used by functions to store
+/// information about a given host, such as host name and IPv4 address.
+#[derive(Debug, Clone)]
+pub struct HostInformation {
+    /// The official name of the host.
+    pub name: String,
+    /// A NULL-terminated array of alternate names.
+    pub aliases: Vec<String>,
+    /// The type of address being returned.
+    pub address_type: u16,
+    /// The length, in bytes, of each address.
+    pub length: u16,
+    /// A NULL-terminated list of addresses for the host.
+    pub address_list: Vec<String>,
+}
+
+/// This function converts the specified string in the Internet standard dot notation
+/// to an integer value suitable for use as an Internet address.
 /// The converted address will be in Network Byte Order.
 pub fn dot_to_nbo(dot: &str) -> Result<IPV4Address> {
     unsafe {
@@ -179,20 +217,18 @@ pub fn dot_to_nbo(dot: &str) -> Result<IPV4Address> {
         if r == 0 {
             Err(OgcError::Network("network dot_to_nbo failed".to_string()))
         } else {
-            Ok(IPV4Address {
-                address: r
-            })
+            Ok(IPV4Address { address: r })
         }
     }
 }
 
-/// This function call converts the specified string in the Internet standard dot notation 
-/// to a network address, and stores the address in the structure provided. 
+/// This function call converts the specified string in the Internet standard dot notation
+/// to a network address, and stores the address in the structure provided.
 /// The converted address will be in Network Byte Order.
 pub fn dot_to_net_addr(dot: &str, addr: &mut IPV4Address) -> Result<()> {
     unsafe {
         let r = ogc_sys::inet_aton(dot.as_ptr() as *const u8, addr.into());
-        
+
         if r < 0 {
             Err(OgcError::Network(format!("network dot_to_net_addr: {}", r)))
         } else {
@@ -201,7 +237,7 @@ pub fn dot_to_net_addr(dot: &str, addr: &mut IPV4Address) -> Result<()> {
     }
 }
 
-/// This function call converts the specified Internet host address 
+/// This function call converts the specified Internet host address
 /// to a string in the Internet standard dot notation.
 pub fn addr_to_dot(addr: &mut IPV4Address) -> Result<String> {
     unsafe {
@@ -209,7 +245,7 @@ pub fn addr_to_dot(addr: &mut IPV4Address) -> Result<String> {
         let r = ogc_sys::inet_ntoa(addr.into());
         let r = std::slice::from_raw_parts(r, 1);
         let r = String::from_utf8(r.to_vec()).unwrap();
-        
+
         if r.is_empty() {
             Err(OgcError::Network("addr_to_dot empty".to_string()))
         } else {
@@ -218,16 +254,35 @@ pub fn addr_to_dot(addr: &mut IPV4Address) -> Result<String> {
     }
 }
 
+/// This function returns a structure of type ``HostInformation`` for the given host name.
+/// Here ``addr_string`` is either a hostname, or an IPv4 address in standard dot notation.
+pub fn get_host_by_name(addr_string: &str) -> Result<HostInformation> {
+    unsafe {
+        let r = ogc_sys::net_gethostbyname(addr_string.as_ptr() as *const u8);
+
+        if r == ptr::null_mut() {
+            Err(OgcError::Network("host provided doesnt exist".into()))
+        } else {
+            Ok(HostInformation {
+                name: raw_to_string((*r).h_name),
+                aliases: raw_to_strings((*r).h_aliases),
+                address_type: (*r).h_addrtype,
+                length: (*r).h_length,
+                address_list: raw_to_strings((*r).h_addr_list),
+            })
+        }
+    }
+}
+
 /// Represents the networking service.
 /// No networking can be done until an instance of this struct is created.
 /// This service can only be created once!
 ///
-/// The service exits when all instances of this struct go out of scope. 
+/// The service exits when all instances of this struct go out of scope.
 pub struct Network(());
 
 /// Implementation of the networking service.
 impl Network {
-
     /// Initialization of the networking service.
     pub fn init() -> Result<Network> {
         unsafe {
@@ -238,6 +293,76 @@ impl Network {
             } else {
                 Ok(Network(()))
             }
+        }
+    }
+
+    /// Create a socket.
+    pub fn new(domain: ProtocolFamily, socket_type: SocketType) -> Result<Socket> {
+        unsafe {
+            let r = ogc_sys::net_socket(domain.to_u32().unwrap(), socket_type.to_u32().unwrap(), 0);
+
+            if r == INVALID_SOCKET {
+                Err(OgcError::Network(format!("network socket creation: {}", r)))
+            } else {
+                Ok(Socket(r))
+            }
+        }
+    }
+}
+
+/// Represents a unix socket.
+/// No networking can be done until an instance of ``Network`` is created.
+///
+/// The socket closes when this struct go out of scope.
+pub struct Socket(i32);
+
+impl Socket {
+    /// Initiate a connection on a socket.
+    pub fn connect(&self, socket_addr: SocketAddress, address_length: u32) -> Result<()> {
+        unsafe {
+            let r = ogc_sys::net_connect(self.0, socket_addr.into(), address_length);
+
+            if r < 0 {
+                Err(OgcError::Network(format!("network socket connect: {}", r)))
+            } else {
+                Ok(())
+            }
+        }
+    }
+
+    /// Write to the file descriptor, in this case the socket.
+    pub fn write(&self, buffer: &[u8], count: i32) -> Result<i32> {
+        unsafe {
+            let r = ogc_sys::net_write(self.0, buffer.as_ptr() as *const c_void, count);
+
+            if r < 0 {
+                Err(OgcError::Network(format!("network writing failure: {}", r)))
+            } else {
+                Ok(r)
+            }
+        }
+    }
+
+    /// Read from the file descriptor, in this case the socket.
+    pub fn read(&self, buffer: &mut [u8], count: i32) -> Result<i32> {
+        unsafe {
+            let r = ogc_sys::net_read(self.0, buffer.as_ptr() as *mut c_void, count);
+
+            if r < 0 {
+                Err(OgcError::Network(format!("network reading failure: {}", r)))
+            } else {
+                Ok(r)
+            }
+        }
+    }
+}
+
+/// Implements ``Drop`` for ``Socket`.
+/// On ``drop`` it closes the file descriptor.
+impl Drop for Socket {
+    fn drop(&mut self) {
+        unsafe {
+            ogc_sys::net_close(self.0);
         }
     }
 }
