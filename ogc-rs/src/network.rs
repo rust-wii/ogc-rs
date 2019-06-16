@@ -330,10 +330,50 @@ impl Socket {
         }
     }
 
-    /// Write to the file descriptor, in this case the socket.
-    pub fn write(&self, buffer: &[u8], count: i32) -> Result<i32> {
+    /// Assign a local protocol address to a socket.
+    pub fn bind(&self, socket_addr: SocketAddress, address_length: u32) -> Result<()> {
         unsafe {
-            let r = ogc_sys::net_write(self.0, buffer.as_ptr() as *const c_void, count);
+            let r = ogc_sys::net_bind(self.0, socket_addr.into(), address_length);
+
+            if r < 0 {
+                Err(OgcError::Network(format!("network socket bind: {}", r)))
+            } else {
+                Ok(())
+            }
+        }
+    }
+
+    /// This function is called only by a TCP server to listen for the client request.
+    pub fn listen(&self, backlog: u32) -> Result<()> {
+        unsafe {
+            let r = ogc_sys::net_listen(self.0, backlog);
+
+            if r < 0 {
+                Err(OgcError::Network(format!("network socket listen: {}", r)))
+            } else {
+                Ok(())
+            }
+        }
+    }
+
+    /// The accept function is called by a TCP server to accept client requests and 
+    /// to establish actual connection.
+    pub fn accept(&self, socket_addr: SocketAddress, address_length: &mut u32) -> Result<i32> {
+        unsafe {
+            let r = ogc_sys::net_accept(self.0, socket_addr.into(), address_length);
+
+            if r < 0 {
+                Err(OgcError::Network(format!("network socket accept: {}", r)))
+            } else {
+                Ok(r)
+            }
+        }
+    }
+
+    /// Write to the file descriptor, in this case the socket.
+    pub fn write(descriptor: i32, buffer: &[u8], count: i32) -> Result<i32> {
+        unsafe {
+            let r = ogc_sys::net_write(descriptor, buffer.as_ptr() as *const c_void, count);
 
             if r < 0 {
                 Err(OgcError::Network(format!("network writing failure: {}", r)))
@@ -343,13 +383,39 @@ impl Socket {
         }
     }
 
-    /// Read from the file descriptor, in this case the socket.
-    pub fn read(&self, buffer: &mut [u8], count: i32) -> Result<i32> {
+    /// Send data over stream sockets or CONNECTED datagram sockets.
+    pub fn send(descriptor: i32, msg: &[u8], length: i32, flags: u32) -> Result<i32> {
         unsafe {
-            let r = ogc_sys::net_read(self.0, buffer.as_ptr() as *mut c_void, count);
+            let r = ogc_sys::net_send(descriptor, buffer.as_ptr() as *const c_void, length, flags);
+
+            if r < 0 {
+                Err(OgcError::Network(format!("network sending failure: {}", r)))
+            } else {
+                Ok(r)
+            }
+        }
+    }
+
+    /// Read from the file descriptor, in this case the socket.
+    pub fn read(descriptor: i32, buffer: &mut [u8], count: i32) -> Result<i32> {
+        unsafe {
+            let r = ogc_sys::net_read(descriptor, buffer.as_ptr() as *mut c_void, count);
 
             if r < 0 {
                 Err(OgcError::Network(format!("network reading failure: {}", r)))
+            } else {
+                Ok(r)
+            }
+        }
+    }
+
+    /// Receive data over stream sockets or CONNECTED datagram sockets.
+    pub fn recieve(descriptor: i32, buffer: &mut [u8], length: i32, flags: u32) -> Result<i32> {
+        unsafe {
+            let r = ogc_sys::net_recv(descriptor, buffer.as_ptr() as *mut c_void, length, flags);
+
+            if r < 0 {
+                Err(OgcError::Network(format!("network recieve failure: {}", r)))
             } else {
                 Ok(r)
             }
