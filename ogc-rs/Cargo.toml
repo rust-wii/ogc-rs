@@ -10,6 +10,8 @@ name = "ogc"
 
 [dependencies]
 bitflags = "1.1"
+enum-primitive-derive = "0.1"
+num-traits = "0.2"
 
 [dependencies.ogc-sys]
 path = "../ogc-sys"

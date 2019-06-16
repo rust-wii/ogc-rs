@@ -19,6 +19,8 @@
 #![crate_name = "ogc"]
 
 pub use bitflags::bitflags;
+pub use enum_primitive_derive::Primitive;
+pub use num_traits::cast::ToPrimitive;
 
 /// Custom Error Implementation
 pub mod error;
@@ -26,3 +28,7 @@ pub use error::{OgcError, Result};
 
 /// Networking Implementation
 pub mod network;
+
+/// Utility Functions
+pub mod utils;
+pub use utils::*;
