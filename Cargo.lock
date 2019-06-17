@@ -43,7 +43,7 @@ dependencies = [
 
 [[package]]
 name = "ogc-rs"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "bitflags 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "enum-primitive-derive 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
