@@ -384,7 +384,7 @@ impl Socket {
     }
 
     /// Send data over stream sockets or CONNECTED datagram sockets.
-    pub fn send(descriptor: i32, msg: &[u8], length: i32, flags: u32) -> Result<i32> {
+    pub fn send(descriptor: i32, buffer: &[u8], length: i32, flags: u32) -> Result<i32> {
         unsafe {
             let r = ogc_sys::net_send(descriptor, buffer.as_ptr() as *const c_void, length, flags);
 
