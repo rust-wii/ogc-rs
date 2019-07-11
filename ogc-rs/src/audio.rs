@@ -43,8 +43,12 @@ impl Audio {
     fn init_dma(data: &[u8]) {
         unsafe {
             // libogc has strict restrictions on data alignment and length.
-            assert_eq!(32, mem::align_of_val(data));
-            assert_eq!(0, data.len() % 32);
+            assert_ne!(
+                32,
+                mem::align_of_val(data),
+                "Data is not aligned correctly."
+            );
+            assert_ne!(0, data.len() % 32, "Data length is not a multiple of 32.");
 
             ogc_sys::AUDIO_InitDMA(data.as_ptr() as u32, data.len() as u32);
         }
@@ -100,30 +104,22 @@ impl Audio {
 
     /// Get the count of bytes, left to play, from the audio DMA interface.
     fn get_dma_bytes_left() -> u32 {
-        unsafe {
-            ogc_sys::AUDIO_GetDMABytesLeft()
-        }
+        unsafe { ogc_sys::AUDIO_GetDMABytesLeft() }
     }
 
     /// Get the audio DMA flag.
     fn get_dma_enable_flag() -> u16 {
-        unsafe {
-            ogc_sys::AUDIO_GetDMAEnableFlag()
-        }
+        unsafe { ogc_sys::AUDIO_GetDMAEnableFlag() }
     }
 
     /// Get the DMA transfer length configured in the audio DMA interface.
     fn get_dma_length() -> u32 {
-        unsafe {
-            ogc_sys::AUDIO_GetDMALength()
-        }
+        unsafe { ogc_sys::AUDIO_GetDMALength() }
     }
 
     /// Get the main memory address for the DMA operation.
     fn get_dma_address() -> u32 {
-        unsafe {
-            ogc_sys::AUDIO_GetDMAStartAddr()
-        }
+        unsafe { ogc_sys::AUDIO_GetDMAStartAddr() }
     }
 
     /// Reset the stream sample count register.
