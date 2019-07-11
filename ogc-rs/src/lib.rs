@@ -32,6 +32,9 @@ pub mod network;
 /// Audio Implementation
 pub mod audio;
 
+/// Console Implementation
+pub mod console;
+
 /// Utility Functions
 pub mod utils;
 pub use utils::*;
