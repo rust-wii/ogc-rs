@@ -5,7 +5,7 @@
 use crate::{mem_k0_to_k1, OgcError, Result};
 use std::ptr;
 
-struct Console(());
+pub struct Console(());
 
 impl Console {
     /// Initializes the console subsystem with given parameters.
