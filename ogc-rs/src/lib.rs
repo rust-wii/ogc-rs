@@ -20,7 +20,7 @@
 
 pub use bitflags::bitflags;
 pub use enum_primitive_derive::Primitive;
-pub use num_traits::cast::ToPrimitive;
+pub use num_traits::cast::{ToPrimitive, FromPrimitive};
 
 /// Custom Error Implementation
 pub mod error;

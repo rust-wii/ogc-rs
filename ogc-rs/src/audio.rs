@@ -2,11 +2,8 @@
 //!
 //! This module implements a safe wrapper around the audio functions found in ``audio.h``.
 
-use crate::{Primitive, Result, ToPrimitive};
-use std::ptr;
-
-/// Custom Callback Types
-pub type AISCallback = Fn(sample_count: u32) -> ();
+use crate::{FromPrimitive, Primitive, ToPrimitive};
+use std::{mem, ptr};
 
 /// Represents the audio service.
 /// No audio control can be done until an instance of this struct is created.
@@ -43,10 +40,16 @@ impl Audio {
     }
 
     /// Register a user callback function for the ``audio`` streaming interface.
-    fn register_stream_callback(callback: AISCallback) {
+    fn register_stream_callback<F>(callback: Box<F>)
+    where
+        F: Fn(u32) -> (),
+    {
         unsafe {
-            // TODO: DO SOMETHING WITH THE RETURNED CALLBACK
-            let _ = ogc_sys::AUDIO_RegisterStreamCallback(callback);
+            // TODO: Check if this implementation can be changed.
+            let ptr = Box::into_raw(callback);
+            let code: extern "C" fn(smp_cnt: u32) = mem::transmute(ptr);
+            // TODO: Do something with the returned callback.
+            let _ = ogc_sys::AUDIO_RegisterStreamCallback(Some(code));
         }
     }
 
@@ -68,7 +71,7 @@ impl Audio {
     fn get_samplerate() -> SampleRate {
         unsafe {
             let r = ogc_sys::AUDIO_GetStreamSampleRate();
-            SampleRate::from_u32(r)
+            SampleRate::from_u32(r).unwrap()
         }
     }
 
@@ -76,7 +79,7 @@ impl Audio {
     fn get_dsp_samplerate() -> SampleRate {
         unsafe {
             let r = ogc_sys::AUDIO_GetDSPSampleRate();
-            SampleRate::from_u32(r)
+            SampleRate::from_u32(r).unwrap()
         }
     }
 
@@ -94,11 +97,11 @@ impl Audio {
         }
     }
 
-    /// Get the play state from the streaming audio interface. 
+    /// Get the play state from the streaming audio interface.
     fn get_playstate() -> PlayState {
         unsafe {
             let r = ogc_sys::AUDIO_GetStreamPlayState();
-            PlayState::from_u32(r)
+            PlayState::from_u32(r).unwrap()
         }
     }
 
@@ -111,29 +114,21 @@ impl Audio {
 
     /// Get streaming volume on the left channel.
     fn get_volume_left() -> u8 {
-        unsafe {
-            ogc_sys::AUDIO_GetStreamVolLeft();
-        }
+        unsafe { ogc_sys::AUDIO_GetStreamVolLeft() }
     }
 
     /// Set streaming volume on the left channel.
     fn set_volume_left(volume: u8) {
-        unsafe {
-            ogc_sys::AUDIO_SetStreamVolLeft(volume);
-        }
+        unsafe { ogc_sys::AUDIO_SetStreamVolLeft(volume) }
     }
 
     /// Get streaming volume on the right channel.
     fn get_volume_right() -> u8 {
-        unsafe {
-            ogc_sys::AUDIO_GetStreamVolRight();
-        }
+        unsafe { ogc_sys::AUDIO_GetStreamVolRight() }
     }
 
     /// Set streaming volume on the right channel.
     fn set_volume_right(volume: u8) {
-        unsafe {
-            ogc_sys::AUDIO_SetStreamVolRight(volume);
-        }
+        unsafe { ogc_sys::AUDIO_SetStreamVolRight(volume) }
     }
 }
