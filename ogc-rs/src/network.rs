@@ -356,7 +356,7 @@ impl Socket {
         }
     }
 
-    /// The accept function is called by a TCP server to accept client requests and 
+    /// The accept function is called by a TCP server to accept client requests and
     /// to establish actual connection.
     pub fn accept(&self, socket_addr: SocketAddress, address_length: &mut u32) -> Result<i32> {
         unsafe {
