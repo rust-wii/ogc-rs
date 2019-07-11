@@ -29,6 +29,9 @@ pub use error::{OgcError, Result};
 /// Networking Implementation
 pub mod network;
 
+/// Audio Implementation
+pub mod audio;
+
 /// Utility Functions
 pub mod utils;
 pub use utils::*;
