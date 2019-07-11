@@ -39,6 +39,20 @@ impl Audio {
         }
     }
 
+    /// Reset the stream sample count register.
+    fn reset_sample_count() {
+        unsafe {
+            ogc_sys::AUDIO_ResetStreamSampleCnt();
+        }
+    }
+
+    /// Set the sample count for the stream trigger.
+    fn set_trigger_count(count: u32) {
+        unsafe {
+            ogc_sys::AUDIO_SetStreamTrigger(count);
+        }
+    }
+
     /// Get streaming sample rate.
     fn get_samplerate() -> SampleRate {
         unsafe {
@@ -47,10 +61,25 @@ impl Audio {
         }
     }
 
+    /// Get the sampling rate for the DSP interface.
+    fn get_dsp_samplerate() -> SampleRate {
+        unsafe {
+            let r = ogc_sys::AUDIO_GetDSPSampleRate();
+            SampleRate::from_u32(r)
+        }
+    }
+
     /// Set the sample rate for the streaming audio interface.
     fn set_samplerate(samplerate: SampleRate) {
         unsafe {
             ogc_sys::AUDIO_SetStreamSampleRate(samplerate.to_u32().unwrap());
+        }
+    }
+
+    /// Set the sampling rate for the DSP interface.
+    fn set_dsp_samplerate(samplerate: SampleRate) {
+        unsafe {
+            ogc_sys::AUDIO_SetDSPSampleRate(samplerate.to_u8().unwrap());
         }
     }
 
