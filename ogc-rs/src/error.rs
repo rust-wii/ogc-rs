@@ -15,7 +15,7 @@ impl fmt::Debug for OgcError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             OgcError::Network(err) => write!(f, "[ OGC - Network ]: {}", err),
-            OgcError::Console(err) => write!(f, "[OGC - Console]: {}", err),
+            OgcError::Console(err) => write!(f, "[ OGC - Console ]: {}", err),
         }
     }
 }
@@ -24,7 +24,7 @@ impl fmt::Display for OgcError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             OgcError::Network(err) => write!(f, "[ OGC - Network ]: {}", err),
-            OgcError::Console(err) => write!(f, "[ OGC - Console]: {}", err),
+            OgcError::Console(err) => write!(f, "[ OGC - Console ]: {}", err),
         }
     }
 }
