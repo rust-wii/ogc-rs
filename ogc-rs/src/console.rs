@@ -12,7 +12,7 @@ impl Console {
     pub fn init(xstart: i32, ystart: i32, xres: i32, yres: i32, stride: i32) -> Console {
         unsafe {
             let framebuffer = mem_k0_to_k1(ogc_sys::SYS_AllocateFramebuffer(
-                ogc_sys::VIDEO_GetPreferredMode(ptr::null()),
+                ogc_sys::VIDEO_GetPreferredMode(ptr::null_mut()),
             ));
 
             ogc_sys::CON_Init(framebuffer, xstart, ystart, xres, yres, stride);
@@ -25,18 +25,19 @@ impl Console {
     pub fn init_stdout(xorigin: i32, yorigin: i32, width: i32, height: i32) -> Result<()> {
         unsafe {
             let init = ogc_sys::CON_InitEx(
-                ogc_sys::VIDEO_GetPreferredMode(ptr::null()),
+                ogc_sys::VIDEO_GetPreferredMode(ptr::null_mut()),
                 xorigin,
                 yorigin,
                 width,
                 height,
             );
 
-            match init {
-                -1 => Err(OgcError::Console(
+            if init < 0 {
+                Err(OgcError::Console(
                     "Failed to allocate memory for framebuffer!".into(),
-                )),
-                0 => Ok(()),
+                ))
+            } else {
+                Ok(())
             }
         }
     }
@@ -50,10 +51,10 @@ impl Console {
 
     /// Retrieve the columns and rows of the current console
     pub fn get_metrics() -> (i32, i32) {
-        let mut coords: (i32, i32) = (0, 0);
+        let coords: (i32, i32) = (0, 0);
 
         unsafe {
-            ogc_sys::CON_GetMetrics(coords.0, coords.1);
+            ogc_sys::CON_GetMetrics(coords.0 as *mut i32, coords.1 as *mut i32);
         }
 
         coords
@@ -61,10 +62,10 @@ impl Console {
 
     /// Retrieve the current cursor position of the current console.
     pub fn get_position() -> (i32, i32) {
-        let mut coords: (i32, i32) = (0, 0);
+        let coords: (i32, i32) = (0, 0);
 
         unsafe {
-            ogc_sys::CON_GetPosition(coords.0, coords.1);
+            ogc_sys::CON_GetPosition(coords.0 as *mut i32, coords.1 as *mut i32);
         }
 
         coords
