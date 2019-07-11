@@ -3,6 +3,7 @@
 //! This module implements a safe wrapper around the audio functions found in ``audio.h``.
 
 use crate::{FromPrimitive, Primitive, ToPrimitive};
+use static_assertions::const_assert_eq;
 use std::{mem, ptr};
 
 /// Represents the audio service.
@@ -33,9 +34,37 @@ impl Audio {
         unsafe {
             // For now this is a mutable null pointer.
             // libogc is fine with this, but this should be changed in the future.
-            let r = ogc_sys::AUDIO_Init(ptr::null_mut());
+            ogc_sys::AUDIO_Init(ptr::null_mut());
 
             Audio(())
+        }
+    }
+
+    /// Initialize an audio DMA transfer.
+    fn init_dma(data: &[u8]) {
+        unsafe {
+            // libogc has strict restrictions on data alignment and length.
+            const_assert_eq!(32, mem::align_of_val(data));
+            const_assert_eq!(0, data.len() % 32);
+
+            ogc_sys::AUDIO_InitDMA(data.as_ptr() as u32, data.len() as u32);
+        }
+    }
+
+    /// Start the audio DMA operation.
+    ///
+    /// Starts to transfer the data from main memory to the audio interface through DMA.
+    /// This call should follow the call to ``init_dma`` which is used to initialize DMA transfers.
+    fn start_dma() {
+        unsafe {
+            ogc_sys::AUDIO_StartDMA();
+        }
+    }
+
+    /// Stop the previously started audio DMA operation.
+    fn stop_dma() {
+        unsafe {
+            ogc_sys::AUDIO_StopDMA();
         }
     }
 
@@ -50,6 +79,51 @@ impl Audio {
             let code: extern "C" fn(smp_cnt: u32) = mem::transmute(ptr);
             // TODO: Do something with the returned callback.
             let _ = ogc_sys::AUDIO_RegisterStreamCallback(Some(code));
+        }
+    }
+
+    /// Register a user callback function for the audio DMA interface.
+    ///
+    /// This callback will be called whenever the audio DMA requests new data.
+    /// Internally the DMA buffers are double buffered.
+    fn register_dma_callback<F>(callback: Box<F>)
+    where
+        F: Fn() -> (),
+    {
+        unsafe {
+            // TODO: Check if this implementation can be changed.
+            let ptr = Box::into_raw(callback);
+            let code: extern "C" fn() = mem::transmute(ptr);
+            // TODO: Do something with the returned callback.
+            let _ = ogc_sys::AUDIO_RegisterDMACallback(Some(code));
+        }
+    }
+
+    /// Get the count of bytes, left to play, from the audio DMA interface.
+    fn get_dma_bytes_left() -> u32 {
+        unsafe {
+            ogc_sys::AUDIO_GetDMABytesLeft()
+        }
+    }
+
+    /// Get the audio DMA flag.
+    fn get_dma_enable_flag() -> u16 {
+        unsafe {
+            ogc_sys::AUDIO_GetDMAEnableFlag()
+        }
+    }
+
+    /// Get the DMA transfer length configured in the audio DMA interface.
+    fn get_dma_length() -> u32 {
+        unsafe {
+            ogc_sys::AUDIO_GetDMALength()
+        }
+    }
+
+    /// Get the main memory address for the DMA operation.
+    fn get_dma_address() -> u32 {
+        unsafe {
+            ogc_sys::AUDIO_GetDMAStartAddr()
         }
     }
 
