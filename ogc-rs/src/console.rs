@@ -33,7 +33,7 @@ impl Console {
             );
 
             match init {
-                -1 => Err(OgcError::Console("con_initex failed".into())),
+                -1 => Err(OgcError::Console("Failed to allocate memory for framebuffer!".into())),
                 0 => Ok(()),
             }
         }
