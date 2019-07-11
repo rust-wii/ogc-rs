@@ -5,6 +5,9 @@
 use crate::{Primitive, Result, ToPrimitive};
 use std::ptr;
 
+/// Custom Callback Types
+pub type AISCallback = Fn(sample_count: u32) -> ();
+
 /// Represents the audio service.
 /// No audio control can be done until an instance of this struct is created.
 /// This service can only be created once!
@@ -36,6 +39,14 @@ impl Audio {
             let r = ogc_sys::AUDIO_Init(ptr::null_mut());
 
             Audio(())
+        }
+    }
+
+    /// Register a user callback function for the ``audio`` streaming interface.
+    fn register_stream_callback(callback: AISCallback) {
+        unsafe {
+            // TODO: DO SOMETHING WITH THE RETURNED CALLBACK
+            let _ = ogc_sys::AUDIO_RegisterStreamCallback(callback);
         }
     }
 
