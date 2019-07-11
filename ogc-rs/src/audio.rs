@@ -24,4 +24,32 @@ impl Audio {
             Audio(())
         }
     }
+
+    /// Get streaming volume on the left channel.
+    fn get_volume_left() -> u8 {
+        unsafe {
+            ogc_sys::AUDIO_GetStreamVolLeft();
+        }
+    }
+
+    /// Set streaming volume on the left channel.
+    fn set_volume_left(volume: u8) {
+        unsafe {
+            ogc_sys::AUDIO_SetStreamVolLeft(volume);
+        }
+    }
+
+    /// Get streaming volume on the right channel.
+    fn get_volume_right() -> u8 {
+        unsafe {
+            ogc_sys::AUDIO_GetStreamVolRight();
+        }
+    }
+
+    /// Set streaming volume on the right channel.
+    fn set_volume_right(volume: u8) {
+        unsafe {
+            ogc_sys::AUDIO_SetStreamVolRight(volume);
+        }
+    }
 }
