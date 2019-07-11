@@ -3,7 +3,6 @@
 //! This module implements a safe wrapper around the audio functions found in ``audio.h``.
 
 use crate::{FromPrimitive, Primitive, ToPrimitive};
-use static_assertions::const_assert_eq;
 use std::{mem, ptr};
 
 /// Represents the audio service.
@@ -44,8 +43,8 @@ impl Audio {
     fn init_dma(data: &[u8]) {
         unsafe {
             // libogc has strict restrictions on data alignment and length.
-            const_assert_eq!(32, mem::align_of_val(data));
-            const_assert_eq!(0, data.len() % 32);
+            assert_eq!(32, mem::align_of_val(data));
+            assert_eq!(0, data.len() % 32);
 
             ogc_sys::AUDIO_InitDMA(data.as_ptr() as u32, data.len() as u32);
         }
