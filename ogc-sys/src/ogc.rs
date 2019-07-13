@@ -5,7 +5,7 @@
 pub struct __IncompleteArrayField<T>(::core::marker::PhantomData<T>, [T; 0]);
 impl<T> __IncompleteArrayField<T> {
     #[inline]
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         __IncompleteArrayField(::core::marker::PhantomData, [])
     }
     #[inline]
@@ -40,7 +40,7 @@ impl<T> ::core::clone::Clone for __IncompleteArrayField<T> {
 pub struct __BindgenUnionField<T>(::core::marker::PhantomData<T>);
 impl<T> __BindgenUnionField<T> {
     #[inline]
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         __BindgenUnionField(::core::marker::PhantomData)
     }
     #[inline]
@@ -490,7 +490,6 @@ pub const COLOR_MONEYGREEN: u32 = 3497447540;
 pub const COLOR_SKYBLUE: u32 = 3281634154;
 pub const COLOR_CREAM: u32 = 4202297986;
 pub const COLOR_MEDGRAY: u32 = 2692915327;
-pub const LWP_COND_NULL: u32 = 4294967295;
 pub const FEATURE_MEDIUM_CANREAD: u32 = 1;
 pub const FEATURE_MEDIUM_CANWRITE: u32 = 2;
 pub const FEATURE_GAMECUBE_SLOTA: u32 = 16;
@@ -3400,10 +3399,18 @@ extern "C" {
     ) -> *mut ::libc::c_char;
 }
 extern "C" {
-    pub fn strlcat(arg1: *mut ::libc::c_char, arg2: *const ::libc::c_char, arg3: usize) -> usize;
+    pub fn strlcat(
+        arg1: *mut ::libc::c_char,
+        arg2: *const ::libc::c_char,
+        arg3: ::libc::c_ulong,
+    ) -> ::libc::c_ulong;
 }
 extern "C" {
-    pub fn strlcpy(arg1: *mut ::libc::c_char, arg2: *const ::libc::c_char, arg3: usize) -> usize;
+    pub fn strlcpy(
+        arg1: *mut ::libc::c_char,
+        arg2: *const ::libc::c_char,
+        arg3: ::libc::c_ulong,
+    ) -> ::libc::c_ulong;
 }
 extern "C" {
     pub fn strnlen(arg1: *const ::libc::c_char, arg2: usize) -> usize;
@@ -5894,63 +5901,6 @@ extern "C" {
     #[doc = ""]
     #[doc = "\\return \\ref card_errors \"card error codes\""]
     pub fn CARD_SetGamecode(gamecode: *const ::libc::c_char) -> s32;
-}
-#[doc = " \\typedef u32 cond_t"]
-#[doc = "\\brief typedef for the condition variable handle"]
-pub type cond_t = u32;
-#[doc = " \\typedef u32 mutex_t"]
-#[doc = "\\brief typedef for the mutex handle"]
-pub type mutex_t = u32;
-extern "C" {
-    #[doc = " \\fn s32 LWP_CondInit(cond_t *cond)"]
-    #[doc = "\\brief Initialize condition variable"]
-    #[doc = "\\param[out] cond pointer to the cond_t handle"]
-    #[doc = ""]
-    #[doc = "\\return 0 on success, <0 on error"]
-    pub fn LWP_CondInit(cond: *mut cond_t) -> s32;
-}
-extern "C" {
-    #[doc = " \\fn s32 LWP_CondWait(cond_t cond,mutex_t mutex)"]
-    #[doc = "\\brief Wait on condition variable."]
-    #[doc = "\\param[in] cond handle to the cond_t structure"]
-    #[doc = "\\param[in] mutex handle to the mutex_t structure"]
-    #[doc = ""]
-    #[doc = "\\return 0 on success, <0 on error"]
-    pub fn LWP_CondWait(cond: cond_t, mutex: mutex_t) -> s32;
-}
-extern "C" {
-    #[doc = " \\fn s32 LWP_CondSignal(cond_t cond)"]
-    #[doc = "\\brief Signal a specific thread waiting on this condition variable to wake up."]
-    #[doc = "\\param[in] cond handle to the cond_t structure"]
-    #[doc = ""]
-    #[doc = "\\return 0 on success, <0 on error"]
-    pub fn LWP_CondSignal(cond: cond_t) -> s32;
-}
-extern "C" {
-    #[doc = " \\fn s32 LWP_CondBroadcast(cond_t cond)"]
-    #[doc = "\\brief Broadcast all threads waiting on this condition variable to wake up."]
-    #[doc = "\\param[in] cond handle to the cond_t structure"]
-    #[doc = ""]
-    #[doc = "\\return 0 on success, <0 on error"]
-    pub fn LWP_CondBroadcast(cond: cond_t) -> s32;
-}
-extern "C" {
-    #[doc = " \\fn s32 LWP_CondTimedWait(cond_t cond,mutex_t mutex,const struct timespec *abstime)"]
-    #[doc = "\\brief Timed wait on a conditionvariable."]
-    #[doc = "\\param[in] cond handle to the cond_t structure"]
-    #[doc = "\\param[in] mutex handle to the mutex_t structure"]
-    #[doc = "\\param[in] abstime pointer to a timespec structure holding the abs time for the timeout."]
-    #[doc = ""]
-    #[doc = "\\return 0 on success, <0 on error"]
-    pub fn LWP_CondTimedWait(cond: cond_t, mutex: mutex_t, abstime: *const timespec) -> s32;
-}
-extern "C" {
-    #[doc = " \\fn s32 LWP_CondDestroy(cond_t cond)"]
-    #[doc = "\\brief Destroy condition variable, release all threads and handles blocked on that condition variable."]
-    #[doc = "\\param[in] cond handle to the cond_t structure"]
-    #[doc = ""]
-    #[doc = "\\return 0 on success, <0 on error"]
-    pub fn LWP_CondDestroy(cond: cond_t) -> s32;
 }
 #[doc = "\\typedef struct _gx_rmodeobj GXRModeObj"]
 #[doc = "\\brief structure to hold the selected video and render settings"]
@@ -10932,6 +10882,9 @@ extern "C" {
 extern "C" {
     pub fn __UnmaskIrq(nMask: u32);
 }
+#[doc = " \\typedef u32 mutex_t"]
+#[doc = "\\brief typedef for the mutex handle"]
+pub type mutex_t = u32;
 extern "C" {
     #[doc = " \\fn s32 LWP_MutexInit(mutex_t *mutex,bool use_recursive)"]
     #[doc = "\\brief Initializes a mutex lock."]
