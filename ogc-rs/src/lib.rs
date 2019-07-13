@@ -18,9 +18,9 @@
 #![crate_type = "rlib"]
 #![crate_name = "ogc"]
 
-pub use bitflags::bitflags;
-pub use enum_primitive_derive::Primitive;
-pub use num_traits::cast::{FromPrimitive, ToPrimitive};
+use bitflags::bitflags;
+use enum_primitive_derive::Primitive;
+use num_traits::cast::{FromPrimitive, ToPrimitive};
 
 /// Custom Error Implementation
 pub mod error;
@@ -37,4 +37,4 @@ pub mod console;
 
 /// Utility Functions
 pub mod utils;
-pub use utils::*;
+use utils::*;
