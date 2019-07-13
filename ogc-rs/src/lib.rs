@@ -22,19 +22,19 @@ use bitflags::bitflags;
 use enum_primitive_derive::Primitive;
 use num_traits::cast::{FromPrimitive, ToPrimitive};
 
-/// Custom Error Implementation
+// Custom Error Implementation
 pub mod error;
 pub use error::{OgcError, Result};
 
-/// Networking Implementation
+// Networking Implementation
 pub mod network;
 
-/// Audio Implementation
+// Audio Implementation
 pub mod audio;
 
-/// Console Implementation
+// Console Implementation
 pub mod console;
 
-/// Utility Functions
+// Utility Functions
 pub mod utils;
 use utils::*;
