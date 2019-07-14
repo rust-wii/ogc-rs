@@ -5,8 +5,12 @@
 use crate::{mem_cached_to_uncached, OgcError, Result};
 use std::ptr;
 
+/// Represents the console service.
+/// No console control can be done until an instance of this struct is created.
+/// This service can only be created once!
 pub struct Console(());
 
+/// Implementation of the console service.
 impl Console {
     /// Initializes the console subsystem with given parameters.
     pub fn init(xstart: i32, ystart: i32, xres: i32, yres: i32, stride: i32) -> Console {
@@ -49,7 +53,7 @@ impl Console {
         }
     }
 
-    /// Retrieve the columns and rows of the current console
+    /// Retrieve the columns and rows of the current console.
     pub fn get_metrics() -> (i32, i32) {
         let coords: (i32, i32) = (0, 0);
 

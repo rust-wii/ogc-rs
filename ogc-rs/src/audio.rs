@@ -8,8 +8,6 @@ use std::{mem, ptr};
 /// Represents the audio service.
 /// No audio control can be done until an instance of this struct is created.
 /// This service can only be created once!
-///
-/// The service exits when all instances of this struct go out of scope.
 pub struct Audio(());
 
 /// The play state of the ``audio`` service.
