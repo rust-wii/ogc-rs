@@ -15,5 +15,4 @@ num-traits = "0.2"
 
 [dependencies.ogc-sys]
 path = "../ogc-sys"
-version = "0.1"
 

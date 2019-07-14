@@ -212,7 +212,7 @@ pub struct HostInformation {
 /// The converted address will be in Network Byte Order.
 pub fn dot_to_nbo(dot: &str) -> Result<IPV4Address> {
     unsafe {
-        let r = ogc_sys::inet_addr(dot.as_ptr() as *const u8);
+        let r = ogc_sys::inet_addr(dot.as_ptr());
 
         if r == 0 {
             Err(OgcError::Network("network dot_to_nbo failed".to_string()))
@@ -227,7 +227,7 @@ pub fn dot_to_nbo(dot: &str) -> Result<IPV4Address> {
 /// The converted address will be in Network Byte Order.
 pub fn dot_to_net_addr(dot: &str, addr: &mut IPV4Address) -> Result<()> {
     unsafe {
-        let r = ogc_sys::inet_aton(dot.as_ptr() as *const u8, addr.into());
+        let r = ogc_sys::inet_aton(dot.as_ptr(), addr.into());
 
         if r < 0 {
             Err(OgcError::Network(format!("network dot_to_net_addr: {}", r)))
@@ -241,10 +241,8 @@ pub fn dot_to_net_addr(dot: &str, addr: &mut IPV4Address) -> Result<()> {
 /// to a string in the Internet standard dot notation.
 pub fn addr_to_dot(addr: &mut IPV4Address) -> Result<String> {
     unsafe {
-        // TODO: FIX THIS MESS
         let r = ogc_sys::inet_ntoa(addr.into());
-        let r = std::slice::from_raw_parts(r, 1);
-        let r = String::from_utf8(r.to_vec()).unwrap();
+        let r = raw_to_string(r);
 
         if r.is_empty() {
             Err(OgcError::Network("addr_to_dot empty".to_string()))
@@ -258,7 +256,7 @@ pub fn addr_to_dot(addr: &mut IPV4Address) -> Result<String> {
 /// Here ``addr_string`` is either a hostname, or an IPv4 address in standard dot notation.
 pub fn get_host_by_name(addr_string: &str) -> Result<HostInformation> {
     unsafe {
-        let r = ogc_sys::net_gethostbyname(addr_string.as_ptr() as *const u8);
+        let r = ogc_sys::net_gethostbyname(addr_string.as_ptr());
 
         if r == ptr::null_mut() {
             Err(OgcError::Network("host provided doesnt exist".into()))

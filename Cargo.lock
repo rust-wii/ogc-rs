@@ -48,12 +48,12 @@ dependencies = [
  "bitflags 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "enum-primitive-derive 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "num-traits 0.2.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "ogc-sys 0.1.1",
+ "ogc-sys 0.2.0",
 ]
 
 [[package]]
 name = "ogc-sys"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "libc 0.2.56 (git+https://github.com/rust-wii/libc.git?branch=wii)",
 ]
