@@ -42,6 +42,56 @@ pub enum MemoryProtectChannels {
     All = 4,
 }
 
+/// System Font Header Structure
+pub struct FontHeader {
+    pub font_type: u16,
+    pub first_char: u16,
+    pub last_char: u16,
+    pub inval_char: u16,
+    pub asc: u16,
+    pub desc: u16,
+    pub width: u16,
+    pub leading: u16,
+    pub cell_dimensions: (u16, u16),
+    pub sheet_size: u32,
+    pub sheet_format: u16,
+    pub sheet_colrow: (u16, u16),
+    pub sheet_dimensions: (u16, u16),
+    pub width_table: u16,
+    pub sheet_image: u32,
+    pub sheet_fullsize: u32,
+}
+
+impl Into<*mut ogc_sys::sys_fontheader> for &mut FontHeader {
+    fn into(self) -> *mut ogc_sys::sys_fontheader {
+        Box::into_raw(Box::new(ogc_sys::sys_fontheader {
+            font_type: self.font_type,
+            first_char: self.first_char,
+            last_char: self.last_char,
+            inval_char: self.inval_char,
+            asc: self.asc,
+            desc: self.desc,
+            width: self.width,
+            leading: self.leading,
+            cell_width: self.cell_dimensions.0,
+            cell_height: self.cell_dimensions.1,
+            sheet_size: self.sheet_size,
+            sheet_format: self.sheet_format,
+            sheet_column: self.sheet_colrow.0,
+            sheet_row: self.sheet_colrow.1,
+            sheet_width: self.sheet_dimensions.0,
+            sheet_height: self.sheet_dimensions.1,
+            width_table: self.width_table,
+            sheet_image: self.sheet_image,
+            sheet_fullsize: self.sheet_fullsize,
+            c0: 0,
+            c1: 0,
+            c2: 0,
+            c3: 0,
+        }))
+    }
+}
+
 /// Implementation of the system service.
 impl System {
     /// Create and initialize sysalarm structure.
@@ -155,81 +205,80 @@ impl System {
         }
     }
 
+    /// Init Font
+    pub fn init_font(font_header: &mut FontHeader) {
+        unsafe {
+            let _ = ogc_sys::SYS_InitFont(font_header.into());
+        }
+    }
+
+    /// Get Font Texel
+    pub fn get_font_texel(c: i32, image: *mut c_void, position: i32, stride: i32, width: &mut i32) {
+        unsafe {
+            ogc_sys::SYS_GetFontTexel(c, image, position, stride, width);
+        }
+    }
+
+    /// Get Font Texture
+    pub fn get_font_texture(c: i32, image: *mut *mut c_void, xpos: &mut i32, ypos: &mut i32, width: &mut i32) {
+        unsafe {
+            ogc_sys::SYS_GetFontTexture(c, image, xpos, ypos, width);
+        }
+    }
+
     /// Get Font Encoding
     pub fn get_font_encoding() -> u32 {
-        unsafe {
-            ogc_sys::SYS_GetFontEncoding()
-        }
+        unsafe { ogc_sys::SYS_GetFontEncoding() }
     }
 
     /// Get Arena 1 Lo
     pub fn get_arena_1_lo() -> *mut c_void {
-        unsafe {
-            ogc_sys::SYS_GetArena1Lo()
-        }
+        unsafe { ogc_sys::SYS_GetArena1Lo() }
     }
 
     /// Set Arena 1 Lo
     pub fn set_arena_1_lo(new_lo: *mut c_void) {
-        unsafe {
-            ogc_sys::SYS_SetArena1Lo(new_lo)
-        }
+        unsafe { ogc_sys::SYS_SetArena1Lo(new_lo) }
     }
 
     /// Get Arena 1 Hi
     pub fn get_arena_1_hi() -> *mut c_void {
-        unsafe {
-            ogc_sys::SYS_GetArena1Hi()
-        }
+        unsafe { ogc_sys::SYS_GetArena1Hi() }
     }
 
     /// Set Arena 1 Hi
     pub fn set_arena_1_hi(new_hi: *mut c_void) {
-        unsafe {
-            ogc_sys::SYS_SetArena1Hi(new_hi)
-        }
+        unsafe { ogc_sys::SYS_SetArena1Hi(new_hi) }
     }
 
     /// Get Arena 1 Size
     pub fn get_arena_1_size() -> u32 {
-        unsafe {
-            ogc_sys::SYS_GetArena1Size()
-        }
+        unsafe { ogc_sys::SYS_GetArena1Size() }
     }
 
     /// Get Arena 2 Lo
     pub fn get_arena_2_lo() -> *mut c_void {
-        unsafe {
-            ogc_sys::SYS_GetArena2Lo()
-        }
+        unsafe { ogc_sys::SYS_GetArena2Lo() }
     }
 
     /// Set Arena 2 Lo
     pub fn set_arena_2_lo(new_lo: *mut c_void) {
-        unsafe {
-            ogc_sys::SYS_SetArena2Lo(new_lo)
-        }
+        unsafe { ogc_sys::SYS_SetArena2Lo(new_lo) }
     }
 
     /// Get Arena 2 Hi
     pub fn get_arena_2_hi() -> *mut c_void {
-        unsafe {
-            ogc_sys::SYS_GetArena2Hi()
-        }
+        unsafe { ogc_sys::SYS_GetArena2Hi() }
     }
 
     /// Set Arena 2 Hi
     pub fn set_arena_2_hi(new_hi: *mut c_void) {
-        unsafe {
-            ogc_sys::SYS_SetArena2Hi(new_hi)
-        }
+        unsafe { ogc_sys::SYS_SetArena2Hi(new_hi) }
     }
 
     /// Get Arena 2 Size
     pub fn get_arena_2_size() -> u32 {
-        unsafe {
-            ogc_sys::SYS_GetArena2Size()
-        }
+        unsafe { ogc_sys::SYS_GetArena2Size() }
     }
 
     /// Set Wireless ID
@@ -332,9 +381,7 @@ impl System {
 
     /// Get Hollywood Revision
     pub fn get_hollywood_revision() -> u32 {
-        unsafe {
-            ogc_sys::SYS_GetHollywoodRevision()
-        }
+        unsafe { ogc_sys::SYS_GetHollywoodRevision() }
     }
 
     /// Get system time.
