@@ -212,7 +212,7 @@ pub struct HostInformation {
 /// The converted address will be in Network Byte Order.
 pub fn dot_to_nbo(dot: &str) -> Result<IPV4Address> {
     unsafe {
-        let r = ogc_sys::inet_addr(dot.as_ptr() as *const i8);
+        let r = ogc_sys::inet_addr(dot.as_ptr());
 
         if r == 0 {
             Err(OgcError::Network("network dot_to_nbo failed".to_string()))
@@ -227,7 +227,7 @@ pub fn dot_to_nbo(dot: &str) -> Result<IPV4Address> {
 /// The converted address will be in Network Byte Order.
 pub fn dot_to_net_addr(dot: &str, addr: &mut IPV4Address) -> Result<()> {
     unsafe {
-        let r = ogc_sys::inet_aton(dot.as_ptr() as *const i8, addr.into());
+        let r = ogc_sys::inet_aton(dot.as_ptr(), addr.into());
 
         if r < 0 {
             Err(OgcError::Network(format!("network dot_to_net_addr: {}", r)))
@@ -241,7 +241,7 @@ pub fn dot_to_net_addr(dot: &str, addr: &mut IPV4Address) -> Result<()> {
 /// to a string in the Internet standard dot notation.
 pub fn addr_to_dot(addr: &mut IPV4Address) -> Result<String> {
     unsafe {
-        let r = ogc_sys::inet_ntoa(addr.into()) as *mut u8;
+        let r = ogc_sys::inet_ntoa(addr.into());
         let r = raw_to_string(r);
 
         if r.is_empty() {
@@ -256,17 +256,17 @@ pub fn addr_to_dot(addr: &mut IPV4Address) -> Result<String> {
 /// Here ``addr_string`` is either a hostname, or an IPv4 address in standard dot notation.
 pub fn get_host_by_name(addr_string: &str) -> Result<HostInformation> {
     unsafe {
-        let r = ogc_sys::net_gethostbyname(addr_string.as_ptr() as *const i8);
+        let r = ogc_sys::net_gethostbyname(addr_string.as_ptr());
 
         if r == ptr::null_mut() {
             Err(OgcError::Network("host provided doesnt exist".into()))
         } else {
             Ok(HostInformation {
-                name: raw_to_string((*r).h_name as *mut u8),
-                aliases: raw_to_strings((*r).h_aliases as *mut *mut u8),
+                name: raw_to_string((*r).h_name),
+                aliases: raw_to_strings((*r).h_aliases),
                 address_type: (*r).h_addrtype,
                 length: (*r).h_length,
-                address_list: raw_to_strings((*r).h_addr_list as *mut *mut u8),
+                address_list: raw_to_strings((*r).h_addr_list),
             })
         }
     }
