@@ -2,7 +2,7 @@
 //!
 //! This module implements a safe wrapper around the OS functions found in ``system.h``.
 
-use crate::{OgcError, Primitive, Result, ToPrimitive};
+use crate::{video::RenderConfig, OgcError, Primitive, Result, ToPrimitive};
 use std::ffi::c_void;
 use std::mem;
 use std::time::Duration;
@@ -94,6 +94,15 @@ impl Into<*mut ogc_sys::sys_fontheader> for &mut FontHeader {
 
 /// Implementation of the system service.
 impl System {
+    /// Allocate cacheline aligned memory for the external
+    /// framebuffer based on the rendermode object.
+    ///
+    /// This function returns a pointer to the framebuffer's startaddress which
+    /// is aligned to a 32 byte boundary.
+    pub fn allocate_framebuffer(render_mode: *mut RenderConfig) -> *mut c_void {
+        unsafe { ogc_sys::SYS_AllocateFramebuffer(render_mode.into()) }
+    }
+
     /// Create and initialize sysalarm structure.
     pub fn create_alarm(context: &mut u32) -> Result<()> {
         unsafe {
@@ -220,7 +229,13 @@ impl System {
     }
 
     /// Get Font Texture
-    pub fn get_font_texture(c: i32, image: *mut *mut c_void, xpos: &mut i32, ypos: &mut i32, width: &mut i32) {
+    pub fn get_font_texture(
+        c: i32,
+        image: *mut *mut c_void,
+        xpos: &mut i32,
+        ypos: &mut i32,
+        width: &mut i32,
+    ) {
         unsafe {
             ogc_sys::SYS_GetFontTexture(c, image, xpos, ypos, width);
         }
