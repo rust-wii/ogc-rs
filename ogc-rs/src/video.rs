@@ -1,6 +1,6 @@
 use std::ffi;
 
-struct render_config {
+struct RenderConfig {
     tv_type: u32,
     framebuffer_width: u16,
     embed_framebuffer_height: u16,
@@ -15,7 +15,7 @@ struct render_config {
     sample_pattern: [[u8; 2u32]; 12u32],
     v_filter: [u8; 7u32],
 }
-struct Video {
+struct Video {  
     pub render_config: render_config,
     pub framebuffer: std::ffi::c_void,
 }
