@@ -35,6 +35,9 @@ pub mod audio;
 /// Console Implementation
 pub mod console;
 
+/// Video Implementation
+pub mod video;
+
 /// Utility Functions
 pub mod utils;
 pub use utils::*;
