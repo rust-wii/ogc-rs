@@ -18,22 +18,25 @@
 #![crate_type = "rlib"]
 #![crate_name = "ogc"]
 
-pub use bitflags::bitflags;
-pub use enum_primitive_derive::Primitive;
-pub use num_traits::cast::{FromPrimitive, ToPrimitive};
+use bitflags::bitflags;
+use enum_primitive_derive::Primitive;
+use num_traits::cast::{FromPrimitive, ToPrimitive};
 
-/// Custom Error Implementation
+// Custom Error Implementation
 pub mod error;
 pub use error::{OgcError, Result};
 
-/// Networking Implementation
+// Networking Implementation
 pub mod network;
 
-/// Audio Implementation
+// Audio Implementation
 pub mod audio;
 
-/// Console Implementation
+// Console Implementation
 pub mod console;
+
+// System Implementation
+pub mod system;
 
 /// Video Implementation
 pub mod video;
