@@ -100,4 +100,28 @@ mod memory_casting {
             (($x as u32) & !ogc_sys::SYS_BASE_UNCACHED) as *mut c_void
         }};
     }
+=======
+/// Console printing macros.
+mod console_printing {
+    /// Prints to the console video output.
+    ///
+    /// Equivalent to the [`println!`] macro except that a newline is not printed at
+    /// the end of the message.
+    #[macro_export]
+    macro_rules! print {
+        ($($arg:tt)*) => {
+            use $crate::console::Console;
+
+            let s = ::std::fmt::format(format_args!($($arg)*));
+            Console::print(&s);
+        }
+    }
+
+    /// Prints to the standard output, with a newline.
+    #[macro_export]
+    macro_rules! println {
+        () => (print!("\n"));
+        ($fmt:expr) => (print!(concat!($fmt, "\n")));
+        ($fmt:expr, $($arg:tt)*) => (print!(concat!($fmt, "\n"), $($arg)*));
+    }
 }

@@ -38,6 +38,9 @@ pub mod console;
 // System Implementation
 pub mod system;
 
-// Utility Functions
+/// Video Implementation
+pub mod video;
+
+/// Utility Functions
 pub mod utils;
 pub use utils::*;

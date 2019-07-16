@@ -74,4 +74,33 @@ impl Console {
 
         coords
     }
+
+    /// Print a formatted string to the console screen through ``printf``.
+    pub fn print(formatted_string: &str) {
+        // Create a buffer.
+        let mut buffer = String::new();
+
+        // Credit to ``lemarcuspoilus`` on github for this method.
+        let offset_to_contents = {
+            let mut it = formatted_string.char_indices();
+            loop {
+                let (i, ch) = match it.next() {
+                    Some(pair) => pair,
+                    None => return,
+                };
+                match ch {
+                    '\n' | '\r' => buffer.push(ch),
+                    _ => break i,
+                }
+            }
+        };
+
+        buffer.push_str(&formatted_string[offset_to_contents..]);
+        buffer.push('\0');
+
+        // Print the buffer.
+        unsafe {
+            ogc_sys::printf(buffer.as_ptr());
+        }
+    }
 }
