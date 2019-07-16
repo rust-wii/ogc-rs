@@ -16,7 +16,7 @@ struct render_config {
     v_filter: [u8; 7u32],
 }
 struct Video {
-    pub rmode: render_config,
+    pub render_config: render_config,
     pub framebuffer: std::ffi::c_void,
 }
 
@@ -29,9 +29,9 @@ impl Video {
         Video(())
     }
 
-    pub fn clear_framebuffer(rconf: render_config, framebuffer: std::ffi::c_void, colour: u32) -> () {
+    pub fn clear_framebuffer(&mut self, rconf: render_config, colour: u32) -> () {
         unsafe {
-            ogc_sys::VIDEO_ClearFrameBuffer(rconf, framebuffer, colour);
+            ogc_sys::VIDEO_ClearFrameBuffer(rconf, self.framebuffer, colour);
         }
     }
 
