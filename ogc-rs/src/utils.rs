@@ -24,6 +24,31 @@ pub fn raw_to_strings(raw: *mut *mut u8) -> Vec<String> {
     }
 }
 
+/// Console printing macros.
+mod console_printing {
+    /// Prints to the console video output.
+    ///
+    /// Equivalent to the [`println!`] macro except that a newline is not printed at
+    /// the end of the message.
+    #[macro_export]
+    macro_rules! print {
+        ($($arg:tt)*) => {
+            use $crate::console::Console;
+
+            let s = ::std::fmt::format(format_args!($($arg)*));
+            Console::print(&s);
+        }
+    }
+
+    /// Prints to the standard output, with a newline.
+    #[macro_export]
+    macro_rules! println {
+        () => (print!("\n"));
+        ($fmt:expr) => (print!(concat!($fmt, "\n")));
+        ($fmt:expr, $($arg:tt)*) => (print!(concat!($fmt, "\n"), $($arg)*));
+    }
+}
+
 /// Converts uncached memory into cached memory (K0 type into K1 type).
 pub fn mem_k0_to_k1(x: *mut c_void) -> *mut c_void {
     ((x as u32) + (ogc_sys::SYS_BASE_UNCACHED - ogc_sys::SYS_BASE_CACHED)) as *mut c_void
