@@ -21,7 +21,7 @@ impl Console {
                 20,
                 video.render_config.framebuffer_width as i32,
                 video.render_config.extern_framebuffer_height as i32,
-                (video.render_config.framebuffer_width*2) as i32,
+                (video.render_config.framebuffer_width * 2) as i32,
             );
         }
 

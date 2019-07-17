@@ -100,7 +100,8 @@ mod memory_casting {
             (($x as u32) & !ogc_sys::SYS_BASE_UNCACHED) as *mut c_void
         }};
     }
-=======
+}
+
 /// Console printing macros.
 mod console_printing {
     /// Prints to the console video output.
