@@ -111,8 +111,6 @@ mod console_printing {
     #[macro_export]
     macro_rules! print {
         ($($arg:tt)*) => {
-            use $crate::console::Console;
-
             let s = ::std::fmt::format(format_args!($($arg)*));
             Console::print(&s);
         }
