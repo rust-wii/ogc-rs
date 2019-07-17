@@ -386,6 +386,10 @@ pub const POLLOUT: u32 = 4;
 pub const POLLERR: u32 = 8;
 pub const POLLHUP: u32 = 16;
 pub const POLLNVAL: u32 = 32;
+pub const GDBSTUB_DEVICE_USB: u32 = 0;
+pub const GDBSTUB_DEVICE_TCP: u32 = 1;
+pub const GDBSTUB_DEF_CHANNEL: u32 = 0;
+pub const GDBSTUB_DEF_TCPPORT: u32 = 2828;
 pub const DSPTASK_INIT: u32 = 0;
 pub const DSPTASK_RUN: u32 = 1;
 pub const DSPTASK_YIELD: u32 = 2;
@@ -4524,6 +4528,32 @@ extern "C" {
 }
 extern "C" {
     pub fn net_gethostbyname(addrString: *const ::libc::c_char) -> *mut hostent;
+}
+extern "C" {
+    pub static mut tcp_localip: *const ::libc::c_char;
+}
+extern "C" {
+    pub static mut tcp_netmask: *const ::libc::c_char;
+}
+extern "C" {
+    pub static mut tcp_gateway: *const ::libc::c_char;
+}
+extern "C" {
+    #[doc = "\\fn void _break()"]
+    #[doc = " \\brief Stub function to insert the hardware break instruction. This function is used to enter the debug stub and to"]
+    #[doc = "        connect with the host. The developer is free to insert this function at any position in project's source code."]
+    #[doc = ""]
+    #[doc = " \\return none."]
+    pub fn _break();
+}
+extern "C" {
+    #[doc = "\\fn void DEBUG_Init(s32 device_type,s32 channel_port)"]
+    #[doc = " \\brief Performs the initialization of the debug stub."]
+    #[doc = " \\param[in] device_type type of device to use. can be either USB or TCP."]
+    #[doc = " \\param[in] channel_port depending on the used device this can be either the EXI channel or the TCP port."]
+    #[doc = ""]
+    #[doc = " \\return none."]
+    pub fn DEBUG_Init(device_type: s32, channel_port: s32);
 }
 #[doc = "\\typedef struct _dsp_task dsptask_t"]
 #[doc = "\\brief forward typdef to struct _dsp_task. This struture holds certain DSP task information for execution."]

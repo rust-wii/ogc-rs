@@ -3,4 +3,5 @@
 #include <string.h>
 #include <stdlib.h>
 #include <network.h>
+#include <debug.h>
 #include <ogcsys.h>
