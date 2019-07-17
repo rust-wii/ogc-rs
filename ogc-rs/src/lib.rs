@@ -41,6 +41,10 @@ pub mod system;
 /// Video Implementation
 pub mod video;
 
+/// Debugging Functions
+pub mod debug;
+pub use debug::*;
+
 /// Utility Functions
 pub mod utils;
 pub use utils::*;
