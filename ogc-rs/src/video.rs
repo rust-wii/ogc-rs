@@ -2,23 +2,23 @@
 //!
 //! This module implements a safe wrapper around video functions.
 
-use crate::{mem_k0_to_k1, system::System, FromPrimitive, Primitive};
+use crate::{mem_cached_to_uncached, system::System, FromPrimitive, Primitive};
 use std::{ffi::c_void, mem, ptr};
 
 pub struct RenderConfig {
-    tv_type: u32,
-    framebuffer_width: u16,
-    embed_framebuffer_height: u16,
-    extern_framebuffer_height: u16,
-    vi_x_origin: u16,
-    vi_y_origin: u16,
-    vi_width: u16,
-    vi_height: u16,
-    extern_framebuffer_mode: u32,
-    field_rendering: u8,
-    anti_aliasing: u8,
-    sample_pattern: [[u8; 2usize]; 12usize],
-    v_filter: [u8; 7usize],
+    pub tv_type: u32,
+    pub framebuffer_width: u16,
+    pub embed_framebuffer_height: u16,
+    pub extern_framebuffer_height: u16,
+    pub vi_x_origin: u16,
+    pub vi_y_origin: u16,
+    pub vi_width: u16,
+    pub vi_height: u16,
+    pub extern_framebuffer_mode: u32,
+    pub field_rendering: u8,
+    pub anti_aliasing: u8,
+    pub sample_pattern: [[u8; 2usize]; 12usize],
+    pub v_filter: [u8; 7usize],
 }
 
 impl Into<*mut ogc_sys::GXRModeObj> for RenderConfig {
@@ -43,20 +43,24 @@ impl Into<*mut ogc_sys::GXRModeObj> for RenderConfig {
 
 impl Into<RenderConfig> for *mut ogc_sys::GXRModeObj {
     fn into(self) -> RenderConfig {
-        RenderConfig {
-            tv_type: (*self).viTVMode,
-            framebuffer_width: (*self).fbWidth,
-            embed_framebuffer_height: (*self).efbHeight,
-            extern_framebuffer_height: (*self).xfbHeight,
-            vi_x_origin: (*self).viXOrigin,
-            vi_y_origin: (*self).viYOrigin,
-            vi_width: (*self).viWidth,
-            vi_height: (*self).viHeight,
-            extern_framebuffer_mode: (*self).xfbMode,
-            field_rendering: (*self).field_rendering,
-            anti_aliasing: (*self).aa,
-            sample_pattern: (*self).sample_pattern,
-            v_filter: (*self).vfilter,
+        // i'll do this the right way one day
+        // :gun:
+        unsafe {
+            RenderConfig {
+                tv_type: (*self).viTVMode,
+                framebuffer_width: (*self).fbWidth,
+                embed_framebuffer_height: (*self).efbHeight,
+                extern_framebuffer_height: (*self).xfbHeight,
+                vi_x_origin: (*self).viXOrigin,
+                vi_y_origin: (*self).viYOrigin,
+                vi_width: (*self).viWidth,
+                vi_height: (*self).viHeight,
+                extern_framebuffer_mode: (*self).xfbMode,
+                field_rendering: (*self).field_rendering,
+                anti_aliasing: (*self).aa,
+                sample_pattern: (*self).sample_pattern,
+                v_filter: (*self).vfilter,
+            }
         }
     }
 }
@@ -95,9 +99,15 @@ impl Video {
             ogc_sys::VIDEO_Init();
         }
 
-        Video {
-            render_config: Self::get_preferred_mode(),
-            framebuffer: mem_k0_to_k1(System::allocate_framebuffer(Self::get_preferred_mode())),
+        unsafe {
+            let r_mode = ogc_sys::VIDEO_GetPreferredMode(ptr::null_mut()).into();
+
+            Video {
+                render_config: r_mode,
+                framebuffer: mem_cached_to_uncached!(System::allocate_framebuffer(
+                    Self::get_preferred_mode().into()
+                )),
+            }
         }
     }
 

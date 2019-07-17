@@ -99,7 +99,7 @@ impl System {
     ///
     /// This function returns a pointer to the framebuffer's startaddress which
     /// is aligned to a 32 byte boundary.
-    pub fn allocate_framebuffer(render_mode: *mut RenderConfig) -> *mut c_void {
+    pub fn allocate_framebuffer(render_mode: RenderConfig) -> *mut c_void {
         unsafe { ogc_sys::SYS_AllocateFramebuffer(render_mode.into()) }
     }
 
