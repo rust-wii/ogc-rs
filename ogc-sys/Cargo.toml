@@ -1,6 +1,6 @@
 [package]
 name = "ogc-sys"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["rust-wii"]
 edition = "2018"
 
