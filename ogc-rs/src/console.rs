@@ -2,7 +2,7 @@
 //!
 //! This module implements a safe wrapper around the console functions.
 
-use crate::{mem_cached_to_uncached, OgcError, Result};
+use crate::{mem_cached_to_uncached, video::Video, OgcError, Result};
 use std::ptr;
 
 /// Represents the console service.
@@ -12,14 +12,17 @@ pub struct Console(());
 
 /// Implementation of the console service.
 impl Console {
-    /// Initializes the console subsystem with given parameters.
-    pub fn init(xstart: i32, ystart: i32, xres: i32, yres: i32, stride: i32) -> Console {
+    /// Initializes the console subsystem with video.
+    pub fn init(video: &Video) -> Console {
         unsafe {
-            let framebuffer = mem_cached_to_uncached!(ogc_sys::SYS_AllocateFramebuffer(
-                ogc_sys::VIDEO_GetPreferredMode(ptr::null_mut())
-            ));
-
-            ogc_sys::CON_Init(framebuffer, xstart, ystart, xres, yres, stride);
+            ogc_sys::CON_Init(
+                video.framebuffer,
+                20,
+                20,
+                video.render_config.framebuffer_width as i32,
+                video.render_config.extern_framebuffer_height as i32,
+                (video.render_config.framebuffer_width*2) as i32,
+            );
         }
 
         Console(())
