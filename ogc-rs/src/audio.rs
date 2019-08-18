@@ -2,38 +2,43 @@
 //!
 //! This module implements a safe wrapper around the audio functions found in ``audio.h``.
 
-use crate::{FromPrimitive, Primitive, ToPrimitive};
-use std::{mem, ptr};
+use alloc::boxed::Box;
+use core::{mem, ptr};
+use enum_primitive::*;
 
 /// Represents the audio service.
 /// No audio control can be done until an instance of this struct is created.
 /// This service can only be created once!
-pub struct Audio(());
+pub struct Audio;
 
-/// The play state of the ``audio`` service.
-#[derive(Debug, Eq, PartialEq, Primitive)]
-pub enum PlayState {
-    Started = 1,
-    Stopped = 0,
+enum_primitive! {
+    /// The play state of the ``audio`` service.
+    #[derive(Debug, Eq, PartialEq)]
+    pub enum PlayState {
+        Started = 1,
+        Stopped = 0,
+    }
 }
 
-/// The sample rate of the ``audio`` service.
-#[derive(Debug, Eq, PartialEq, Primitive)]
-pub enum SampleRate {
-    FortyEightKhz = 1,
-    ThirtySixKhz = 0,
+enum_primitive! {
+    /// The sample rate of the ``audio`` service.
+    #[derive(Debug, Eq, PartialEq)]
+    pub enum SampleRate {
+        FortyEightKhz = 1,
+        ThirtySixKhz = 0,
+    }
 }
 
 /// Implementation of the audio service.
 impl Audio {
     /// Initialization of the audio service.
-    pub fn init() -> Audio {
+    pub fn init() -> Self {
         unsafe {
             // For now this is a mutable null pointer.
             // libogc is fine with this, but this should be changed in the future.
             ogc_sys::AUDIO_Init(ptr::null_mut());
 
-            Audio(())
+            Self
         }
     }
 

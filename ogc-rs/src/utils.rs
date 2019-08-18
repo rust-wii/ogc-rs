@@ -1,9 +1,12 @@
 //! Utility Functions to convert between types.
 
+use alloc::{string::String, vec::Vec};
+use core::slice;
+
 /// Converts a raw *mut u8 into a String.
 pub fn raw_to_string(raw: *mut u8) -> String {
     unsafe {
-        let slice = std::slice::from_raw_parts(raw, 1);
+        let slice = slice::from_raw_parts(raw, 1);
         String::from_utf8(slice.to_vec()).unwrap()
     }
 }
@@ -11,11 +14,11 @@ pub fn raw_to_string(raw: *mut u8) -> String {
 /// Converts a raw *mut *mut u8 into a String vector.
 pub fn raw_to_strings(raw: *mut *mut u8) -> Vec<String> {
     unsafe {
-        let slice = std::slice::from_raw_parts(raw, 2);
+        let slice = slice::from_raw_parts(raw, 2);
         slice
-            .into_iter()
+            .iter()
             .map(|x: &*mut u8| {
-                let r = std::slice::from_raw_parts(*x, 1);
+                let r = slice::from_raw_parts(*x, 1);
                 String::from_utf8(r.to_vec()).unwrap()
             })
             .collect()
@@ -29,7 +32,7 @@ mod memory_casting {
     #[macro_export]
     macro_rules! mem_cached_to_uncached {
         ( $x:expr ) => {{
-            use std::ffi::c_void;
+            use core::ffi::c_void;
 
             (($x as u32) + (ogc_sys::SYS_BASE_UNCACHED - ogc_sys::SYS_BASE_CACHED)) as *mut c_void
         }};
@@ -40,7 +43,7 @@ mod memory_casting {
     #[macro_export]
     macro_rules! mem_cached_to_physical {
         ( $x:expr ) => {{
-            use std::ffi::c_void;
+            use core::ffi::c_void;
 
             (($x as u32) - ogc_sys::SYS_BASE_CACHED) as *mut c_void
         }};
@@ -51,7 +54,7 @@ mod memory_casting {
     #[macro_export]
     macro_rules! mem_uncached_to_cached {
         ( $x:expr ) => {{
-            use std::ffi::c_void;
+            use core::ffi::c_void;
 
             (($x as u32) - (ogc_sys::SYS_BASE_UNCACHED - ogc_sys::SYS_BASE_CACHED)) as *mut c_void
         }};
@@ -62,7 +65,7 @@ mod memory_casting {
     #[macro_export]
     macro_rules! mem_uncached_to_physical {
         ( $x:expr ) => {{
-            use std::ffi::c_void;
+            use core::ffi::c_void;
 
             (($x as u32) - ogc_sys::SYS_BASE_UNCACHED) as *mut c_void
         }};
@@ -73,7 +76,7 @@ mod memory_casting {
     #[macro_export]
     macro_rules! mem_physical_to_cached {
         ( $x:expr ) => {{
-            use std::ffi::c_void;
+            use core::ffi::c_void;
 
             (($x as u32) + ogc_sys::SYS_BASE_CACHED) as *mut c_void
         }};
@@ -84,7 +87,7 @@ mod memory_casting {
     #[macro_export]
     macro_rules! mem_physical_to_uncached {
         ( $x:expr ) => {{
-            use std::ffi::c_void;
+            use core::ffi::c_void;
 
             (($x as u32) + ogc_sys::SYS_BASE_UNCACHED) as *mut c_void
         }};
@@ -95,7 +98,7 @@ mod memory_casting {
     #[macro_export]
     macro_rules! mem_virtual_to_physical {
         ( $x:expr ) => {{
-            use std::ffi::c_void;
+            use core::ffi::c_void;
 
             (($x as u32) & !ogc_sys::SYS_BASE_UNCACHED) as *mut c_void
         }};
@@ -111,8 +114,8 @@ mod console_printing {
     #[macro_export]
     macro_rules! print {
         ($($arg:tt)*) => {
-            let s = ::std::fmt::format(format_args!($($arg)*));
-            Console::print(&s);
+            let s = ::alloc::fmt::format(format_args!($($arg)*));
+            $crate::console::Console::print(&s);
         }
     }
 

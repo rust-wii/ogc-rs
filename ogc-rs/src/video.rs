@@ -2,8 +2,10 @@
 //!
 //! This module implements a safe wrapper around video functions.
 
-use crate::{mem_cached_to_uncached, system::System, FromPrimitive, Primitive};
-use std::{ffi::c_void, mem, ptr};
+use crate::{mem_cached_to_uncached, system::System};
+use alloc::boxed::Box;
+use core::{ffi::c_void, mem, ptr};
+use enum_primitive::*;
 
 pub struct RenderConfig {
     pub tv_type: u32,
@@ -65,26 +67,30 @@ impl Into<RenderConfig> for *mut ogc_sys::GXRModeObj {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Primitive)]
-pub enum TVMode {
-    /// Used in NA / JPN
-    ViNtsc = 0,
-    /// Used in Europe      
-    ViPal = 1,
-    /// Similar to NTSC, Used in Brazil       
-    ViMpal = 2,
-    /// Debug Mode for NA / JPN - Special Decoder Needed      
-    ViDebug = 3,
-    /// Debug mode for EU - Special Decoder Needed     
-    ViDebugPal = 4,
-    /// RGB 60Hz, 480 lines (same timing + aspect as NTSC) used in Europe
-    ViEuRgb60 = 5,
+enum_primitive! {
+    #[derive(Debug, Eq, PartialEq)]
+    pub enum TVMode {
+        /// Used in NA / JPN
+        ViNtsc = 0,
+        /// Used in Europe
+        ViPal = 1,
+        /// Similar to NTSC, Used in Brazil
+        ViMpal = 2,
+        /// Debug Mode for NA / JPN - Special Decoder Needed
+        ViDebug = 3,
+        /// Debug mode for EU - Special Decoder Needed
+        ViDebugPal = 4,
+        /// RGB 60Hz, 480 lines (same timing + aspect as NTSC) used in Europe
+        ViEuRgb60 = 5,
+    }
 }
 
-#[derive(Debug, Eq, PartialEq, Primitive)]
-pub enum ViField {
-    ViLowerField = 0,
-    ViUpperField = 1,
+enum_primitive! {
+    #[derive(Debug, Eq, PartialEq)]
+    pub enum ViField {
+        ViLowerField = 0,
+        ViUpperField = 1,
+    }
 }
 
 /// Represents the video service.
@@ -97,12 +103,10 @@ impl Video {
     pub fn init() -> Self {
         unsafe {
             ogc_sys::VIDEO_Init();
-        }
 
-        unsafe {
             let r_mode = ogc_sys::VIDEO_GetPreferredMode(ptr::null_mut()).into();
 
-            Video {
+            Self {
                 render_config: r_mode,
                 framebuffer: mem_cached_to_uncached!(System::allocate_framebuffer(
                     Self::get_preferred_mode().into()

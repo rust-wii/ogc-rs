@@ -10,8 +10,10 @@ name = "ogc"
 
 [dependencies]
 bitflags = "1.1"
-enum-primitive-derive = "0.1"
-num-traits = "0.2"
+
+[dependencies.enum_primitive]
+version = "0.1"
+git = "https://github.com/FrictionlessPortals/enum_primitive-rs.git"
 
 [dependencies.ogc-sys]
 path = "../ogc-sys"
