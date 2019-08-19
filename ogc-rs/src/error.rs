@@ -1,9 +1,10 @@
 //! Custom Error Implementation for ``ogc-rs``.
 
-use std::fmt;
+use alloc::string::String;
+use core::fmt;
 
 /// Custom Result Type that uses the error type.
-pub type Result<T> = std::result::Result<T, OgcError>;
+pub type Result<T> = core::result::Result<T, OgcError>;
 
 /// Custom Error Type
 pub enum OgcError {

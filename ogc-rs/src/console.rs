@@ -2,18 +2,19 @@
 //!
 //! This module implements a safe wrapper around the console functions.
 
-use crate::{mem_cached_to_uncached, video::Video, OgcError, Result};
-use std::ptr;
+use crate::{video::Video, OgcError, Result};
+use alloc::string::String;
+use core::ptr;
 
 /// Represents the console service.
 /// No console control can be done until an instance of this struct is created.
 /// This service can only be created once!
-pub struct Console(());
+pub struct Console;
 
 /// Implementation of the console service.
 impl Console {
     /// Initializes the console subsystem with video.
-    pub fn init(video: &Video) -> Console {
+    pub fn init(video: &Video) -> Self {
         unsafe {
             ogc_sys::CON_Init(
                 video.framebuffer,
@@ -25,7 +26,7 @@ impl Console {
             );
         }
 
-        Console(())
+        Self
     }
 
     /// Initialize stdout console.

@@ -13,6 +13,4 @@
 * ``video``: Provides functions for video output on the Wii.
 * ``gx``: Provides an opengl-like interface for rendering on the Wii.
 
-Features such as ``network``, ``fs`` and ``console`` have been merged into ``std`` to extend functionality.
-
-However it is still possible to use these features if you require certain functionality missing from ``std``.
+``ogc-rs`` also provides runtime functions and an allocator for ``no_std`` environments.

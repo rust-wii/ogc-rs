@@ -2,8 +2,15 @@
 //!
 //! This module implements a safe wrapper around the networking functions found in ``network.h``.
 
-use crate::{bitflags, raw_to_string, raw_to_strings, OgcError, Primitive, Result, ToPrimitive};
-use std::{ffi::c_void, ptr};
+use crate::{bitflags, raw_to_string, raw_to_strings, OgcError, Result};
+use alloc::{
+    boxed::Box,
+    format,
+    string::{String, ToString},
+    vec::Vec,
+};
+use core::{ffi::c_void, ptr};
+use enum_primitive::*;
 
 bitflags! {
     /// Optional flags for sockets.
@@ -94,19 +101,23 @@ bitflags! {
     }
 }
 
-/// Protocol Families
-#[derive(Debug, Eq, PartialEq, Primitive)]
-pub enum ProtocolFamily {
-    AfUnspec = 0,
-    AfInet = 2,
+enum_primitive! {
+    /// Protocol Families
+    #[derive(Debug, Eq, PartialEq)]
+    pub enum ProtocolFamily {
+        AfUnspec = 0,
+        AfInet = 2,
+    }
 }
 
-/// Socket Types
-#[derive(Debug, Eq, PartialEq, Primitive)]
-pub enum SocketType {
-    SockStream = 1,
-    SockDgram = 2,
-    SockRaw = 3,
+enum_primitive! {
+    /// Socket Types
+    #[derive(Debug, Eq, PartialEq)]
+    pub enum SocketType {
+        SockStream = 1,
+        SockDgram = 2,
+        SockRaw = 3,
+    }
 }
 
 /// Non Blocking IO
@@ -277,19 +288,19 @@ pub fn get_host_by_name(addr_string: &str) -> Result<HostInformation> {
 /// This service can only be created once!
 ///
 /// The service exits when all instances of this struct go out of scope.
-pub struct Network(());
+pub struct Network;
 
 /// Implementation of the networking service.
 impl Network {
     /// Initialization of the networking service.
-    pub fn init() -> Result<Network> {
+    pub fn init() -> Result<Self> {
         unsafe {
             let r = ogc_sys::net_init();
 
             if r < 0 {
                 Err(OgcError::Network(format!("network init: {}", r)))
             } else {
-                Ok(Network(()))
+                Ok(Self)
             }
         }
     }

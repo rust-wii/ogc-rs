@@ -2,44 +2,52 @@
 //!
 //! This module implements a safe wrapper around the OS functions found in ``system.h``.
 
-use crate::{video::RenderConfig, OgcError, Primitive, Result, ToPrimitive};
-use std::ffi::c_void;
-use std::mem;
-use std::time::Duration;
+use crate::{video::RenderConfig, OgcError, Result};
+use alloc::boxed::Box;
+use core::ffi::c_void;
+use core::mem;
+use core::time::Duration;
+use enum_primitive::*;
 
 /// Represents the system service.
 /// The initialization of this service is done in the crt0 startup code.
-pub struct System(());
+pub struct System;
 
-/// OS Reset Types
-#[derive(Debug, Eq, PartialEq, Primitive)]
-pub enum ResetTypes {
-    Restart = 0,
-    HotReset = 1,
-    Shutdown = 2,
-    ReturnToMenu = 3,
-    PowerOff = 4,
-    PowerOffStandby = 5,
-    PowerOffIdle = 6,
+enum_primitive! {
+    /// OS Reset Types
+    #[derive(Debug, Eq, PartialEq)]
+    pub enum ResetTypes {
+        Restart = 0,
+        HotReset = 1,
+        Shutdown = 2,
+        ReturnToMenu = 3,
+        PowerOff = 4,
+        PowerOffStandby = 5,
+        PowerOffIdle = 6,
+    }
 }
 
-/// OS Memory Protection Modes
-#[derive(Debug, Eq, PartialEq, Primitive)]
-pub enum MemoryProtectModes {
-    ProtectNone = 0,
-    ProtectRead = 1,
-    ProtectWrite = 2,
-    ProtectReadWrite = 1 | 2,
+enum_primitive! {
+    /// OS Memory Protection Modes
+    #[derive(Debug, Eq, PartialEq)]
+    pub enum MemoryProtectModes {
+        ProtectNone = 0,
+        ProtectRead = 1,
+        ProtectWrite = 2,
+        ProtectReadWrite = 1 | 2,
+    }
 }
 
-/// OS Memory Protection Channels
-#[derive(Debug, Eq, PartialEq, Primitive)]
-pub enum MemoryProtectChannels {
-    ChannelZero = 0,
-    ChannelOne = 1,
-    ChannelTwo = 2,
-    ChannelThree = 3,
-    All = 4,
+enum_primitive! {
+    /// OS Memory Protection Channels
+    #[derive(Debug, Eq, PartialEq)]
+    pub enum MemoryProtectChannels {
+        ChannelZero = 0,
+        ChannelOne = 1,
+        ChannelTwo = 2,
+        ChannelThree = 3,
+        All = 4,
+    }
 }
 
 /// System Font Header Structure
