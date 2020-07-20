@@ -1,6 +1,6 @@
 [package]
 name = "ogc-rs"
-version = "0.7.0"
+version = "0.7.1"
 authors = ["rust-wii"]
 edition = "2018"
 
@@ -9,7 +9,7 @@ crate-type = ["rlib"]
 name = "ogc"
 
 [dependencies]
-bitflags = "1.1"
+bitflags = "1.2"
 
 [dependencies.enum_primitive]
 version = "0.1"

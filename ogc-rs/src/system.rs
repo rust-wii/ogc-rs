@@ -159,8 +159,7 @@ impl System {
             // Convert Duration to timespec
             let timespec: *const ogc_sys::timespec = &ogc_sys::timespec {
                 tv_sec: fire_time.as_secs() as i64,
-                tv_nsec: fire_time.as_nanos() as i32,
-                __bindgen_padding_0: 0,
+                tv_nsec: fire_time.as_nanos() as i32
             };
 
             // TODO: Check if this implementation can be changed.
@@ -191,14 +190,12 @@ impl System {
             // Convert Duration to timespec
             let timespec_start: *const ogc_sys::timespec = &ogc_sys::timespec {
                 tv_sec: time_start.as_secs() as i64,
-                tv_nsec: time_start.as_nanos() as i32,
-                __bindgen_padding_0: 0,
+                tv_nsec: time_start.as_nanos() as i32
             };
 
             let timespec_period: *const ogc_sys::timespec = &ogc_sys::timespec {
                 tv_sec: time_period.as_secs() as i64,
-                tv_nsec: time_period.as_nanos() as i32,
-                __bindgen_padding_0: 0,
+                tv_nsec: time_period.as_nanos() as i32
             };
 
             // TODO: Check if this implementation can be changed.

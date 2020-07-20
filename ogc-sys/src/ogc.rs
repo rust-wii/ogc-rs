@@ -9,12 +9,12 @@ impl<T> __IncompleteArrayField<T> {
         __IncompleteArrayField(::core::marker::PhantomData, [])
     }
     #[inline]
-    pub unsafe fn as_ptr(&self) -> *const T {
-        ::core::mem::transmute(self)
+    pub fn as_ptr(&self) -> *const T {
+        self as *const _ as *const T
     }
     #[inline]
-    pub unsafe fn as_mut_ptr(&mut self) -> *mut T {
-        ::core::mem::transmute(self)
+    pub fn as_mut_ptr(&mut self) -> *mut T {
+        self as *mut _ as *mut T
     }
     #[inline]
     pub unsafe fn as_slice(&self, len: usize) -> &[T] {
@@ -28,12 +28,6 @@ impl<T> __IncompleteArrayField<T> {
 impl<T> ::core::fmt::Debug for __IncompleteArrayField<T> {
     fn fmt(&self, fmt: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
         fmt.write_str("__IncompleteArrayField")
-    }
-}
-impl<T> ::core::clone::Clone for __IncompleteArrayField<T> {
-    #[inline]
-    fn clone(&self) -> Self {
-        Self::new()
     }
 }
 #[repr(C)]
@@ -81,11 +75,12 @@ impl<T> ::core::cmp::PartialEq for __BindgenUnionField<T> {
 impl<T> ::core::cmp::Eq for __BindgenUnionField<T> {}
 pub const __NEWLIB_H__: u32 = 1;
 pub const _NEWLIB_VERSION_H__: u32 = 1;
-pub const _NEWLIB_VERSION: &'static [u8; 6usize] = b"3.1.0\0";
+pub const _NEWLIB_VERSION: &'static [u8; 6usize] = b"3.3.0\0";
 pub const __NEWLIB__: u32 = 3;
-pub const __NEWLIB_MINOR__: u32 = 1;
+pub const __NEWLIB_MINOR__: u32 = 3;
 pub const __NEWLIB_PATCHLEVEL__: u32 = 0;
 pub const _WANT_IO_LONG_LONG: u32 = 1;
+pub const _REENT_CHECK_VERIFY: u32 = 1;
 pub const _MB_CAPABLE: u32 = 1;
 pub const _MB_LEN_MAX: u32 = 8;
 pub const HAVE_INITFINI_ARRAY: u32 = 1;
@@ -230,6 +225,7 @@ pub const true_: u32 = 1;
 pub const false_: u32 = 0;
 pub const __bool_true_false_are_defined: u32 = 1;
 pub const __int20: u32 = 2;
+pub const __int20__: u32 = 2;
 pub const __INT8: &'static [u8; 3usize] = b"hh\0";
 pub const __INT16: &'static [u8; 2usize] = b"h\0";
 pub const __INT64: &'static [u8; 3usize] = b"ll\0";
@@ -380,12 +376,16 @@ pub const IOC_INOUT: u32 = 3221225472;
 pub const O_NONBLOCK: u32 = 2048;
 pub const TCP_NODELAY: u32 = 1;
 pub const TCP_KEEPALIVE: u32 = 2;
-pub const POLLIN: u32 = 1;
-pub const POLLPRI: u32 = 2;
-pub const POLLOUT: u32 = 4;
-pub const POLLERR: u32 = 8;
-pub const POLLHUP: u32 = 16;
-pub const POLLNVAL: u32 = 32;
+pub const POLLRDNORM: u32 = 1;
+pub const POLLRDBAND: u32 = 2;
+pub const POLLPRI: u32 = 4;
+pub const POLLWRNORM: u32 = 8;
+pub const POLLWRBAND: u32 = 16;
+pub const POLLERR: u32 = 32;
+pub const POLLHUP: u32 = 64;
+pub const POLLNVAL: u32 = 128;
+pub const POLLIN: u32 = 3;
+pub const POLLOUT: u32 = 8;
 pub const GDBSTUB_DEVICE_USB: u32 = 0;
 pub const GDBSTUB_DEVICE_TCP: u32 = 1;
 pub const GDBSTUB_DEF_CHANNEL: u32 = 0;
@@ -499,6 +499,7 @@ pub const FEATURE_MEDIUM_CANWRITE: u32 = 2;
 pub const FEATURE_GAMECUBE_SLOTA: u32 = 16;
 pub const FEATURE_GAMECUBE_SLOTB: u32 = 32;
 pub const FEATURE_GAMECUBE_DVD: u32 = 64;
+pub const FEATURE_GAMECUBE_PORT2: u32 = 128;
 pub const FEATURE_WII_SD: u32 = 256;
 pub const FEATURE_WII_USB: u32 = 512;
 pub const FEATURE_WII_DVD: u32 = 1024;
@@ -590,8 +591,8 @@ pub const GX_COLORZERO: u32 = 6;
 pub const GX_ALPHA_BUMP: u32 = 7;
 pub const GX_ALPHA_BUMPN: u32 = 8;
 pub const GX_COLORNULL: u32 = 255;
-pub const GX_MTX2x4: u32 = 0;
-pub const GX_MTX3x4: u32 = 1;
+pub const GX_MTX3x4: u32 = 0;
+pub const GX_MTX2x4: u32 = 1;
 pub const GX_VTXFMT0: u32 = 0;
 pub const GX_VTXFMT1: u32 = 1;
 pub const GX_VTXFMT2: u32 = 2;
@@ -1253,8 +1254,8 @@ pub const SI_ERROR_COLLISION: u32 = 4;
 pub const SI_ERROR_NO_RESPONSE: u32 = 8;
 pub const SI_ERROR_WRST: u32 = 16;
 pub const SI_ERROR_RDST: u32 = 32;
-pub const SI_ERR_UNKNOWN: u32 = 64;
-pub const SI_ERR_BUSY: u32 = 128;
+pub const SI_ERROR_UNKNOWN: u32 = 64;
+pub const SI_ERROR_BUSY: u32 = 128;
 pub const SI_TYPE_MASK: u32 = 402653184;
 pub const SI_TYPE_N64: u32 = 0;
 pub const SI_TYPE_DOLPHIN: u32 = 134217728;
@@ -1599,21 +1600,65 @@ pub type __intmax_t = ::libc::c_longlong;
 pub type __uintmax_t = ::libc::c_ulonglong;
 pub type __intptr_t = ::libc::c_long;
 pub type __uintptr_t = ::libc::c_ulong;
+pub type size_t = ::libc::c_ulong;
 pub type wchar_t = ::libc::c_int;
 #[repr(C)]
 #[repr(align(16))]
 #[derive(Debug, Copy, Clone)]
 pub struct max_align_t {
     pub __clang_max_align_nonce1: ::libc::c_longlong,
-    pub __bindgen_padding_0: [u32; 2usize],
+    pub __bindgen_padding_0: u64,
     pub __clang_max_align_nonce2: u128,
 }
 pub type va_list = __builtin_va_list;
 pub type __gnuc_va_list = __builtin_va_list;
+pub type wint_t = ::libc::c_int;
 pub type _off_t = __int64_t;
 pub type _fpos_t = __int64_t;
 pub type __ino_t = __uint32_t;
 pub type __dev_t = __uint32_t;
+pub type __blkcnt_t = ::libc::c_long;
+pub type __blksize_t = ::libc::c_long;
+pub type __fsblkcnt_t = __uint64_t;
+pub type __fsfilcnt_t = __uint32_t;
+pub type __pid_t = ::libc::c_int;
+pub type __uid_t = ::libc::c_ushort;
+pub type __gid_t = ::libc::c_ushort;
+pub type __id_t = __uint32_t;
+pub type __mode_t = __uint32_t;
+pub type _off64_t = ::libc::c_longlong;
+pub type __off_t = _off_t;
+pub type __loff_t = _off64_t;
+pub type __key_t = ::libc::c_long;
+pub type __size_t = ::libc::c_ulong;
+pub type _ssize_t = ::libc::c_long;
+pub type __ssize_t = _ssize_t;
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub struct _mbstate_t {
+    pub __count: ::libc::c_int,
+    pub __value: _mbstate_t__bindgen_ty_1,
+}
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub union _mbstate_t__bindgen_ty_1 {
+    pub __wch: wint_t,
+    pub __wchb: [::libc::c_uchar; 4usize],
+    _bindgen_union_align: u32,
+}
+pub type _iconv_t = *mut ::libc::c_void;
+pub type __clock_t = ::libc::c_ulong;
+pub type __time_t = __int_least64_t;
+pub type __clockid_t = ::libc::c_ulong;
+pub type __timer_t = ::libc::c_ulong;
+pub type __sa_family_t = __uint8_t;
+pub type __socklen_t = __uint32_t;
+pub type __nl_item = ::libc::c_int;
+pub type __nlink_t = ::libc::c_ushort;
+pub type __suseconds_t = ::libc::c_long;
+pub type __useconds_t = ::libc::c_ulong;
+pub type __va_list = __builtin_va_list;
+pub type __ULong = ::libc::c_ulong;
 pub type _LOCK_T = ::libc::c_int;
 pub type _LOCK_RECURSIVE_T = ::libc::c_int;
 extern "C" {
@@ -1631,50 +1676,7 @@ extern "C" {
 extern "C" {
     pub fn __libc_lock_release(arg1: *mut ::libc::c_int) -> ::libc::c_int;
 }
-pub type __blkcnt_t = ::libc::c_long;
-pub type __blksize_t = ::libc::c_long;
-pub type __fsblkcnt_t = __uint64_t;
-pub type __fsfilcnt_t = __uint32_t;
-pub type __pid_t = ::libc::c_int;
-pub type __uid_t = ::libc::c_ushort;
-pub type __gid_t = ::libc::c_ushort;
-pub type __id_t = __uint32_t;
-pub type __mode_t = __uint32_t;
-pub type _off64_t = ::libc::c_longlong;
-pub type __off_t = _off_t;
-pub type __loff_t = _off64_t;
-pub type __key_t = ::libc::c_long;
-pub type __size_t = ::libc::c_ulong;
-pub type _ssize_t = ::libc::c_long;
-pub type __ssize_t = _ssize_t;
-pub type wint_t = ::libc::c_int;
-#[repr(C)]
-#[derive(Copy, Clone)]
-pub struct _mbstate_t {
-    pub __count: ::libc::c_int,
-    pub __value: _mbstate_t__bindgen_ty_1,
-}
-#[repr(C)]
-#[derive(Copy, Clone)]
-pub union _mbstate_t__bindgen_ty_1 {
-    pub __wch: wint_t,
-    pub __wchb: [::libc::c_uchar; 4usize],
-    _bindgen_union_align: u32,
-}
 pub type _flock_t = _LOCK_RECURSIVE_T;
-pub type _iconv_t = *mut ::libc::c_void;
-pub type __clock_t = ::libc::c_ulong;
-pub type __time_t = __int_least64_t;
-pub type __clockid_t = ::libc::c_ulong;
-pub type __timer_t = ::libc::c_ulong;
-pub type __sa_family_t = __uint8_t;
-pub type __socklen_t = __uint32_t;
-pub type __nl_item = ::libc::c_int;
-pub type __nlink_t = ::libc::c_ushort;
-pub type __suseconds_t = ::libc::c_long;
-pub type __useconds_t = ::libc::c_ulong;
-pub type __va_list = __builtin_va_list;
-pub type __ULong = ::libc::c_ulong;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct __locale_t {
@@ -1775,7 +1777,6 @@ pub struct __sFILE {
     pub _lock: _flock_t,
     pub _mbstate: _mbstate_t,
     pub _flags2: ::libc::c_int,
-    pub __bindgen_padding_0: u32,
 }
 pub type __FILE = __sFILE;
 #[repr(C)]
@@ -1816,10 +1817,8 @@ pub struct _reent {
     pub _atexit0: _atexit,
     pub _sig_func: *mut ::core::option::Option<unsafe extern "C" fn(arg1: ::libc::c_int)>,
     pub __sglue: _glue,
-    pub __bindgen_padding_0: u32,
     pub __sf: [__FILE; 3usize],
     pub deviceData: *mut ::libc::c_void,
-    pub __bindgen_padding_1: u32,
 }
 #[repr(C)]
 #[derive(Copy, Clone)]
@@ -1836,7 +1835,6 @@ pub struct _reent__bindgen_ty_1__bindgen_ty_1 {
     pub _asctime_buf: [::libc::c_char; 26usize],
     pub _localtime_buf: __tm,
     pub _gamma_signgam: ::libc::c_int,
-    pub __bindgen_padding_0: u32,
     pub _rand_next: ::libc::c_ulonglong,
     pub _r48: _rand48,
     pub _mblen_state: _mbstate_t,
@@ -1871,7 +1869,7 @@ pub type u_int8_t = __uint8_t;
 pub type u_int16_t = __uint16_t;
 pub type u_int32_t = __uint32_t;
 pub type u_int64_t = __uint64_t;
-pub type register_t = ::libc::c_int;
+pub type register_t = __intptr_t;
 pub type intmax_t = __intmax_t;
 pub type uintmax_t = __uintmax_t;
 pub type __sigset_t = ::libc::c_ulong;
@@ -1882,14 +1880,12 @@ pub type time_t = __int_least64_t;
 pub struct timeval {
     pub tv_sec: time_t,
     pub tv_usec: suseconds_t,
-    pub __bindgen_padding_0: u32,
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct timespec {
     pub tv_sec: time_t,
     pub tv_nsec: ::libc::c_long,
-    pub __bindgen_padding_0: u32,
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -1925,6 +1921,7 @@ extern "C" {
 }
 pub type in_addr_t = __uint32_t;
 pub type in_port_t = __uint16_t;
+pub type u_register_t = __uintptr_t;
 pub type u_char = ::libc::c_uchar;
 pub type u_short = ::libc::c_ushort;
 pub type u_int = ::libc::c_uint;
@@ -1947,6 +1944,7 @@ pub type uid_t = __uid_t;
 pub type gid_t = __gid_t;
 pub type pid_t = __pid_t;
 pub type key_t = __key_t;
+pub type ssize_t = _ssize_t;
 pub type mode_t = __mode_t;
 pub type nlink_t = __nlink_t;
 pub type clockid_t = __clockid_t;
@@ -2034,7 +2032,7 @@ extern "C" {
         arg1: *mut FILE,
         arg2: *mut ::libc::c_char,
         arg3: ::libc::c_int,
-        arg4: usize,
+        arg4: size_t,
     ) -> ::libc::c_int;
 }
 extern "C" {
@@ -2210,7 +2208,7 @@ extern "C" {
 extern "C" {
     pub fn asniprintf(
         arg1: *mut ::libc::c_char,
-        arg2: *mut usize,
+        arg2: *mut size_t,
         arg3: *const ::libc::c_char,
         ...
     ) -> *mut ::libc::c_char;
@@ -2218,7 +2216,7 @@ extern "C" {
 extern "C" {
     pub fn asnprintf(
         arg1: *mut ::libc::c_char,
-        arg2: *mut usize,
+        arg2: *mut size_t,
         arg3: *const ::libc::c_char,
         ...
     ) -> *mut ::libc::c_char;
@@ -2247,7 +2245,7 @@ extern "C" {
 extern "C" {
     pub fn sniprintf(
         arg1: *mut ::libc::c_char,
-        arg2: usize,
+        arg2: size_t,
         arg3: *const ::libc::c_char,
         ...
     ) -> ::libc::c_int;
@@ -2262,7 +2260,7 @@ extern "C" {
 extern "C" {
     pub fn vasniprintf(
         arg1: *mut ::libc::c_char,
-        arg2: *mut usize,
+        arg2: *mut size_t,
         arg3: *const ::libc::c_char,
         arg4: *mut __va_list_tag,
     ) -> *mut ::libc::c_char;
@@ -2270,7 +2268,7 @@ extern "C" {
 extern "C" {
     pub fn vasnprintf(
         arg1: *mut ::libc::c_char,
-        arg2: *mut usize,
+        arg2: *mut size_t,
         arg3: *const ::libc::c_char,
         arg4: *mut __va_list_tag,
     ) -> *mut ::libc::c_char;
@@ -2319,7 +2317,7 @@ extern "C" {
 extern "C" {
     pub fn vsniprintf(
         arg1: *mut ::libc::c_char,
-        arg2: usize,
+        arg2: size_t,
         arg3: *const ::libc::c_char,
         arg4: *mut __va_list_tag,
     ) -> ::libc::c_int;
@@ -2375,12 +2373,12 @@ extern "C" {
 extern "C" {
     pub fn fmemopen(
         arg1: *mut ::libc::c_void,
-        arg2: usize,
+        arg2: size_t,
         arg3: *const ::libc::c_char,
     ) -> *mut FILE;
 }
 extern "C" {
-    pub fn open_memstream(arg1: *mut *mut ::libc::c_char, arg2: *mut usize) -> *mut FILE;
+    pub fn open_memstream(arg1: *mut *mut ::libc::c_char, arg2: *mut size_t) -> *mut FILE;
 }
 extern "C" {
     pub fn vdprintf(
@@ -2409,7 +2407,7 @@ extern "C" {
     pub fn _asniprintf_r(
         arg1: *mut _reent,
         arg2: *mut ::libc::c_char,
-        arg3: *mut usize,
+        arg3: *mut size_t,
         arg4: *const ::libc::c_char,
         ...
     ) -> *mut ::libc::c_char;
@@ -2418,7 +2416,7 @@ extern "C" {
     pub fn _asnprintf_r(
         arg1: *mut _reent,
         arg2: *mut ::libc::c_char,
-        arg3: *mut usize,
+        arg3: *mut size_t,
         arg4: *const ::libc::c_char,
         ...
     ) -> *mut ::libc::c_char;
@@ -2511,7 +2509,7 @@ extern "C" {
     pub fn _fmemopen_r(
         arg1: *mut _reent,
         arg2: *mut ::libc::c_void,
-        arg3: usize,
+        arg3: size_t,
         arg4: *const ::libc::c_char,
     ) -> *mut FILE;
 }
@@ -2569,19 +2567,19 @@ extern "C" {
     pub fn _fread_r(
         arg1: *mut _reent,
         arg2: *mut ::libc::c_void,
-        _size: usize,
-        _n: usize,
+        _size: size_t,
+        _n: size_t,
         arg3: *mut FILE,
-    ) -> usize;
+    ) -> size_t;
 }
 extern "C" {
     pub fn _fread_unlocked_r(
         arg1: *mut _reent,
         arg2: *mut ::libc::c_void,
-        _size: usize,
-        _n: usize,
+        _size: size_t,
+        _n: size_t,
         arg3: *mut FILE,
-    ) -> usize;
+    ) -> size_t;
 }
 extern "C" {
     pub fn _fscanf_r(
@@ -2620,19 +2618,19 @@ extern "C" {
     pub fn _fwrite_r(
         arg1: *mut _reent,
         arg2: *const ::libc::c_void,
-        _size: usize,
-        _n: usize,
+        _size: size_t,
+        _n: size_t,
         arg3: *mut FILE,
-    ) -> usize;
+    ) -> size_t;
 }
 extern "C" {
     pub fn _fwrite_unlocked_r(
         arg1: *mut _reent,
         arg2: *const ::libc::c_void,
-        _size: usize,
-        _n: usize,
+        _size: size_t,
+        _n: size_t,
         arg3: *mut FILE,
-    ) -> usize;
+    ) -> size_t;
 }
 extern "C" {
     pub fn _getc_r(arg1: *mut _reent, arg2: *mut FILE) -> ::libc::c_int;
@@ -2659,7 +2657,7 @@ extern "C" {
     pub fn _open_memstream_r(
         arg1: *mut _reent,
         arg2: *mut *mut ::libc::c_char,
-        arg3: *mut usize,
+        arg3: *mut size_t,
     ) -> *mut FILE;
 }
 extern "C" {
@@ -2720,7 +2718,7 @@ extern "C" {
     pub fn _sniprintf_r(
         arg1: *mut _reent,
         arg2: *mut ::libc::c_char,
-        arg3: usize,
+        arg3: size_t,
         arg4: *const ::libc::c_char,
         ...
     ) -> ::libc::c_int;
@@ -2729,7 +2727,7 @@ extern "C" {
     pub fn _snprintf_r(
         arg1: *mut _reent,
         arg2: *mut ::libc::c_char,
-        arg3: usize,
+        arg3: size_t,
         arg4: *const ::libc::c_char,
         ...
     ) -> ::libc::c_int;
@@ -2778,7 +2776,7 @@ extern "C" {
     pub fn _vasniprintf_r(
         arg1: *mut _reent,
         arg2: *mut ::libc::c_char,
-        arg3: *mut usize,
+        arg3: *mut size_t,
         arg4: *const ::libc::c_char,
         arg5: *mut __va_list_tag,
     ) -> *mut ::libc::c_char;
@@ -2787,7 +2785,7 @@ extern "C" {
     pub fn _vasnprintf_r(
         arg1: *mut _reent,
         arg2: *mut ::libc::c_char,
-        arg3: *mut usize,
+        arg3: *mut size_t,
         arg4: *const ::libc::c_char,
         arg5: *mut __va_list_tag,
     ) -> *mut ::libc::c_char;
@@ -2896,7 +2894,7 @@ extern "C" {
     pub fn _vsniprintf_r(
         arg1: *mut _reent,
         arg2: *mut ::libc::c_char,
-        arg3: usize,
+        arg3: size_t,
         arg4: *const ::libc::c_char,
         arg5: *mut __va_list_tag,
     ) -> ::libc::c_int;
@@ -2905,7 +2903,7 @@ extern "C" {
     pub fn _vsnprintf_r(
         arg1: *mut _reent,
         arg2: *mut ::libc::c_char,
-        arg3: usize,
+        arg3: size_t,
         arg4: *const ::libc::c_char,
         arg5: *mut __va_list_tag,
     ) -> ::libc::c_int;
@@ -2932,13 +2930,14 @@ extern "C" {
 extern "C" {
     pub fn __getdelim(
         arg1: *mut *mut ::libc::c_char,
-        arg2: *mut usize,
+        arg2: *mut size_t,
         arg3: ::libc::c_int,
         arg4: *mut FILE,
-    ) -> isize;
+    ) -> ssize_t;
 }
 extern "C" {
-    pub fn __getline(arg1: *mut *mut ::libc::c_char, arg2: *mut usize, arg3: *mut FILE) -> isize;
+    pub fn __getline(arg1: *mut *mut ::libc::c_char, arg2: *mut size_t, arg3: *mut FILE)
+        -> ssize_t;
 }
 extern "C" {
     pub fn clearerr_unlocked(arg1: *mut FILE);
@@ -2964,18 +2963,18 @@ extern "C" {
 extern "C" {
     pub fn fread_unlocked(
         arg1: *mut ::libc::c_void,
-        _size: usize,
-        _n: usize,
+        _size: size_t,
+        _n: size_t,
         arg2: *mut FILE,
-    ) -> usize;
+    ) -> size_t;
 }
 extern "C" {
     pub fn fwrite_unlocked(
         arg1: *const ::libc::c_void,
-        _size: usize,
-        _n: usize,
+        _size: size_t,
+        _n: size_t,
         arg2: *mut FILE,
-    ) -> usize;
+    ) -> size_t;
 }
 extern "C" {
     pub fn __srget_r(arg1: *mut _reent, arg2: *mut FILE) -> ::libc::c_int;
@@ -3045,22 +3044,22 @@ extern "C" {
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct mallinfo {
-    pub arena: usize,
-    pub ordblks: usize,
-    pub smblks: usize,
-    pub hblks: usize,
-    pub hblkhd: usize,
-    pub usmblks: usize,
-    pub fsmblks: usize,
-    pub uordblks: usize,
-    pub fordblks: usize,
-    pub keepcost: usize,
+    pub arena: size_t,
+    pub ordblks: size_t,
+    pub smblks: size_t,
+    pub hblks: size_t,
+    pub hblkhd: size_t,
+    pub usmblks: size_t,
+    pub fsmblks: size_t,
+    pub uordblks: size_t,
+    pub fordblks: size_t,
+    pub keepcost: size_t,
 }
 extern "C" {
     pub fn malloc(arg1: ::libc::c_ulong) -> *mut ::libc::c_void;
 }
 extern "C" {
-    pub fn _malloc_r(arg1: *mut _reent, arg2: usize) -> *mut ::libc::c_void;
+    pub fn _malloc_r(arg1: *mut _reent, arg2: size_t) -> *mut ::libc::c_void;
 }
 extern "C" {
     pub fn free(arg1: *mut ::libc::c_void);
@@ -3075,20 +3074,20 @@ extern "C" {
     pub fn _realloc_r(
         arg1: *mut _reent,
         arg2: *mut ::libc::c_void,
-        arg3: usize,
+        arg3: size_t,
     ) -> *mut ::libc::c_void;
 }
 extern "C" {
     pub fn calloc(arg1: ::libc::c_ulong, arg2: ::libc::c_ulong) -> *mut ::libc::c_void;
 }
 extern "C" {
-    pub fn _calloc_r(arg1: *mut _reent, arg2: usize, arg3: usize) -> *mut ::libc::c_void;
+    pub fn _calloc_r(arg1: *mut _reent, arg2: size_t, arg3: size_t) -> *mut ::libc::c_void;
 }
 extern "C" {
-    pub fn memalign(arg1: usize, arg2: usize) -> *mut ::libc::c_void;
+    pub fn memalign(arg1: size_t, arg2: size_t) -> *mut ::libc::c_void;
 }
 extern "C" {
-    pub fn _memalign_r(arg1: *mut _reent, arg2: usize, arg3: usize) -> *mut ::libc::c_void;
+    pub fn _memalign_r(arg1: *mut _reent, arg2: size_t, arg3: size_t) -> *mut ::libc::c_void;
 }
 extern "C" {
     pub fn mallinfo() -> mallinfo;
@@ -3110,28 +3109,28 @@ extern "C" {
         -> ::libc::c_int;
 }
 extern "C" {
-    pub fn malloc_usable_size(arg1: *mut ::libc::c_void) -> usize;
+    pub fn malloc_usable_size(arg1: *mut ::libc::c_void) -> size_t;
 }
 extern "C" {
-    pub fn _malloc_usable_size_r(arg1: *mut _reent, arg2: *mut ::libc::c_void) -> usize;
+    pub fn _malloc_usable_size_r(arg1: *mut _reent, arg2: *mut ::libc::c_void) -> size_t;
 }
 extern "C" {
-    pub fn valloc(arg1: usize) -> *mut ::libc::c_void;
+    pub fn valloc(arg1: size_t) -> *mut ::libc::c_void;
 }
 extern "C" {
-    pub fn _valloc_r(arg1: *mut _reent, arg2: usize) -> *mut ::libc::c_void;
+    pub fn _valloc_r(arg1: *mut _reent, arg2: size_t) -> *mut ::libc::c_void;
 }
 extern "C" {
-    pub fn pvalloc(arg1: usize) -> *mut ::libc::c_void;
+    pub fn pvalloc(arg1: size_t) -> *mut ::libc::c_void;
 }
 extern "C" {
-    pub fn _pvalloc_r(arg1: *mut _reent, arg2: usize) -> *mut ::libc::c_void;
+    pub fn _pvalloc_r(arg1: *mut _reent, arg2: size_t) -> *mut ::libc::c_void;
 }
 extern "C" {
-    pub fn malloc_trim(arg1: usize) -> ::libc::c_int;
+    pub fn malloc_trim(arg1: size_t) -> ::libc::c_int;
 }
 extern "C" {
-    pub fn _malloc_trim_r(arg1: *mut _reent, arg2: usize) -> ::libc::c_int;
+    pub fn _malloc_trim_r(arg1: *mut _reent, arg2: size_t) -> ::libc::c_int;
 }
 extern "C" {
     pub fn __malloc_lock(arg1: *mut _reent);
@@ -3153,17 +3152,17 @@ extern "C" {
     pub fn bcmp(
         arg1: *const ::libc::c_void,
         arg2: *const ::libc::c_void,
-        arg3: usize,
+        arg3: ::libc::c_ulong,
     ) -> ::libc::c_int;
 }
 extern "C" {
-    pub fn bcopy(arg1: *const ::libc::c_void, arg2: *mut ::libc::c_void, arg3: usize);
+    pub fn bcopy(arg1: *const ::libc::c_void, arg2: *mut ::libc::c_void, arg3: size_t);
 }
 extern "C" {
     pub fn bzero(arg1: *mut ::libc::c_void, arg2: ::libc::c_ulong);
 }
 extern "C" {
-    pub fn explicit_bzero(arg1: *mut ::libc::c_void, arg2: usize);
+    pub fn explicit_bzero(arg1: *mut ::libc::c_void, arg2: size_t);
 }
 extern "C" {
     pub fn ffs(arg1: ::libc::c_int) -> ::libc::c_int;
@@ -3210,7 +3209,7 @@ extern "C" {
     pub fn strncasecmp_l(
         arg1: *const ::libc::c_char,
         arg2: *const ::libc::c_char,
-        arg3: usize,
+        arg3: size_t,
         arg4: locale_t,
     ) -> ::libc::c_int;
 }
@@ -3331,9 +3330,9 @@ extern "C" {
     pub fn strxfrm_l(
         arg1: *mut ::libc::c_char,
         arg2: *const ::libc::c_char,
-        arg3: usize,
+        arg3: size_t,
         arg4: locale_t,
-    ) -> usize;
+    ) -> size_t;
 }
 extern "C" {
     pub fn strtok_r(
@@ -3346,14 +3345,14 @@ extern "C" {
     pub fn timingsafe_bcmp(
         arg1: *const ::libc::c_void,
         arg2: *const ::libc::c_void,
-        arg3: usize,
+        arg3: size_t,
     ) -> ::libc::c_int;
 }
 extern "C" {
     pub fn timingsafe_memcmp(
         arg1: *const ::libc::c_void,
         arg2: *const ::libc::c_void,
-        arg3: usize,
+        arg3: size_t,
     ) -> ::libc::c_int;
 }
 extern "C" {
@@ -3361,7 +3360,7 @@ extern "C" {
         arg1: *mut ::libc::c_void,
         arg2: *const ::libc::c_void,
         arg3: ::libc::c_int,
-        arg4: usize,
+        arg4: ::libc::c_ulong,
     ) -> *mut ::libc::c_void;
 }
 extern "C" {
@@ -3387,12 +3386,15 @@ extern "C" {
     pub fn _strndup_r(
         arg1: *mut _reent,
         arg2: *const ::libc::c_char,
-        arg3: usize,
+        arg3: size_t,
     ) -> *mut ::libc::c_char;
 }
 extern "C" {
-    pub fn strerror_r(arg1: ::libc::c_int, arg2: *mut ::libc::c_char, arg3: usize)
-        -> ::libc::c_int;
+    pub fn strerror_r(
+        arg1: ::libc::c_int,
+        arg2: *mut ::libc::c_char,
+        arg3: size_t,
+    ) -> ::libc::c_int;
 }
 extern "C" {
     pub fn _strerror_r(
@@ -3417,7 +3419,7 @@ extern "C" {
     ) -> ::libc::c_ulong;
 }
 extern "C" {
-    pub fn strnlen(arg1: *const ::libc::c_char, arg2: usize) -> usize;
+    pub fn strnlen(arg1: *const ::libc::c_char, arg2: size_t) -> size_t;
 }
 extern "C" {
     pub fn strsep(
@@ -3429,7 +3431,7 @@ extern "C" {
     pub fn strnstr(
         arg1: *const ::libc::c_char,
         arg2: *const ::libc::c_char,
-        arg3: usize,
+        arg3: size_t,
     ) -> *mut ::libc::c_char;
 }
 extern "C" {
@@ -3478,7 +3480,7 @@ extern "C" {
     pub fn arc4random_uniform(arg1: __uint32_t) -> __uint32_t;
 }
 extern "C" {
-    pub fn arc4random_buf(arg1: *mut ::libc::c_void, arg2: usize);
+    pub fn arc4random_buf(arg1: *mut ::libc::c_void, arg2: size_t);
 }
 extern "C" {
     pub fn atexit(__func: ::core::option::Option<unsafe extern "C" fn()>) -> ::libc::c_int;
@@ -3505,8 +3507,8 @@ extern "C" {
     pub fn bsearch(
         __key: *const ::libc::c_void,
         __base: *const ::libc::c_void,
-        __nmemb: usize,
-        __size: usize,
+        __nmemb: size_t,
+        __size: size_t,
         _compar: __compar_fn_t,
     ) -> *mut ::libc::c_void;
 }
@@ -3549,25 +3551,25 @@ extern "C" {
     pub fn ldiv(__numer: ::libc::c_long, __denom: ::libc::c_long) -> ldiv_t;
 }
 extern "C" {
-    pub fn mblen(arg1: *const ::libc::c_char, arg2: usize) -> ::libc::c_int;
+    pub fn mblen(arg1: *const ::libc::c_char, arg2: size_t) -> ::libc::c_int;
 }
 extern "C" {
     pub fn _mblen_r(
         arg1: *mut _reent,
         arg2: *const ::libc::c_char,
-        arg3: usize,
+        arg3: size_t,
         arg4: *mut _mbstate_t,
     ) -> ::libc::c_int;
 }
 extern "C" {
-    pub fn mbtowc(arg1: *mut wchar_t, arg2: *const ::libc::c_char, arg3: usize) -> ::libc::c_int;
+    pub fn mbtowc(arg1: *mut wchar_t, arg2: *const ::libc::c_char, arg3: size_t) -> ::libc::c_int;
 }
 extern "C" {
     pub fn _mbtowc_r(
         arg1: *mut _reent,
         arg2: *mut wchar_t,
         arg3: *const ::libc::c_char,
-        arg4: usize,
+        arg4: size_t,
         arg5: *mut _mbstate_t,
     ) -> ::libc::c_int;
 }
@@ -3583,28 +3585,28 @@ extern "C" {
     ) -> ::libc::c_int;
 }
 extern "C" {
-    pub fn mbstowcs(arg1: *mut wchar_t, arg2: *const ::libc::c_char, arg3: usize) -> usize;
+    pub fn mbstowcs(arg1: *mut wchar_t, arg2: *const ::libc::c_char, arg3: size_t) -> size_t;
 }
 extern "C" {
     pub fn _mbstowcs_r(
         arg1: *mut _reent,
         arg2: *mut wchar_t,
         arg3: *const ::libc::c_char,
-        arg4: usize,
+        arg4: size_t,
         arg5: *mut _mbstate_t,
-    ) -> usize;
+    ) -> size_t;
 }
 extern "C" {
-    pub fn wcstombs(arg1: *mut ::libc::c_char, arg2: *const wchar_t, arg3: usize) -> usize;
+    pub fn wcstombs(arg1: *mut ::libc::c_char, arg2: *const wchar_t, arg3: size_t) -> size_t;
 }
 extern "C" {
     pub fn _wcstombs_r(
         arg1: *mut _reent,
         arg2: *mut ::libc::c_char,
         arg3: *const wchar_t,
-        arg4: usize,
+        arg4: size_t,
         arg5: *mut _mbstate_t,
-    ) -> usize;
+    ) -> size_t;
 }
 extern "C" {
     pub fn mkdtemp(arg1: *mut ::libc::c_char) -> *mut ::libc::c_char;
@@ -3652,8 +3654,8 @@ extern "C" {
 extern "C" {
     pub fn qsort(
         __base: *mut ::libc::c_void,
-        __nmemb: usize,
-        __size: usize,
+        __nmemb: size_t,
+        __size: size_t,
         _compar: __compar_fn_t,
     );
 }
@@ -3661,11 +3663,14 @@ extern "C" {
     pub fn rand() -> ::libc::c_int;
 }
 extern "C" {
-    pub fn reallocarray(arg1: *mut ::libc::c_void, arg2: usize, arg3: usize)
-        -> *mut ::libc::c_void;
+    pub fn reallocarray(
+        arg1: *mut ::libc::c_void,
+        arg2: size_t,
+        arg3: size_t,
+    ) -> *mut ::libc::c_void;
 }
 extern "C" {
-    pub fn reallocf(arg1: *mut ::libc::c_void, arg2: usize) -> *mut ::libc::c_void;
+    pub fn reallocf(arg1: *mut ::libc::c_void, arg2: size_t) -> *mut ::libc::c_void;
 }
 extern "C" {
     pub fn realpath(
@@ -3755,7 +3760,7 @@ extern "C" {
     pub fn _reallocf_r(
         arg1: *mut _reent,
         arg2: *mut ::libc::c_void,
-        arg3: usize,
+        arg3: size_t,
     ) -> *mut ::libc::c_void;
 }
 extern "C" {
@@ -3862,7 +3867,7 @@ extern "C" {
     pub fn initstate(
         arg1: ::libc::c_uint,
         arg2: *mut ::libc::c_char,
-        arg3: usize,
+        arg3: size_t,
     ) -> *mut ::libc::c_char;
 }
 extern "C" {
@@ -3925,8 +3930,8 @@ extern "C" {
 extern "C" {
     pub fn posix_memalign(
         arg1: *mut *mut ::libc::c_void,
-        arg2: usize,
-        arg3: usize,
+        arg2: size_t,
+        arg3: size_t,
     ) -> ::libc::c_int;
 }
 extern "C" {
@@ -3954,8 +3959,8 @@ extern "C" {
 extern "C" {
     pub fn qsort_r(
         __base: *mut ::libc::c_void,
-        __nmemb: usize,
-        __size: usize,
+        __nmemb: size_t,
+        __size: size_t,
         __thunk: *mut ::libc::c_void,
         _compar: ::core::option::Option<
             unsafe extern "C" fn(
@@ -3977,7 +3982,7 @@ extern "C" {
     pub fn strtold(arg1: *const ::libc::c_char, arg2: *mut *mut ::libc::c_char) -> u128;
 }
 extern "C" {
-    pub fn aligned_alloc(arg1: usize, arg2: usize) -> *mut ::libc::c_void;
+    pub fn aligned_alloc(arg1: size_t, arg2: size_t) -> *mut ::libc::c_void;
 }
 extern "C" {
     pub fn at_quick_exit(arg1: ::core::option::Option<unsafe extern "C" fn()>) -> ::libc::c_int;
@@ -4100,19 +4105,19 @@ extern "C" {
 extern "C" {
     pub fn strftime(
         _s: *mut ::libc::c_char,
-        _maxsize: usize,
+        _maxsize: size_t,
         _fmt: *const ::libc::c_char,
         _t: *const tm,
-    ) -> usize;
+    ) -> size_t;
 }
 extern "C" {
     pub fn strftime_l(
         _s: *mut ::libc::c_char,
-        _maxsize: usize,
+        _maxsize: size_t,
         _fmt: *const ::libc::c_char,
         _t: *const tm,
         _l: locale_t,
-    ) -> usize;
+    ) -> size_t;
 }
 extern "C" {
     pub fn asctime_r(arg1: *const tm, arg2: *mut ::libc::c_char) -> *mut ::libc::c_char;
@@ -4140,14 +4145,11 @@ pub struct __tzrule_struct {
     pub n: ::libc::c_int,
     pub d: ::libc::c_int,
     pub s: ::libc::c_int,
-    pub __bindgen_padding_0: u32,
     pub change: time_t,
     pub offset: ::libc::c_long,
-    pub __bindgen_padding_1: u32,
 }
 pub type __tzrule_type = __tzrule_struct;
 #[repr(C)]
-#[repr(align(8))]
 #[derive(Debug, Copy, Clone)]
 pub struct __tzinfo_struct {
     pub __tznorth: ::libc::c_int,
@@ -4201,7 +4203,7 @@ pub struct sigaction {
 pub struct sigaltstack {
     pub ss_sp: *mut ::libc::c_void,
     pub ss_flags: ::libc::c_int,
-    pub ss_size: usize,
+    pub ss_size: size_t,
 }
 pub type stack_t = sigaltstack;
 extern "C" {
@@ -5458,6 +5460,13 @@ pub struct _card_file {
     pub len: s32,
     pub iblock: u16,
 }
+#[doc = " \\typedef struct _card_file card_file"]
+#[doc = "\\brief structure to hold the fileinformations upon open and for later use."]
+#[doc = "\\param chn CARD slot."]
+#[doc = "\\param filenum file index in the card directory structure."]
+#[doc = "\\param offset offset into the file."]
+#[doc = "\\param len length of file."]
+#[doc = "\\param iblock block index on memory card."]
 pub type card_file = _card_file;
 #[doc = " \\typedef struct card_dir"]
 #[doc = "\\brief structure to hold the information of a directory entry"]
@@ -5479,6 +5488,15 @@ pub struct _card_dir {
     pub company: [u8; 2usize],
     pub showall: bool,
 }
+#[doc = " \\typedef struct card_dir"]
+#[doc = "\\brief structure to hold the information of a directory entry"]
+#[doc = "\\param chn CARD slot."]
+#[doc = "\\param fileno file index in the card directory structure."]
+#[doc = "\\param filelen length of file."]
+#[doc = "\\param filename[CARD_FILENAMELEN] name of the file on card."]
+#[doc = "\\param gamecode[4] string identifier <=4."]
+#[doc = "\\param company[2] string identifier <=2."]
+#[doc = "\\param showall boolean flag whether to showall entries or ony those identified by card_gamecode and card_company, previously set within the call to CARD_Init()"]
 pub type card_dir = _card_dir;
 #[doc = " \\typedef struct card_stat"]
 #[doc = "\\brief structure to hold the additional statistical informations."]
@@ -5515,6 +5533,21 @@ pub struct _card_stat {
     pub offset_icon_tlut: [u32; 8usize],
     pub offset_data: u32,
 }
+#[doc = " \\typedef struct card_stat"]
+#[doc = "\\brief structure to hold the additional statistical informations."]
+#[doc = "\\param filename[CARD_FILENAMELEN] name of the file on card."]
+#[doc = "\\param len length of file."]
+#[doc = "\\param gamecode[4] string identifier <=4."]
+#[doc = "\\param company[2] string identifier <=2."]
+#[doc = "\\param banner_fmt format of banner."]
+#[doc = "\\param icon_addr icon image address in file."]
+#[doc = "\\param icon_speed speed of an animated icon."]
+#[doc = "\\param comment_addr address in file of the comment block."]
+#[doc = "\\param offset_banner offset in file to the banner's image data."]
+#[doc = "\\param offset_banner_tlut offset in file to the banner's texture lookup table."]
+#[doc = "\\param offset_icon[CARD_MAXICONS] array of offsets in file to the icon's image data <CARD_MAXICONS."]
+#[doc = "\\param offset_icon_tlut offset in file to the icons's texture lookup table."]
+#[doc = "\\param offset_data offset to additional data."]
 pub type card_stat = _card_stat;
 #[doc = " \\typedef void (*cardcallback)(s32 chan,s32 result)"]
 #[doc = "\\brief function pointer typedef for the user's operation callback"]
@@ -5958,6 +5991,16 @@ pub struct _gx_rmodeobj {
     pub sample_pattern: [[u8; 2usize]; 12usize],
     pub vfilter: [u8; 7usize],
 }
+#[doc = "\\typedef struct _gx_rmodeobj GXRModeObj"]
+#[doc = "\\brief structure to hold the selected video and render settings"]
+#[doc = "\\param viTVMode mode and type of TV"]
+#[doc = "\\param fbWidth width of external framebuffer"]
+#[doc = "\\param efbHeight height of embedded framebuffer"]
+#[doc = "\\param xfbHeight height of external framebuffer"]
+#[doc = "\\param viXOrigin x starting point of first pixel to draw on VI"]
+#[doc = "\\param viYOrigin y starting point of first pixel to draw on VI"]
+#[doc = "\\param viWidth width of configured VI"]
+#[doc = "\\param viHeight height of configured VI"]
 pub type GXRModeObj = _gx_rmodeobj;
 extern "C" {
     #[doc = " \\fn CON_Init(void *framebuffer,int xstart,int ystart,int xres,int yres,int stride)"]
@@ -6018,7 +6061,7 @@ extern "C" {
     #[doc = " \\fn CON_EnableGecko(int channel, int safe)"]
     #[doc = " \\brief Enable or disable the USB gecko console."]
     #[doc = ""]
-    #[doc = " \\param[in] channel EXI channel, or -1 \u{fffd}to disable the gecko console"]
+    #[doc = " \\param[in] channel EXI channel, or -1 �to disable the gecko console"]
     #[doc = " \\param[in] safe If true, use safe mode (wait for peer)"]
     #[doc = ""]
     #[doc = " \\return none"]
@@ -6097,7 +6140,6 @@ pub struct _dvdcmdblk {
     pub id: *mut dvddiskid,
     pub cb: dvdcbcallback,
     pub usrdata: *mut ::libc::c_void,
-    pub __bindgen_padding_0: u32,
 }
 #[doc = " \\typedef struct _dvddrvinfo dvddrvinfo"]
 #[doc = " \\brief forward typedef for struct _dvddrvinfo"]
@@ -6137,7 +6179,6 @@ pub struct _dvdfileinfo {
     pub addr: u32,
     pub len: u32,
     pub cb: dvdcallback,
-    pub __bindgen_padding_0: u32,
 }
 extern "C" {
     #[doc = " \\fn void DVD_Init(void)"]
@@ -6509,6 +6550,16 @@ pub struct _vecf {
     pub y: f32,
     pub z: f32,
 }
+#[doc = " \\struct guVector"]
+#[doc = " \\brief 3-element vector with x, y and z components."]
+#[doc = ""]
+#[doc = " \\details When used in 3D transformations, it is treated as a column vector with an implied fourth 'w' coordinate of 1."]
+#[doc = " For example, to multiply a vector <i>vOld</i> by a matrix <i>m</i>: <i>vNew</i> = <i>m</i> x <i>vOld</i>. In code:"]
+#[doc = ""]
+#[doc = " \\code guVecMultiply( m, &vOld, &vNew ); \\endcode"]
+#[doc = ""]
+#[doc = " \\note This is a generic structure which can be used in any situation or function that accepts an array or struct with"]
+#[doc = " three f32 values."]
 pub type guVector = _vecf;
 #[doc = " \\struct guQuaternion"]
 #[doc = " \\brief Quaternion type consisting of an (x,y,z) vector component and a (w) scalar component."]
@@ -6525,6 +6576,14 @@ pub struct _qrtn {
     pub z: f32,
     pub w: f32,
 }
+#[doc = " \\struct guQuaternion"]
+#[doc = " \\brief Quaternion type consisting of an (x,y,z) vector component and a (w) scalar component."]
+#[doc = ""]
+#[doc = " \\details This struct is used by gu library function such as guQuatMtx(), which generates a rotation matrix from a"]
+#[doc = " quaternion."]
+#[doc = ""]
+#[doc = " \\note This is a generic structure which can be used in any situation or function that accepts an array or struct with"]
+#[doc = " four f32 values."]
 pub type guQuaternion = _qrtn;
 #[doc = " \\typedef f32 Mtx[3][4]"]
 #[doc = " \\brief Standard 3x4 matrix."]
@@ -6895,6 +6954,15 @@ extern "C" {
 extern "C" {
     pub fn c_guMtxQuat(m: *mut [f32; 4usize], a: *mut guQuaternion);
 }
+extern "C" {
+    pub fn guMtx44Identity(mt: *mut [f32; 4usize]);
+}
+extern "C" {
+    pub fn guMtx44Copy(src: *mut [f32; 4usize], dst: *mut [f32; 4usize]);
+}
+extern "C" {
+    pub fn guMtx44Inverse(src: *mut [f32; 4usize], inv: *mut [f32; 4usize]) -> u32;
+}
 #[doc = " \\typedef u32 lwp_t"]
 #[doc = "\\brief typedef for the thread context handle"]
 pub type lwp_t = u32;
@@ -7052,6 +7120,8 @@ pub struct _gx_color {
     #[doc = "< Alpha component. If a function does not use the alpha value, it is safely ignored."]
     pub a: u8,
 }
+#[doc = " \\typedef struct _gx_color GXColor"]
+#[doc = " \\brief Structure used to pass colors to some GX functions."]
 pub type GXColor = _gx_color;
 #[doc = " \\typedef struct _gx_colors10 GXColorS10"]
 #[doc = " \\brief Structure used to pass signed 10-bit colors to some GX functions."]
@@ -7067,6 +7137,8 @@ pub struct _gx_colors10 {
     #[doc = "< Alpha component. If a function does not use the alpha value, it is safely ignored."]
     pub a: s16,
 }
+#[doc = " \\typedef struct _gx_colors10 GXColorS10"]
+#[doc = " \\brief Structure used to pass signed 10-bit colors to some GX functions."]
 pub type GXColorS10 = _gx_colors10;
 #[doc = " \\typedef struct _gx_texobj GXTexObj"]
 #[doc = " \\brief Object containing information about a texture."]
@@ -7081,6 +7153,15 @@ pub type GXColorS10 = _gx_colors10;
 pub struct _gx_texobj {
     pub val: [u32; 8usize],
 }
+#[doc = " \\typedef struct _gx_texobj GXTexObj"]
+#[doc = " \\brief Object containing information about a texture."]
+#[doc = ""]
+#[doc = " \\details This structure contains precompiled register state setting commands and data. The application must use the GX_InitTexObj*()"]
+#[doc = " function to initialize or change this object. The proper size of the object is returned by"]
+#[doc = ""]
+#[doc = " \\code sizeof(GXTexObj) \\endcode"]
+#[doc = ""]
+#[doc = " \\details but the internal data representation is not visible to the application."]
 pub type GXTexObj = _gx_texobj;
 #[doc = " \\typedef struct _gx_tlutobj GXTlutObj"]
 #[doc = " \\brief Object containing information on a TLUT."]
@@ -7095,6 +7176,15 @@ pub type GXTexObj = _gx_texobj;
 pub struct _gx_tlutobj {
     pub val: [u32; 3usize],
 }
+#[doc = " \\typedef struct _gx_tlutobj GXTlutObj"]
+#[doc = " \\brief Object containing information on a TLUT."]
+#[doc = ""]
+#[doc = " \\details This structure contains precompiled register state setting commands and data. The application must use the GX_InitTlutObj()"]
+#[doc = " function to initialize or change this object. The proper size of the object is returned by"]
+#[doc = ""]
+#[doc = " \\code sizeof(GXTlutObj) \\endcode"]
+#[doc = ""]
+#[doc = " \\details but the internal data representation is not visible to the application."]
 pub type GXTlutObj = _gx_tlutobj;
 #[doc = " \\typedef struct _gx_texreg GXTexRegion"]
 #[doc = " \\brief Object containing information on a texture cache region."]
@@ -7109,6 +7199,15 @@ pub type GXTlutObj = _gx_tlutobj;
 pub struct _gx_texreg {
     pub val: [u32; 4usize],
 }
+#[doc = " \\typedef struct _gx_texreg GXTexRegion"]
+#[doc = " \\brief Object containing information on a texture cache region."]
+#[doc = ""]
+#[doc = " \\details This structure contains precompiled register state setting commands and data. The application must use the"]
+#[doc = " GX_InitTexCacheRegion() function to initialize or change this object. The proper size of the object is returned by"]
+#[doc = ""]
+#[doc = " \\code sizeof(GXTexRegion) \\endcode"]
+#[doc = ""]
+#[doc = " \\details but the internal data representation is not visible to the application."]
 pub type GXTexRegion = _gx_texreg;
 #[doc = " \\typedef struct _gx_tlutreg GXTlutRegion"]
 #[doc = " \\brief Object containing information on a TLUT cache region."]
@@ -7123,6 +7222,15 @@ pub type GXTexRegion = _gx_texreg;
 pub struct _gx_tlutreg {
     pub val: [u32; 4usize],
 }
+#[doc = " \\typedef struct _gx_tlutreg GXTlutRegion"]
+#[doc = " \\brief Object containing information on a TLUT cache region."]
+#[doc = ""]
+#[doc = " \\details This structure contains precompiled register state setting commands and data. The application must use the GX_InitTlutRegion()"]
+#[doc = " function to initialize or change this object. The proper size of the object is returned by"]
+#[doc = ""]
+#[doc = " \\code sizeof(GXTlutRegion) \\endcode"]
+#[doc = ""]
+#[doc = " \\details but the internal data representation is not visible to the application."]
 pub type GXTlutRegion = _gx_tlutreg;
 #[doc = " \\typedef _gx_litobj GXLightObj"]
 #[doc = " \\brief Object containing information on a light."]
@@ -7137,6 +7245,15 @@ pub type GXTlutRegion = _gx_tlutreg;
 pub struct _gx_litobj {
     pub val: [u32; 16usize],
 }
+#[doc = " \\typedef _gx_litobj GXLightObj"]
+#[doc = " \\brief Object containing information on a light."]
+#[doc = ""]
+#[doc = " \\details This structure contains precompiled register state setting commands and data. The application must use the GX_InitLight*() functions"]
+#[doc = " to initialize or change this object. The proper size of the object is returned by"]
+#[doc = ""]
+#[doc = " \\code sizeof(GXLightObj) \\endcode"]
+#[doc = ""]
+#[doc = " \\details but the internal data representation is not visible to the application."]
 pub type GXLightObj = _gx_litobj;
 #[repr(C)]
 pub struct _vtx {
@@ -10815,10 +10932,16 @@ extern "C" {
     ) -> u32;
 }
 extern "C" {
+    pub fn SI_DecodeType(type_: u32) -> u32;
+}
+extern "C" {
     pub fn SI_GetTypeAsync(chan: s32, cb: SICallback) -> u32;
 }
 extern "C" {
     pub fn SI_GetType(chan: s32) -> u32;
+}
+extern "C" {
+    pub fn SI_Probe(chan: s32) -> u32;
 }
 extern "C" {
     pub fn SI_GetCommand(chan: s32) -> u32;
@@ -11039,6 +11162,15 @@ extern "C" {
     pub fn LWP_SemWait(sem: sem_t) -> s32;
 }
 extern "C" {
+    #[doc = " \\fn s32 LWP_SemGetValue(sem_t sem, u32* value)"]
+    #[doc = "\\brief return the current semaphore count"]
+    #[doc = "\\param[in] sem handle to the sem_t structure."]
+    #[doc = "\\param[out] the current value of the semaphore"]
+    #[doc = ""]
+    #[doc = "\\return 0 on success, <0 on error"]
+    pub fn LWP_SemGetValue(sem: sem_t, value: *mut u32) -> s32;
+}
+extern "C" {
     #[doc = " \\fn s32 LWP_SemPost(sem_t sem)"]
     #[doc = "\\brief Count up semaphore counter and release lock if counter >0"]
     #[doc = "\\param[in] sem handle to the sem_t structure."]
@@ -11173,7 +11305,7 @@ pub type syswd_t = u32;
 #[doc = " \\param lang language of system"]
 #[doc = " \\param flags device and operations flag"]
 pub type syssram = _syssram;
-#[repr(C, packed)]
+#[repr(C)]
 pub struct _syssram {
     pub checksum: u16,
     pub checksum_inv: u16,
@@ -11192,8 +11324,9 @@ pub struct _syssram {
 #[doc = " \\param wirelessPad_id[4] 16bit device ID of last connected pad."]
 #[doc = " \\param dvderr_code last non-recoverable error from DVD interface"]
 #[doc = " \\param __padding0 padding"]
-#[doc = " \\param flashID_chksum[2] 16bit checksum of unlock flash ID"]
-#[doc = " \\param __padding1[4] padding"]
+#[doc = " \\param flashID_chksum[2] 8bit checksum of unlock flash ID"]
+#[doc = " \\param gbs Game Boy Player Start-Up Disc settings"]
+#[doc = " \\param __padding1 padding"]
 pub type syssramex = _syssramex;
 #[repr(C, packed)]
 pub struct _syssramex {
@@ -11202,8 +11335,9 @@ pub struct _syssramex {
     pub wirelessPad_id: [u16; 4usize],
     pub dvderr_code: u8,
     pub __padding0: u8,
-    pub flashID_chksum: [u16; 2usize],
-    pub __padding1: [u8; 4usize],
+    pub flashID_chksum: [u8; 2usize],
+    pub gbs: u16,
+    pub __padding1: u16,
 }
 pub type alarmcallback =
     ::core::option::Option<unsafe extern "C" fn(alarm: syswd_t, cb_arg: *mut ::libc::c_void)>;
@@ -11338,6 +11472,12 @@ extern "C" {
     pub fn SYS_GetWirelessID(chan: u32) -> u32;
 }
 extern "C" {
+    pub fn SYS_SetGBSMode(mode: u16);
+}
+extern "C" {
+    pub fn SYS_GetGBSMode() -> u16;
+}
+extern "C" {
     pub fn SYS_GetFontEncoding() -> u32;
 }
 extern "C" {
@@ -11458,6 +11598,15 @@ extern "C" {
     pub static mut TVMpal240DsAa: GXRModeObj;
 }
 extern "C" {
+    pub static mut TVMpal240Int: GXRModeObj;
+}
+extern "C" {
+    pub static mut TVMpal240IntAa: GXRModeObj;
+}
+extern "C" {
+    pub static mut TVMpal480Int: GXRModeObj;
+}
+extern "C" {
     pub static mut TVMpal480IntDf: GXRModeObj;
 }
 extern "C" {
@@ -11465,6 +11614,12 @@ extern "C" {
 }
 extern "C" {
     pub static mut TVMpal480Prog: GXRModeObj;
+}
+extern "C" {
+    pub static mut TVMpal480ProgSoft: GXRModeObj;
+}
+extern "C" {
+    pub static mut TVMpal480ProgAa: GXRModeObj;
 }
 extern "C" {
     pub static mut TVPal264Ds: GXRModeObj;
@@ -11479,16 +11634,25 @@ extern "C" {
     pub static mut TVPal264IntAa: GXRModeObj;
 }
 extern "C" {
-    pub static mut TVPal524IntAa: GXRModeObj;
-}
-extern "C" {
     pub static mut TVPal528Int: GXRModeObj;
 }
 extern "C" {
     pub static mut TVPal528IntDf: GXRModeObj;
 }
 extern "C" {
+    pub static mut TVPal524IntAa: GXRModeObj;
+}
+extern "C" {
     pub static mut TVPal576IntDfScale: GXRModeObj;
+}
+extern "C" {
+    pub static mut TVPal528Prog: GXRModeObj;
+}
+extern "C" {
+    pub static mut TVPal528ProgSoft: GXRModeObj;
+}
+extern "C" {
+    pub static mut TVPal524ProgAa: GXRModeObj;
 }
 extern "C" {
     pub static mut TVPal576ProgScale: GXRModeObj;
@@ -11721,7 +11885,7 @@ extern "C" {
         chn: s32,
         offset: u32,
         buffer: *mut ::libc::c_void,
-        length: usize,
+        length: size_t,
     ) -> ::libc::c_int;
 }
 extern "C" {
@@ -11729,7 +11893,7 @@ extern "C" {
         chn: s32,
         offset: u32,
         buffer: *const ::libc::c_void,
-        length: usize,
+        length: size_t,
     ) -> ::libc::c_int;
 }
 extern "C" {
@@ -13047,7 +13211,7 @@ pub struct raw_device_command {
     pub flags: u8,
     pub scsi_status: u8,
     pub data: *mut ::libc::c_void,
-    pub data_length: usize,
+    pub data_length: size_t,
 }
 extern "C" {
     pub fn USBStorage_Initialize() -> s32;
