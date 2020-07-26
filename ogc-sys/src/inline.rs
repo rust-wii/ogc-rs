@@ -124,7 +124,7 @@ pub unsafe fn GX_Color1x8(index: u8) {
     *(*wgPipe).U8.as_mut() = index;
 }
 
-pub unsafe fn GX_Color1x16(u16 index) {
+pub unsafe fn GX_Color1x16(index: u16) {
     *(*wgPipe).U16.as_mut() = index;
 }
 
@@ -138,7 +138,7 @@ pub unsafe fn GX_TexCoord2u16(s: u16, t: u16) {
     *(*wgPipe).U16.as_mut() = t;
 }
 
-pub unsafe fn GX_TexCoord2s16(s: u16, t: u16) {
+pub unsafe fn GX_TexCoord2s16(s: i16, t: i16) {
     *(*wgPipe).S16.as_mut() = s;
     *(*wgPipe).S16.as_mut() = t;
 }
@@ -173,12 +173,12 @@ pub unsafe fn GX_TexCoord1s8(s: i8) {
     *(*wgPipe).S8.as_mut() = s;
 }
 
-pub unsafe fn GX_TexCoord1x8(u8 index) {
-    (*wgPipe).U8.as_mut() = index;
+pub unsafe fn GX_TexCoord1x8(index: u8) {
+    *(*wgPipe).U8.as_mut() = index;
 }
 
-pub unsafe fn GX_TexCoord1x16(u16 index) {
-    (*wgPipe).U16.as_mut() = index;
+pub unsafe fn GX_TexCoord1x16(index: u16) {
+    *(*wgPipe).U16.as_mut() = index;
 }
 
 pub unsafe fn GX_MatrixIndex1x8(index: u8) {
