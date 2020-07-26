@@ -5,3 +5,6 @@
 #![no_std]
 
 include!("ogc.rs");
+
+mod inline;
+pub use inline::*;
