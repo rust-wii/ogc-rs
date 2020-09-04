@@ -1,10 +1,8 @@
 [package]
 name = "ogc-sys"
-version = "0.4.0"
+version = "0.4.1"
 authors = ["rust-wii"]
 edition = "2018"
 
-[dependencies.libc]
-git = "https://github.com/rust-wii/libc.git"
-branch = "wii"
-default-features = false
+[dependencies]
+libc = "0.2"
