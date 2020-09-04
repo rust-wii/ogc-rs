@@ -7,7 +7,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "bitflags"
-version = "1.1.0"
+version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
@@ -20,8 +20,8 @@ dependencies = [
 
 [[package]]
 name = "libc"
-version = "0.2.56"
-source = "git+https://github.com/rust-wii/libc.git?branch=wii#172289d8db97f950f22b4d42598f056e70759a18"
+version = "0.2.76"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "num-traits"
@@ -33,23 +33,23 @@ dependencies = [
 
 [[package]]
 name = "ogc-rs"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
- "bitflags 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "bitflags 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "enum_primitive 0.1.1 (git+https://github.com/FrictionlessPortals/enum_primitive-rs.git)",
- "ogc-sys 0.3.0",
+ "ogc-sys 0.4.0",
 ]
 
 [[package]]
 name = "ogc-sys"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
- "libc 0.2.56 (git+https://github.com/rust-wii/libc.git?branch=wii)",
+ "libc 0.2.76 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [metadata]
 "checksum autocfg 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)" = "0e49efa51329a5fd37e7c79db4621af617cd4e3e5bc224939808d076077077bf"
-"checksum bitflags 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "3d155346769a6855b86399e9bc3814ab343cd3d62c7e985113d46a0ec3c281fd"
+"checksum bitflags 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "cf1de2fe8c75bc145a2f577add951f8134889b4795d47466a54a5c846d691693"
 "checksum enum_primitive 0.1.1 (git+https://github.com/FrictionlessPortals/enum_primitive-rs.git)" = "<none>"
-"checksum libc 0.2.56 (git+https://github.com/rust-wii/libc.git?branch=wii)" = "<none>"
+"checksum libc 0.2.76 (registry+https://github.com/rust-lang/crates.io-index)" = "755456fae044e6fa1ebbbd1b3e902ae19e73097ed4ed87bb79934a867c007bc3"
 "checksum num-traits 0.2.8 (registry+https://github.com/rust-lang/crates.io-index)" = "6ba9a427cfca2be13aa6f6403b0b7e7368fe982bfa16fccc450ce74c46cd9b32"

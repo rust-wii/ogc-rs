@@ -19,6 +19,7 @@ bindgen wrapper.h \
     --no-layout-tests \
     --ctypes-prefix "::libc" \
     --no-prepend-enum-name \
+    --disable-untagged-union \
     --generate "functions,types,vars" \
     --blacklist-type "u(8|16|32|64|128)" \
     --blacklist-type "i(8|16|32|64|128)" \
