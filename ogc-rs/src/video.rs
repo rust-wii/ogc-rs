@@ -181,7 +181,7 @@ impl Video {
         F: Fn(u32) -> (),
     {
         let ptr = Box::into_raw(callback);
-        
+
         unsafe {
             let code: extern "C" fn(vi_retrace_callback: u32) = mem::transmute(ptr);
 
@@ -194,7 +194,7 @@ impl Video {
         F: Fn(u32) -> (),
     {
         let ptr = Box::into_raw(callback);
-        
+
         unsafe {
             let code: extern "C" fn(vi_retrace_callback: u32) = mem::transmute(ptr);
 

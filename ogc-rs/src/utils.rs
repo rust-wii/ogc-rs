@@ -12,7 +12,8 @@ pub fn raw_to_string(raw: *mut u8) -> String {
 /// Converts a raw *mut *mut u8 into a String vector.
 pub fn raw_to_strings(raw: *mut *mut u8) -> Vec<String> {
     let slice = unsafe { slice::from_raw_parts(raw, 2) };
-    slice.iter()
+    slice
+        .iter()
         .map(|x: &*mut u8| {
             let r = unsafe { slice::from_raw_parts(*x, 1) };
             String::from_utf8(r.to_vec()).unwrap()

@@ -81,7 +81,7 @@ impl Audio {
     {
         // TODO: Check if this implementation can be changed.
         let ptr = Box::into_raw(callback);
-        
+
         unsafe {
             let code: extern "C" fn(smp_cnt: u32) = mem::transmute(ptr);
             // TODO: Do something with the returned callback.
@@ -99,7 +99,7 @@ impl Audio {
     {
         // TODO: Check if this implementation can be changed.
         let ptr = Box::into_raw(callback);
-        
+
         unsafe {
             let code: extern "C" fn() = mem::transmute(ptr);
             // TODO: Do something with the returned callback.

@@ -299,7 +299,9 @@ impl Network {
 
     /// Create a socket.
     pub fn new(domain: ProtocolFamily, socket_type: SocketType) -> Result<Socket> {
-        let r = unsafe { ogc_sys::net_socket(domain.to_u32().unwrap(), socket_type.to_u32().unwrap(), 0) };
+        let r = unsafe {
+            ogc_sys::net_socket(domain.to_u32().unwrap(), socket_type.to_u32().unwrap(), 0)
+        };
 
         if r == INVALID_SOCKET {
             Err(OgcError::Network(format!("network socket creation: {}", r)))
@@ -374,7 +376,9 @@ impl Socket {
 
     /// Send data over stream sockets or CONNECTED datagram sockets.
     pub fn send(descriptor: i32, buffer: &[u8], length: i32, flags: u32) -> Result<i32> {
-        let r = unsafe { ogc_sys::net_send(descriptor, buffer.as_ptr() as *const c_void, length, flags) };
+        let r = unsafe {
+            ogc_sys::net_send(descriptor, buffer.as_ptr() as *const c_void, length, flags)
+        };
 
         if r < 0 {
             Err(OgcError::Network(format!("network sending failure: {}", r)))
@@ -396,7 +400,8 @@ impl Socket {
 
     /// Receive data over stream sockets or CONNECTED datagram sockets.
     pub fn recieve(descriptor: i32, buffer: &mut [u8], length: i32, flags: u32) -> Result<i32> {
-        let r = unsafe { ogc_sys::net_recv(descriptor, buffer.as_ptr() as *mut c_void, length, flags) };
+        let r =
+            unsafe { ogc_sys::net_recv(descriptor, buffer.as_ptr() as *mut c_void, length, flags) };
 
         if r < 0 {
             Err(OgcError::Network(format!("network recieve failure: {}", r)))
