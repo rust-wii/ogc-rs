@@ -10,7 +10,7 @@ use alloc::{
     vec::Vec,
 };
 use core::{ffi::c_void, ptr};
-use enum_primitive::*;
+use num_enum::IntoPrimitive;
 
 bitflags! {
     /// Optional flags for sockets.
@@ -101,23 +101,21 @@ bitflags! {
     }
 }
 
-enum_primitive! {
-    /// Protocol Families
-    #[derive(Debug, Eq, PartialEq)]
-    pub enum ProtocolFamily {
-        AfUnspec = 0,
-        AfInet = 2,
-    }
+/// Protocol Families
+#[derive(IntoPrimitive, Debug, Eq, PartialEq)]
+#[repr(u32)]
+pub enum ProtocolFamily {
+    AfUnspec = 0,
+    AfInet = 2,
 }
 
-enum_primitive! {
-    /// Socket Types
-    #[derive(Debug, Eq, PartialEq)]
-    pub enum SocketType {
-        SockStream = 1,
-        SockDgram = 2,
-        SockRaw = 3,
-    }
+/// Socket Types
+#[derive(IntoPrimitive, Debug, Eq, PartialEq)]
+#[repr(u32)]
+pub enum SocketType {
+    SockStream = 1,
+    SockDgram = 2,
+    SockRaw = 3,
 }
 
 /// Non Blocking IO
@@ -194,9 +192,11 @@ pub struct SocketAddress {
 /// Convert ``SocketAddress`` into a ``ogc_sys::sockaddr``.
 impl Into<*mut ogc_sys::sockaddr> for SocketAddress {
     fn into(self) -> *mut ogc_sys::sockaddr {
+        // TODO: Check implementation.
+        let sa_family: u32 = self.family.into();
         Box::into_raw(Box::new(ogc_sys::sockaddr {
             sa_len: self.length,
-            sa_family: self.family.to_u8().unwrap(),
+            sa_family: sa_family as u8,
             sa_data: self.data,
         }))
     }
@@ -299,9 +299,7 @@ impl Network {
 
     /// Create a socket.
     pub fn new(domain: ProtocolFamily, socket_type: SocketType) -> Result<Socket> {
-        let r = unsafe {
-            ogc_sys::net_socket(domain.to_u32().unwrap(), socket_type.to_u32().unwrap(), 0)
-        };
+        let r = unsafe { ogc_sys::net_socket(domain.into(), socket_type.into(), 0) };
 
         if r == INVALID_SOCKET {
             Err(OgcError::Network(format!("network socket creation: {}", r)))

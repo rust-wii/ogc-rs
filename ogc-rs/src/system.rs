@@ -4,50 +4,45 @@
 
 use crate::{video::RenderConfig, OgcError, Result};
 use alloc::boxed::Box;
-use core::ffi::c_void;
-use core::mem;
-use core::time::Duration;
-use enum_primitive::*;
+use core::{ffi::c_void, mem, time::Duration};
+use num_enum::IntoPrimitive;
 
 /// Represents the system service.
 /// The initialization of this service is done in the crt0 startup code.
 pub struct System;
 
-enum_primitive! {
-    /// OS Reset Types
-    #[derive(Debug, Eq, PartialEq)]
-    pub enum ResetTypes {
-        Restart = 0,
-        HotReset = 1,
-        Shutdown = 2,
-        ReturnToMenu = 3,
-        PowerOff = 4,
-        PowerOffStandby = 5,
-        PowerOffIdle = 6,
-    }
+/// OS Reset Types
+#[derive(IntoPrimitive, Debug, Eq, PartialEq)]
+#[repr(u32)]
+pub enum ResetTypes {
+    Restart = 0,
+    HotReset = 1,
+    Shutdown = 2,
+    ReturnToMenu = 3,
+    PowerOff = 4,
+    PowerOffStandby = 5,
+    PowerOffIdle = 6,
 }
 
-enum_primitive! {
-    /// OS Memory Protection Modes
-    #[derive(Debug, Eq, PartialEq)]
-    pub enum MemoryProtectModes {
-        ProtectNone = 0,
-        ProtectRead = 1,
-        ProtectWrite = 2,
-        ProtectReadWrite = 1 | 2,
-    }
+/// OS Memory Protection Modes
+#[derive(IntoPrimitive, Debug, Eq, PartialEq)]
+#[repr(u32)]
+pub enum MemoryProtectModes {
+    ProtectNone = 0,
+    ProtectRead = 1,
+    ProtectWrite = 2,
+    ProtectReadWrite = 1 | 2,
 }
 
-enum_primitive! {
-    /// OS Memory Protection Channels
-    #[derive(Debug, Eq, PartialEq)]
-    pub enum MemoryProtectChannels {
-        ChannelZero = 0,
-        ChannelOne = 1,
-        ChannelTwo = 2,
-        ChannelThree = 3,
-        All = 4,
-    }
+/// OS Memory Protection Channels
+#[derive(IntoPrimitive, Debug, Eq, PartialEq)]
+#[repr(u32)]
+pub enum MemoryProtectChannels {
+    ChannelZero = 0,
+    ChannelOne = 1,
+    ChannelTwo = 2,
+    ChannelThree = 3,
+    All = 4,
 }
 
 /// System Font Header Structure
@@ -338,7 +333,7 @@ impl System {
     /// Reset System
     pub fn reset_system(reset: i32, reset_type: ResetTypes, force_menu: i32) {
         unsafe {
-            ogc_sys::SYS_ResetSystem(reset, reset_type.to_u32().unwrap(), force_menu);
+            ogc_sys::SYS_ResetSystem(reset, reset_type.into(), force_menu);
         }
     }
 
@@ -380,10 +375,10 @@ impl System {
     ) {
         unsafe {
             ogc_sys::SYS_ProtectRange(
-                channel.to_u32().unwrap(),
+                channel.into(),
                 address as *mut c_void,
                 bytes,
-                control.to_u32().unwrap(),
+                control.into(),
             );
         }
     }
