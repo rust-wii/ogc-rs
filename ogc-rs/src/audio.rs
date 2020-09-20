@@ -46,12 +46,12 @@ impl Audio {
     fn init_dma(data: &[u8]) {
         unsafe {
             // libogc has strict restrictions on data alignment and length.
-            assert_ne!(
+            assert_eq!(
                 32,
                 mem::align_of_val(data),
                 "Data is not aligned correctly."
             );
-            assert_ne!(0, data.len() % 32, "Data length is not a multiple of 32.");
+            assert_eq!(0, data.len() % 32, "Data length is not a multiple of 32.");
 
             ogc_sys::AUDIO_InitDMA(data.as_ptr() as u32, data.len() as u32);
         }
