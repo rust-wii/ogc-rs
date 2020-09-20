@@ -3,30 +3,28 @@
 //! This module implements a safe wrapper around the audio functions found in ``audio.h``.
 
 use alloc::boxed::Box;
-use core::{mem, ptr};
-use enum_primitive::*;
+use core::{convert::TryFrom, mem, ptr};
+use num_enum::{IntoPrimitive, TryFromPrimitive};
 
 /// Represents the audio service.
 /// No audio control can be done until an instance of this struct is created.
 /// This service can only be created once!
 pub struct Audio;
 
-enum_primitive! {
-    /// The play state of the ``audio`` service.
-    #[derive(Debug, Eq, PartialEq)]
-    pub enum PlayState {
-        Started = 1,
-        Stopped = 0,
-    }
+/// The play state of the ``audio`` service.
+#[derive(IntoPrimitive, TryFromPrimitive, Debug, Eq, PartialEq)]
+#[repr(u32)]
+pub enum PlayState {
+    Started = 1,
+    Stopped = 0,
 }
 
-enum_primitive! {
-    /// The sample rate of the ``audio`` service.
-    #[derive(Debug, Eq, PartialEq)]
-    pub enum SampleRate {
-        FortyEightKhz = 1,
-        ThirtySixKhz = 0,
-    }
+/// The sample rate of the ``audio`` service.
+#[derive(IntoPrimitive, TryFromPrimitive, Debug, Eq, PartialEq)]
+#[repr(u32)]
+pub enum SampleRate {
+    FortyEightKhz = 1,
+    ThirtySixKhz = 0,
 }
 
 /// Implementation of the audio service.
@@ -143,42 +141,43 @@ impl Audio {
 
     /// Get streaming sample rate.
     fn get_samplerate() -> SampleRate {
-        unsafe {
-            let r = ogc_sys::AUDIO_GetStreamSampleRate();
-            SampleRate::from_u32(r).unwrap()
-        }
+        let r = unsafe { ogc_sys::AUDIO_GetStreamSampleRate() };
+        SampleRate::try_from(r).unwrap()
     }
 
     /// Get the sampling rate for the DSP interface.
     fn get_dsp_samplerate() -> SampleRate {
         let r = unsafe { ogc_sys::AUDIO_GetDSPSampleRate() };
-        SampleRate::from_u32(r).unwrap()
+        SampleRate::try_from(r).unwrap()
     }
 
     /// Set the sample rate for the streaming audio interface.
     fn set_samplerate(samplerate: SampleRate) {
         unsafe {
-            ogc_sys::AUDIO_SetStreamSampleRate(samplerate.to_u32().unwrap());
+            ogc_sys::AUDIO_SetStreamSampleRate(samplerate.into());
         }
     }
 
     /// Set the sampling rate for the DSP interface.
     fn set_dsp_samplerate(samplerate: SampleRate) {
+        // TODO: Check implementation.
+        let sample_rate: u32 = samplerate.into();
+
         unsafe {
-            ogc_sys::AUDIO_SetDSPSampleRate(samplerate.to_u8().unwrap());
+            ogc_sys::AUDIO_SetDSPSampleRate(sample_rate as u8);
         }
     }
 
     /// Get the play state from the streaming audio interface.
     fn get_playstate() -> PlayState {
         let r = unsafe { ogc_sys::AUDIO_GetStreamPlayState() };
-        PlayState::from_u32(r).unwrap()
+        PlayState::try_from(r).unwrap()
     }
 
     /// Set the play state for the streaming audio interface.
     fn set_playstate(playstate: PlayState) {
         unsafe {
-            ogc_sys::AUDIO_SetStreamPlayState(playstate.to_u32().unwrap());
+            ogc_sys::AUDIO_SetStreamPlayState(playstate.into());
         }
     }
 

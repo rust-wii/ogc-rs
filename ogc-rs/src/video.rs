@@ -4,8 +4,8 @@
 
 use crate::{mem_cached_to_uncached, system::System};
 use alloc::boxed::Box;
-use core::{ffi::c_void, mem, ptr};
-use enum_primitive::*;
+use core::{convert::TryFrom, ffi::c_void, mem, ptr};
+use num_enum::{IntoPrimitive, TryFromPrimitive};
 
 pub struct RenderConfig {
     pub tv_type: u32,
@@ -67,30 +67,28 @@ impl Into<RenderConfig> for *mut ogc_sys::GXRModeObj {
     }
 }
 
-enum_primitive! {
-    #[derive(Debug, Eq, PartialEq)]
-    pub enum TVMode {
-        /// Used in NA / JPN
-        ViNtsc = 0,
-        /// Used in Europe
-        ViPal = 1,
-        /// Similar to NTSC, Used in Brazil
-        ViMpal = 2,
-        /// Debug Mode for NA / JPN - Special Decoder Needed
-        ViDebug = 3,
-        /// Debug mode for EU - Special Decoder Needed
-        ViDebugPal = 4,
-        /// RGB 60Hz, 480 lines (same timing + aspect as NTSC) used in Europe
-        ViEuRgb60 = 5,
-    }
+#[derive(IntoPrimitive, TryFromPrimitive, Debug, Eq, PartialEq)]
+#[repr(u32)]
+pub enum TVMode {
+    /// Used in NA / JPN
+    ViNtsc = 0,
+    /// Used in Europe
+    ViPal = 1,
+    /// Similar to NTSC, Used in Brazil
+    ViMpal = 2,
+    /// Debug Mode for NA / JPN - Special Decoder Needed
+    ViDebug = 3,
+    /// Debug mode for EU - Special Decoder Needed
+    ViDebugPal = 4,
+    /// RGB 60Hz, 480 lines (same timing + aspect as NTSC) used in Europe
+    ViEuRgb60 = 5,
 }
 
-enum_primitive! {
-    #[derive(Debug, Eq, PartialEq)]
-    pub enum ViField {
-        ViLowerField = 0,
-        ViUpperField = 1,
-    }
+#[derive(IntoPrimitive, TryFromPrimitive, Debug, Eq, PartialEq)]
+#[repr(u32)]
+pub enum ViField {
+    ViLowerField = 0,
+    ViUpperField = 1,
 }
 
 /// Represents the video service.
@@ -145,12 +143,12 @@ impl Video {
 
     pub fn get_tv_mode() -> TVMode {
         let mode = unsafe { ogc_sys::VIDEO_GetCurrentTvMode() };
-        TVMode::from_u32(mode).unwrap()
+        TVMode::try_from(mode).unwrap()
     }
 
     pub fn get_next_field() -> ViField {
         let next_field = unsafe { ogc_sys::VIDEO_GetNextField() };
-        ViField::from_u32(next_field).unwrap()
+        ViField::try_from(next_field).unwrap()
     }
 
     pub fn is_component_cable() -> bool {
