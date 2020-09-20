@@ -5,24 +5,20 @@ use core::slice;
 
 /// Converts a raw *mut u8 into a String.
 pub fn raw_to_string(raw: *mut u8) -> String {
-    unsafe {
-        let slice = slice::from_raw_parts(raw, 1);
-        String::from_utf8(slice.to_vec()).unwrap()
-    }
+    let slice = unsafe { slice::from_raw_parts(raw, 1) };
+    String::from_utf8(slice.to_vec()).unwrap()
 }
 
 /// Converts a raw *mut *mut u8 into a String vector.
 pub fn raw_to_strings(raw: *mut *mut u8) -> Vec<String> {
-    unsafe {
-        let slice = slice::from_raw_parts(raw, 2);
-        slice
-            .iter()
-            .map(|x: &*mut u8| {
-                let r = slice::from_raw_parts(*x, 1);
-                String::from_utf8(r.to_vec()).unwrap()
-            })
-            .collect()
-    }
+    let slice = unsafe { slice::from_raw_parts(raw, 2) };
+    slice
+        .iter()
+        .map(|x: &*mut u8| {
+            let r = unsafe { slice::from_raw_parts(*x, 1) };
+            String::from_utf8(r.to_vec()).unwrap()
+        })
+        .collect()
 }
 
 /// OS memory casting macros.

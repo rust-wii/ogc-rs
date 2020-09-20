@@ -46,12 +46,12 @@ impl Audio {
     fn init_dma(data: &[u8]) {
         unsafe {
             // libogc has strict restrictions on data alignment and length.
-            assert_ne!(
+            assert_eq!(
                 32,
                 mem::align_of_val(data),
                 "Data is not aligned correctly."
             );
-            assert_ne!(0, data.len() % 32, "Data length is not a multiple of 32.");
+            assert_eq!(0, data.len() % 32, "Data length is not a multiple of 32.");
 
             ogc_sys::AUDIO_InitDMA(data.as_ptr() as u32, data.len() as u32);
         }
@@ -79,9 +79,10 @@ impl Audio {
     where
         F: Fn(u32) -> (),
     {
+        // TODO: Check if this implementation can be changed.
+        let ptr = Box::into_raw(callback);
+
         unsafe {
-            // TODO: Check if this implementation can be changed.
-            let ptr = Box::into_raw(callback);
             let code: extern "C" fn(smp_cnt: u32) = mem::transmute(ptr);
             // TODO: Do something with the returned callback.
             let _ = ogc_sys::AUDIO_RegisterStreamCallback(Some(code));
@@ -96,9 +97,10 @@ impl Audio {
     where
         F: Fn() -> (),
     {
+        // TODO: Check if this implementation can be changed.
+        let ptr = Box::into_raw(callback);
+
         unsafe {
-            // TODO: Check if this implementation can be changed.
-            let ptr = Box::into_raw(callback);
             let code: extern "C" fn() = mem::transmute(ptr);
             // TODO: Do something with the returned callback.
             let _ = ogc_sys::AUDIO_RegisterDMACallback(Some(code));
@@ -149,10 +151,8 @@ impl Audio {
 
     /// Get the sampling rate for the DSP interface.
     fn get_dsp_samplerate() -> SampleRate {
-        unsafe {
-            let r = ogc_sys::AUDIO_GetDSPSampleRate();
-            SampleRate::from_u32(r).unwrap()
-        }
+        let r = unsafe { ogc_sys::AUDIO_GetDSPSampleRate() };
+        SampleRate::from_u32(r).unwrap()
     }
 
     /// Set the sample rate for the streaming audio interface.
@@ -171,10 +171,8 @@ impl Audio {
 
     /// Get the play state from the streaming audio interface.
     fn get_playstate() -> PlayState {
-        unsafe {
-            let r = ogc_sys::AUDIO_GetStreamPlayState();
-            PlayState::from_u32(r).unwrap()
-        }
+        let r = unsafe { ogc_sys::AUDIO_GetStreamPlayState() };
+        PlayState::from_u32(r).unwrap()
     }
 
     /// Set the play state for the streaming audio interface.

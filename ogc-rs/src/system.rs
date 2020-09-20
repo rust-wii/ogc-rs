@@ -113,40 +113,34 @@ impl System {
 
     /// Create and initialize sysalarm structure.
     pub fn create_alarm(context: &mut u32) -> Result<()> {
-        unsafe {
-            let r = ogc_sys::SYS_CreateAlarm(context);
+        let r = unsafe { ogc_sys::SYS_CreateAlarm(context) };
 
-            if r < 0 {
-                Err(OgcError::System("system failed to create alarm".into()))
-            } else {
-                Ok(())
-            }
+        if r < 0 {
+            Err(OgcError::System("system failed to create alarm".into()))
+        } else {
+            Ok(())
         }
     }
 
     /// Cancel the alarm, but do not remove from the list of contexts.
     pub fn cancel_alarm(context: u32) -> Result<()> {
-        unsafe {
-            let r = ogc_sys::SYS_CancelAlarm(context);
+        let r = unsafe { ogc_sys::SYS_CancelAlarm(context) };
 
-            if r < 0 {
-                Err(OgcError::System("system failed to cancel alarm".into()))
-            } else {
-                Ok(())
-            }
+        if r < 0 {
+            Err(OgcError::System("system failed to cancel alarm".into()))
+        } else {
+            Ok(())
         }
     }
 
     /// Remove the given alarm context from the list of contexts and destroy it.
     pub fn remove_alarm(context: u32) -> Result<()> {
-        unsafe {
-            let r = ogc_sys::SYS_RemoveAlarm(context);
+        let r = unsafe { ogc_sys::SYS_RemoveAlarm(context) };
 
-            if r < 0 {
-                Err(OgcError::System("system failed to remove alarm".into()))
-            } else {
-                Ok(())
-            }
+        if r < 0 {
+            Err(OgcError::System("system failed to remove alarm".into()))
+        } else {
+            Ok(())
         }
     }
 
@@ -159,7 +153,7 @@ impl System {
             // Convert Duration to timespec
             let timespec: *const ogc_sys::timespec = &ogc_sys::timespec {
                 tv_sec: fire_time.as_secs() as i64,
-                tv_nsec: fire_time.as_nanos() as i32
+                tv_nsec: fire_time.as_nanos() as i32,
             };
 
             // TODO: Check if this implementation can be changed.
@@ -190,12 +184,12 @@ impl System {
             // Convert Duration to timespec
             let timespec_start: *const ogc_sys::timespec = &ogc_sys::timespec {
                 tv_sec: time_start.as_secs() as i64,
-                tv_nsec: time_start.as_nanos() as i32
+                tv_nsec: time_start.as_nanos() as i32,
             };
 
             let timespec_period: *const ogc_sys::timespec = &ogc_sys::timespec {
                 tv_sec: time_period.as_secs() as i64,
-                tv_nsec: time_period.as_nanos() as i32
+                tv_nsec: time_period.as_nanos() as i32,
             };
 
             // TODO: Check if this implementation can be changed.
@@ -355,9 +349,10 @@ impl System {
 
     /// Set Reset Callback
     pub fn set_reset_callback<F>(callback: Box<F>) {
+        // TODO: Check if this implementation can be changed.
+        let ptr = Box::into_raw(callback);
+
         unsafe {
-            // TODO: Check if this implementation can be changed.
-            let ptr = Box::into_raw(callback);
             let code: extern "C" fn(irq: u32, ctx: *mut c_void) = mem::transmute(ptr);
             // TODO: Do something with the returned callback.
             let _ = ogc_sys::SYS_SetResetCallback(Some(code));
@@ -366,9 +361,10 @@ impl System {
 
     /// Set Power Callback
     pub fn set_power_callback<F>(callback: Box<F>) {
+        // TODO: Check if this implementation can be changed.
+        let ptr = Box::into_raw(callback);
+
         unsafe {
-            // TODO: Check if this implementation can be changed.
-            let ptr = Box::into_raw(callback);
             let code: extern "C" fn() = mem::transmute(ptr);
             // TODO: Do something with the returned callback.
             let _ = ogc_sys::SYS_SetPowerCallback(Some(code));
