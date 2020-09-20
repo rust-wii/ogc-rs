@@ -144,29 +144,18 @@ impl Video {
     }
 
     pub fn get_tv_mode() -> TVMode {
-        unsafe {
-            let mode = ogc_sys::VIDEO_GetCurrentTvMode();
-            TVMode::from_u32(mode).unwrap()
-        }
+        let mode = unsafe { ogc_sys::VIDEO_GetCurrentTvMode() };
+        TVMode::from_u32(mode).unwrap()
     }
 
     pub fn get_next_field() -> ViField {
-        unsafe {
-            let next_field = ogc_sys::VIDEO_GetNextField();
-            ViField::from_u32(next_field).unwrap()
-        }
+        let next_field = unsafe { ogc_sys::VIDEO_GetNextField() };
+        ViField::from_u32(next_field).unwrap()
     }
 
     pub fn is_component_cable() -> bool {
-        unsafe {
-            let component = ogc_sys::VIDEO_HaveComponentCable();
-
-            if component == 1 {
-                true
-            } else {
-                false
-            }
-        }
+        let component = unsafe { ogc_sys::VIDEO_HaveComponentCable() };
+        component == 1
     }
 
     pub fn set_black(is_black: bool) {
@@ -191,8 +180,9 @@ impl Video {
     where
         F: Fn(u32) -> (),
     {
+        let ptr = Box::into_raw(callback);
+        
         unsafe {
-            let ptr = Box::into_raw(callback);
             let code: extern "C" fn(vi_retrace_callback: u32) = mem::transmute(ptr);
 
             let _ = ogc_sys::VIDEO_SetPostRetraceCallback(Some(code));
@@ -203,8 +193,9 @@ impl Video {
     where
         F: Fn(u32) -> (),
     {
+        let ptr = Box::into_raw(callback);
+        
         unsafe {
-            let ptr = Box::into_raw(callback);
             let code: extern "C" fn(vi_retrace_callback: u32) = mem::transmute(ptr);
 
             let _ = ogc_sys::VIDEO_SetPreRetraceCallback(Some(code));

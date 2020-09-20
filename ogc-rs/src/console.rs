@@ -31,22 +31,20 @@ impl Console {
 
     /// Initialize stdout console.
     pub fn init_stdout(xorigin: i32, yorigin: i32, width: i32, height: i32) -> Result<()> {
-        unsafe {
-            let init = ogc_sys::CON_InitEx(
-                ogc_sys::VIDEO_GetPreferredMode(ptr::null_mut()),
-                xorigin,
-                yorigin,
-                width,
-                height,
-            );
+        let init = unsafe { ogc_sys::CON_InitEx(
+            ogc_sys::VIDEO_GetPreferredMode(ptr::null_mut()),
+            xorigin,
+            yorigin,
+            width,
+            height,
+        )};
 
-            if init < 0 {
-                Err(OgcError::Console(
-                    "Failed to allocate memory for framebuffer!".into(),
-                ))
-            } else {
-                Ok(())
-            }
+        if init < 0 {
+            Err(OgcError::Console(
+                "Failed to allocate memory for framebuffer!".into(),
+            ))
+        } else {
+            Ok(())
         }
     }
 

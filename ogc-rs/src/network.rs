@@ -222,14 +222,12 @@ pub struct HostInformation {
 /// to an integer value suitable for use as an Internet address.
 /// The converted address will be in Network Byte Order.
 pub fn dot_to_nbo(dot: &str) -> Result<IPV4Address> {
-    unsafe {
-        let r = ogc_sys::inet_addr(dot.as_ptr());
+    let r = unsafe { ogc_sys::inet_addr(dot.as_ptr()) };
 
-        if r == 0 {
-            Err(OgcError::Network("network dot_to_nbo failed".to_string()))
-        } else {
-            Ok(IPV4Address { address: r })
-        }
+    if r == 0 {
+        Err(OgcError::Network("network dot_to_nbo failed".to_string()))
+    } else {
+        Ok(IPV4Address { address: r })
     }
 }
 
@@ -237,29 +235,25 @@ pub fn dot_to_nbo(dot: &str) -> Result<IPV4Address> {
 /// to a network address, and stores the address in the structure provided.
 /// The converted address will be in Network Byte Order.
 pub fn dot_to_net_addr(dot: &str, addr: &mut IPV4Address) -> Result<()> {
-    unsafe {
-        let r = ogc_sys::inet_aton(dot.as_ptr(), addr.into());
+    let r = unsafe { ogc_sys::inet_aton(dot.as_ptr(), addr.into()) };
 
-        if r < 0 {
-            Err(OgcError::Network(format!("network dot_to_net_addr: {}", r)))
-        } else {
-            Ok(())
-        }
+    if r < 0 {
+        Err(OgcError::Network(format!("network dot_to_net_addr: {}", r)))
+    } else {
+        Ok(())
     }
 }
 
 /// This function call converts the specified Internet host address
 /// to a string in the Internet standard dot notation.
 pub fn addr_to_dot(addr: &mut IPV4Address) -> Result<String> {
-    unsafe {
-        let r = ogc_sys::inet_ntoa(addr.into());
-        let r = raw_to_string(r);
+    let r = unsafe { ogc_sys::inet_ntoa(addr.into()) };
+    let r = raw_to_string(r);
 
-        if r.is_empty() {
-            Err(OgcError::Network("addr_to_dot empty".to_string()))
-        } else {
-            Ok(r)
-        }
+    if r.is_empty() {
+        Err(OgcError::Network("addr_to_dot empty".to_string()))
+    } else {
+        Ok(r)
     }
 }
 
@@ -294,27 +288,23 @@ pub struct Network;
 impl Network {
     /// Initialization of the networking service.
     pub fn init() -> Result<Self> {
-        unsafe {
-            let r = ogc_sys::net_init();
+        let r = unsafe { ogc_sys::net_init() };
 
-            if r < 0 {
-                Err(OgcError::Network(format!("network init: {}", r)))
-            } else {
-                Ok(Self)
-            }
+        if r < 0 {
+            Err(OgcError::Network(format!("network init: {}", r)))
+        } else {
+            Ok(Self)
         }
     }
 
     /// Create a socket.
     pub fn new(domain: ProtocolFamily, socket_type: SocketType) -> Result<Socket> {
-        unsafe {
-            let r = ogc_sys::net_socket(domain.to_u32().unwrap(), socket_type.to_u32().unwrap(), 0);
+        let r = unsafe { ogc_sys::net_socket(domain.to_u32().unwrap(), socket_type.to_u32().unwrap(), 0) };
 
-            if r == INVALID_SOCKET {
-                Err(OgcError::Network(format!("network socket creation: {}", r)))
-            } else {
-                Ok(Socket(r))
-            }
+        if r == INVALID_SOCKET {
+            Err(OgcError::Network(format!("network socket creation: {}", r)))
+        } else {
+            Ok(Socket(r))
         }
     }
 }
@@ -328,106 +318,90 @@ pub struct Socket(i32);
 impl Socket {
     /// Initiate a connection on a socket.
     pub fn connect(&self, socket_addr: SocketAddress, address_length: u32) -> Result<()> {
-        unsafe {
-            let r = ogc_sys::net_connect(self.0, socket_addr.into(), address_length);
+        let r = unsafe { ogc_sys::net_connect(self.0, socket_addr.into(), address_length) };
 
-            if r < 0 {
-                Err(OgcError::Network(format!("network socket connect: {}", r)))
-            } else {
-                Ok(())
-            }
+        if r < 0 {
+            Err(OgcError::Network(format!("network socket connect: {}", r)))
+        } else {
+            Ok(())
         }
     }
 
     /// Assign a local protocol address to a socket.
     pub fn bind(&self, socket_addr: SocketAddress, address_length: u32) -> Result<()> {
-        unsafe {
-            let r = ogc_sys::net_bind(self.0, socket_addr.into(), address_length);
+        let r = unsafe { ogc_sys::net_bind(self.0, socket_addr.into(), address_length) };
 
-            if r < 0 {
-                Err(OgcError::Network(format!("network socket bind: {}", r)))
-            } else {
-                Ok(())
-            }
+        if r < 0 {
+            Err(OgcError::Network(format!("network socket bind: {}", r)))
+        } else {
+            Ok(())
         }
     }
 
     /// This function is called only by a TCP server to listen for the client request.
     pub fn listen(&self, backlog: u32) -> Result<()> {
-        unsafe {
-            let r = ogc_sys::net_listen(self.0, backlog);
+        let r = unsafe { ogc_sys::net_listen(self.0, backlog) };
 
-            if r < 0 {
-                Err(OgcError::Network(format!("network socket listen: {}", r)))
-            } else {
-                Ok(())
-            }
+        if r < 0 {
+            Err(OgcError::Network(format!("network socket listen: {}", r)))
+        } else {
+            Ok(())
         }
     }
 
     /// The accept function is called by a TCP server to accept client requests and
     /// to establish actual connection.
     pub fn accept(&self, socket_addr: SocketAddress, address_length: &mut u32) -> Result<i32> {
-        unsafe {
-            let r = ogc_sys::net_accept(self.0, socket_addr.into(), address_length);
+        let r = unsafe { ogc_sys::net_accept(self.0, socket_addr.into(), address_length) };
 
-            if r < 0 {
-                Err(OgcError::Network(format!("network socket accept: {}", r)))
-            } else {
-                Ok(r)
-            }
+        if r < 0 {
+            Err(OgcError::Network(format!("network socket accept: {}", r)))
+        } else {
+            Ok(r)
         }
     }
 
     /// Write to the file descriptor, in this case the socket.
     pub fn write(descriptor: i32, buffer: &[u8], count: i32) -> Result<i32> {
-        unsafe {
-            let r = ogc_sys::net_write(descriptor, buffer.as_ptr() as *const c_void, count);
+        let r = unsafe { ogc_sys::net_write(descriptor, buffer.as_ptr() as *const c_void, count) };
 
-            if r < 0 {
-                Err(OgcError::Network(format!("network writing failure: {}", r)))
-            } else {
-                Ok(r)
-            }
+        if r < 0 {
+            Err(OgcError::Network(format!("network writing failure: {}", r)))
+        } else {
+            Ok(r)
         }
     }
 
     /// Send data over stream sockets or CONNECTED datagram sockets.
     pub fn send(descriptor: i32, buffer: &[u8], length: i32, flags: u32) -> Result<i32> {
-        unsafe {
-            let r = ogc_sys::net_send(descriptor, buffer.as_ptr() as *const c_void, length, flags);
+        let r = unsafe { ogc_sys::net_send(descriptor, buffer.as_ptr() as *const c_void, length, flags) };
 
-            if r < 0 {
-                Err(OgcError::Network(format!("network sending failure: {}", r)))
-            } else {
-                Ok(r)
-            }
+        if r < 0 {
+            Err(OgcError::Network(format!("network sending failure: {}", r)))
+        } else {
+            Ok(r)
         }
     }
 
     /// Read from the file descriptor, in this case the socket.
     pub fn read(descriptor: i32, buffer: &mut [u8], count: i32) -> Result<i32> {
-        unsafe {
-            let r = ogc_sys::net_read(descriptor, buffer.as_ptr() as *mut c_void, count);
+        let r = unsafe { ogc_sys::net_read(descriptor, buffer.as_ptr() as *mut c_void, count) };
 
-            if r < 0 {
-                Err(OgcError::Network(format!("network reading failure: {}", r)))
-            } else {
-                Ok(r)
-            }
+        if r < 0 {
+            Err(OgcError::Network(format!("network reading failure: {}", r)))
+        } else {
+            Ok(r)
         }
     }
 
     /// Receive data over stream sockets or CONNECTED datagram sockets.
     pub fn recieve(descriptor: i32, buffer: &mut [u8], length: i32, flags: u32) -> Result<i32> {
-        unsafe {
-            let r = ogc_sys::net_recv(descriptor, buffer.as_ptr() as *mut c_void, length, flags);
+        let r = unsafe { ogc_sys::net_recv(descriptor, buffer.as_ptr() as *mut c_void, length, flags) };
 
-            if r < 0 {
-                Err(OgcError::Network(format!("network recieve failure: {}", r)))
-            } else {
-                Ok(r)
-            }
+        if r < 0 {
+            Err(OgcError::Network(format!("network recieve failure: {}", r)))
+        } else {
+            Ok(r)
         }
     }
 }
