@@ -59,6 +59,7 @@ pub mod prelude {
     pub use alloc::boxed::Box;
     pub use alloc::string::{String, ToString};
     pub use alloc::{vec, vec::Vec};
+    pub use ogc_sys;
 
     // Export Services
     pub use crate::console::*;
