@@ -15,40 +15,41 @@ use enum_primitive::*;
 /// ```
 pub struct Pad;
 
-enum_primitive! {
-    #[derive(Debug, Eq, PartialEq)]
-    pub enum Controller {
-        One = 0,
-        Two = 1,
-        Three = 2,
-        Four = 3,
-    }
+#[derive(Debug, Eq, PartialEq)]
+pub enum Controller {
+    One = 0,
+    Two = 1,
+    Three = 2,
+    Four = 3,
 }
 
-enum_primitive! {
-    #[derive(Debug, Eq, PartialEq)]
-    pub enum Button {
-        Left = 1,
-        Right = 2,
-        Down = 4,
-        Up = 8,
-        Z = 16,
-        R = 32,
-        L = 64,
-        A = 256,
-        B = 512,
-        X = 1024,
-        Y = 2048,
-        Start = 4096,
-    }
+#[derive(Debug, Eq, PartialEq)]
+pub enum Button {
+    Left = 1,
+    Right = 2,
+    Down = 4,
+    Up = 8,
+    Z = 16,
+    R = 32,
+    L = 64,
+    A = 256,
+    B = 512,
+    X = 1024,
+    Y = 2048,
+    Start = 4096,
 }
 
 impl Pad {
     pub fn init() -> Self {
         unsafe {
             ogc_sys::PAD_Init();
-            ogc_sys::PAD_ScanPads();
             Pad
+        }
+    }
+
+    pub fn scan_pads(&self) -> u32 {
+        unsafe {
+            ogc_sys::PAD_ScanPads()
         }
     }
 
