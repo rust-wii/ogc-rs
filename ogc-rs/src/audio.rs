@@ -39,7 +39,7 @@ impl Audio {
     }
 
     /// Initialize an audio DMA transfer.
-    fn init_dma(data: &[u8]) {
+    pub fn init_dma(&self, data: &[u8]) {
         unsafe {
             // libogc has strict restrictions on data alignment and length.
             assert_eq!(
@@ -57,21 +57,21 @@ impl Audio {
     ///
     /// Starts to transfer the data from main memory to the audio interface through DMA.
     /// This call should follow the call to ``init_dma`` which is used to initialize DMA transfers.
-    fn start_dma() {
+    pub fn start_dma(&self) {
         unsafe {
             ogc_sys::AUDIO_StartDMA();
         }
     }
 
     /// Stop the previously started audio DMA operation.
-    fn stop_dma() {
+    pub fn stop_dma(&self) {
         unsafe {
             ogc_sys::AUDIO_StopDMA();
         }
     }
 
     /// Register a user callback function for the ``audio`` streaming interface.
-    fn register_stream_callback<F>(callback: Box<F>)
+    pub fn register_stream_callback<F>(&self, callback: Box<F>)
     where
         F: Fn(u32) -> (),
     {
@@ -89,7 +89,7 @@ impl Audio {
     ///
     /// This callback will be called whenever the audio DMA requests new data.
     /// Internally the DMA buffers are double buffered.
-    fn register_dma_callback<F>(callback: Box<F>)
+    pub fn register_dma_callback<F>(&self, callback: Box<F>)
     where
         F: Fn() -> (),
     {
@@ -104,41 +104,41 @@ impl Audio {
     }
 
     /// Get the count of bytes, left to play, from the audio DMA interface.
-    fn get_dma_bytes_left() -> u32 {
+    pub fn get_dma_bytes_left(&self) -> u32 {
         unsafe { ogc_sys::AUDIO_GetDMABytesLeft() }
     }
 
     /// Get the audio DMA flag.
-    fn get_dma_enable_flag() -> u16 {
+    pub fn get_dma_enable_flag(&self) -> u16 {
         unsafe { ogc_sys::AUDIO_GetDMAEnableFlag() }
     }
 
     /// Get the DMA transfer length configured in the audio DMA interface.
-    fn get_dma_length() -> u32 {
+    pub fn get_dma_length(&self) -> u32 {
         unsafe { ogc_sys::AUDIO_GetDMALength() }
     }
 
     /// Get the main memory address for the DMA operation.
-    fn get_dma_address() -> u32 {
+    pub fn get_dma_address(&self) -> u32 {
         unsafe { ogc_sys::AUDIO_GetDMAStartAddr() }
     }
 
     /// Reset the stream sample count register.
-    fn reset_sample_count() {
+    pub fn reset_sample_count(&self) {
         unsafe {
             ogc_sys::AUDIO_ResetStreamSampleCnt();
         }
     }
 
     /// Set the sample count for the stream trigger.
-    fn set_trigger_count(count: u32) {
+    pub fn set_trigger_count(&self, count: u32) {
         unsafe {
             ogc_sys::AUDIO_SetStreamTrigger(count);
         }
     }
 
     /// Get streaming sample rate.
-    fn get_samplerate() -> SampleRate {
+    pub fn get_samplerate(&self) -> SampleRate {
         unsafe {
             let r = ogc_sys::AUDIO_GetStreamSampleRate();
             SampleRate::from_u32(r).unwrap()
@@ -146,55 +146,55 @@ impl Audio {
     }
 
     /// Get the sampling rate for the DSP interface.
-    fn get_dsp_samplerate() -> SampleRate {
+    pub fn get_dsp_samplerate(&self) -> SampleRate {
         let r = unsafe { ogc_sys::AUDIO_GetDSPSampleRate() };
         SampleRate::from_u32(r).unwrap()
     }
 
     /// Set the sample rate for the streaming audio interface.
-    fn set_samplerate(samplerate: SampleRate) {
+    pub fn set_samplerate(&self, samplerate: SampleRate) {
         unsafe {
             ogc_sys::AUDIO_SetStreamSampleRate(samplerate.to_u32().unwrap());
         }
     }
 
     /// Set the sampling rate for the DSP interface.
-    fn set_dsp_samplerate(samplerate: SampleRate) {
+    pub fn set_dsp_samplerate(&self, samplerate: SampleRate) {
         unsafe {
             ogc_sys::AUDIO_SetDSPSampleRate(samplerate.to_u8().unwrap());
         }
     }
 
     /// Get the play state from the streaming audio interface.
-    fn get_playstate() -> PlayState {
+    pub fn get_playstate(&self) -> PlayState {
         let r = unsafe { ogc_sys::AUDIO_GetStreamPlayState() };
         PlayState::from_u32(r).unwrap()
     }
 
     /// Set the play state for the streaming audio interface.
-    fn set_playstate(playstate: PlayState) {
+    pub fn set_playstate(&self, playstate: PlayState) {
         unsafe {
             ogc_sys::AUDIO_SetStreamPlayState(playstate.to_u32().unwrap());
         }
     }
 
     /// Get streaming volume on the left channel.
-    fn get_volume_left() -> u8 {
+    pub fn get_volume_left(&self) -> u8 {
         unsafe { ogc_sys::AUDIO_GetStreamVolLeft() }
     }
 
     /// Set streaming volume on the left channel.
-    fn set_volume_left(volume: u8) {
+    pub fn set_volume_left(&self, volume: u8) {
         unsafe { ogc_sys::AUDIO_SetStreamVolLeft(volume) }
     }
 
     /// Get streaming volume on the right channel.
-    fn get_volume_right() -> u8 {
+    pub fn get_volume_right(&self) -> u8 {
         unsafe { ogc_sys::AUDIO_GetStreamVolRight() }
     }
 
     /// Set streaming volume on the right channel.
-    fn set_volume_right(volume: u8) {
+    pub fn set_volume_right(&self, volume: u8) {
         unsafe { ogc_sys::AUDIO_SetStreamVolRight(volume) }
     }
 }
