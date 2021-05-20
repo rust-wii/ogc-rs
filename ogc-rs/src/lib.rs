@@ -34,6 +34,9 @@ pub mod network;
 // Audio Implementation
 pub mod audio;
 
+// Pad Implementation
+pub mod pad;
+
 // Console Implementation
 pub mod console;
 
@@ -66,6 +69,7 @@ pub mod prelude {
     pub use crate::debug::*;
     pub use crate::system::*;
     pub use crate::video::*;
+    pub use crate::pad::*;
     pub use crate::{print, println};
 
     // Global Allocator
