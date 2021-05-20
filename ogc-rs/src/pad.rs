@@ -1,3 +1,6 @@
+use alloc::boxed::Box;
+use core::{mem, ptr};
+
 pub struct Pad;
 
 #[derive(Copy, Clone)]
@@ -104,12 +107,23 @@ impl Pad {
         }
     }
 
-    pub fn clamp(&self) { unimplemented!() }
-    pub fn control_motor(&self) { unimplemented!() }
-    pub fn read(&self) { unimplemented!() }
-    pub fn recalibrate(&self) { unimplemented!() }
-    pub fn reset(&self) { unimplemented!() }
-    pub fn set_sampling_callback(&self) { unimplemented!() }
-    pub fn set_spec(&self) { unimplemented!() }
-    pub fn sync(&self) { unimplemented!() }
+    pub fn set_sampling_callback<F>(&self, callback: Box<F>)
+    where
+        F: Fn(u32) -> (),
+    {
+        let ptr = Box::into_raw(callback);
+
+        unsafe {
+            let code: extern "C" fn() = mem::transmute(ptr);
+            ogc_sys::PAD_SetSamplingCallback(Some(code));
+        }
+    }
+
+    // pub fn clamp(&self) { unimplemented!() }
+    // pub fn control_motor(&self) { unimplemented!() }
+    // pub fn read(&self) { unimplemented!() }
+    // pub fn recalibrate(&self) { unimplemented!() }
+    // pub fn reset(&self) { unimplemented!() }
+    // pub fn set_spec(&self) { unimplemented!() }
+    // pub fn sync(&self) { unimplemented!() }
 }

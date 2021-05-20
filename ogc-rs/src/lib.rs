@@ -25,6 +25,8 @@ pub mod audio;
 ///
 /// loop {
 ///     pad.scan_pads();
+///     let (left, right) = (pad.trigger_l(Controller::One), pad.trigger_r(Controller::One));
+///     println!("Left: {}, Right: {}", left, right);
 ///     if pad.buttons_down(Controller::One) == Button::A {
 ///         break;
 ///     }
