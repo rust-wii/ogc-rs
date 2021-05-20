@@ -26,9 +26,9 @@ pub enum Controller {
     Four = 3,
 }
 
-impl PartialEq<u16> for Controller {
-    fn eq(&self, other: &u16) -> bool {
-        *self as u16 == *other
+impl PartialEq<Controller> for u16 {
+    fn eq(&self, other: &Controller) -> bool {
+        *self == *other as u16
     }
 }
 
@@ -48,9 +48,9 @@ pub enum Button {
     Start = 4096,
 }
 
-impl PartialEq<u16> for Button {
-    fn eq(&self, other: &u16) -> bool {
-        *self as u16 == *other
+impl PartialEq<Button> for u16 {
+    fn eq(&self, other: &Button) -> bool {
+        *self == *other as u16
     }
 }
 
