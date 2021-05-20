@@ -4,18 +4,21 @@
 
 // use alloc::boxed::Box;
 // use core::{mem, ptr};
-use enum_primitive::*;
 
 /// ```rust
 /// let pad = Pad::init();
-/// let buttons_down = pad.buttons_down(Controller::One);
-/// if buttons_down & Button::A {
-///     return 0;
+///
+/// loop {
+///     pad.scan_pads();
+///     if pad.buttons_down(Controller::One) == Button::A {
+///         break;
+///     }
 /// }
+///
 /// ```
 pub struct Pad;
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Copy, Clone)]
 pub enum Controller {
     One = 0,
     Two = 1,
@@ -23,7 +26,13 @@ pub enum Controller {
     Four = 3,
 }
 
-#[derive(Debug, Eq, PartialEq)]
+impl PartialEq<u16> for Controller {
+    fn eq(&self, other: &u16) -> bool {
+        *self as u16 == *other
+    }
+}
+
+#[derive(Copy, Clone)]
 pub enum Button {
     Left = 1,
     Right = 2,
@@ -37,6 +46,12 @@ pub enum Button {
     X = 1024,
     Y = 2048,
     Start = 4096,
+}
+
+impl PartialEq<u16> for Button {
+    fn eq(&self, other: &u16) -> bool {
+        *self as u16 == *other
+    }
 }
 
 impl Pad {
