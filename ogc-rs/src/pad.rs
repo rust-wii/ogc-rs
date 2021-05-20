@@ -53,77 +53,77 @@ impl Pad {
     }
 
     /// Scan all pads. Must be called every time before checking buttons.
-    pub fn scan_pads(&self) -> u32 {
+    pub fn scan_pads() -> u32 {
         unsafe {
             ogc_sys::PAD_ScanPads()
         }
     }
 
     /// Returns button that is pressed.
-    pub fn buttons_down(&self, controller: Controller) -> u16 {
+    pub fn buttons_down(controller: Controller) -> u16 {
         unsafe {
             ogc_sys::PAD_ButtonsDown(controller as i32)
         }
     }
 
     /// Returns button that is held.
-    pub fn buttons_held(&self, controller: Controller) -> u16 {
+    pub fn buttons_held(controller: Controller) -> u16 {
         unsafe {
             ogc_sys::PAD_ButtonsHeld(controller as i32)
         }
     }
 
     /// Returns button that is released.
-    pub fn buttons_up(&self, controller: Controller) -> u16 {
+    pub fn buttons_up(controller: Controller) -> u16 {
         unsafe {
             ogc_sys::PAD_ButtonsUp(controller as i32)
         }
     }
 
     /// Returns analog x-value of grey joystick.
-    pub fn stick_x(&self, controller: Controller) -> i8 {
+    pub fn stick_x(controller: Controller) -> i8 {
         unsafe {
             ogc_sys::PAD_StickX(controller as i32)
         }
     }
 
     /// Returns analog y-value of grey joystick.
-    pub fn stick_y(&self, controller: Controller) -> i8 {
+    pub fn stick_y(controller: Controller) -> i8 {
         unsafe {
             ogc_sys::PAD_StickY(controller as i32)
         }
     }
 
     /// Returns analog x-value of yellow joystick.
-    pub fn sub_stick_x(&self, controller: Controller) -> i8 {
+    pub fn sub_stick_x(controller: Controller) -> i8 {
         unsafe {
             ogc_sys::PAD_SubStickX(controller as i32)
         }
     }
 
     /// Returns analog y-value of yellow joystick.
-    pub fn sub_stick_y(&self, controller: Controller) -> i8 {
+    pub fn sub_stick_y(controller: Controller) -> i8 {
         unsafe {
             ogc_sys::PAD_SubStickY(controller as i32)
         }
     }
 
     /// Returns analog value of left trigger.
-    pub fn trigger_l(&self, controller: Controller) -> u8 {
+    pub fn trigger_l(controller: Controller) -> u8 {
         unsafe {
             ogc_sys::PAD_TriggerL(controller as i32)
         }
     }
 
     /// Returns analog value of right trigger.
-    pub fn trigger_r(&self, controller: Controller) -> u8 {
+    pub fn trigger_r(controller: Controller) -> u8 {
         unsafe {
             ogc_sys::PAD_TriggerR(controller as i32)
         }
     }
 
     /// Register a user callback function for the `pad` interface.
-    pub fn set_sampling_callback<F>(&self, callback: Box<F>)
+    pub fn set_sampling_callback<F>(callback: Box<F>)
     where
         F: Fn(u32) -> (),
     {
@@ -135,11 +135,11 @@ impl Pad {
         }
     }
 
-    fn clamp(&self) { unimplemented!() }
-    fn control_motor(&self) { unimplemented!() }
-    fn read(&self) { unimplemented!() }
-    fn recalibrate(&self) { unimplemented!() }
-    fn reset(&self) { unimplemented!() }
-    fn set_spec(&self) { unimplemented!() }
-    fn sync(&self) { unimplemented!() }
+    fn clamp() { unimplemented!() }
+    fn control_motor() { unimplemented!() }
+    fn read() { unimplemented!() }
+    fn recalibrate() { unimplemented!() }
+    fn reset() { unimplemented!() }
+    fn set_spec() { unimplemented!() }
+    fn sync() { unimplemented!() }
 }

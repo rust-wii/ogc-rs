@@ -20,19 +20,7 @@ pub mod network;
 // Audio Implementation
 pub mod audio;
 
-/// ```rust
-/// let pad = Pad::init();
-///
-/// loop {
-///     pad.scan_pads();
-///     let (left, right) = (pad.trigger_l(Controller::One), pad.trigger_r(Controller::One));
-///     println!("Left: {}, Right: {}", left, right);
-///     if pad.buttons_down(Controller::One) == Button::A {
-///         break;
-///     }
-/// }
-///
-/// ```
+// Pad Implementation
 pub mod pad;
 
 // Console Implementation
