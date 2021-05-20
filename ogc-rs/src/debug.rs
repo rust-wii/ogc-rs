@@ -1,7 +1,3 @@
-//! The ``debug`` module of ``ogc-rs``.
-//!
-//! This module implements a safe wrapper around the debug functions.
-
 use enum_primitive::*;
 
 enum_primitive! {

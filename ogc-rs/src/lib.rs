@@ -1,20 +1,6 @@
 //! # ogc-rs
 //!
 //! ``ogc-rs`` is a safe, idiomatic wrapper around ``ogc-sys``.
-//!
-//! ``ogc-rs`` provides many features from libogc such as:
-//!
-//! * ``network``: Provides TCP networking for the Wii.
-//! * ``audio``: Provides functions for audio on the Wii.
-//! * ``fs``: Provides functions for manipulating the filesystem on the Wii.
-//! * ``system``: Provides OS functions for the Wii.
-//! * ``console``: Provides console functions for the Wii.
-//! * ``input``: Provides an interface for reading input from devices on the Wii.
-//! * ``video``: Provides functions for video output on the Wii.
-//! * ``gx``: Provides an opengl-like interface for rendering on the Wii.
-//!
-//! ``ogc-rs`` also provides runtime functions and an allocator for ``no_std``
-//! environments.
 
 #![no_std]
 #![allow(dead_code)]
@@ -34,7 +20,17 @@ pub mod network;
 // Audio Implementation
 pub mod audio;
 
-// Pad Implementation
+/// ```rust
+/// let pad = Pad::init();
+///
+/// loop {
+///     pad.scan_pads();
+///     if pad.buttons_down(Controller::One) == Button::A {
+///         break;
+///     }
+/// }
+///
+/// ```
 pub mod pad;
 
 // Console Implementation
@@ -43,10 +39,10 @@ pub mod console;
 // System Implementation
 pub mod system;
 
-/// Video Implementation
+// Video Implementation
 pub mod video;
 
-/// Debugging Functions
+// Debugging Functions
 pub mod debug;
 
 // Utility Functions
@@ -56,7 +52,7 @@ pub use utils::*;
 // Runtime Functions
 pub mod runtime;
 
-/// Prelude
+// Prelude
 pub mod prelude {
     // alloc Export
     pub use alloc::boxed::Box;

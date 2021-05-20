@@ -1,7 +1,3 @@
-//! The ``network`` module of ``ogc-rs``.
-//!
-//! This module implements a safe wrapper around the networking functions found in ``network.h``.
-
 use crate::{bitflags, raw_to_string, raw_to_strings, OgcError, Result};
 use alloc::{
     boxed::Box,

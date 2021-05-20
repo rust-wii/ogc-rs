@@ -1,7 +1,3 @@
-//! The ``system`` module of ``ogc-rs``.
-//!
-//! This module implements a safe wrapper around the OS functions found in ``system.h``.
-
 use crate::{video::RenderConfig, OgcError, Result};
 use alloc::boxed::Box;
 use core::ffi::c_void;

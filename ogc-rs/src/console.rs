@@ -1,7 +1,3 @@
-//! The ``console`` module of ``ogc-rs``.
-//!
-//! This module implements a safe wrapper around the console functions.
-
 use crate::{video::Video, OgcError, Result};
 use alloc::string::String;
 use core::ptr;

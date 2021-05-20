@@ -1,10 +1,8 @@
-//! The ``runtime`` module of ``ogc-rs``.
-//!
-//! This module implements runtime functions and allocators
-//! required for ``no_std`` on the Wii.
-//!
-//! Most of the functions defined here are modified functions from
-//! the helpful project [water](https://github.com/lemarcuspoilus/water).
+// This module implements runtime functions and allocators
+// required for ``no_std`` on the Wii.
+//
+// Most of the functions defined here are modified functions from
+// the helpful project [water](https://github.com/lemarcuspoilus/water).
 
 use crate::{print, println};
 use core::{

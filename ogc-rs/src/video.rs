@@ -1,7 +1,3 @@
-//! The ``video`` module of ``ogc-rs``.
-//!
-//! This module implements a safe wrapper around video functions.
-
 use crate::{mem_cached_to_uncached, system::System};
 use alloc::boxed::Box;
 use core::{ffi::c_void, mem, ptr};
