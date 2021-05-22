@@ -210,6 +210,9 @@ pub const SEEK_CUR: u32 = 1;
 pub const SEEK_END: u32 = 2;
 pub const TMP_MAX: u32 = 26;
 pub const L_ctermid: u32 = 16;
+pub const EXIT_FAILURE: u32 = 1;
+pub const EXIT_SUCCESS: u32 = 0;
+pub const RAND_MAX: u32 = 2147483647;
 pub const _M_LN2: f64 = 0.6931471805599453;
 pub const FP_NAN: u32 = 0;
 pub const FP_INFINITE: u32 = 1;
@@ -245,9 +248,6 @@ pub const M_TRIM_THRESHOLD: i32 = -1;
 pub const M_TOP_PAD: i32 = -2;
 pub const M_MMAP_THRESHOLD: i32 = -3;
 pub const M_MMAP_MAX: i32 = -4;
-pub const EXIT_FAILURE: u32 = 1;
-pub const EXIT_SUCCESS: u32 = 0;
-pub const RAND_MAX: u32 = 2147483647;
 pub const true_: u32 = 1;
 pub const false_: u32 = 0;
 pub const __bool_true_false_are_defined: u32 = 1;
@@ -3214,6 +3214,587 @@ extern "C" {
         >,
     ) -> *mut FILE;
 }
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct div_t {
+    pub quot: ::libc::c_int,
+    pub rem: ::libc::c_int,
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct ldiv_t {
+    pub quot: ::libc::c_long,
+    pub rem: ::libc::c_long,
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct lldiv_t {
+    pub quot: ::libc::c_longlong,
+    pub rem: ::libc::c_longlong,
+}
+pub type __compar_fn_t = ::core::option::Option<
+    unsafe extern "C" fn(arg1: *const ::libc::c_void, arg2: *const ::libc::c_void) -> ::libc::c_int,
+>;
+extern "C" {
+    pub fn __locale_mb_cur_max() -> ::libc::c_int;
+}
+extern "C" {
+    pub fn abort();
+}
+extern "C" {
+    pub fn abs(arg1: ::libc::c_int) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn arc4random() -> __uint32_t;
+}
+extern "C" {
+    pub fn arc4random_uniform(arg1: __uint32_t) -> __uint32_t;
+}
+extern "C" {
+    pub fn arc4random_buf(arg1: *mut ::libc::c_void, arg2: size_t);
+}
+extern "C" {
+    pub fn atexit(__func: ::core::option::Option<unsafe extern "C" fn()>) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn atof(__nptr: *const ::libc::c_char) -> f64;
+}
+extern "C" {
+    pub fn atoff(__nptr: *const ::libc::c_char) -> f32;
+}
+extern "C" {
+    pub fn atoi(__nptr: *const ::libc::c_char) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn _atoi_r(arg1: *mut _reent, __nptr: *const ::libc::c_char) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn atol(__nptr: *const ::libc::c_char) -> ::libc::c_long;
+}
+extern "C" {
+    pub fn _atol_r(arg1: *mut _reent, __nptr: *const ::libc::c_char) -> ::libc::c_long;
+}
+extern "C" {
+    pub fn bsearch(
+        __key: *const ::libc::c_void,
+        __base: *const ::libc::c_void,
+        __nmemb: size_t,
+        __size: size_t,
+        _compar: __compar_fn_t,
+    ) -> *mut ::libc::c_void;
+}
+extern "C" {
+    pub fn calloc(arg1: ::libc::c_ulong, arg2: ::libc::c_ulong) -> *mut ::libc::c_void;
+}
+extern "C" {
+    pub fn div(__numer: ::libc::c_int, __denom: ::libc::c_int) -> div_t;
+}
+extern "C" {
+    pub fn exit(__status: ::libc::c_int);
+}
+extern "C" {
+    pub fn free(arg1: *mut ::libc::c_void);
+}
+extern "C" {
+    pub fn getenv(__string: *const ::libc::c_char) -> *mut ::libc::c_char;
+}
+extern "C" {
+    pub fn _getenv_r(arg1: *mut _reent, __string: *const ::libc::c_char) -> *mut ::libc::c_char;
+}
+extern "C" {
+    pub fn _findenv(arg1: *const ::libc::c_char, arg2: *mut ::libc::c_int) -> *mut ::libc::c_char;
+}
+extern "C" {
+    pub fn _findenv_r(
+        arg1: *mut _reent,
+        arg2: *const ::libc::c_char,
+        arg3: *mut ::libc::c_int,
+    ) -> *mut ::libc::c_char;
+}
+extern "C" {
+    pub static mut suboptarg: *mut ::libc::c_char;
+}
+extern "C" {
+    pub fn getsubopt(
+        arg1: *mut *mut ::libc::c_char,
+        arg2: *const *mut ::libc::c_char,
+        arg3: *mut *mut ::libc::c_char,
+    ) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn labs(arg1: ::libc::c_long) -> ::libc::c_long;
+}
+extern "C" {
+    pub fn ldiv(__numer: ::libc::c_long, __denom: ::libc::c_long) -> ldiv_t;
+}
+extern "C" {
+    pub fn malloc(arg1: ::libc::c_ulong) -> *mut ::libc::c_void;
+}
+extern "C" {
+    pub fn mblen(arg1: *const ::libc::c_char, arg2: size_t) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn _mblen_r(
+        arg1: *mut _reent,
+        arg2: *const ::libc::c_char,
+        arg3: size_t,
+        arg4: *mut _mbstate_t,
+    ) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn mbtowc(arg1: *mut wchar_t, arg2: *const ::libc::c_char, arg3: size_t) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn _mbtowc_r(
+        arg1: *mut _reent,
+        arg2: *mut wchar_t,
+        arg3: *const ::libc::c_char,
+        arg4: size_t,
+        arg5: *mut _mbstate_t,
+    ) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn wctomb(arg1: *mut ::libc::c_char, arg2: wchar_t) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn _wctomb_r(
+        arg1: *mut _reent,
+        arg2: *mut ::libc::c_char,
+        arg3: wchar_t,
+        arg4: *mut _mbstate_t,
+    ) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn mbstowcs(arg1: *mut wchar_t, arg2: *const ::libc::c_char, arg3: size_t) -> size_t;
+}
+extern "C" {
+    pub fn _mbstowcs_r(
+        arg1: *mut _reent,
+        arg2: *mut wchar_t,
+        arg3: *const ::libc::c_char,
+        arg4: size_t,
+        arg5: *mut _mbstate_t,
+    ) -> size_t;
+}
+extern "C" {
+    pub fn wcstombs(arg1: *mut ::libc::c_char, arg2: *const wchar_t, arg3: size_t) -> size_t;
+}
+extern "C" {
+    pub fn _wcstombs_r(
+        arg1: *mut _reent,
+        arg2: *mut ::libc::c_char,
+        arg3: *const wchar_t,
+        arg4: size_t,
+        arg5: *mut _mbstate_t,
+    ) -> size_t;
+}
+extern "C" {
+    pub fn mkdtemp(arg1: *mut ::libc::c_char) -> *mut ::libc::c_char;
+}
+extern "C" {
+    pub fn mkstemp(arg1: *mut ::libc::c_char) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn mkstemps(arg1: *mut ::libc::c_char, arg2: ::libc::c_int) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn mktemp(arg1: *mut ::libc::c_char) -> *mut ::libc::c_char;
+}
+extern "C" {
+    pub fn _mkdtemp_r(arg1: *mut _reent, arg2: *mut ::libc::c_char) -> *mut ::libc::c_char;
+}
+extern "C" {
+    pub fn _mkostemp_r(
+        arg1: *mut _reent,
+        arg2: *mut ::libc::c_char,
+        arg3: ::libc::c_int,
+    ) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn _mkostemps_r(
+        arg1: *mut _reent,
+        arg2: *mut ::libc::c_char,
+        arg3: ::libc::c_int,
+        arg4: ::libc::c_int,
+    ) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn _mkstemp_r(arg1: *mut _reent, arg2: *mut ::libc::c_char) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn _mkstemps_r(
+        arg1: *mut _reent,
+        arg2: *mut ::libc::c_char,
+        arg3: ::libc::c_int,
+    ) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn _mktemp_r(arg1: *mut _reent, arg2: *mut ::libc::c_char) -> *mut ::libc::c_char;
+}
+extern "C" {
+    pub fn qsort(
+        __base: *mut ::libc::c_void,
+        __nmemb: size_t,
+        __size: size_t,
+        _compar: __compar_fn_t,
+    );
+}
+extern "C" {
+    pub fn rand() -> ::libc::c_int;
+}
+extern "C" {
+    pub fn realloc(arg1: *mut ::libc::c_void, arg2: ::libc::c_ulong) -> *mut ::libc::c_void;
+}
+extern "C" {
+    pub fn reallocarray(
+        arg1: *mut ::libc::c_void,
+        arg2: size_t,
+        arg3: size_t,
+    ) -> *mut ::libc::c_void;
+}
+extern "C" {
+    pub fn reallocf(arg1: *mut ::libc::c_void, arg2: size_t) -> *mut ::libc::c_void;
+}
+extern "C" {
+    pub fn realpath(
+        path: *const ::libc::c_char,
+        resolved_path: *mut ::libc::c_char,
+    ) -> *mut ::libc::c_char;
+}
+extern "C" {
+    pub fn rpmatch(response: *const ::libc::c_char) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn srand(__seed: ::libc::c_uint);
+}
+extern "C" {
+    pub fn strtod(__n: *const ::libc::c_char, __end_PTR: *mut *mut ::libc::c_char) -> f64;
+}
+extern "C" {
+    pub fn _strtod_r(
+        arg1: *mut _reent,
+        __n: *const ::libc::c_char,
+        __end_PTR: *mut *mut ::libc::c_char,
+    ) -> f64;
+}
+extern "C" {
+    pub fn strtof(__n: *const ::libc::c_char, __end_PTR: *mut *mut ::libc::c_char) -> f32;
+}
+extern "C" {
+    pub fn strtol(
+        __n: *const ::libc::c_char,
+        __end_PTR: *mut *mut ::libc::c_char,
+        __base: ::libc::c_int,
+    ) -> ::libc::c_long;
+}
+extern "C" {
+    pub fn _strtol_r(
+        arg1: *mut _reent,
+        __n: *const ::libc::c_char,
+        __end_PTR: *mut *mut ::libc::c_char,
+        __base: ::libc::c_int,
+    ) -> ::libc::c_long;
+}
+extern "C" {
+    pub fn strtoul(
+        __n: *const ::libc::c_char,
+        __end_PTR: *mut *mut ::libc::c_char,
+        __base: ::libc::c_int,
+    ) -> ::libc::c_ulong;
+}
+extern "C" {
+    pub fn _strtoul_r(
+        arg1: *mut _reent,
+        __n: *const ::libc::c_char,
+        __end_PTR: *mut *mut ::libc::c_char,
+        __base: ::libc::c_int,
+    ) -> ::libc::c_ulong;
+}
+extern "C" {
+    pub fn system(__string: *const ::libc::c_char) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn a64l(__input: *const ::libc::c_char) -> ::libc::c_long;
+}
+extern "C" {
+    pub fn l64a(__input: ::libc::c_long) -> *mut ::libc::c_char;
+}
+extern "C" {
+    pub fn _l64a_r(arg1: *mut _reent, __input: ::libc::c_long) -> *mut ::libc::c_char;
+}
+extern "C" {
+    pub fn on_exit(
+        __func: ::core::option::Option<
+            unsafe extern "C" fn(arg1: ::libc::c_int, arg2: *mut ::libc::c_void),
+        >,
+        __arg: *mut ::libc::c_void,
+    ) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn _Exit(__status: ::libc::c_int);
+}
+extern "C" {
+    pub fn putenv(__string: *mut ::libc::c_char) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn _putenv_r(arg1: *mut _reent, __string: *mut ::libc::c_char) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn _reallocf_r(
+        arg1: *mut _reent,
+        arg2: *mut ::libc::c_void,
+        arg3: size_t,
+    ) -> *mut ::libc::c_void;
+}
+extern "C" {
+    pub fn setenv(
+        __string: *const ::libc::c_char,
+        __value: *const ::libc::c_char,
+        __overwrite: ::libc::c_int,
+    ) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn _setenv_r(
+        arg1: *mut _reent,
+        __string: *const ::libc::c_char,
+        __value: *const ::libc::c_char,
+        __overwrite: ::libc::c_int,
+    ) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn __itoa(
+        arg1: ::libc::c_int,
+        arg2: *mut ::libc::c_char,
+        arg3: ::libc::c_int,
+    ) -> *mut ::libc::c_char;
+}
+extern "C" {
+    pub fn __utoa(
+        arg1: ::libc::c_uint,
+        arg2: *mut ::libc::c_char,
+        arg3: ::libc::c_int,
+    ) -> *mut ::libc::c_char;
+}
+extern "C" {
+    pub fn itoa(
+        arg1: ::libc::c_int,
+        arg2: *mut ::libc::c_char,
+        arg3: ::libc::c_int,
+    ) -> *mut ::libc::c_char;
+}
+extern "C" {
+    pub fn utoa(
+        arg1: ::libc::c_uint,
+        arg2: *mut ::libc::c_char,
+        arg3: ::libc::c_int,
+    ) -> *mut ::libc::c_char;
+}
+extern "C" {
+    pub fn rand_r(__seed: *mut ::libc::c_uint) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn drand48() -> f64;
+}
+extern "C" {
+    pub fn _drand48_r(arg1: *mut _reent) -> f64;
+}
+extern "C" {
+    pub fn erand48(arg1: *mut ::libc::c_ushort) -> f64;
+}
+extern "C" {
+    pub fn _erand48_r(arg1: *mut _reent, arg2: *mut ::libc::c_ushort) -> f64;
+}
+extern "C" {
+    pub fn jrand48(arg1: *mut ::libc::c_ushort) -> ::libc::c_long;
+}
+extern "C" {
+    pub fn _jrand48_r(arg1: *mut _reent, arg2: *mut ::libc::c_ushort) -> ::libc::c_long;
+}
+extern "C" {
+    pub fn lcong48(arg1: *mut ::libc::c_ushort);
+}
+extern "C" {
+    pub fn _lcong48_r(arg1: *mut _reent, arg2: *mut ::libc::c_ushort);
+}
+extern "C" {
+    pub fn lrand48() -> ::libc::c_long;
+}
+extern "C" {
+    pub fn _lrand48_r(arg1: *mut _reent) -> ::libc::c_long;
+}
+extern "C" {
+    pub fn mrand48() -> ::libc::c_long;
+}
+extern "C" {
+    pub fn _mrand48_r(arg1: *mut _reent) -> ::libc::c_long;
+}
+extern "C" {
+    pub fn nrand48(arg1: *mut ::libc::c_ushort) -> ::libc::c_long;
+}
+extern "C" {
+    pub fn _nrand48_r(arg1: *mut _reent, arg2: *mut ::libc::c_ushort) -> ::libc::c_long;
+}
+extern "C" {
+    pub fn seed48(arg1: *mut ::libc::c_ushort) -> *mut ::libc::c_ushort;
+}
+extern "C" {
+    pub fn _seed48_r(arg1: *mut _reent, arg2: *mut ::libc::c_ushort) -> *mut ::libc::c_ushort;
+}
+extern "C" {
+    pub fn srand48(arg1: ::libc::c_long);
+}
+extern "C" {
+    pub fn _srand48_r(arg1: *mut _reent, arg2: ::libc::c_long);
+}
+extern "C" {
+    pub fn initstate(
+        arg1: ::libc::c_uint,
+        arg2: *mut ::libc::c_char,
+        arg3: size_t,
+    ) -> *mut ::libc::c_char;
+}
+extern "C" {
+    pub fn random() -> ::libc::c_long;
+}
+extern "C" {
+    pub fn setstate(arg1: *mut ::libc::c_char) -> *mut ::libc::c_char;
+}
+extern "C" {
+    pub fn srandom(arg1: ::libc::c_uint);
+}
+extern "C" {
+    pub fn atoll(__nptr: *const ::libc::c_char) -> ::libc::c_longlong;
+}
+extern "C" {
+    pub fn _atoll_r(arg1: *mut _reent, __nptr: *const ::libc::c_char) -> ::libc::c_longlong;
+}
+extern "C" {
+    pub fn llabs(arg1: ::libc::c_longlong) -> ::libc::c_longlong;
+}
+extern "C" {
+    pub fn lldiv(__numer: ::libc::c_longlong, __denom: ::libc::c_longlong) -> lldiv_t;
+}
+extern "C" {
+    pub fn strtoll(
+        __n: *const ::libc::c_char,
+        __end_PTR: *mut *mut ::libc::c_char,
+        __base: ::libc::c_int,
+    ) -> ::libc::c_longlong;
+}
+extern "C" {
+    pub fn _strtoll_r(
+        arg1: *mut _reent,
+        __n: *const ::libc::c_char,
+        __end_PTR: *mut *mut ::libc::c_char,
+        __base: ::libc::c_int,
+    ) -> ::libc::c_longlong;
+}
+extern "C" {
+    pub fn strtoull(
+        __n: *const ::libc::c_char,
+        __end_PTR: *mut *mut ::libc::c_char,
+        __base: ::libc::c_int,
+    ) -> ::libc::c_ulonglong;
+}
+extern "C" {
+    pub fn _strtoull_r(
+        arg1: *mut _reent,
+        __n: *const ::libc::c_char,
+        __end_PTR: *mut *mut ::libc::c_char,
+        __base: ::libc::c_int,
+    ) -> ::libc::c_ulonglong;
+}
+extern "C" {
+    pub fn cfree(arg1: *mut ::libc::c_void);
+}
+extern "C" {
+    pub fn unsetenv(__string: *const ::libc::c_char) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn _unsetenv_r(arg1: *mut _reent, __string: *const ::libc::c_char) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn posix_memalign(
+        arg1: *mut *mut ::libc::c_void,
+        arg2: size_t,
+        arg3: size_t,
+    ) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn _dtoa_r(
+        arg1: *mut _reent,
+        arg2: f64,
+        arg3: ::libc::c_int,
+        arg4: ::libc::c_int,
+        arg5: *mut ::libc::c_int,
+        arg6: *mut ::libc::c_int,
+        arg7: *mut *mut ::libc::c_char,
+    ) -> *mut ::libc::c_char;
+}
+extern "C" {
+    pub fn _malloc_r(arg1: *mut _reent, arg2: size_t) -> *mut ::libc::c_void;
+}
+extern "C" {
+    pub fn _calloc_r(arg1: *mut _reent, arg2: size_t, arg3: size_t) -> *mut ::libc::c_void;
+}
+extern "C" {
+    pub fn _free_r(arg1: *mut _reent, arg2: *mut ::libc::c_void);
+}
+extern "C" {
+    pub fn _realloc_r(
+        arg1: *mut _reent,
+        arg2: *mut ::libc::c_void,
+        arg3: size_t,
+    ) -> *mut ::libc::c_void;
+}
+extern "C" {
+    pub fn _mstats_r(arg1: *mut _reent, arg2: *mut ::libc::c_char);
+}
+extern "C" {
+    pub fn _system_r(arg1: *mut _reent, arg2: *const ::libc::c_char) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn __eprintf(
+        arg1: *const ::libc::c_char,
+        arg2: *const ::libc::c_char,
+        arg3: ::libc::c_uint,
+        arg4: *const ::libc::c_char,
+    );
+}
+extern "C" {
+    pub fn qsort_r(
+        __base: *mut ::libc::c_void,
+        __nmemb: size_t,
+        __size: size_t,
+        __thunk: *mut ::libc::c_void,
+        _compar: ::core::option::Option<
+            unsafe extern "C" fn(
+                arg1: *mut ::libc::c_void,
+                arg2: *const ::libc::c_void,
+                arg3: *const ::libc::c_void,
+            ) -> ::libc::c_int,
+        >,
+    );
+}
+extern "C" {
+    pub fn _strtold_r(
+        arg1: *mut _reent,
+        arg2: *const ::libc::c_char,
+        arg3: *mut *mut ::libc::c_char,
+    ) -> u128;
+}
+extern "C" {
+    pub fn strtold(arg1: *const ::libc::c_char, arg2: *mut *mut ::libc::c_char) -> u128;
+}
+extern "C" {
+    pub fn aligned_alloc(arg1: size_t, arg2: size_t) -> *mut ::libc::c_void;
+}
+extern "C" {
+    pub fn at_quick_exit(arg1: ::core::option::Option<unsafe extern "C" fn()>) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn quick_exit(arg1: ::libc::c_int);
+}
 extern "C" {
     pub fn atan(arg1: f64) -> f64;
 }
@@ -3864,34 +4445,6 @@ pub struct mallinfo {
     pub keepcost: size_t,
 }
 extern "C" {
-    pub fn malloc(arg1: ::libc::c_ulong) -> *mut ::libc::c_void;
-}
-extern "C" {
-    pub fn _malloc_r(arg1: *mut _reent, arg2: size_t) -> *mut ::libc::c_void;
-}
-extern "C" {
-    pub fn free(arg1: *mut ::libc::c_void);
-}
-extern "C" {
-    pub fn _free_r(arg1: *mut _reent, arg2: *mut ::libc::c_void);
-}
-extern "C" {
-    pub fn realloc(arg1: *mut ::libc::c_void, arg2: ::libc::c_ulong) -> *mut ::libc::c_void;
-}
-extern "C" {
-    pub fn _realloc_r(
-        arg1: *mut _reent,
-        arg2: *mut ::libc::c_void,
-        arg3: size_t,
-    ) -> *mut ::libc::c_void;
-}
-extern "C" {
-    pub fn calloc(arg1: ::libc::c_ulong, arg2: ::libc::c_ulong) -> *mut ::libc::c_void;
-}
-extern "C" {
-    pub fn _calloc_r(arg1: *mut _reent, arg2: size_t, arg3: size_t) -> *mut ::libc::c_void;
-}
-extern "C" {
     pub fn memalign(arg1: size_t, arg2: size_t) -> *mut ::libc::c_void;
 }
 extern "C" {
@@ -3948,12 +4501,6 @@ extern "C" {
 }
 extern "C" {
     pub fn mstats(arg1: *mut ::libc::c_char);
-}
-extern "C" {
-    pub fn _mstats_r(arg1: *mut _reent, arg2: *mut ::libc::c_char);
-}
-extern "C" {
-    pub fn cfree(arg1: *mut ::libc::c_void);
 }
 pub type locale_t = *mut __locale_t;
 extern "C" {
@@ -4250,553 +4797,6 @@ extern "C" {
 }
 extern "C" {
     pub fn strsignal(__signo: ::libc::c_int) -> *mut ::libc::c_char;
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct div_t {
-    pub quot: ::libc::c_int,
-    pub rem: ::libc::c_int,
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct ldiv_t {
-    pub quot: ::libc::c_long,
-    pub rem: ::libc::c_long,
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct lldiv_t {
-    pub quot: ::libc::c_longlong,
-    pub rem: ::libc::c_longlong,
-}
-pub type __compar_fn_t = ::core::option::Option<
-    unsafe extern "C" fn(arg1: *const ::libc::c_void, arg2: *const ::libc::c_void) -> ::libc::c_int,
->;
-extern "C" {
-    pub fn __locale_mb_cur_max() -> ::libc::c_int;
-}
-extern "C" {
-    pub fn abort();
-}
-extern "C" {
-    pub fn abs(arg1: ::libc::c_int) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn arc4random() -> __uint32_t;
-}
-extern "C" {
-    pub fn arc4random_uniform(arg1: __uint32_t) -> __uint32_t;
-}
-extern "C" {
-    pub fn arc4random_buf(arg1: *mut ::libc::c_void, arg2: size_t);
-}
-extern "C" {
-    pub fn atexit(__func: ::core::option::Option<unsafe extern "C" fn()>) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn atof(__nptr: *const ::libc::c_char) -> f64;
-}
-extern "C" {
-    pub fn atoff(__nptr: *const ::libc::c_char) -> f32;
-}
-extern "C" {
-    pub fn atoi(__nptr: *const ::libc::c_char) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn _atoi_r(arg1: *mut _reent, __nptr: *const ::libc::c_char) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn atol(__nptr: *const ::libc::c_char) -> ::libc::c_long;
-}
-extern "C" {
-    pub fn _atol_r(arg1: *mut _reent, __nptr: *const ::libc::c_char) -> ::libc::c_long;
-}
-extern "C" {
-    pub fn bsearch(
-        __key: *const ::libc::c_void,
-        __base: *const ::libc::c_void,
-        __nmemb: size_t,
-        __size: size_t,
-        _compar: __compar_fn_t,
-    ) -> *mut ::libc::c_void;
-}
-extern "C" {
-    pub fn div(__numer: ::libc::c_int, __denom: ::libc::c_int) -> div_t;
-}
-extern "C" {
-    pub fn exit(__status: ::libc::c_int);
-}
-extern "C" {
-    pub fn getenv(__string: *const ::libc::c_char) -> *mut ::libc::c_char;
-}
-extern "C" {
-    pub fn _getenv_r(arg1: *mut _reent, __string: *const ::libc::c_char) -> *mut ::libc::c_char;
-}
-extern "C" {
-    pub fn _findenv(arg1: *const ::libc::c_char, arg2: *mut ::libc::c_int) -> *mut ::libc::c_char;
-}
-extern "C" {
-    pub fn _findenv_r(
-        arg1: *mut _reent,
-        arg2: *const ::libc::c_char,
-        arg3: *mut ::libc::c_int,
-    ) -> *mut ::libc::c_char;
-}
-extern "C" {
-    pub static mut suboptarg: *mut ::libc::c_char;
-}
-extern "C" {
-    pub fn getsubopt(
-        arg1: *mut *mut ::libc::c_char,
-        arg2: *const *mut ::libc::c_char,
-        arg3: *mut *mut ::libc::c_char,
-    ) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn labs(arg1: ::libc::c_long) -> ::libc::c_long;
-}
-extern "C" {
-    pub fn ldiv(__numer: ::libc::c_long, __denom: ::libc::c_long) -> ldiv_t;
-}
-extern "C" {
-    pub fn mblen(arg1: *const ::libc::c_char, arg2: size_t) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn _mblen_r(
-        arg1: *mut _reent,
-        arg2: *const ::libc::c_char,
-        arg3: size_t,
-        arg4: *mut _mbstate_t,
-    ) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn mbtowc(arg1: *mut wchar_t, arg2: *const ::libc::c_char, arg3: size_t) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn _mbtowc_r(
-        arg1: *mut _reent,
-        arg2: *mut wchar_t,
-        arg3: *const ::libc::c_char,
-        arg4: size_t,
-        arg5: *mut _mbstate_t,
-    ) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn wctomb(arg1: *mut ::libc::c_char, arg2: wchar_t) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn _wctomb_r(
-        arg1: *mut _reent,
-        arg2: *mut ::libc::c_char,
-        arg3: wchar_t,
-        arg4: *mut _mbstate_t,
-    ) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn mbstowcs(arg1: *mut wchar_t, arg2: *const ::libc::c_char, arg3: size_t) -> size_t;
-}
-extern "C" {
-    pub fn _mbstowcs_r(
-        arg1: *mut _reent,
-        arg2: *mut wchar_t,
-        arg3: *const ::libc::c_char,
-        arg4: size_t,
-        arg5: *mut _mbstate_t,
-    ) -> size_t;
-}
-extern "C" {
-    pub fn wcstombs(arg1: *mut ::libc::c_char, arg2: *const wchar_t, arg3: size_t) -> size_t;
-}
-extern "C" {
-    pub fn _wcstombs_r(
-        arg1: *mut _reent,
-        arg2: *mut ::libc::c_char,
-        arg3: *const wchar_t,
-        arg4: size_t,
-        arg5: *mut _mbstate_t,
-    ) -> size_t;
-}
-extern "C" {
-    pub fn mkdtemp(arg1: *mut ::libc::c_char) -> *mut ::libc::c_char;
-}
-extern "C" {
-    pub fn mkstemp(arg1: *mut ::libc::c_char) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn mkstemps(arg1: *mut ::libc::c_char, arg2: ::libc::c_int) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn mktemp(arg1: *mut ::libc::c_char) -> *mut ::libc::c_char;
-}
-extern "C" {
-    pub fn _mkdtemp_r(arg1: *mut _reent, arg2: *mut ::libc::c_char) -> *mut ::libc::c_char;
-}
-extern "C" {
-    pub fn _mkostemp_r(
-        arg1: *mut _reent,
-        arg2: *mut ::libc::c_char,
-        arg3: ::libc::c_int,
-    ) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn _mkostemps_r(
-        arg1: *mut _reent,
-        arg2: *mut ::libc::c_char,
-        arg3: ::libc::c_int,
-        arg4: ::libc::c_int,
-    ) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn _mkstemp_r(arg1: *mut _reent, arg2: *mut ::libc::c_char) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn _mkstemps_r(
-        arg1: *mut _reent,
-        arg2: *mut ::libc::c_char,
-        arg3: ::libc::c_int,
-    ) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn _mktemp_r(arg1: *mut _reent, arg2: *mut ::libc::c_char) -> *mut ::libc::c_char;
-}
-extern "C" {
-    pub fn qsort(
-        __base: *mut ::libc::c_void,
-        __nmemb: size_t,
-        __size: size_t,
-        _compar: __compar_fn_t,
-    );
-}
-extern "C" {
-    pub fn rand() -> ::libc::c_int;
-}
-extern "C" {
-    pub fn reallocarray(
-        arg1: *mut ::libc::c_void,
-        arg2: size_t,
-        arg3: size_t,
-    ) -> *mut ::libc::c_void;
-}
-extern "C" {
-    pub fn reallocf(arg1: *mut ::libc::c_void, arg2: size_t) -> *mut ::libc::c_void;
-}
-extern "C" {
-    pub fn realpath(
-        path: *const ::libc::c_char,
-        resolved_path: *mut ::libc::c_char,
-    ) -> *mut ::libc::c_char;
-}
-extern "C" {
-    pub fn rpmatch(response: *const ::libc::c_char) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn srand(__seed: ::libc::c_uint);
-}
-extern "C" {
-    pub fn strtod(__n: *const ::libc::c_char, __end_PTR: *mut *mut ::libc::c_char) -> f64;
-}
-extern "C" {
-    pub fn _strtod_r(
-        arg1: *mut _reent,
-        __n: *const ::libc::c_char,
-        __end_PTR: *mut *mut ::libc::c_char,
-    ) -> f64;
-}
-extern "C" {
-    pub fn strtof(__n: *const ::libc::c_char, __end_PTR: *mut *mut ::libc::c_char) -> f32;
-}
-extern "C" {
-    pub fn strtol(
-        __n: *const ::libc::c_char,
-        __end_PTR: *mut *mut ::libc::c_char,
-        __base: ::libc::c_int,
-    ) -> ::libc::c_long;
-}
-extern "C" {
-    pub fn _strtol_r(
-        arg1: *mut _reent,
-        __n: *const ::libc::c_char,
-        __end_PTR: *mut *mut ::libc::c_char,
-        __base: ::libc::c_int,
-    ) -> ::libc::c_long;
-}
-extern "C" {
-    pub fn strtoul(
-        __n: *const ::libc::c_char,
-        __end_PTR: *mut *mut ::libc::c_char,
-        __base: ::libc::c_int,
-    ) -> ::libc::c_ulong;
-}
-extern "C" {
-    pub fn _strtoul_r(
-        arg1: *mut _reent,
-        __n: *const ::libc::c_char,
-        __end_PTR: *mut *mut ::libc::c_char,
-        __base: ::libc::c_int,
-    ) -> ::libc::c_ulong;
-}
-extern "C" {
-    pub fn system(__string: *const ::libc::c_char) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn a64l(__input: *const ::libc::c_char) -> ::libc::c_long;
-}
-extern "C" {
-    pub fn l64a(__input: ::libc::c_long) -> *mut ::libc::c_char;
-}
-extern "C" {
-    pub fn _l64a_r(arg1: *mut _reent, __input: ::libc::c_long) -> *mut ::libc::c_char;
-}
-extern "C" {
-    pub fn on_exit(
-        __func: ::core::option::Option<
-            unsafe extern "C" fn(arg1: ::libc::c_int, arg2: *mut ::libc::c_void),
-        >,
-        __arg: *mut ::libc::c_void,
-    ) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn _Exit(__status: ::libc::c_int);
-}
-extern "C" {
-    pub fn putenv(__string: *mut ::libc::c_char) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn _putenv_r(arg1: *mut _reent, __string: *mut ::libc::c_char) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn _reallocf_r(
-        arg1: *mut _reent,
-        arg2: *mut ::libc::c_void,
-        arg3: size_t,
-    ) -> *mut ::libc::c_void;
-}
-extern "C" {
-    pub fn setenv(
-        __string: *const ::libc::c_char,
-        __value: *const ::libc::c_char,
-        __overwrite: ::libc::c_int,
-    ) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn _setenv_r(
-        arg1: *mut _reent,
-        __string: *const ::libc::c_char,
-        __value: *const ::libc::c_char,
-        __overwrite: ::libc::c_int,
-    ) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn __itoa(
-        arg1: ::libc::c_int,
-        arg2: *mut ::libc::c_char,
-        arg3: ::libc::c_int,
-    ) -> *mut ::libc::c_char;
-}
-extern "C" {
-    pub fn __utoa(
-        arg1: ::libc::c_uint,
-        arg2: *mut ::libc::c_char,
-        arg3: ::libc::c_int,
-    ) -> *mut ::libc::c_char;
-}
-extern "C" {
-    pub fn itoa(
-        arg1: ::libc::c_int,
-        arg2: *mut ::libc::c_char,
-        arg3: ::libc::c_int,
-    ) -> *mut ::libc::c_char;
-}
-extern "C" {
-    pub fn utoa(
-        arg1: ::libc::c_uint,
-        arg2: *mut ::libc::c_char,
-        arg3: ::libc::c_int,
-    ) -> *mut ::libc::c_char;
-}
-extern "C" {
-    pub fn rand_r(__seed: *mut ::libc::c_uint) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn drand48() -> f64;
-}
-extern "C" {
-    pub fn _drand48_r(arg1: *mut _reent) -> f64;
-}
-extern "C" {
-    pub fn erand48(arg1: *mut ::libc::c_ushort) -> f64;
-}
-extern "C" {
-    pub fn _erand48_r(arg1: *mut _reent, arg2: *mut ::libc::c_ushort) -> f64;
-}
-extern "C" {
-    pub fn jrand48(arg1: *mut ::libc::c_ushort) -> ::libc::c_long;
-}
-extern "C" {
-    pub fn _jrand48_r(arg1: *mut _reent, arg2: *mut ::libc::c_ushort) -> ::libc::c_long;
-}
-extern "C" {
-    pub fn lcong48(arg1: *mut ::libc::c_ushort);
-}
-extern "C" {
-    pub fn _lcong48_r(arg1: *mut _reent, arg2: *mut ::libc::c_ushort);
-}
-extern "C" {
-    pub fn lrand48() -> ::libc::c_long;
-}
-extern "C" {
-    pub fn _lrand48_r(arg1: *mut _reent) -> ::libc::c_long;
-}
-extern "C" {
-    pub fn mrand48() -> ::libc::c_long;
-}
-extern "C" {
-    pub fn _mrand48_r(arg1: *mut _reent) -> ::libc::c_long;
-}
-extern "C" {
-    pub fn nrand48(arg1: *mut ::libc::c_ushort) -> ::libc::c_long;
-}
-extern "C" {
-    pub fn _nrand48_r(arg1: *mut _reent, arg2: *mut ::libc::c_ushort) -> ::libc::c_long;
-}
-extern "C" {
-    pub fn seed48(arg1: *mut ::libc::c_ushort) -> *mut ::libc::c_ushort;
-}
-extern "C" {
-    pub fn _seed48_r(arg1: *mut _reent, arg2: *mut ::libc::c_ushort) -> *mut ::libc::c_ushort;
-}
-extern "C" {
-    pub fn srand48(arg1: ::libc::c_long);
-}
-extern "C" {
-    pub fn _srand48_r(arg1: *mut _reent, arg2: ::libc::c_long);
-}
-extern "C" {
-    pub fn initstate(
-        arg1: ::libc::c_uint,
-        arg2: *mut ::libc::c_char,
-        arg3: size_t,
-    ) -> *mut ::libc::c_char;
-}
-extern "C" {
-    pub fn random() -> ::libc::c_long;
-}
-extern "C" {
-    pub fn setstate(arg1: *mut ::libc::c_char) -> *mut ::libc::c_char;
-}
-extern "C" {
-    pub fn srandom(arg1: ::libc::c_uint);
-}
-extern "C" {
-    pub fn atoll(__nptr: *const ::libc::c_char) -> ::libc::c_longlong;
-}
-extern "C" {
-    pub fn _atoll_r(arg1: *mut _reent, __nptr: *const ::libc::c_char) -> ::libc::c_longlong;
-}
-extern "C" {
-    pub fn llabs(arg1: ::libc::c_longlong) -> ::libc::c_longlong;
-}
-extern "C" {
-    pub fn lldiv(__numer: ::libc::c_longlong, __denom: ::libc::c_longlong) -> lldiv_t;
-}
-extern "C" {
-    pub fn strtoll(
-        __n: *const ::libc::c_char,
-        __end_PTR: *mut *mut ::libc::c_char,
-        __base: ::libc::c_int,
-    ) -> ::libc::c_longlong;
-}
-extern "C" {
-    pub fn _strtoll_r(
-        arg1: *mut _reent,
-        __n: *const ::libc::c_char,
-        __end_PTR: *mut *mut ::libc::c_char,
-        __base: ::libc::c_int,
-    ) -> ::libc::c_longlong;
-}
-extern "C" {
-    pub fn strtoull(
-        __n: *const ::libc::c_char,
-        __end_PTR: *mut *mut ::libc::c_char,
-        __base: ::libc::c_int,
-    ) -> ::libc::c_ulonglong;
-}
-extern "C" {
-    pub fn _strtoull_r(
-        arg1: *mut _reent,
-        __n: *const ::libc::c_char,
-        __end_PTR: *mut *mut ::libc::c_char,
-        __base: ::libc::c_int,
-    ) -> ::libc::c_ulonglong;
-}
-extern "C" {
-    pub fn unsetenv(__string: *const ::libc::c_char) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn _unsetenv_r(arg1: *mut _reent, __string: *const ::libc::c_char) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn posix_memalign(
-        arg1: *mut *mut ::libc::c_void,
-        arg2: size_t,
-        arg3: size_t,
-    ) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn _dtoa_r(
-        arg1: *mut _reent,
-        arg2: f64,
-        arg3: ::libc::c_int,
-        arg4: ::libc::c_int,
-        arg5: *mut ::libc::c_int,
-        arg6: *mut ::libc::c_int,
-        arg7: *mut *mut ::libc::c_char,
-    ) -> *mut ::libc::c_char;
-}
-extern "C" {
-    pub fn _system_r(arg1: *mut _reent, arg2: *const ::libc::c_char) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn __eprintf(
-        arg1: *const ::libc::c_char,
-        arg2: *const ::libc::c_char,
-        arg3: ::libc::c_uint,
-        arg4: *const ::libc::c_char,
-    );
-}
-extern "C" {
-    pub fn qsort_r(
-        __base: *mut ::libc::c_void,
-        __nmemb: size_t,
-        __size: size_t,
-        __thunk: *mut ::libc::c_void,
-        _compar: ::core::option::Option<
-            unsafe extern "C" fn(
-                arg1: *mut ::libc::c_void,
-                arg2: *const ::libc::c_void,
-                arg3: *const ::libc::c_void,
-            ) -> ::libc::c_int,
-        >,
-    );
-}
-extern "C" {
-    pub fn _strtold_r(
-        arg1: *mut _reent,
-        arg2: *const ::libc::c_char,
-        arg3: *mut *mut ::libc::c_char,
-    ) -> u128;
-}
-extern "C" {
-    pub fn strtold(arg1: *const ::libc::c_char, arg2: *mut *mut ::libc::c_char) -> u128;
-}
-extern "C" {
-    pub fn aligned_alloc(arg1: size_t, arg2: size_t) -> *mut ::libc::c_void;
-}
-extern "C" {
-    pub fn at_quick_exit(arg1: ::core::option::Option<unsafe extern "C" fn()>) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn quick_exit(arg1: ::libc::c_int);
 }
 pub type int_least8_t = __int_least8_t;
 pub type uint_least8_t = __uint_least8_t;
