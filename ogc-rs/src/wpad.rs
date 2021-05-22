@@ -38,9 +38,9 @@ pub enum WpadButton {
     C = 131072,
 }
 
-impl PartialEq<WpadButton> for u16 {
+impl PartialEq<WpadButton> for u32 {
     fn eq(&self, other: &WpadButton) -> bool {
-        *self == *other as u16
+        *self == *other as u32
     }
 }
 
