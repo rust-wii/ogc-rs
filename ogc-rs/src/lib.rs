@@ -23,6 +23,9 @@ pub mod audio;
 // Pad Implementation
 pub mod pad;
 
+// WPad Implementation
+pub mod wpad;
+
 // Console Implementation
 pub mod console;
 
@@ -56,6 +59,7 @@ pub mod prelude {
     pub use crate::system::*;
     pub use crate::video::*;
     pub use crate::pad::*;
+    pub use crate::wpad::*;
     pub use crate::{print, println};
 
     // Global Allocator

@@ -1,7 +1,7 @@
 use alloc::boxed::Box;
 use core::mem;
 
-/// Represents the pad service. No controllers can be read until an instance of
+/// Represents the pad service. No gamecube controllers can be read until an instance of
 /// this struct is created. This service can only be created once!
 pub struct Pad;
 
@@ -22,7 +22,7 @@ impl PartialEq<Controller> for u16 {
 
 /// The button to be checked for the `pad` service.
 #[derive(Copy, Clone)]
-pub enum Button {
+pub enum PadButton {
     Left = 1,
     Right = 2,
     Down = 4,
@@ -37,18 +37,18 @@ pub enum Button {
     Start = 4096,
 }
 
-impl PartialEq<Button> for u16 {
-    fn eq(&self, other: &Button) -> bool {
+impl PartialEq<PadButton> for u16 {
+    fn eq(&self, other: &PadButton) -> bool {
         *self == *other as u16
     }
 }
 
 impl Pad {
-    /// Initialization of the audio service.
+    /// Initialization of the pad service.
     pub fn init() -> Self {
         unsafe {
             ogc_sys::PAD_Init();
-            Pad
+            Self
         }
     }
 
@@ -59,70 +59,61 @@ impl Pad {
         }
     }
 
-    /// Returns button that is pressed.
     pub fn buttons_down(controller: Controller) -> u16 {
         unsafe {
             ogc_sys::PAD_ButtonsDown(controller as i32)
         }
     }
 
-    /// Returns button that is held.
     pub fn buttons_held(controller: Controller) -> u16 {
         unsafe {
             ogc_sys::PAD_ButtonsHeld(controller as i32)
         }
     }
 
-    /// Returns button that is released.
     pub fn buttons_up(controller: Controller) -> u16 {
         unsafe {
             ogc_sys::PAD_ButtonsUp(controller as i32)
         }
     }
 
-    /// Returns analog x-value of grey joystick.
     pub fn stick_x(controller: Controller) -> i8 {
         unsafe {
             ogc_sys::PAD_StickX(controller as i32)
         }
     }
 
-    /// Returns analog y-value of grey joystick.
     pub fn stick_y(controller: Controller) -> i8 {
         unsafe {
             ogc_sys::PAD_StickY(controller as i32)
         }
     }
 
-    /// Returns analog x-value of yellow joystick.
     pub fn sub_stick_x(controller: Controller) -> i8 {
         unsafe {
             ogc_sys::PAD_SubStickX(controller as i32)
         }
     }
 
-    /// Returns analog y-value of yellow joystick.
     pub fn sub_stick_y(controller: Controller) -> i8 {
         unsafe {
             ogc_sys::PAD_SubStickY(controller as i32)
         }
     }
 
-    /// Returns analog value of left trigger.
     pub fn trigger_l(controller: Controller) -> u8 {
         unsafe {
             ogc_sys::PAD_TriggerL(controller as i32)
         }
     }
 
-    /// Returns analog value of right trigger.
     pub fn trigger_r(controller: Controller) -> u8 {
         unsafe {
             ogc_sys::PAD_TriggerR(controller as i32)
         }
     }
 
-    /// Register a user callback function for the `pad` interface.
+    /// Registers a sampling callback function.
     pub fn set_sampling_callback<F>(callback: Box<F>)
     where
         F: Fn(u32) -> (),
