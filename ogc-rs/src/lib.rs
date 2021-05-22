@@ -24,7 +24,7 @@ pub mod audio;
 pub mod pad;
 
 // WPad Implementation
-pub mod wpad;
+mod wpad;
 
 // Console Implementation
 pub mod console;
