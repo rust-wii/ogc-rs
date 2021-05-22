@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <network.h>
 #include <debug.h>
-#include <aesndlib.h>
 #include <gccore.h>
-#include <wiiuse/wpad.h>
 #include <ogcsys.h>
+#include <wiiuse/wpad.h>

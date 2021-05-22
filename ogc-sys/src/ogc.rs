@@ -388,23 +388,6 @@ pub const GDBSTUB_DEVICE_USB: u32 = 0;
 pub const GDBSTUB_DEVICE_TCP: u32 = 1;
 pub const GDBSTUB_DEF_CHANNEL: u32 = 0;
 pub const GDBSTUB_DEF_TCPPORT: u32 = 2828;
-pub const MAX_VOICES: u32 = 32;
-pub const SND_BUFFERSIZE: u32 = 384;
-pub const DSP_STREAMBUFFER_SIZE: u32 = 1152;
-pub const DSP_DEFAULT_FREQ: u32 = 48000;
-pub const VOICE_STATE_STOPPED: u32 = 0;
-pub const VOICE_STATE_RUNNING: u32 = 1;
-pub const VOICE_STATE_STREAM: u32 = 2;
-pub const VOICE_MONO8: u32 = 0;
-pub const VOICE_STEREO8: u32 = 1;
-pub const VOICE_MONO16: u32 = 2;
-pub const VOICE_STEREO16: u32 = 3;
-pub const VOICE_MONO8_UNSIGNED: u32 = 4;
-pub const VOICE_STEREO8_UNSIGNED: u32 = 5;
-pub const VOICE_MONO16_UNSIGNED: u32 = 6;
-pub const VOICE_STEREO16_UNSIGNED: u32 = 7;
-pub const VOICE_FREQ32KHZ: u32 = 32000;
-pub const VOICE_FREQ48KHZ: u32 = 48000;
 pub const DSPTASK_INIT: u32 = 0;
 pub const DSPTASK_RUN: u32 = 1;
 pub const DSPTASK_YIELD: u32 = 2;
@@ -1595,6 +1578,22 @@ pub const RNC_HUF_DECODE_ERROR: i32 = -2;
 pub const RNC_FILE_SIZE_MISMATCH: i32 = -3;
 pub const RNC_PACKED_CRC_ERROR: i32 = -4;
 pub const RNC_UNPACKED_CRC_ERROR: i32 = -5;
+pub const TB_BUS_CLOCK: u32 = 243000000;
+pub const TB_CORE_CLOCK: u32 = 729000000;
+pub const TB_TIMER_CLOCK: u32 = 60750;
+pub const TB_MSPERSEC: u32 = 1000;
+pub const TB_USPERSEC: u32 = 1000000;
+pub const TB_NSPERSEC: u32 = 1000000000;
+pub const TB_NSPERMS: u32 = 1000000;
+pub const TB_NSPERUS: u32 = 1000;
+pub const TB_USPERTICK: u32 = 10000;
+pub const TB_SECSPERMIN: u32 = 60;
+pub const TB_MINSPERHR: u32 = 60;
+pub const TB_MONSPERYR: u32 = 12;
+pub const TB_DAYSPERYR: u32 = 365;
+pub const TB_HRSPERDAY: u32 = 24;
+pub const TB_SECSPERDAY: u32 = 86400;
+pub const TB_SECSPERNYR: u32 = 31536000;
 pub const WIIMOTE_LED_NONE: u32 = 0;
 pub const WIIMOTE_LED_1: u32 = 16;
 pub const WIIMOTE_LED_2: u32 = 32;
@@ -1728,22 +1727,6 @@ pub const WPAD_THRESH_DEFAULT_ACCEL: u32 = 20;
 pub const WPAD_THRESH_DEFAULT_JOYSTICK: u32 = 2;
 pub const WPAD_THRESH_DEFAULT_BALANCEBOARD: u32 = 60;
 pub const WPAD_THRESH_DEFAULT_MOTION_PLUS: u32 = 100;
-pub const TB_BUS_CLOCK: u32 = 243000000;
-pub const TB_CORE_CLOCK: u32 = 729000000;
-pub const TB_TIMER_CLOCK: u32 = 60750;
-pub const TB_MSPERSEC: u32 = 1000;
-pub const TB_USPERSEC: u32 = 1000000;
-pub const TB_NSPERSEC: u32 = 1000000000;
-pub const TB_NSPERMS: u32 = 1000000;
-pub const TB_NSPERUS: u32 = 1000;
-pub const TB_USPERTICK: u32 = 10000;
-pub const TB_SECSPERMIN: u32 = 60;
-pub const TB_MINSPERHR: u32 = 60;
-pub const TB_MONSPERYR: u32 = 12;
-pub const TB_DAYSPERYR: u32 = 365;
-pub const TB_HRSPERDAY: u32 = 24;
-pub const TB_SECSPERDAY: u32 = 86400;
-pub const TB_SECSPERNYR: u32 = 31536000;
 pub type __int8_t = ::libc::c_schar;
 pub type __uint8_t = ::libc::c_uchar;
 pub type __int16_t = ::libc::c_short;
@@ -4730,84 +4713,6 @@ extern "C" {
     #[doc = ""]
     #[doc = " \\return none."]
     pub fn DEBUG_Init(device_type: s32, channel_port: s32);
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct aesndpb_t {
-    _unused: [u8; 0],
-}
-pub type AESNDPB = aesndpb_t;
-pub type AESNDVoiceCallback =
-    ::core::option::Option<unsafe extern "C" fn(pb: *mut AESNDPB, state: u32_)>;
-pub type AESNDAudioCallback =
-    ::core::option::Option<unsafe extern "C" fn(audio_buffer: *mut ::libc::c_void, len: u32_)>;
-extern "C" {
-    pub fn AESND_Init();
-}
-extern "C" {
-    pub fn AESND_Reset();
-}
-extern "C" {
-    pub fn AESND_Pause(pause: bool);
-}
-extern "C" {
-    pub fn AESND_GetDSPProcessTime() -> u32_;
-}
-extern "C" {
-    pub fn AESND_GetDSPProcessUsage() -> f32_;
-}
-extern "C" {
-    pub fn AESND_RegisterAudioCallback(cb: AESNDAudioCallback) -> AESNDAudioCallback;
-}
-extern "C" {
-    pub fn AESND_AllocateVoice(cb: AESNDVoiceCallback) -> *mut AESNDPB;
-}
-extern "C" {
-    pub fn AESND_FreeVoice(pb: *mut AESNDPB);
-}
-extern "C" {
-    pub fn AESND_SetVoiceStop(pb: *mut AESNDPB, stop: bool);
-}
-extern "C" {
-    pub fn AESND_SetVoiceMute(pb: *mut AESNDPB, mute: bool);
-}
-extern "C" {
-    pub fn AESND_SetVoiceLoop(pb: *mut AESNDPB, loop_: bool);
-}
-extern "C" {
-    pub fn AESND_SetVoiceFormat(pb: *mut AESNDPB, format: u32_);
-}
-extern "C" {
-    pub fn AESND_SetVoiceStream(pb: *mut AESNDPB, stream: bool);
-}
-extern "C" {
-    pub fn AESND_SetVoiceFrequency(pb: *mut AESNDPB, freq: f32_);
-}
-extern "C" {
-    pub fn AESND_SetVoiceVolume(pb: *mut AESNDPB, volume_l: u16_, volume_r: u16_);
-}
-extern "C" {
-    pub fn AESND_SetVoiceDelay(pb: *mut AESNDPB, delay: u32_);
-}
-extern "C" {
-    pub fn AESND_SetVoiceBuffer(pb: *mut AESNDPB, buffer: *const ::libc::c_void, len: u32_);
-}
-extern "C" {
-    pub fn AESND_PlayVoice(
-        pb: *mut AESNDPB,
-        format: u32_,
-        buffer: *const ::libc::c_void,
-        len: u32_,
-        freq: f32_,
-        delay: u32_,
-        looped: bool,
-    );
-}
-extern "C" {
-    pub fn AESND_RegisterVoiceCallback(
-        pb: *mut AESNDPB,
-        cb: AESNDVoiceCallback,
-    ) -> AESNDVoiceCallback;
 }
 #[doc = "\\typedef struct _dsp_task dsptask_t"]
 #[doc = "\\brief forward typdef to struct _dsp_task. This struture holds certain DSP task information for execution."]
