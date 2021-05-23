@@ -1,11 +1,8 @@
-pub mod utils {
-    pub fn gp_fifo(boundary: usize, fifo_size: usize) -> *mut libc::c_void {
-        assert_eq!(32, boundary);
-        unsafe {
-            let gp_fifo = libc::memalign(boundary, fifo_size);
-            libc::memset(gp_fifo, 0, fifo_size);
-            gp_fifo
-        }
+pub fn gp_fifo(fifo_size: usize) -> *mut libc::c_void {
+    unsafe {
+        let gp_fifo = libc::memalign(32, fifo_size);
+        libc::memset(gp_fifo, 0, fifo_size);
+        gp_fifo
     }
 }
 
