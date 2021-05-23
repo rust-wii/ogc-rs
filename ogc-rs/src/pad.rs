@@ -45,10 +45,9 @@ impl PartialEq<PadButton> for u16 {
 
 impl Pad {
     /// Initialization of the pad service.
-    pub fn init() -> Self {
+    pub fn init() {
         unsafe {
             ogc_sys::PAD_Init();
-            Self
         }
     }
 
