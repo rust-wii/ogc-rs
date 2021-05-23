@@ -23,6 +23,9 @@ pub mod audio;
 // Gx Implementation
 pub mod gx;
 
+// Gu Implementation
+pub mod gu;
+
 // Pad Implementation
 pub mod pad;
 
@@ -63,7 +66,8 @@ pub mod prelude {
     pub use crate::video::*;
     pub use crate::pad::*;
     pub use crate::wpad::*;
-    pub use crate::gx::*;
+    pub use crate::gx::{*, constants::*};
+    pub use crate::gu::*;
     pub use crate::{print, println};
 
     // Global Allocator
