@@ -12,6 +12,14 @@ impl Gu {
         }
     }
 
+    /// Sets a 4x4 perspective projection matrix from field of view and aspect ratio parameters.
+    /// See [guPerspective](https://libogc.devkitpro.org/gu_8h.html#af22f5e7e20c24dc11f2d58dfb64cdc95) for more.
+    pub fn perspective(mut mt: Mtx44, fovy: f32, aspect: f32, n: f32, f: f32) {
+        unsafe {
+            ogc_sys::guPerspective(&mut mt[0], fovy, aspect, n, f)
+        }
+    }
+
     pub fn mtx_identity(mut mt: Mtx44) {
         unsafe {
             ogc_sys::guMtx44Identity(&mut mt[0])

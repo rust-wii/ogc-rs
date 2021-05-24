@@ -26,6 +26,9 @@ pub mod gx;
 // Gu Implementation
 pub mod gu;
 
+// Tpl Implementation
+pub mod tpl;
+
 // Pad Implementation
 pub mod pad;
 
@@ -68,6 +71,7 @@ pub mod prelude {
     pub use crate::wpad::*;
     pub use crate::gx::{*, constants::*};
     pub use crate::gu::*;
+    pub use crate::tpl::*;
     pub use crate::{print, println};
 
     // Global Allocator
