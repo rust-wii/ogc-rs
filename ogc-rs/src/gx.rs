@@ -1,5 +1,7 @@
+use core::ffi::c_void;
+
 /// Helper function for `Gx::init`
-pub fn gp_fifo(fifo_size: usize) -> *mut libc::c_void {
+pub fn gp_fifo(fifo_size: usize) -> *mut c_void {
     unsafe {
         let gp_fifo = libc::memalign(32, fifo_size);
         libc::memset(gp_fifo, 0, fifo_size);
@@ -16,7 +18,7 @@ pub struct Gx;
 impl Gx {
     /// Initializes the graphics processor to its initial state.
     /// See [GX_Init](https://libogc.devkitpro.org/gx_8h.html#aea24cfd5f8f2b168dc4f60d4883a6a8e) for more.
-    pub fn init(gp_fifo: *mut libc::c_void, fifo_size: u32) -> *mut ogc_sys::GXFifoObj {
+    pub fn init(gp_fifo: *mut c_void, fifo_size: u32) -> *mut ogc_sys::GXFifoObj {
         assert_eq!(0, fifo_size % 32);
         unsafe {
             ogc_sys::GX_Init(gp_fifo, fifo_size)
@@ -120,7 +122,7 @@ impl Gx {
 
     /// Copies the embedded framebuffer (EFB) to the external framebuffer(XFB) in main memory.
     /// See [GX_CopyDisp](https://libogc.devkitpro.org/gx_8h.html#a9ed0ae3f900abb6af2e930dff7a6bc28) for more.
-    pub fn copy_disp(dest: *mut libc::c_void, clear: u8) {
+    pub fn copy_disp(dest: *mut c_void, clear: u8) {
         unsafe {
             ogc_sys::GX_CopyDisp(dest, clear)
         }
@@ -275,6 +277,14 @@ impl Gx {
     pub fn set_color_update(enable: u8) {
         unsafe {
             ogc_sys::GX_SetColorUpdate(enable)
+        }
+    }
+
+    /// Sets the array base pointer and stride for a single attribute.
+    /// See [GX_SetArray](https://libogc.devkitpro.org/gx_8h.html#a5164fc6aa2a678d792af80d94bfa1ec2) for more.
+    pub fn set_array(attr: u32, ptr: *mut c_void, stride: u8) {
+        unsafe {
+            ogc_sys::GX_SetArray(attr, ptr, stride)
         }
     }
 
