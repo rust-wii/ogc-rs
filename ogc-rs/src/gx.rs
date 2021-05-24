@@ -1,3 +1,4 @@
+/// Helper function for `Gx::init`
 pub fn gp_fifo(fifo_size: usize) -> *mut libc::c_void {
     unsafe {
         let gp_fifo = libc::memalign(32, fifo_size);
@@ -6,6 +7,10 @@ pub fn gp_fifo(fifo_size: usize) -> *mut libc::c_void {
     }
 }
 
+type Mtx34 = [[f32; 4]; 3];
+type Mtx44 = [[f32; 4]; 4];
+
+/// Represents the GX service.
 pub struct Gx;
 
 impl Gx {
@@ -195,7 +200,7 @@ impl Gx {
 
     /// Sets the projection matrix.
     /// See [GX_LoadProjectionMtx](https://libogc.devkitpro.org/gx_8h.html#a241a1301f006ed04b7895c051959f64e) for more.
-    pub fn load_projection_mtx(mut mt: [[f32; 4]; 4], p_type: u8) {
+    pub fn load_projection_mtx(mut mt: Mtx44, p_type: u8) {
         unsafe {
             ogc_sys::GX_LoadProjectionMtx(&mut mt[0], p_type)
         }
@@ -227,7 +232,7 @@ impl Gx {
 
     /// Used to load a 3x4 modelview matrix mt into matrix memory at location pnidx.
     /// See [GX_LoadPosMtxImm](https://libogc.devkitpro.org/gx_8h.html#a90349e713128a1fa4fd6048dcab7b5e7) for more.
-    pub fn load_pos_mtx_imm(mut mt: [[f32; 4]; 3], pnidx: u32) {
+    pub fn load_pos_mtx_imm(mut mt: Mtx34, pnidx: u32) {
         unsafe {
             ogc_sys::GX_LoadPosMtxImm(&mut mt[0], pnidx)
         }
@@ -280,6 +285,7 @@ impl Gx {
     }
 }
 
+/// Contains all constants used with GX.
 pub mod constants {
     pub const GX_FALSE: u32 = 0;
     pub const GX_TRUE: u32 = 1;
