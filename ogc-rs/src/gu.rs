@@ -1,7 +1,10 @@
 /// Represents the gu service.
 pub struct Gu;
 
+type Mtx34 = [[f32; 4]; 3];
 type Mtx44 = [[f32; 4]; 4];
+
+pub type Vector = ogc_sys::guVector;
 
 impl Gu {
     /// Sets a 4x4 matrix for orthographic projection.
@@ -17,6 +20,14 @@ impl Gu {
     pub fn perspective(mut mt: Mtx44, fovy: f32, aspect: f32, n: f32, f: f32) {
         unsafe {
             ogc_sys::guPerspective(&mut mt[0], fovy, aspect, n, f)
+        }
+    }
+
+    /// Sets a world-space to camera-space transformation matrix.
+    /// See [guLookAt](https://libogc.devkitpro.org/gu_8h.html#a3ed1b8f80bc0ab13879bd8ce7c16f5ee) for more.
+    pub fn look_at(mut mt: Mtx34, mut cam_pos: Vector, mut cam_up: Vector, mut target: Vector) {
+        unsafe {
+            ogc_sys::guLookAt(&mut mt[0], &mut cam_pos, &mut cam_up, &mut target)
         }
     }
 
