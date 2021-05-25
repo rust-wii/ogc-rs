@@ -1,6 +1,7 @@
 /// Represents the gu service.
 pub struct Gu;
 
+type Mtx = [[f32; 4]; 3];
 type Mtx34 = [[f32; 4]; 3];
 type Mtx44 = [[f32; 4]; 4];
 
@@ -31,9 +32,15 @@ impl Gu {
         }
     }
 
+    pub fn mtx_concat(mut a: Mtx, mut b: Mtx, mut ab: Mtx) {
+        unsafe {
+            ogc_sys::c_guMtxConcat(&mut a[0], &mut b[0], &mut ab[0])
+        }
+    }
+
     pub fn mtx_identity(mut mt: Mtx44) {
         unsafe {
-            ogc_sys::guMtx44Identity(&mut mt[0])
+            ogc_sys::c_guMtxIdentity(&mut mt[0])
         }
     }
 
