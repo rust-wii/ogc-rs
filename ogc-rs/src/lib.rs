@@ -74,6 +74,10 @@ pub mod prelude {
     pub use crate::tpl::*;
     pub use crate::{print, println};
 
+    pub type Mtx = [[f32; 4]; 3];
+    pub type Mtx34 = [[f32; 4]; 3];
+    pub type Mtx44 = [[f32; 4]; 4];
+
     // Global Allocator
     use crate::runtime::OGCAllocator;
 
