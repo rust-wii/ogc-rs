@@ -26,7 +26,7 @@ impl Gu {
 
     /// Sets a world-space to camera-space transformation matrix.
     /// See [guLookAt](https://libogc.devkitpro.org/gu_8h.html#a3ed1b8f80bc0ab13879bd8ce7c16f5ee) for more.
-    pub fn look_at(mut mt: Mtx34, mut cam_pos: Vector, mut cam_up: Vector, mut target: Vector) {
+    pub fn look_at(mut mt: Mtx, mut cam_pos: Vector, mut cam_up: Vector, mut target: Vector) {
         unsafe {
             ogc_sys::guLookAt(&mut mt[0], &mut cam_pos, &mut cam_up, &mut target)
         }
@@ -38,13 +38,13 @@ impl Gu {
         }
     }
 
-    pub fn mtx_identity(mut mt: Mtx44) {
+    pub fn mtx_identity(mut mt: Mtx) {
         unsafe {
             ogc_sys::c_guMtxIdentity(&mut mt[0])
         }
     }
 
-    pub fn mtx_trans_apply(mut src: Mtx44, mut dst: Mtx44, x_t: f32, y_t: f32, z_t: f32) {
+    pub fn mtx_trans_apply(mut src: Mtx, mut dst: Mtx, x_t: f32, y_t: f32, z_t: f32) {
         unsafe {
             ogc_sys::c_guMtxTransApply(&mut src[0], &mut dst[0], x_t, y_t, z_t)
         }
