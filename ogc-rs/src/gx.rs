@@ -296,6 +296,12 @@ impl Gx {
         }
     }
 
+    pub fn flush() {
+        unsafe {
+            ogc_sys::GX_Flush()
+        }
+    }
+
     pub fn end() {
         unsafe {
             ogc_sys::GX_End()
