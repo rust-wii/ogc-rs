@@ -53,63 +53,43 @@ impl Pad {
 
     /// Scan all pads. Must be called every time before checking buttons.
     pub fn scan_pads() -> u32 {
-        unsafe {
-            ogc_sys::PAD_ScanPads()
-        }
+        unsafe { ogc_sys::PAD_ScanPads() }
     }
 
     pub fn buttons_down(controller: Controller) -> u16 {
-        unsafe {
-            ogc_sys::PAD_ButtonsDown(controller as i32)
-        }
+        unsafe { ogc_sys::PAD_ButtonsDown(controller as i32) }
     }
 
     pub fn buttons_held(controller: Controller) -> u16 {
-        unsafe {
-            ogc_sys::PAD_ButtonsHeld(controller as i32)
-        }
+        unsafe { ogc_sys::PAD_ButtonsHeld(controller as i32) }
     }
 
     pub fn buttons_up(controller: Controller) -> u16 {
-        unsafe {
-            ogc_sys::PAD_ButtonsUp(controller as i32)
-        }
+        unsafe { ogc_sys::PAD_ButtonsUp(controller as i32) }
     }
 
     pub fn stick_x(controller: Controller) -> i8 {
-        unsafe {
-            ogc_sys::PAD_StickX(controller as i32)
-        }
+        unsafe { ogc_sys::PAD_StickX(controller as i32) }
     }
 
     pub fn stick_y(controller: Controller) -> i8 {
-        unsafe {
-            ogc_sys::PAD_StickY(controller as i32)
-        }
+        unsafe { ogc_sys::PAD_StickY(controller as i32) }
     }
 
     pub fn sub_stick_x(controller: Controller) -> i8 {
-        unsafe {
-            ogc_sys::PAD_SubStickX(controller as i32)
-        }
+        unsafe { ogc_sys::PAD_SubStickX(controller as i32) }
     }
 
     pub fn sub_stick_y(controller: Controller) -> i8 {
-        unsafe {
-            ogc_sys::PAD_SubStickY(controller as i32)
-        }
+        unsafe { ogc_sys::PAD_SubStickY(controller as i32) }
     }
 
     pub fn trigger_l(controller: Controller) -> u8 {
-        unsafe {
-            ogc_sys::PAD_TriggerL(controller as i32)
-        }
+        unsafe { ogc_sys::PAD_TriggerL(controller as i32) }
     }
 
     pub fn trigger_r(controller: Controller) -> u8 {
-        unsafe {
-            ogc_sys::PAD_TriggerR(controller as i32)
-        }
+        unsafe { ogc_sys::PAD_TriggerR(controller as i32) }
     }
 
     /// Registers a sampling callback function.
@@ -125,11 +105,25 @@ impl Pad {
         }
     }
 
-    fn clamp() { unimplemented!() }
-    fn control_motor() { unimplemented!() }
-    fn read() { unimplemented!() }
-    fn recalibrate() { unimplemented!() }
-    fn reset() { unimplemented!() }
-    fn set_spec() { unimplemented!() }
-    fn sync() { unimplemented!() }
+    fn clamp() {
+        unimplemented!()
+    }
+    fn control_motor() {
+        unimplemented!()
+    }
+    fn read() {
+        unimplemented!()
+    }
+    fn recalibrate() {
+        unimplemented!()
+    }
+    fn reset() {
+        unimplemented!()
+    }
+    fn set_spec() {
+        unimplemented!()
+    }
+    fn sync() {
+        unimplemented!()
+    }
 }

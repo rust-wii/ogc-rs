@@ -55,27 +55,19 @@ impl Wpad {
 
     /// Scan all pads. Must be called every time before checking buttons.
     pub fn scan_pads() -> i32 {
-        unsafe {
-            ogc_sys::WPAD_ScanPads()
-        }
+        unsafe { ogc_sys::WPAD_ScanPads() }
     }
 
     pub fn buttons_down(remote: Remote) -> u32 {
-        unsafe {
-            ogc_sys::WPAD_ButtonsDown(remote as i32)
-        }
+        unsafe { ogc_sys::WPAD_ButtonsDown(remote as i32) }
     }
 
     pub fn buttons_held(remote: Remote) -> u32 {
-        unsafe {
-            ogc_sys::WPAD_ButtonsHeld(remote as i32)
-        }
+        unsafe { ogc_sys::WPAD_ButtonsHeld(remote as i32) }
     }
 
     pub fn buttons_up(remote: Remote) -> u32 {
-        unsafe {
-            ogc_sys::WPAD_ButtonsHeld(remote as i32)
-        }
+        unsafe { ogc_sys::WPAD_ButtonsHeld(remote as i32) }
     }
 
     /// Registers a battery dead callback function.

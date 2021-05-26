@@ -23,6 +23,9 @@ pub mod audio;
 // Gx Implementation
 pub mod gx;
 
+// Constants Implementation
+pub mod constants;
+
 // Gu Implementation
 pub mod gu;
 
@@ -64,14 +67,15 @@ pub mod prelude {
 
     // Export Services
     pub use crate::console::*;
+    pub use crate::constants::*;
     pub use crate::debug::*;
-    pub use crate::system::*;
-    pub use crate::video::*;
-    pub use crate::pad::*;
-    pub use crate::wpad::*;
-    pub use crate::gx::{*, constants::*};
     pub use crate::gu::*;
+    pub use crate::gx::*;
+    pub use crate::pad::*;
+    pub use crate::system::*;
     pub use crate::tpl::*;
+    pub use crate::video::*;
+    pub use crate::wpad::*;
     pub use crate::{print, println};
 
     // Types
