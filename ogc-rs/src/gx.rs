@@ -3,7 +3,7 @@ use core::ffi::c_void;
 /// Helper function for `Gx::init`
 pub fn gp_fifo(fifo_size: usize) -> *mut c_void {
     unsafe {
-        let gp_fifo = libc::memalign(32, fifo_size);
+        let gp_fifo = crate::mem_cached_to_uncached!(libc::memalign(32, fifo_size));
         libc::memset(gp_fifo, 0, fifo_size);
         gp_fifo
     }
