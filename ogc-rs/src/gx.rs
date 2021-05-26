@@ -288,6 +288,32 @@ impl Gx {
         }
     }
 
+    /// Begins drawing of a graphics primitive.
+    /// See [GX_Begin](https://libogc.devkitpro.org/gx_8h.html#ac1e1239130a33d9fae1352aee8d2cab9) for more.
+    pub fn begin(primitive: u8, vtxfmt: u8, vtxcnt: u16) {
+        unsafe {
+            ogc_sys::GX_Begin(primitive, vtxfmt, vtxcnt)
+        }
+    }
+
+    pub fn end() {
+        unsafe {
+            ogc_sys::GX_End()
+        }
+    }
+
+    pub fn position1x8(index: u8) {
+        unsafe {
+            ogc_sys::GX_Position1x8(index)
+        }
+    }
+
+    pub fn color1x8(index: u8) {
+        unsafe {
+            ogc_sys::GX_Color1x8(index)
+        }
+    }
+
     pub fn tex_coord_2f32(s: f32, t: f32) {
         unsafe {
             ogc_sys::GX_TexCoord2f32(s, t)
