@@ -296,14 +296,14 @@ impl System {
     }
 
     /// Set Wireless ID
-    pub fn set_wireless_id(channel: u32, id: u32) {
+    pub fn set_wireless_id(channel: u32, id: u16) {
         unsafe {
             ogc_sys::SYS_SetWirelessID(channel, id);
         }
     }
 
     /// Get Wireless ID
-    pub fn get_wireless_id(channel: u32) -> u32 {
+    pub fn get_wireless_id(channel: u32) -> u16 {
         unsafe { ogc_sys::SYS_GetWirelessID(channel) }
     }
 
