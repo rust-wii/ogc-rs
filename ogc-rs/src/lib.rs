@@ -53,6 +53,10 @@ pub use utils::*;
 // Runtime Functions
 pub mod runtime;
 
+// FFI
+#[cfg(feature = "ffi")]
+pub extern crate ogc_sys as ffi;
+
 /// Prelude
 pub mod prelude {
     // alloc Export
