@@ -1,8 +1,11 @@
 [package]
 name = "ogc-sys"
-version = "0.4.1"
+version = "0.4.2"
 authors = ["rust-wii"]
 edition = "2018"
 
 [dependencies]
 libc = "0.2"
+
+[build-dependencies]
+bindgen = "0.58"

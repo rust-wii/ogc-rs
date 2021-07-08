@@ -57,13 +57,15 @@ pub use utils::*;
 // Runtime Functions
 pub mod runtime;
 
-// Prelude
+#[cfg(feature = "ffi")]
+pub extern crate ogc_sys as ffi;
+
+/// Prelude
 pub mod prelude {
     // alloc Export
     pub use alloc::boxed::Box;
     pub use alloc::string::{String, ToString};
     pub use alloc::{vec, vec::Vec};
-    pub use ogc_sys;
 
     // Export Services
     pub use crate::console::*;

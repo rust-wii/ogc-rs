@@ -1,18 +1,21 @@
-use enum_primitive::*;
+//! The ``debug`` module of ``ogc-rs``.
+//!
+//! This module implements a safe wrapper around the debug functions.
 
-enum_primitive! {
-    /// Enum for gdb stub types.
-    #[derive(Debug, Eq, PartialEq)]
-    pub enum GDBStubDevice {
-        Usb = 0,
-        Tcp = 1,
-    }
+use num_enum::IntoPrimitive;
+
+/// Enum for gdb stub types.
+#[derive(IntoPrimitive, Debug, Eq, PartialEq)]
+#[repr(i32)]
+pub enum GDBStubDevice {
+    Usb = 0,
+    Tcp = 1,
 }
 
 /// Performs the initialization of the debug stub.
 pub fn debug_init(device_type: GDBStubDevice, channel_port: i32) {
     unsafe {
-        ogc_sys::DEBUG_Init(device_type.to_i32().unwrap(), channel_port);
+        ogc_sys::DEBUG_Init(device_type.into(), channel_port);
     }
 }
 
