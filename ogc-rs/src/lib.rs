@@ -15,6 +15,20 @@
 //!
 //! ``ogc-rs`` also provides runtime functions and an allocator for ``no_std``
 //! environments.
+//!
+//! ## Features
+//! You can currently enable the following features:
+//!
+//! - `ffi`: provides access to `ogc-sys` for functions that are not implemented yet.
+//! - `pad`: enables support for GameCube controllers.
+//!
+//! For instance, to enable the `pad` module, add following to `Cargo.toml`:
+//!
+//! ```toml
+//! [dependencies.ogc-rs]
+//! version = "*"
+//! features = ["pad"]
+//! ```
 
 #![no_std]
 #![allow(dead_code)]
@@ -53,6 +67,10 @@ pub use utils::*;
 // Runtime Functions
 pub mod runtime;
 
+// Gamecube Pad Functions
+#[cfg(feature = "pad")]
+pub mod pad;
+
 // FFI
 #[cfg(feature = "ffi")]
 pub extern crate ogc_sys as ffi;
@@ -67,6 +85,8 @@ pub mod prelude {
     // Export Services
     pub use crate::console::*;
     pub use crate::debug::*;
+    #[cfg(feature = "pad")]
+    pub use crate::pad::*;
     pub use crate::system::*;
     pub use crate::video::*;
     pub use crate::{print, println};
