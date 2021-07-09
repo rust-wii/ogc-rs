@@ -1,6 +1,5 @@
 [build]
 target = "powerpc-unknown-eabi.json"
-rustflags = ["-C", "link-args=-lc"]
 
 [unstable]
 build-std = ["core", "alloc"]

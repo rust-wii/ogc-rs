@@ -1,3 +1,5 @@
+//! Utility Functions to convert between types.
+
 use alloc::{string::String, vec::Vec};
 use core::slice;
 

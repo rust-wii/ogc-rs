@@ -1,3 +1,7 @@
+//! The ``pad`` module of ``ogc-rs``.
+//!
+//! This module implements a safe wrapper around the gamecube controller functions found in ``pad.h``.
+
 use crate::{video::RenderConfig, OgcError, Result};
 use alloc::boxed::Box;
 use core::{ffi::c_void, mem, time::Duration};

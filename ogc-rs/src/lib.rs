@@ -1,3 +1,7 @@
+//! # ogc-rs
+//!
+//! ``ogc-rs`` is a safe, idiomatic wrapper around ``ogc-sys``.
+//!
 //! ``ogc-rs`` provides many features from libogc such as:
 //!
 //! * ``network``: Provides TCP networking for the Wii.

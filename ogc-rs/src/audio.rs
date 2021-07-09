@@ -1,3 +1,7 @@
+//! The ``audio`` module of ``ogc-rs``.
+//!
+//! This module implements a safe wrapper around the audio functions found in ``audio.h``.
+
 use alloc::boxed::Box;
 use core::{convert::TryFrom, mem, ptr};
 use num_enum::{IntoPrimitive, TryFromPrimitive};

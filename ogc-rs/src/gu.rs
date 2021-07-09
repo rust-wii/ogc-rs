@@ -1,3 +1,7 @@
+//! The ``gu`` module of ``ogc-rs``.
+//!
+//! This module implements a safe wrapper around the matrix subsystem functions found in ``gu.h``.
+
 /// Represents the gu service.
 pub struct Gu;
 

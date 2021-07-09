@@ -1,3 +1,7 @@
+//! The ``gx`` module of ``ogc-rs``.
+//!
+//! This module implements a safe wrapper around the graphics functions found in ``gx.h``.
+
 use core::ffi::c_void;
 
 /// Helper function for `Gx::init`

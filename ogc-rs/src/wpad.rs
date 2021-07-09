@@ -1,3 +1,7 @@
+//! The ``wpad`` module of ``ogc-rs``.
+//!
+//! This module implements a safe wrapper around the wii controller functions found in ``wpad.h``.
+
 use alloc::boxed::Box;
 use core::mem;
 

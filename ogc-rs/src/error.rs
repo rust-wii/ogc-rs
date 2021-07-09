@@ -1,3 +1,5 @@
+//! Custom Error Implementation for ``ogc-rs``.
+
 use alloc::string::String;
 use core::fmt;
 
