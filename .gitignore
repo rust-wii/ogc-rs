@@ -1,4 +1,3 @@
 /target
-/.cargo
 /.ccls-cache
 **/*.rs.bk
