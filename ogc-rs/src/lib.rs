@@ -50,6 +50,9 @@ pub mod debug;
 pub mod utils;
 pub use utils::*;
 
+// Gu Implementation
+pub mod gu;
+
 // Runtime Functions
 pub mod runtime;
 
@@ -67,6 +70,7 @@ pub mod prelude {
     // Export Services
     pub use crate::console::*;
     pub use crate::debug::*;
+    pub use crate::gu::*;
     pub use crate::system::*;
     pub use crate::video::*;
     pub use crate::{print, println};
