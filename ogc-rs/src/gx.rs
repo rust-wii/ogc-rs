@@ -9,8 +9,8 @@ pub fn gp_fifo(fifo_size: usize) -> *mut c_void {
     }
 }
 
-type Mtx34 = [[f32; 4]; 3];
-type Mtx44 = [[f32; 4]; 4];
+pub type Mtx34 = [[f32; 4]; 3];
+pub type Mtx44 = [[f32; 4]; 4];
 
 /// Represents the GX service.
 pub struct Gx;

@@ -1,5 +1,4 @@
 /target
 /.cargo
 /.ccls-cache
-/powerpc-unknown-eabi.json
 **/*.rs.bk

@@ -1,8 +1,7 @@
 /// Represents the gu service.
 pub struct Gu;
 
-type Mtx34 = [[f32; 4]; 3];
-type Mtx44 = [[f32; 4]; 4];
+use crate::gx::{Mtx34, Mtx44};
 
 pub type Vector = ogc_sys::guVector;
 

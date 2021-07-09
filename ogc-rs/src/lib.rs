@@ -1,6 +1,16 @@
-//! # ogc-rs
+//! ``ogc-rs`` provides many features from libogc such as:
 //!
-//! ``ogc-rs`` is a safe, idiomatic wrapper around ``ogc-sys``.
+//! * ``network``: Provides TCP networking for the Wii.
+//! * ``audio``: Provides functions for audio on the Wii.
+//! * ``fs``: Provides functions for manipulating the filesystem on the Wii.
+//! * ``system``: Provides OS functions for the Wii.
+//! * ``console``: Provides console functions for the Wii.
+//! * ``input``: Provides an interface for reading input from devices on the Wii.
+//! * ``video``: Provides functions for video output on the Wii.
+//! * ``gx``: Provides an opengl-like interface for rendering on the Wii.
+//!
+//! ``ogc-rs`` also provides runtime functions and an allocator for ``no_std``
+//! environments.
 
 #![no_std]
 #![allow(dead_code)]
@@ -23,14 +33,8 @@ pub mod audio;
 // Gx Implementation
 pub mod gx;
 
-// Constants Implementation
-pub mod constants;
-
 // Gu Implementation
 pub mod gu;
-
-// Tpl Implementation
-pub mod tpl;
 
 // Pad Implementation
 pub mod pad;
@@ -69,21 +73,14 @@ pub mod prelude {
 
     // Export Services
     pub use crate::console::*;
-    pub use crate::constants::*;
     pub use crate::debug::*;
     pub use crate::gu::*;
     pub use crate::gx::*;
     pub use crate::pad::*;
     pub use crate::system::*;
-    pub use crate::tpl::*;
     pub use crate::video::*;
     pub use crate::wpad::*;
     pub use crate::{print, println};
-
-    // Types
-    pub type Mtx = [[f32; 4]; 3];
-    pub type Mtx34 = [[f32; 4]; 3];
-    pub type Mtx44 = [[f32; 4]; 4];
 
     // Global Allocator
     use crate::runtime::OGCAllocator;
