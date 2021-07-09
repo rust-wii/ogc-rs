@@ -5,3 +5,5 @@
 #include <network.h>
 #include <debug.h>
 #include <ogcsys.h>
+#include <math.h>
+#include <wiiuse/wpad.h>

@@ -53,6 +53,10 @@ pub use utils::*;
 // Runtime Functions
 pub mod runtime;
 
+// Wpad Implementation
+#[cfg(feature = "wpad")]
+pub mod wpad;
+
 // FFI
 #[cfg(feature = "ffi")]
 pub extern crate ogc_sys as ffi;
@@ -69,6 +73,8 @@ pub mod prelude {
     pub use crate::debug::*;
     pub use crate::system::*;
     pub use crate::video::*;
+    #[cfg(feature = "wpad")]
+    pub use crate::wpad::*;
     pub use crate::{print, println};
 
     // Global Allocator
