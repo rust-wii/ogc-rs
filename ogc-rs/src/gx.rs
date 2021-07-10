@@ -14,6 +14,15 @@ pub fn gp_fifo(fifo_size: usize) -> *mut c_void {
     }
 }
 
+#[derive(Copy, Clone, Default, Debug)]
+pub struct Color(u8, u8, u8, u8);
+
+impl Color {
+    pub fn new(r: u8, g: u8, b: u8, a: u8) -> Self {
+        Self(r, g, b, a)
+    }
+}
+
 /// Represents the GX service.
 pub struct Gx;
 
@@ -28,8 +37,8 @@ impl Gx {
 
     /// Sets color and Z value to clear the EFB to during copy operations.
     /// See [GX_SetCopyClear](https://libogc.devkitpro.org/gx_8h.html#a17265aefd7e64820de53abd9113334bc) for more.
-    pub fn set_copy_clear(background: (u8, u8, u8, u8), z_value: u32) {
-        let (r, g, b, a) = background;
+    pub fn set_copy_clear(background: Color, z_value: u32) {
+        let Color(r, g, b, a) = background;
         let background = ogc_sys::_gx_color { r, g, b, a };
         unsafe { ogc_sys::GX_SetCopyClear(background, z_value) }
     }
@@ -246,6 +255,30 @@ impl Gx {
     /// See [GX_SetClipMode](https://libogc.devkitpro.org/gx_8h.html#a3d348d7af8ded25b57352e956f43d974) for more.
     pub fn set_clip_mode(mode: u8) {
         unsafe { ogc_sys::GX_SetClipMode(mode) }
+    }
+
+    /// Allows the CPU to write color directly to the Embedded Frame Buffer (EFB) at position x, y.
+    /// See [GX_PokeARGB](https://libogc.devkitpro.org/gx_8h.html#a5038d2f65e7959d64c68dcb1855353d8) for more.
+    pub fn poke_argb(x: u16, y: u16, color: Color) {
+        assert!(x < 640, "x must be less than 640, currently {}", x);
+        assert!(y < 528, "y must be less than 527, currently {}", y);
+        let Color(r, g, b, a) = color;
+        let color = ogc_sys::_gx_color { r, g, b, a };
+        unsafe {
+            ogc_sys::GX_PokeARGB(x, y, color);
+        }
+    }
+
+    pub fn position_3f32(x: f32, y: f32, z: f32) {
+        unsafe {
+            ogc_sys::GX_Position3f32(x, y, z);
+        }
+    }
+
+    pub fn color_1u32(clr: u32) {
+        unsafe {
+            ogc_sys::GX_Color1u32(clr);
+        }
     }
 
     pub fn flush() {
