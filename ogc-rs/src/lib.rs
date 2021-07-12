@@ -59,6 +59,9 @@ pub mod runtime;
 // Gx Implementation
 pub mod gx;
 
+// ASND Implementation
+pub mod asnd;
+
 // FFI
 #[cfg(feature = "ffi")]
 pub extern crate ogc_sys as ffi;
@@ -71,12 +74,13 @@ pub mod prelude {
     pub use alloc::{vec, vec::Vec};
 
     // Export Services
+    pub use crate::asnd::*;
     pub use crate::console::*;
     pub use crate::debug::*;
     pub use crate::gu::*;
+    pub use crate::gx::*;
     pub use crate::system::*;
     pub use crate::video::*;
-    pub use crate::gx::*;
     pub use crate::{print, println};
 
     // Global Allocator
