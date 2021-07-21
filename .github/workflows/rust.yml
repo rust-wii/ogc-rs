@@ -21,6 +21,4 @@ jobs:
           components: rust-src
 
       - name: Run cargo check
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
+        run: cargo check --target=powerpc-unknown-eabi.json
