@@ -26,4 +26,8 @@ jobs:
           components: rust-src
 
       - name: Run cargo check
-        run: cargo check --target=powerpc-unknown-eabi.json
+        uses: actions-rs/cargo@v1
+        env:
+          CLANG_VERSION: 7.0.1
+        with:
+          command: check
