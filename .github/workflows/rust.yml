@@ -11,6 +11,9 @@ jobs:
     container:
       image: "devkitpro/devkitppc"
     steps:
+      - name: Install required packages
+        run: sudo apt-get install -y gcc libc6-dev
+
       - name: Checkout sources
         uses: actions/checkout@v2
 
