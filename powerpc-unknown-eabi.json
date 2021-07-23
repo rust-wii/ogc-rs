@@ -1,0 +1,32 @@
+{
+    "arch": "powerpc",
+    "cpu": "750",
+    "data-layout": "E-m:e-p:32:32-i64:64-n32",
+    "dynamic-linking": false,
+    "env": "newlib",
+    "executables": true,
+    "has-elf-tls": false,
+    "has-rpath": true,
+    "llvm-target": "powerpc-unknown-eabi",
+    "linker": "powerpc-eabi-gcc",
+    "linker-flavor": "gcc",
+    "linker-is-gnu": true,
+    "os": "rvl-ios",
+    "pre-link-args": {
+        "gcc": [
+            "-mrvl",
+            "-meabi",
+            "-mhard-float"
+        ]
+    },
+    "panic-strategy": "abort",
+    "relocation-model": "static",
+    "target-env": "newlib",
+    "target-endian": "big",
+    "target-os": "rvl-ios",
+    "target-family": "unix",
+    "target-mcount": "_mcount",
+    "target-c-int-width": "32",
+    "target-pointer-width": "32",
+    "vendor": "nintendo"
+}

@@ -1,0 +1,33 @@
+# Rust CI
+
+on: [push, pull_request]
+
+name: Rust CI
+
+jobs:
+  check:
+    name: Check
+    runs-on: ubuntu-latest
+    container:
+      image: "devkitpro/devkitppc"
+    steps:
+      - name: Install required packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc libc6-dev nodejs clang
+
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Install nightly toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          components: rust-src
+
+      - name: Run cargo check
+        uses: actions-rs/cargo@v1
+        env:
+          CLANG_VERSION: 7.0.1
+        with:
+          command: check
