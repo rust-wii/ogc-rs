@@ -1,5 +1,6 @@
 extern crate bindgen;
 
+use regex::Regex;
 use std::env;
 use std::process::Command;
 
@@ -21,23 +22,20 @@ fn get_clang_version() -> String {
             None => panic!("Clang command output does not contain split lines."),
         };
 
-        // Attempt to split the version numbers from the string.
-        let split_v: Option<Vec<&str>> = first_line
-            .split_whitespace()
-            .filter(|t| t.chars().next().map_or(false, |v| v.is_ascii_digit()))
-            .next()
-            .map(|v| v.split('.').collect());
+        // Parse the version string using Regex.
+        let regex = Regex::new(r"(?m)\d+(\.\d+)+").unwrap();
+        let result = regex.captures(first_line).unwrap().get(0);
 
         // Attempt to join together the version string.
-        let version = match split_v {
-            Some(v) => v.join("."),
+        let version = match result {
+            Some(v) => v.as_str(),
             None => {
                 panic!("Failed to parse version, please export your clang version to CLANG_VERSION")
             }
         };
 
         // Return the final joined string.
-        version
+        version.to_string()
     } else {
         // Clang version env variable exists, use that over parsing.
         env::var("CLANG_VERSION").unwrap()
