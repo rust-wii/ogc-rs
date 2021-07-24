@@ -1,8 +1,7 @@
-#include <stdio.h>
-#include <malloc.h>
-#include <string.h>
-#include <stdlib.h>
+#include <ogcsys.h>
+
+// Extras
 #include <network.h>
 #include <debug.h>
-#include <ogcsys.h>
 #include <asndlib.h>
+
