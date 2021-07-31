@@ -62,6 +62,9 @@ pub mod gx;
 // ASND Implementation
 pub mod asnd;
 
+// Input Implementation
+pub mod input;
+
 // FFI
 #[cfg(feature = "ffi")]
 pub extern crate ogc_sys as ffi;
@@ -79,6 +82,7 @@ pub mod prelude {
     pub use crate::debug::*;
     pub use crate::gu::*;
     pub use crate::gx::*;
+    pub use crate::input::*;
     pub use crate::system::*;
     pub use crate::video::*;
     pub use crate::{print, println};
