@@ -1620,6 +1620,139 @@ pub const MAX_VOLUME: u32 = 255;
 pub const MIN_PITCH: u32 = 1;
 pub const F44100HZ_PITCH: u32 = 44100;
 pub const MAX_PITCH: u32 = 144000;
+pub const WIIMOTE_LED_NONE: u32 = 0;
+pub const WIIMOTE_LED_1: u32 = 16;
+pub const WIIMOTE_LED_2: u32 = 32;
+pub const WIIMOTE_LED_3: u32 = 64;
+pub const WIIMOTE_LED_4: u32 = 128;
+pub const WIIMOTE_BUTTON_TWO: u32 = 1;
+pub const WIIMOTE_BUTTON_ONE: u32 = 2;
+pub const WIIMOTE_BUTTON_B: u32 = 4;
+pub const WIIMOTE_BUTTON_A: u32 = 8;
+pub const WIIMOTE_BUTTON_MINUS: u32 = 16;
+pub const WIIMOTE_BUTTON_ZACCEL_BIT6: u32 = 32;
+pub const WIIMOTE_BUTTON_ZACCEL_BIT7: u32 = 64;
+pub const WIIMOTE_BUTTON_HOME: u32 = 128;
+pub const WIIMOTE_BUTTON_LEFT: u32 = 256;
+pub const WIIMOTE_BUTTON_RIGHT: u32 = 512;
+pub const WIIMOTE_BUTTON_DOWN: u32 = 1024;
+pub const WIIMOTE_BUTTON_UP: u32 = 2048;
+pub const WIIMOTE_BUTTON_PLUS: u32 = 4096;
+pub const WIIMOTE_BUTTON_ZACCEL_BIT4: u32 = 8192;
+pub const WIIMOTE_BUTTON_ZACCEL_BIT5: u32 = 16384;
+pub const WIIMOTE_BUTTON_UNKNOWN: u32 = 32768;
+pub const WIIMOTE_BUTTON_ALL: u32 = 8095;
+pub const NUNCHUK_BUTTON_Z: u32 = 1;
+pub const NUNCHUK_BUTTON_C: u32 = 2;
+pub const NUNCHUK_BUTTON_ALL: u32 = 3;
+pub const CLASSIC_CTRL_BUTTON_UP: u32 = 1;
+pub const CLASSIC_CTRL_BUTTON_LEFT: u32 = 2;
+pub const CLASSIC_CTRL_BUTTON_ZR: u32 = 4;
+pub const CLASSIC_CTRL_BUTTON_X: u32 = 8;
+pub const CLASSIC_CTRL_BUTTON_A: u32 = 16;
+pub const CLASSIC_CTRL_BUTTON_Y: u32 = 32;
+pub const CLASSIC_CTRL_BUTTON_B: u32 = 64;
+pub const CLASSIC_CTRL_BUTTON_ZL: u32 = 128;
+pub const CLASSIC_CTRL_BUTTON_FULL_R: u32 = 512;
+pub const CLASSIC_CTRL_BUTTON_PLUS: u32 = 1024;
+pub const CLASSIC_CTRL_BUTTON_HOME: u32 = 2048;
+pub const CLASSIC_CTRL_BUTTON_MINUS: u32 = 4096;
+pub const CLASSIC_CTRL_BUTTON_FULL_L: u32 = 8192;
+pub const CLASSIC_CTRL_BUTTON_DOWN: u32 = 16384;
+pub const CLASSIC_CTRL_BUTTON_RIGHT: u32 = 32768;
+pub const CLASSIC_CTRL_BUTTON_ALL: u32 = 65279;
+pub const GUITAR_HERO_3_BUTTON_STRUM_UP: u32 = 1;
+pub const GUITAR_HERO_3_BUTTON_YELLOW: u32 = 8;
+pub const GUITAR_HERO_3_BUTTON_GREEN: u32 = 16;
+pub const GUITAR_HERO_3_BUTTON_BLUE: u32 = 32;
+pub const GUITAR_HERO_3_BUTTON_RED: u32 = 64;
+pub const GUITAR_HERO_3_BUTTON_ORANGE: u32 = 128;
+pub const GUITAR_HERO_3_BUTTON_PLUS: u32 = 1024;
+pub const GUITAR_HERO_3_BUTTON_MINUS: u32 = 4096;
+pub const GUITAR_HERO_3_BUTTON_STRUM_DOWN: u32 = 16384;
+pub const GUITAR_HERO_3_BUTTON_ALL: u32 = 65279;
+pub const GUITAR_HERO_3_TOUCH_AVAILABLE: u32 = 4096;
+pub const GUITAR_HERO_3_TOUCH_GREEN: u32 = 4097;
+pub const GUITAR_HERO_3_TOUCH_RED: u32 = 4098;
+pub const GUITAR_HERO_3_TOUCH_YELLOW: u32 = 4100;
+pub const GUITAR_HERO_3_TOUCH_BLUE: u32 = 4104;
+pub const GUITAR_HERO_3_TOUCH_ORANGE: u32 = 4112;
+pub const WIIUSE_SMOOTHING: u32 = 1;
+pub const WIIUSE_CONTINUOUS: u32 = 2;
+pub const WIIUSE_ACCEL_THRESH: u32 = 4;
+pub const WIIUSE_IR_THRESH: u32 = 8;
+pub const WIIUSE_JS_THRESH: u32 = 16;
+pub const WIIUSE_INIT_FLAGS: u32 = 1;
+pub const WIIUSE_ORIENT_PRECISION: f64 = 100.0;
+pub const EXP_NONE: u32 = 0;
+pub const EXP_NUNCHUK: u32 = 1;
+pub const EXP_CLASSIC: u32 = 2;
+pub const EXP_GUITAR_HERO_3: u32 = 3;
+pub const EXP_WII_BOARD: u32 = 4;
+pub const EXP_MOTION_PLUS: u32 = 5;
+pub const MAX_PAYLOAD: u32 = 32;
+pub const WPAD_MAX_IR_DOTS: u32 = 4;
+pub const WPAD_BUTTON_2: u32 = 1;
+pub const WPAD_BUTTON_1: u32 = 2;
+pub const WPAD_BUTTON_B: u32 = 4;
+pub const WPAD_BUTTON_A: u32 = 8;
+pub const WPAD_BUTTON_MINUS: u32 = 16;
+pub const WPAD_BUTTON_HOME: u32 = 128;
+pub const WPAD_BUTTON_LEFT: u32 = 256;
+pub const WPAD_BUTTON_RIGHT: u32 = 512;
+pub const WPAD_BUTTON_DOWN: u32 = 1024;
+pub const WPAD_BUTTON_UP: u32 = 2048;
+pub const WPAD_BUTTON_PLUS: u32 = 4096;
+pub const WPAD_NUNCHUK_BUTTON_Z: u32 = 65536;
+pub const WPAD_NUNCHUK_BUTTON_C: u32 = 131072;
+pub const WPAD_CLASSIC_BUTTON_UP: u32 = 65536;
+pub const WPAD_CLASSIC_BUTTON_LEFT: u32 = 131072;
+pub const WPAD_CLASSIC_BUTTON_ZR: u32 = 262144;
+pub const WPAD_CLASSIC_BUTTON_X: u32 = 524288;
+pub const WPAD_CLASSIC_BUTTON_A: u32 = 1048576;
+pub const WPAD_CLASSIC_BUTTON_Y: u32 = 2097152;
+pub const WPAD_CLASSIC_BUTTON_B: u32 = 4194304;
+pub const WPAD_CLASSIC_BUTTON_ZL: u32 = 8388608;
+pub const WPAD_CLASSIC_BUTTON_FULL_R: u32 = 33554432;
+pub const WPAD_CLASSIC_BUTTON_PLUS: u32 = 67108864;
+pub const WPAD_CLASSIC_BUTTON_HOME: u32 = 134217728;
+pub const WPAD_CLASSIC_BUTTON_MINUS: u32 = 268435456;
+pub const WPAD_CLASSIC_BUTTON_FULL_L: u32 = 536870912;
+pub const WPAD_CLASSIC_BUTTON_DOWN: u32 = 1073741824;
+pub const WPAD_CLASSIC_BUTTON_RIGHT: u32 = 2147483648;
+pub const WPAD_GUITAR_HERO_3_BUTTON_STRUM_UP: u32 = 65536;
+pub const WPAD_GUITAR_HERO_3_BUTTON_YELLOW: u32 = 524288;
+pub const WPAD_GUITAR_HERO_3_BUTTON_GREEN: u32 = 1048576;
+pub const WPAD_GUITAR_HERO_3_BUTTON_BLUE: u32 = 2097152;
+pub const WPAD_GUITAR_HERO_3_BUTTON_RED: u32 = 4194304;
+pub const WPAD_GUITAR_HERO_3_BUTTON_ORANGE: u32 = 8388608;
+pub const WPAD_GUITAR_HERO_3_BUTTON_PLUS: u32 = 67108864;
+pub const WPAD_GUITAR_HERO_3_BUTTON_MINUS: u32 = 268435456;
+pub const WPAD_GUITAR_HERO_3_BUTTON_STRUM_DOWN: u32 = 1073741824;
+pub const WPAD_ERR_NONE: u32 = 0;
+pub const WPAD_ERR_NO_CONTROLLER: i32 = -1;
+pub const WPAD_ERR_NOT_READY: i32 = -2;
+pub const WPAD_ERR_TRANSFER: i32 = -3;
+pub const WPAD_ERR_NONEREGISTERED: i32 = -4;
+pub const WPAD_ERR_UNKNOWN: i32 = -5;
+pub const WPAD_ERR_BAD_CHANNEL: i32 = -6;
+pub const WPAD_ERR_QUEUE_EMPTY: i32 = -7;
+pub const WPAD_ERR_BADVALUE: i32 = -8;
+pub const WPAD_ERR_BADCONF: i32 = -9;
+pub const WPAD_DATA_BUTTONS: u32 = 1;
+pub const WPAD_DATA_ACCEL: u32 = 2;
+pub const WPAD_DATA_EXPANSION: u32 = 4;
+pub const WPAD_DATA_IR: u32 = 8;
+pub const WPAD_ENC_FIRST: u32 = 0;
+pub const WPAD_ENC_CONT: u32 = 1;
+pub const WPAD_THRESH_IGNORE: i32 = -1;
+pub const WPAD_THRESH_ANY: u32 = 0;
+pub const WPAD_THRESH_DEFAULT_BUTTONS: u32 = 0;
+pub const WPAD_THRESH_DEFAULT_IR: i32 = -1;
+pub const WPAD_THRESH_DEFAULT_ACCEL: u32 = 20;
+pub const WPAD_THRESH_DEFAULT_JOYSTICK: u32 = 2;
+pub const WPAD_THRESH_DEFAULT_BALANCEBOARD: u32 = 60;
+pub const WPAD_THRESH_DEFAULT_MOTION_PLUS: u32 = 100;
 pub type __int8_t = ::libc::c_schar;
 pub type __uint8_t = ::libc::c_uchar;
 pub type __int16_t = ::libc::c_short;
@@ -3446,18 +3579,10 @@ extern "C" {
     ) -> *mut ::libc::c_char;
 }
 extern "C" {
-    pub fn strlcat(
-        arg1: *mut ::libc::c_char,
-        arg2: *const ::libc::c_char,
-        arg3: ::libc::c_ulong,
-    ) -> ::libc::c_ulong;
+    pub fn strlcat(arg1: *mut ::libc::c_char, arg2: *const ::libc::c_char, arg3: size_t) -> size_t;
 }
 extern "C" {
-    pub fn strlcpy(
-        arg1: *mut ::libc::c_char,
-        arg2: *const ::libc::c_char,
-        arg3: ::libc::c_ulong,
-    ) -> ::libc::c_ulong;
+    pub fn strlcpy(arg1: *mut ::libc::c_char, arg2: *const ::libc::c_char, arg3: size_t) -> size_t;
 }
 extern "C" {
     pub fn strnlen(arg1: *const ::libc::c_char, arg2: size_t) -> size_t;
@@ -13867,6 +13992,757 @@ extern "C" {
 }
 extern "C" {
     pub fn ASND_GetDSP_ProcessTime() -> u32_;
+}
+pub const WIIUSE_IR_ABOVE: ir_position_t = 0;
+pub const WIIUSE_IR_BELOW: ir_position_t = 1;
+pub type ir_position_t = ::libc::c_uint;
+pub type ubyte = ::libc::c_uchar;
+pub type sbyte = ::libc::c_char;
+pub type uword = ::libc::c_ushort;
+pub type sword = ::libc::c_short;
+pub type sint = ::libc::c_char;
+#[doc = "      @brief Callback that handles a read event."]
+#[doc = ""]
+#[doc = "      @param wm               Pointer to a wiimote_t structure."]
+#[doc = "      @param data             Pointer to the filled data block."]
+#[doc = "      @param len              Length in bytes of the data block."]
+#[doc = ""]
+#[doc = "      @see wiiuse_init()"]
+#[doc = ""]
+#[doc = "      A registered function of this type is called automatically by the wiiuse"]
+#[doc = "      library when the wiimote has returned the full data requested by a previous"]
+#[doc = "      call to wiiuse_read_data()."]
+pub type wiiuse_data_cb = ::core::option::Option<
+    unsafe extern "C" fn(wm: *mut wiimote_t, data: *mut ubyte, len: ::libc::c_ushort),
+>;
+pub const REQ_READY: data_req_s = 0;
+pub const REQ_SENT: data_req_s = 1;
+pub const REQ_DONE: data_req_s = 2;
+pub type data_req_s = ::libc::c_uint;
+#[doc = "\t@struct data_req_t"]
+#[doc = "\t@brief Data read request structure."]
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub struct data_req_t {
+    pub node: lwp_node,
+    #[doc = "< buffer where read data is written"]
+    pub data: [ubyte; 48usize],
+    pub len: ::libc::c_uint,
+    #[doc = "< set to 1 if not using callback and needs to be cleaned up"]
+    pub state: data_req_s,
+    #[doc = "< read data callback"]
+    pub cb: wiiuse_data_cb,
+    pub next: *mut data_req_t,
+}
+pub type cmd_blk_cb =
+    ::core::option::Option<unsafe extern "C" fn(wm: *mut wiimote_t, data: *mut ubyte, len: uword)>;
+pub const CMD_READY: cmd_blk_s = 0;
+pub const CMD_SENT: cmd_blk_s = 1;
+pub const CMD_DONE: cmd_blk_s = 2;
+pub type cmd_blk_s = ::libc::c_uint;
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub struct cmd_blk_t {
+    pub node: lwp_node,
+    pub data: [ubyte; 48usize],
+    pub len: uint,
+    pub state: cmd_blk_s,
+    pub cb: cmd_blk_cb,
+    pub next: *mut cmd_blk_t,
+}
+#[doc = "\t@struct vec2b_t"]
+#[doc = "\t@brief Unsigned x,y byte vector."]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct vec2b_t {
+    pub x: ubyte,
+    pub y: ubyte,
+}
+#[doc = "\t@struct vec3b_t"]
+#[doc = "\t@brief Unsigned x,y,z byte vector."]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct vec3b_t {
+    pub x: ubyte,
+    pub y: ubyte,
+    pub z: ubyte,
+}
+#[doc = "\t@struct vec3b_t"]
+#[doc = "\t@brief Unsigned x,y,z byte vector."]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct vec3w_t {
+    pub x: uword,
+    pub y: uword,
+    pub z: uword,
+}
+#[doc = "\t@struct vec3f_t"]
+#[doc = "\t@brief Signed x,y,z float struct."]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct vec3f_t {
+    pub x: f32,
+    pub y: f32,
+    pub z: f32,
+}
+#[doc = "\t@struct orient_t"]
+#[doc = "\t@brief Orientation struct."]
+#[doc = ""]
+#[doc = "\tYaw, pitch, and roll range from -180 to 180 degrees."]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct orient_t {
+    #[doc = "< roll, this may be smoothed if enabled"]
+    pub roll: f32,
+    #[doc = "< pitch, this may be smoothed if enabled"]
+    pub pitch: f32,
+    pub yaw: f32,
+    #[doc = "< absolute roll, unsmoothed"]
+    pub a_roll: f32,
+    #[doc = "< absolute pitch, unsmoothed"]
+    pub a_pitch: f32,
+}
+#[doc = "\t@struct gforce_t"]
+#[doc = "\t@brief Gravity force struct."]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct gforce_t {
+    pub x: f32,
+    pub y: f32,
+    pub z: f32,
+}
+#[doc = "\t@struct accel_t"]
+#[doc = "\t@brief Accelerometer struct. For any device with an accelerometer."]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct accel_t {
+    #[doc = "< zero calibration"]
+    pub cal_zero: vec3w_t,
+    #[doc = "< 1g difference around 0cal"]
+    pub cal_g: vec3w_t,
+    #[doc = "< last smoothed roll value"]
+    pub st_roll: f32,
+    #[doc = "< last smoothed roll pitch"]
+    pub st_pitch: f32,
+    #[doc = "< alpha value for smoothing [0-1]"]
+    pub st_alpha: f32,
+}
+#[doc = "\t@struct ir_dot_t"]
+#[doc = "\t@brief A single IR source."]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct ir_dot_t {
+    #[doc = "< if the IR source is visible"]
+    pub visible: ubyte,
+    #[doc = "< raw X coordinate (0-1023)"]
+    pub rx: ::libc::c_short,
+    #[doc = "< raw Y coordinate (0-767)"]
+    pub ry: ::libc::c_short,
+    #[doc = "< size of the IR dot (0-15)"]
+    pub size: ubyte,
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct fdot_t {
+    pub x: f32,
+    pub y: f32,
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct sb_t {
+    pub dots: [fdot_t; 2usize],
+    pub acc_dots: [fdot_t; 2usize],
+    pub rot_dots: [fdot_t; 2usize],
+    pub angle: f32,
+    pub off_angle: f32,
+    pub score: f32,
+}
+pub const WIIUSE_ASPECT_4_3: aspect_t = 0;
+pub const WIIUSE_ASPECT_16_9: aspect_t = 1;
+#[doc = "\t@enum aspect_t"]
+#[doc = "\t@brief Screen aspect ratio."]
+pub type aspect_t = ::libc::c_uint;
+#[doc = "\t@struct ir_t"]
+#[doc = "\t@brief IR struct. Hold all data related to the IR tracking."]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct ir_t {
+    #[doc = "< IR dots"]
+    pub dot: [ir_dot_t; 4usize],
+    #[doc = "< number of dots at this time"]
+    pub num_dots: ubyte,
+    #[doc = "< keeps track of the IR state"]
+    pub state: ::libc::c_int,
+    #[doc = "< is the raw position valid?"]
+    pub raw_valid: ::libc::c_int,
+    #[doc = "< sensor bar, detected or guessed"]
+    pub sensorbar: sb_t,
+    #[doc = "< raw X coordinate"]
+    pub ax: f32,
+    #[doc = "< raw Y coordinate"]
+    pub ay: f32,
+    #[doc = "< pixel width of the sensor bar"]
+    pub distance: f32,
+    #[doc = "< calculated distance in meters"]
+    pub z: f32,
+    #[doc = "< angle of the wiimote to the sensor bar"]
+    pub angle: f32,
+    #[doc = "< is the smoothed position valid?"]
+    pub smooth_valid: ::libc::c_int,
+    #[doc = "< smoothed X coordinate"]
+    pub sx: f32,
+    #[doc = "< smoothed Y coordinate"]
+    pub sy: f32,
+    #[doc = "< error count, for smoothing algorithm"]
+    pub error_cnt: f32,
+    #[doc = "< glitch count, same"]
+    pub glitch_cnt: f32,
+    #[doc = "< is the bounded position valid?"]
+    pub valid: ::libc::c_int,
+    #[doc = "< bounded X coordinate"]
+    pub x: f32,
+    #[doc = "< bounded Y coordinate"]
+    pub y: f32,
+    #[doc = "< aspect ratio of the screen"]
+    pub aspect: aspect_t,
+    #[doc = "< IR sensor bar position"]
+    pub pos: ir_position_t,
+    #[doc = "< IR virtual screen resolution"]
+    pub vres: [::libc::c_uint; 2usize],
+    #[doc = "< IR XY correction offset"]
+    pub offset: [::libc::c_int; 2usize],
+}
+#[doc = "\t@struct joystick_t"]
+#[doc = "\t@brief Joystick calibration structure."]
+#[doc = ""]
+#[doc = "\tThe angle \\a ang is relative to the positive y-axis into quadrant I"]
+#[doc = "\tand ranges from 0 to 360 degrees.  So if the joystick is held straight"]
+#[doc = "\tupwards then angle is 0 degrees.  If it is held to the right it is 90,"]
+#[doc = "\tdown is 180, and left is 270."]
+#[doc = ""]
+#[doc = "\tThe magnitude \\a mag is the distance from the center to where the"]
+#[doc = "\tjoystick is being held.  The magnitude ranges from 0 to 1."]
+#[doc = "\tIf the joystick is only slightly tilted from the center the magnitude"]
+#[doc = "\twill be low, but if it is closer to the outter edge the value will"]
+#[doc = "\tbe higher."]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct joystick_t {
+    #[doc = "< maximum joystick values"]
+    pub max: vec2b_t,
+    #[doc = "< minimum joystick values"]
+    pub min: vec2b_t,
+    #[doc = "< center joystick values"]
+    pub center: vec2b_t,
+    #[doc = "< raw position values"]
+    pub pos: vec2b_t,
+    #[doc = "< angle the joystick is being held"]
+    pub ang: f32,
+    #[doc = "< magnitude of the joystick (range 0-1)"]
+    pub mag: f32,
+}
+#[doc = "\t@struct nunchuk_t"]
+#[doc = "\t@brief Nunchuk expansion device."]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct nunchuk_t {
+    #[doc = "< nunchuk accelerometer calibration"]
+    pub accel_calib: accel_t,
+    #[doc = "< joystick calibration"]
+    pub js: joystick_t,
+    #[doc = "< options flag (points to wiimote_t.flags)"]
+    pub flags: *mut ::libc::c_int,
+    #[doc = "< what buttons have just been pressed"]
+    pub btns: ubyte,
+    #[doc = "< what buttons have just been pressed"]
+    pub btns_last: ubyte,
+    #[doc = "< what buttons are being held down"]
+    pub btns_held: ubyte,
+    #[doc = "< what buttons were just released this"]
+    pub btns_released: ubyte,
+    #[doc = "< current raw acceleration data"]
+    pub accel: vec3w_t,
+    #[doc = "< current orientation on each axis"]
+    pub orient: orient_t,
+    #[doc = "< current gravity forces on each axis"]
+    pub gforce: gforce_t,
+}
+#[doc = "\t@struct classic_ctrl_t"]
+#[doc = "\t@brief Classic controller expansion device."]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct classic_ctrl_t {
+    #[doc = "< what buttons have just been pressed"]
+    pub btns: ::libc::c_short,
+    #[doc = "< what buttons have just been pressed"]
+    pub btns_last: ::libc::c_short,
+    #[doc = "< what buttons are being held down"]
+    pub btns_held: ::libc::c_short,
+    #[doc = "< what buttons were just released this"]
+    pub btns_released: ::libc::c_short,
+    pub rs_raw: ubyte,
+    pub ls_raw: ubyte,
+    #[doc = "< right shoulder button (range 0-1)"]
+    pub r_shoulder: f32,
+    #[doc = "< left shoulder button (range 0-1)"]
+    pub l_shoulder: f32,
+    #[doc = "< left joystick calibration"]
+    pub ljs: joystick_t,
+    #[doc = "< right joystick calibration"]
+    pub rjs: joystick_t,
+    #[doc = "< original, pro, wiiu pro"]
+    pub type_: ubyte,
+}
+#[doc = "\t@struct guitar_hero_3_t"]
+#[doc = "\t@brief Guitar Hero 3 expansion device."]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct guitar_hero_3_t {
+    #[doc = "< what buttons have just been pressed"]
+    pub btns: ::libc::c_short,
+    #[doc = "< what buttons have just been pressed"]
+    pub btns_last: ::libc::c_short,
+    #[doc = "< what buttons are being held down"]
+    pub btns_held: ::libc::c_short,
+    #[doc = "< what buttons were just released this"]
+    pub btns_released: ::libc::c_short,
+    pub wb_raw: ubyte,
+    #[doc = "< whammy bar (range 0-1)"]
+    pub whammy_bar: f32,
+    pub tb_raw: ubyte,
+    #[doc = "< touch bar"]
+    pub touch_bar: ::libc::c_int,
+    #[doc = "< joystick calibration"]
+    pub js: joystick_t,
+}
+#[doc = " @struct wii_board_t"]
+#[doc = " @brief Wii Balance Board expansion device."]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct wii_board_t {
+    pub tl: f32,
+    pub tr: f32,
+    pub bl: f32,
+    pub br: f32,
+    pub rtl: ::libc::c_short,
+    pub rtr: ::libc::c_short,
+    pub rbl: ::libc::c_short,
+    pub rbr: ::libc::c_short,
+    pub ctl: [::libc::c_short; 3usize],
+    pub ctr: [::libc::c_short; 3usize],
+    pub cbl: [::libc::c_short; 3usize],
+    pub cbr: [::libc::c_short; 3usize],
+    pub x: f32,
+    pub y: f32,
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct motion_plus_t {
+    pub rx: ::libc::c_short,
+    pub ry: ::libc::c_short,
+    pub rz: ::libc::c_short,
+    pub status: ubyte,
+    pub ext: ubyte,
+}
+#[doc = "\t@struct expansion_t"]
+#[doc = "\t@brief Generic expansion device plugged into wiimote."]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct expansion_t {
+    #[doc = "< type of expansion attached"]
+    pub type_: ::libc::c_int,
+    pub __bindgen_anon_1: expansion_t__bindgen_ty_1,
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct expansion_t__bindgen_ty_1 {
+    pub nunchuk: __BindgenUnionField<nunchuk_t>,
+    pub classic: __BindgenUnionField<classic_ctrl_t>,
+    pub gh3: __BindgenUnionField<guitar_hero_3_t>,
+    pub wb: __BindgenUnionField<wii_board_t>,
+    pub mp: __BindgenUnionField<motion_plus_t>,
+    pub bindgen_union_field: [u32; 22usize],
+}
+pub const WIIUSE_STACK_UNKNOWN: win_bt_stack_t = 0;
+pub const WIIUSE_STACK_MS: win_bt_stack_t = 1;
+pub const WIIUSE_STACK_BLUESOLEIL: win_bt_stack_t = 2;
+#[doc = "\t@enum win32_bt_stack_t"]
+#[doc = "\t@brief\tAvailable bluetooth stacks for Windows."]
+pub type win_bt_stack_t = ::libc::c_uint;
+#[doc = "\t@struct wiimote_state_t"]
+#[doc = "\t@brief Significant data from the previous event."]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct wiimote_state_t {
+    pub btns: ::libc::c_ushort,
+    pub ir: ir_t,
+    pub accel: vec3w_t,
+    pub exp: expansion_t,
+}
+pub const WIIUSE_NONE: WIIUSE_EVENT_TYPE = 0;
+pub const WIIUSE_EVENT: WIIUSE_EVENT_TYPE = 1;
+pub const WIIUSE_STATUS: WIIUSE_EVENT_TYPE = 2;
+pub const WIIUSE_CONNECT: WIIUSE_EVENT_TYPE = 3;
+pub const WIIUSE_DISCONNECT: WIIUSE_EVENT_TYPE = 4;
+pub const WIIUSE_UNEXPECTED_DISCONNECT: WIIUSE_EVENT_TYPE = 5;
+pub const WIIUSE_READ_DATA: WIIUSE_EVENT_TYPE = 6;
+pub const WIIUSE_ACK: WIIUSE_EVENT_TYPE = 7;
+pub const WIIUSE_NUNCHUK_INSERTED: WIIUSE_EVENT_TYPE = 8;
+pub const WIIUSE_NUNCHUK_REMOVED: WIIUSE_EVENT_TYPE = 9;
+pub const WIIUSE_CLASSIC_CTRL_INSERTED: WIIUSE_EVENT_TYPE = 10;
+pub const WIIUSE_CLASSIC_CTRL_REMOVED: WIIUSE_EVENT_TYPE = 11;
+pub const WIIUSE_GUITAR_HERO_3_CTRL_INSERTED: WIIUSE_EVENT_TYPE = 12;
+pub const WIIUSE_GUITAR_HERO_3_CTRL_REMOVED: WIIUSE_EVENT_TYPE = 13;
+pub const WIIUSE_WII_BOARD_INSERTED: WIIUSE_EVENT_TYPE = 14;
+pub const WIIUSE_WII_BOARD_REMOVED: WIIUSE_EVENT_TYPE = 15;
+pub const WIIUSE_MOTION_PLUS_ACTIVATED: WIIUSE_EVENT_TYPE = 16;
+pub const WIIUSE_MOTION_PLUS_REMOVED: WIIUSE_EVENT_TYPE = 17;
+#[doc = "\t@enum WIIUSE_EVENT_TYPE"]
+#[doc = "\t@brief Events that wiiuse can generate from a poll."]
+pub type WIIUSE_EVENT_TYPE = ::libc::c_uint;
+#[doc = "\t@struct wiimote_t"]
+#[doc = "\t@brief Wiimote structure."]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct wiimote_t {
+    #[doc = "< user specified id"]
+    pub unid: ::libc::c_int,
+    #[doc = "< various state flags"]
+    pub state: ::libc::c_int,
+    #[doc = "< currently lit leds"]
+    pub leds: ubyte,
+    #[doc = "< battery level"]
+    pub battery_level: f32,
+    #[doc = "< options flag"]
+    pub flags: ::libc::c_int,
+    #[doc = "< the state of the connection handshake"]
+    pub handshake_state: ubyte,
+    #[doc = "< the state of the expansion handshake"]
+    pub expansion_state: ubyte,
+    #[doc = "< list of data read requests"]
+    pub data_req: *const data_req_t,
+    pub cmd_head: *const cmd_blk_t,
+    pub cmd_tail: *const cmd_blk_t,
+    #[doc = "< wiimote accelerometer calibration"]
+    pub accel_calib: accel_t,
+    #[doc = "< wiimote expansion device"]
+    pub exp: expansion_t,
+    #[doc = "< current raw acceleration data"]
+    pub accel: vec3w_t,
+    #[doc = "< current orientation on each axis"]
+    pub orient: orient_t,
+    #[doc = "< current gravity forces on each axis"]
+    pub gforce: gforce_t,
+    #[doc = "< IR data"]
+    pub ir: ir_t,
+    #[doc = "< what buttons are down"]
+    pub btns: ::libc::c_ushort,
+    #[doc = "< what buttons were down before"]
+    pub btns_last: ::libc::c_ushort,
+    #[doc = "< what buttons are and were held down"]
+    pub btns_held: ::libc::c_ushort,
+    #[doc = "< what buttons were just released"]
+    pub btns_released: ::libc::c_ushort,
+    #[doc = "< last saved state"]
+    pub lstate: wiimote_state_t,
+    #[doc = "< type of event that occured"]
+    pub event: WIIUSE_EVENT_TYPE,
+    #[doc = "< event buffer"]
+    pub event_buf: [ubyte; 32usize],
+    pub motion_plus_id: [ubyte; 6usize],
+}
+#[doc = "\t@struct wiimote_t"]
+#[doc = "\t@brief Wiimote structure."]
+pub type wiimote = wiimote_t;
+extern "C" {
+    pub fn wiiuse_version() -> *const ::libc::c_char;
+}
+extern "C" {
+    pub fn wiiuse_init(wiimotes: ::libc::c_int) -> *mut *mut wiimote_t;
+}
+extern "C" {
+    pub fn wiiuse_disconnected(wm: *mut wiimote_t);
+}
+extern "C" {
+    pub fn wiiuse_cleanup(wm: *mut *mut wiimote_t, wiimotes: ::libc::c_int);
+}
+extern "C" {
+    pub fn wiiuse_rumble(wm: *mut wiimote_t, status: ::libc::c_int);
+}
+extern "C" {
+    pub fn wiiuse_toggle_rumble(wm: *mut wiimote_t);
+}
+extern "C" {
+    pub fn wiiuse_set_leds(wm: *mut wiimote_t, leds: ::libc::c_int, cb: cmd_blk_cb);
+}
+extern "C" {
+    pub fn wiiuse_motion_sensing(wm: *mut wiimote_t, status: ::libc::c_int);
+}
+extern "C" {
+    pub fn wiiuse_read_data(
+        wm: *mut wiimote_t,
+        buffer: *mut ubyte,
+        offset: ::libc::c_uint,
+        len: ::libc::c_ushort,
+        cb: cmd_blk_cb,
+    ) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn wiiuse_write_data(
+        wm: *mut wiimote_t,
+        addr: ::libc::c_uint,
+        data: *mut ubyte,
+        len: ubyte,
+        cb: cmd_blk_cb,
+    ) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn wiiuse_status(wm: *mut wiimote_t, cb: cmd_blk_cb);
+}
+extern "C" {
+    pub fn wiiuse_get_by_id(
+        wm: *mut *mut wiimote_t,
+        wiimotes: ::libc::c_int,
+        unid: ::libc::c_int,
+    ) -> *mut wiimote_t;
+}
+extern "C" {
+    pub fn wiiuse_set_flags(
+        wm: *mut wiimote_t,
+        enable: ::libc::c_int,
+        disable: ::libc::c_int,
+    ) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn wiiuse_set_smooth_alpha(wm: *mut wiimote_t, alpha: f32) -> f32;
+}
+extern "C" {
+    pub fn wiiuse_set_bluetooth_stack(
+        wm: *mut *mut wiimote_t,
+        wiimotes: ::libc::c_int,
+        type_: win_bt_stack_t,
+    );
+}
+extern "C" {
+    pub fn wiiuse_resync(wm: *mut wiimote_t);
+}
+extern "C" {
+    pub fn wiiuse_set_timeout(
+        wm: *mut *mut wiimote_t,
+        wiimotes: ::libc::c_int,
+        normal_timeout: ubyte,
+        exp_timeout: ubyte,
+    );
+}
+extern "C" {
+    pub fn wiiuse_write_streamdata(
+        wm: *mut wiimote_t,
+        data: *mut ubyte,
+        len: ubyte,
+        cb: cmd_blk_cb,
+    ) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn wiiuse_find(
+        wm: *mut *mut wiimote_t,
+        max_wiimotes: ::libc::c_int,
+        timeout: ::libc::c_int,
+    ) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn wiiuse_connect(wm: *mut *mut wiimote_t, wiimotes: ::libc::c_int) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn wiiuse_disconnect(wm: *mut wiimote_t);
+}
+extern "C" {
+    pub fn wiiuse_poll(wm: *mut *mut wiimote_t, wiimotes: ::libc::c_int) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn wiiuse_set_ir_mode(wm: *mut wiimote_t);
+}
+extern "C" {
+    pub fn wiiuse_set_ir(wm: *mut wiimote_t, status: ::libc::c_int);
+}
+extern "C" {
+    pub fn wiiuse_set_ir_vres(wm: *mut wiimote_t, x: ::libc::c_uint, y: ::libc::c_uint);
+}
+extern "C" {
+    pub fn wiiuse_set_ir_position(wm: *mut wiimote_t, pos: ir_position_t);
+}
+extern "C" {
+    pub fn wiiuse_set_aspect_ratio(wm: *mut wiimote_t, aspect: aspect_t);
+}
+extern "C" {
+    pub fn wiiuse_set_ir_sensitivity(wm: *mut wiimote_t, level: ::libc::c_int);
+}
+extern "C" {
+    pub fn wiiuse_set_motion_plus(wm: *mut wiimote_t, status: ::libc::c_int);
+}
+extern "C" {
+    pub fn wiiuse_set_speaker(wm: *mut wiimote_t, status: ::libc::c_int);
+}
+pub const WPAD_CHAN_ALL: ::libc::c_int = -1;
+pub const WPAD_CHAN_0: ::libc::c_int = 0;
+pub const WPAD_CHAN_1: ::libc::c_int = 1;
+pub const WPAD_CHAN_2: ::libc::c_int = 2;
+pub const WPAD_CHAN_3: ::libc::c_int = 3;
+pub const WPAD_BALANCE_BOARD: ::libc::c_int = 4;
+pub const WPAD_MAX_WIIMOTES: ::libc::c_int = 5;
+pub type _bindgen_ty_14 = ::libc::c_int;
+pub const WPAD_EXP_NONE: ::libc::c_uint = 0;
+pub const WPAD_EXP_NUNCHUK: ::libc::c_uint = 1;
+pub const WPAD_EXP_CLASSIC: ::libc::c_uint = 2;
+pub const WPAD_EXP_GUITARHERO3: ::libc::c_uint = 3;
+pub const WPAD_EXP_WIIBOARD: ::libc::c_uint = 4;
+pub const WPAD_EXP_UNKNOWN: ::libc::c_uint = 255;
+pub type _bindgen_ty_15 = ::libc::c_uint;
+pub const WPAD_FMT_BTNS: ::libc::c_uint = 0;
+pub const WPAD_FMT_BTNS_ACC: ::libc::c_uint = 1;
+pub const WPAD_FMT_BTNS_ACC_IR: ::libc::c_uint = 2;
+pub type _bindgen_ty_16 = ::libc::c_uint;
+pub const WPAD_STATE_DISABLED: ::libc::c_uint = 0;
+pub const WPAD_STATE_ENABLING: ::libc::c_uint = 1;
+pub const WPAD_STATE_ENABLED: ::libc::c_uint = 2;
+pub type _bindgen_ty_17 = ::libc::c_uint;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _wpad_data {
+    pub err: s16,
+    pub data_present: u32_,
+    pub battery_level: u8_,
+    pub btns_h: u32_,
+    pub btns_l: u32_,
+    pub btns_d: u32_,
+    pub btns_u: u32_,
+    pub ir: ir_t,
+    pub accel: vec3w_t,
+    pub orient: orient_t,
+    pub gforce: gforce_t,
+    pub exp: expansion_t,
+}
+pub type WPADData = _wpad_data;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _wpad_encstatus {
+    pub data: [u8_; 32usize],
+}
+pub type WPADEncStatus = _wpad_encstatus;
+pub type WPADDataCallback =
+    ::core::option::Option<unsafe extern "C" fn(chan: s32, data: *const WPADData)>;
+pub type WPADShutdownCallback = ::core::option::Option<unsafe extern "C" fn(chan: s32)>;
+extern "C" {
+    pub fn WPAD_Init() -> s32;
+}
+extern "C" {
+    pub fn WPAD_ControlSpeaker(chan: s32, enable: s32) -> s32;
+}
+extern "C" {
+    pub fn WPAD_ReadEvent(chan: s32, data: *mut WPADData) -> s32;
+}
+extern "C" {
+    pub fn WPAD_DroppedEvents(chan: s32) -> s32;
+}
+extern "C" {
+    pub fn WPAD_Flush(chan: s32) -> s32;
+}
+extern "C" {
+    pub fn WPAD_ReadPending(chan: s32, datacb: WPADDataCallback) -> s32;
+}
+extern "C" {
+    pub fn WPAD_SetDataFormat(chan: s32, fmt: s32) -> s32;
+}
+extern "C" {
+    pub fn WPAD_SetMotionPlus(chan: s32, enable: u8_) -> s32;
+}
+extern "C" {
+    pub fn WPAD_SetVRes(chan: s32, xres: u32_, yres: u32_) -> s32;
+}
+extern "C" {
+    pub fn WPAD_GetStatus() -> s32;
+}
+extern "C" {
+    pub fn WPAD_Probe(chan: s32, type_: *mut u32_) -> s32;
+}
+extern "C" {
+    pub fn WPAD_SetEventBufs(chan: s32, bufs: *mut WPADData, cnt: u32_) -> s32;
+}
+extern "C" {
+    pub fn WPAD_Disconnect(chan: s32) -> s32;
+}
+extern "C" {
+    pub fn WPAD_IsSpeakerEnabled(chan: s32) -> s32;
+}
+extern "C" {
+    pub fn WPAD_SendStreamData(chan: s32, buf: *mut ::libc::c_void, len: u32_) -> s32;
+}
+extern "C" {
+    pub fn WPAD_Shutdown();
+}
+extern "C" {
+    pub fn WPAD_SetIdleTimeout(seconds: u32_);
+}
+extern "C" {
+    pub fn WPAD_SetPowerButtonCallback(cb: WPADShutdownCallback);
+}
+extern "C" {
+    pub fn WPAD_SetBatteryDeadCallback(cb: WPADShutdownCallback);
+}
+extern "C" {
+    pub fn WPAD_ScanPads() -> s32;
+}
+extern "C" {
+    pub fn WPAD_Rumble(chan: s32, status: ::libc::c_int) -> s32;
+}
+extern "C" {
+    pub fn WPAD_SetIdleThresholds(
+        chan: s32,
+        btns: s32,
+        ir: s32,
+        accel: s32,
+        js: s32,
+        wb: s32,
+        mp: s32,
+    ) -> s32;
+}
+extern "C" {
+    pub fn WPAD_EncodeData(
+        info: *mut WPADEncStatus,
+        flag: u32_,
+        pcmSamples: *const s16,
+        numSamples: s32,
+        encData: *mut u8_,
+    );
+}
+extern "C" {
+    pub fn WPAD_Data(chan: ::libc::c_int) -> *mut WPADData;
+}
+extern "C" {
+    pub fn WPAD_BatteryLevel(chan: ::libc::c_int) -> u8_;
+}
+extern "C" {
+    pub fn WPAD_ButtonsUp(chan: ::libc::c_int) -> u32_;
+}
+extern "C" {
+    pub fn WPAD_ButtonsDown(chan: ::libc::c_int) -> u32_;
+}
+extern "C" {
+    pub fn WPAD_ButtonsHeld(chan: ::libc::c_int) -> u32_;
+}
+extern "C" {
+    pub fn WPAD_IR(chan: ::libc::c_int, ir: *mut ir_t);
+}
+extern "C" {
+    pub fn WPAD_Orientation(chan: ::libc::c_int, orient: *mut orient_t);
+}
+extern "C" {
+    pub fn WPAD_GForce(chan: ::libc::c_int, gforce: *mut gforce_t);
+}
+extern "C" {
+    pub fn WPAD_Accel(chan: ::libc::c_int, accel: *mut vec3w_t);
+}
+extern "C" {
+    pub fn WPAD_Expansion(chan: ::libc::c_int, exp: *mut expansion_t);
 }
 pub type __builtin_va_list = [__va_list_tag; 1usize];
 #[repr(C)]

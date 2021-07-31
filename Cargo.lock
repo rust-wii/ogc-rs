@@ -225,6 +225,7 @@ name = "ogc-rs"
 version = "0.7.1"
 dependencies = [
  "bitflags",
+ "libc",
  "num_enum",
  "ogc-sys",
 ]
