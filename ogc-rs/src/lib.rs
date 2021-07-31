@@ -62,6 +62,9 @@ pub mod gx;
 // ASND Implementation
 pub mod asnd;
 
+//Imput Implementation
+pub mod input;
+
 // FFI
 #[cfg(feature = "ffi")]
 pub extern crate ogc_sys as ffi;
