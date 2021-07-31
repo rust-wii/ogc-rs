@@ -1,9 +1,51 @@
 extern crate bindgen;
 
+use regex::Regex;
+use std::env;
+use std::process::Command;
+
+fn get_clang_version() -> String {
+    // Check if the clang version env variable exists.
+    if env::var("CLANG_VERSION").is_err() {
+        // Attempt to retrieve clang version through the command line.
+        let clang_output = match Command::new("clang").arg("--version").output() {
+            Ok(output) => output,
+            Err(_e) => panic!("Could not find clang on the host machine!"),
+        };
+
+        // Get the first line of the output, usually containing the version string.
+        let output = clang_output.stdout;
+        let parsed_output =
+            String::from_utf8(output).expect("Clang command output returned a non-utf8 string.");
+        let first_line = match parsed_output.lines().next() {
+            Some(line) => line,
+            None => panic!("Clang command output does not contain split lines."),
+        };
+
+        // Parse the version string using Regex.
+        let regex = Regex::new(r"(?m)\d+(\.\d+)+").unwrap();
+        let result = regex.captures(first_line).unwrap().get(0);
+
+        // Attempt to join together the version string.
+        let version = match result {
+            Some(v) => v.as_str(),
+            None => {
+                panic!("Failed to parse version, please export your clang version to CLANG_VERSION")
+            }
+        };
+
+        // Return the final joined string.
+        version.to_string()
+    } else {
+        // Clang version env variable exists, use that over parsing.
+        env::var("CLANG_VERSION").unwrap()
+    }
+}
+
 fn main() {
-    let dkp_path = std::env::var("DEVKITPRO").expect("devkitPro is needed to use this crate");
-    let dkppc_path = std::env::var("DEVKITPPC").expect("devkitPro's devkitPPC is needed to use this crate");
-    let clang_version = std::env::var("CLANG_VERSION").expect("You're clang version needs to be exported to CLANG_VERSION (ex. export CLANG_VERSION=11.0.0)");
+    let dkp_path = env::var("DEVKITPRO").expect("devkitPro is needed to use this crate");
+    let dkppc_path =
+        env::var("DEVKITPPC").expect("devkitPro's devkitPPC is needed to use this crate");
 
     println!(
         "cargo:rustc-link-search=native={}/devkitPPC/powerpc-eabi/lib",
@@ -31,7 +73,10 @@ fn main() {
         .clang_arg("--target=powerpc-none-eabi")
         .clang_arg(format!("--sysroot={}/powerpc-eabi", dkppc_path))
         .clang_arg(format!("-isystem/{}/powerpc-eabi/include", dkppc_path))
-        .clang_arg(format!("-isystem/usr/lib/clang/{}/include", clang_version))
+        .clang_arg(format!(
+            "-isystem/usr/lib/clang/{}/include",
+            get_clang_version()
+        ))
         .clang_arg(format!("-I{}/libogc/include", dkp_path))
         .clang_arg("-mfloat-abi=hard")
         .clang_arg("-nostdinc")
@@ -41,7 +86,7 @@ fn main() {
         .parse_callbacks(Box::new(bindgen::CargoCallbacks))
         .generate()
         .expect("Unable to generate bindings");
- 
+
     bindings
         .write_to_file("./src/ogc.rs")
         .expect("Unable to write bindings to file");

@@ -62,7 +62,7 @@ pub mod gx;
 // ASND Implementation
 pub mod asnd;
 
-//Imput Implementation
+// Input Implementation
 pub mod input;
 
 // FFI
@@ -82,6 +82,7 @@ pub mod prelude {
     pub use crate::debug::*;
     pub use crate::gu::*;
     pub use crate::gx::*;
+    pub use crate::input::*;
     pub use crate::system::*;
     pub use crate::video::*;
     pub use crate::{print, println};

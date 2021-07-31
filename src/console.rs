@@ -104,7 +104,7 @@ impl Console {
 
         // Print the buffer.
         unsafe {
-            ogc_sys::printf(buffer.as_ptr());
+            libc::printf(buffer.as_ptr());
         }
     }
 }
