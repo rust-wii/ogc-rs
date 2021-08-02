@@ -55,7 +55,13 @@ fn main() {
 
     println!("cargo:rustc-link-lib=static=c");
     println!("cargo:rustc-link-lib=static=sysbase");
+    println!("cargo:rustc-link-lib=static=m");
     println!("cargo:rustc-link-lib=static=ogc");
+
+    //Wiipad
+    println!("cargo:rustc-link-lib=static=bte");
+    println!("cargo:rustc-link-lib=static=wiiuse");
+
 
     println!("cargo:rerun-if-changed=wrapper.h");
     let bindings = bindgen::Builder::default()
