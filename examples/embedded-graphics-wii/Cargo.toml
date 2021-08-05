@@ -1,0 +1,14 @@
+cargo-features = ["strip"]
+
+[package]
+name = "embedded-graphics-wii"
+version = "0.1.0"
+edition = "2018"
+
+[profile]
+dev = { panic = "abort" }
+release = { panic = "abort", lto = true, codegen-units = 1, strip = "symbols", opt-level = "s" }
+
+[dependencies]
+ogc-rs = { path = "../../", features = ["ffi"] }
+embedded-graphics = "0.7"
