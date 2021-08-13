@@ -7,11 +7,10 @@ use crate::display::Display;
 extern crate alloc;
 
 use embedded_graphics::{
-    draw_target::DrawTarget,
     pixelcolor::Rgb888,
-    prelude::{OriginDimensions, Point, Primitive, RgbColor, Size, Transform},
+    prelude::{Point, Primitive, RgbColor, Size, Transform},
     primitives::{PrimitiveStyle, Rectangle},
-    Drawable, Pixel,
+    Drawable,
 };
 use ogc_rs::prelude::*;
 //use tinytga::Tga;

@@ -12,7 +12,7 @@ fn main(_argc: isize, _argv: *const *const u8) -> isize {
 
     let mut gcn_ctrl = Input::new(ControllerType::Gamecube, ControllerPort::One);
     let mut wii_ctrl = Input::new(ControllerType::Wii, ControllerPort::One);
-    
+
     Console::init(&video);
     Video::configure(video.render_config.into());
     Video::set_next_framebuffer(video.framebuffer);
@@ -28,14 +28,12 @@ fn main(_argc: isize, _argv: *const *const u8) -> isize {
 
         if gcn_ctrl.is_button_in_state(Button::Start, ButtonState::ButtonDown) {
             break 0;
-                     
         }
 
         if wii_ctrl.is_button_in_state(Button::Home, ButtonState::ButtonDown) {
-            break 0;    
+            break 0;
         }
-    
+
         Video::wait_vsync();
     }
 }
-

@@ -30,7 +30,8 @@ mod memory_casting {
         ( $x:expr ) => {{
             use core::ffi::c_void;
 
-            (($x as u32) + (ogc_sys::SYS_BASE_UNCACHED - ogc_sys::SYS_BASE_CACHED)) as *mut c_void
+            (($x as u32) + ($crate::ffi::SYS_BASE_UNCACHED - $crate::ffi::SYS_BASE_CACHED))
+                as *mut c_void
         }};
     }
 
@@ -41,7 +42,7 @@ mod memory_casting {
         ( $x:expr ) => {{
             use core::ffi::c_void;
 
-            (($x as u32) - ogc_sys::SYS_BASE_CACHED) as *mut c_void
+            (($x as u32) - $crate::ffi::SYS_BASE_CACHED) as *mut c_void
         }};
     }
 
@@ -52,7 +53,8 @@ mod memory_casting {
         ( $x:expr ) => {{
             use core::ffi::c_void;
 
-            (($x as u32) - (ogc_sys::SYS_BASE_UNCACHED - ogc_sys::SYS_BASE_CACHED)) as *mut c_void
+            (($x as u32) - ($crate::ffi::SYS_BASE_UNCACHED - $crate::ffi::SYS_BASE_CACHED))
+                as *mut c_void
         }};
     }
 
@@ -63,7 +65,7 @@ mod memory_casting {
         ( $x:expr ) => {{
             use core::ffi::c_void;
 
-            (($x as u32) - ogc_sys::SYS_BASE_UNCACHED) as *mut c_void
+            (($x as u32) - $crate::ffi::SYS_BASE_UNCACHED) as *mut c_void
         }};
     }
 
@@ -74,7 +76,7 @@ mod memory_casting {
         ( $x:expr ) => {{
             use core::ffi::c_void;
 
-            (($x as u32) + ogc_sys::SYS_BASE_CACHED) as *mut c_void
+            (($x as u32) + $crate::ffi::SYS_BASE_CACHED) as *mut c_void
         }};
     }
 
@@ -85,7 +87,7 @@ mod memory_casting {
         ( $x:expr ) => {{
             use core::ffi::c_void;
 
-            (($x as u32) + ogc_sys::SYS_BASE_UNCACHED) as *mut c_void
+            (($x as u32) + $crate::ffi::SYS_BASE_UNCACHED) as *mut c_void
         }};
     }
 
@@ -96,7 +98,7 @@ mod memory_casting {
         ( $x:expr ) => {{
             use core::ffi::c_void;
 
-            (($x as u32) & !ogc_sys::SYS_BASE_UNCACHED) as *mut c_void
+            (($x as u32) & !$crate::ffi::SYS_BASE_UNCACHED) as *mut c_void
         }};
     }
 }
