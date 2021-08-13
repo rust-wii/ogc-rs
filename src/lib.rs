@@ -66,8 +66,13 @@ pub mod asnd;
 pub mod input;
 
 // FFI
-#[cfg(feature = "ffi")]
-pub extern crate ogc_sys as ffi;
+cfg_if::cfg_if! {
+    if #[cfg(feature = "ffi")] {
+        pub use ogc_sys as ffi;
+    } else {
+        use ogc_sys as ffi;
+    }
+}
 
 /// Prelude
 pub mod prelude {
