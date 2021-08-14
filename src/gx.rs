@@ -275,10 +275,119 @@ impl Gx {
         }
     }
 
+    pub fn position_3u16(x: u16, y: u16, z: u16) {
+        unsafe {
+            ogc_sys::GX_Position3u16(x, y, z);
+        }
+    }
+
+    pub fn position_3i16(x: i16, y: i16, z: i16) {
+        unsafe {
+            ogc_sys::GX_Position3s16(x, y, z);
+        }
+    }
+
+    pub fn position_3u8(x: u8, y: u8, z: u8) {
+        unsafe {
+            ogc_sys::GX_Position3u8(x, y, z);
+        }
+    }
+
+    pub fn position_3i8(x: i8, y: i8, z: i8) {
+        unsafe {
+            ogc_sys::GX_Position3s8(x, y, z);
+        }
+    }
+
+    pub fn position_2f32(x: f32, y: f32) {
+        unsafe {
+            ogc_sys::GX_Position2f32(x, y);
+        }
+    }
+
+    pub fn position_2u16(x: u16, y: u16) {
+        unsafe {
+            ogc_sys::GX_Position2u16(x, y);
+        }
+    }
+
+    pub fn position_2i16(x: i16, y: i16) {
+        unsafe {
+            ogc_sys::GX_Position2s16(x, y);
+        }
+    }
+
+    pub fn position_2u8(x: u8, y: u8) {
+        unsafe {
+            ogc_sys::GX_Position2u8(x, y);
+        }
+    }
+
+    pub fn position_2i8(x: i8, y: i8) {
+        unsafe {
+            ogc_sys::GX_Position2s8(x, y);
+        }
+    }
+
+    pub fn position1x8(index: u8) {
+        unsafe { ogc_sys::GX_Position1x8(index) }
+    }
+
+    pub fn position1x16(index: u16) {
+        unsafe { ogc_sys::GX_Position1x16(index) }
+    }
+
+    pub fn color_4u8(r: u8, b: u8, g: u8, a: u8) {
+        unsafe {
+            ogc_sys::GX_Color4u8(r, g, b, a);
+        }
+    }
+
+    pub fn color_3u8(r: u8, b: u8, g: u8) {
+        unsafe {
+            ogc_sys::GX_Color3u8(r, g, b);
+        }
+    }
+
+    pub fn color_3f32(r: f32, g: f32, b: f32) {
+        unsafe {
+            ogc_sys::GX_Color3f32(r, g, b);
+        }
+    }
+
     pub fn color_1u32(clr: u32) {
         unsafe {
             ogc_sys::GX_Color1u32(clr);
         }
+    }
+
+    pub fn color_1u16(clr: u16) {
+        unsafe {
+            ogc_sys::GX_Color1u16(clr);
+        }
+    }
+
+    pub fn color1x8(index: u8) {
+        unsafe {
+            ogc_sys::GX_Color1x8(index);
+        }
+    }
+
+    pub fn color1x16(index: u16) {
+        unsafe {
+            ogc_sys::GX_Color1x16(index);
+        }
+    }
+
+    ///Helper functions to just pass in a color object
+    pub fn color_color(clr: Color) {
+        unsafe {
+            ogc_sys::GX_Color4u8(clr.0, clr.1, clr.2, clr.3);
+        }
+    }
+
+    pub fn tex_coord_2f32(s: f32, t: f32) {
+        unsafe { ogc_sys::GX_TexCoord2f32(s, t) }
     }
 
     pub fn flush() {
@@ -287,17 +396,5 @@ impl Gx {
 
     pub fn end() {
         unsafe { ogc_sys::GX_End() }
-    }
-
-    pub fn position1x8(index: u8) {
-        unsafe { ogc_sys::GX_Position1x8(index) }
-    }
-
-    pub fn color1x8(index: u8) {
-        unsafe { ogc_sys::GX_Color1x8(index) }
-    }
-
-    pub fn tex_coord_2f32(s: f32, t: f32) {
-        unsafe { ogc_sys::GX_TexCoord2f32(s, t) }
     }
 }
