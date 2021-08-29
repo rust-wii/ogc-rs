@@ -10,7 +10,7 @@ use embedded_graphics::{
 use ogc_rs::{
     ffi::{
         GX_Color4u8, Mtx, GX_ALWAYS, GX_AOP_AND, GX_BL_INVSRCALPHA, GX_BL_SRCALPHA, GX_BM_BLEND,
-        GX_CLIP_ENABLE, GX_CLR_RGBA, GX_COLOR0A0, GX_CULL_NONE, GX_DIRECT, GX_F32, GX_FALSE,
+        GX_CLIP_ENABLE, GX_CLR_RGBA, GX_COLOR0A0, GX_DIRECT, GX_F32, GX_FALSE,
         GX_GM_1_0, GX_GREATER, GX_LEQUAL, GX_LO_CLEAR, GX_MAX_Z24, GX_NONE, GX_ORTHOGRAPHIC,
         GX_PASSCLR, GX_PF_RGB8_Z24, GX_PNMTX0, GX_POS_XYZ, GX_QUADS, GX_RGBA8, GX_TEVSTAGE0,
         GX_TEXCOORD0, GX_TEXMAP0, GX_TEX_ST, GX_TRUE, GX_VA_CLR0, GX_VA_POS, GX_VA_TEX0,
@@ -143,7 +143,7 @@ impl Display {
         Gx::set_alpha_update(GX_TRUE as _);
         Gx::set_alpha_compare(GX_GREATER as _, 0, GX_AOP_AND as _, GX_ALWAYS as _, 0);
         Gx::set_color_update(GX_TRUE as _);
-        Gx::set_cull_mode(GX_CULL_NONE as _);
+        Gx::set_cull_mode(CullMode::None);
 
         Gx::set_clip_mode(GX_CLIP_ENABLE as _);
         Gx::set_scissor(
