@@ -23,6 +23,22 @@ impl Color {
     }
 }
 
+#[derive(Copy, Clone, Debug)]
+#[repr(u8)]
+/// Backface culling mode.
+///
+/// Primitives in which the vertex order is clockwise to the viewer are considered front-facing.
+pub enum CullMode {
+    /// Do not cull any primitives.
+    None = 0,
+    /// Cull front-facing primitives.
+    Front = 1,
+    /// Cull back-facing primitives.
+    Back = 2,
+    /// Cull all primitives.
+    All = 3,
+}
+
 /// Represents the GX service.
 pub struct Gx;
 
@@ -108,9 +124,12 @@ impl Gx {
     }
 
     /// Enables or disables culling of geometry based on its orientation to the viewer.
+    ///
+    /// Primitives in which the vertex order is clockwise to the viewer are considered front-facing.
+    /// 
     /// See [GX_SetCullMode](https://libogc.devkitpro.org/gx_8h.html#adb4b17c39b24073c3e961458ecf02e87) for more.
-    pub fn set_cull_mode(mode: u8) {
-        unsafe { ogc_sys::GX_SetCullMode(mode) }
+    pub fn set_cull_mode(mode: CullMode) {
+        unsafe { ogc_sys::GX_SetCullMode(mode as u8) }
     }
 
     /// Copies the embedded framebuffer (EFB) to the external framebuffer(XFB) in main memory.

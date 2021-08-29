@@ -2742,6 +2742,60 @@ pub struct _card_dir {
 #[doc = "\\param company[2] string identifier <=2."]
 #[doc = "\\param showall boolean flag whether to showall entries or ony those identified by card_gamecode and card_company, previously set within the call to CARD_Init()"]
 pub type card_dir = _card_dir;
+#[doc = " \\typedef struct card_direntry"]
+#[doc = "\\brief structure to hold the information of the save file entry ( aka GCI )"]
+#[doc = "\\param gamecode[4] string identifier <=4."]
+#[doc = "\\param company[2] string identifier <=2."]
+#[doc = "\\param padding always 0xFF."]
+#[doc = "\\param banner_fmt format of banner."]
+#[doc = "\\param filename[CARD_FILENAMELEN] name of the file on card."]
+#[doc = "\\param last_modified last time it was modified,in seconds since 1970 in seconds."]
+#[doc = "\\param icon_addr icon image address in file."]
+#[doc = "\\param icon_fmt icon image format."]
+#[doc = "\\param icon_speed speed of an animated icon."]
+#[doc = "\\param permission permissions of the save file."]
+#[doc = "\\param copy_times how many times the save file has been copied."]
+#[doc = "\\param block starting block of the save file."]
+#[doc = "\\param length size of the save file.."]
+#[doc = "\\param padding always 0xFFFF."]
+#[doc = "\\param comment_addr address in file of the comment block."]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _card_direntry {
+    pub gamecode: [u8_; 4usize],
+    pub company: [u8_; 2usize],
+    pub pad_00: u8_,
+    pub banner_fmt: u8_,
+    pub filename: [u8_; 32usize],
+    pub last_modified: u32_,
+    pub icon_addr: u32_,
+    pub icon_fmt: u16_,
+    pub icon_speed: u16_,
+    pub permission: u8_,
+    pub copy_times: u8_,
+    pub block: u16_,
+    pub length: u16_,
+    pub pad_01: u16_,
+    pub comment_addr: u32_,
+}
+#[doc = " \\typedef struct card_direntry"]
+#[doc = "\\brief structure to hold the information of the save file entry ( aka GCI )"]
+#[doc = "\\param gamecode[4] string identifier <=4."]
+#[doc = "\\param company[2] string identifier <=2."]
+#[doc = "\\param padding always 0xFF."]
+#[doc = "\\param banner_fmt format of banner."]
+#[doc = "\\param filename[CARD_FILENAMELEN] name of the file on card."]
+#[doc = "\\param last_modified last time it was modified,in seconds since 1970 in seconds."]
+#[doc = "\\param icon_addr icon image address in file."]
+#[doc = "\\param icon_fmt icon image format."]
+#[doc = "\\param icon_speed speed of an animated icon."]
+#[doc = "\\param permission permissions of the save file."]
+#[doc = "\\param copy_times how many times the save file has been copied."]
+#[doc = "\\param block starting block of the save file."]
+#[doc = "\\param length size of the save file.."]
+#[doc = "\\param padding always 0xFFFF."]
+#[doc = "\\param comment_addr address in file of the comment block."]
+pub type card_direntry = _card_direntry;
 #[doc = " \\typedef struct card_stat"]
 #[doc = "\\brief structure to hold the additional statistical informations."]
 #[doc = "\\param filename[CARD_FILENAMELEN] name of the file on card."]
@@ -2750,6 +2804,7 @@ pub type card_dir = _card_dir;
 #[doc = "\\param company[2] string identifier <=2."]
 #[doc = "\\param banner_fmt format of banner."]
 #[doc = "\\param icon_addr icon image address in file."]
+#[doc = "\\param icon_fmt icon image format."]
 #[doc = "\\param icon_speed speed of an animated icon."]
 #[doc = "\\param comment_addr address in file of the comment block."]
 #[doc = "\\param offset_banner offset in file to the banner's image data."]
@@ -2786,6 +2841,7 @@ pub struct _card_stat {
 #[doc = "\\param company[2] string identifier <=2."]
 #[doc = "\\param banner_fmt format of banner."]
 #[doc = "\\param icon_addr icon image address in file."]
+#[doc = "\\param icon_fmt icon image format."]
 #[doc = "\\param icon_speed speed of an animated icon."]
 #[doc = "\\param comment_addr address in file of the comment block."]
 #[doc = "\\param offset_banner offset in file to the banner's image data."]
@@ -3130,6 +3186,16 @@ extern "C" {
     pub fn CARD_GetStatus(chn: s32, fileno: s32, stats: *mut card_stat) -> s32;
 }
 extern "C" {
+    #[doc = " \\fn s32 CARD_GetStatusEx(s32 chn, s32 fileno, card_direntry *entry)"]
+    #[doc = "\\brief Get the directory entry (GCI header)"]
+    #[doc = "\\param[in] chn CARD slot."]
+    #[doc = "\\param[in] fileno file index. returned by a previous call to CARD_Open()."]
+    #[doc = "\\param[out] entry pointer to receive the directory entry."]
+    #[doc = ""]
+    #[doc = "\\return \\ref card_errors \"card error codes\""]
+    pub fn CARD_GetStatusEx(chn: s32, fileno: s32, entry: *mut card_direntry) -> s32;
+}
+extern "C" {
     #[doc = " \\fn s32 CARD_SetStatus(s32 chn,s32 fileno,card_stat *stats)"]
     #[doc = "\\brief Set additional file statistic informations. Synchronous version."]
     #[doc = "\\param[in] chn CARD slot."]
@@ -3154,6 +3220,15 @@ extern "C" {
         stats: *mut card_stat,
         callback: cardcallback,
     ) -> s32;
+}
+extern "C" {
+    #[doc = " \\fn s32 CARD_SetStatusEx(s32 chn, s32 fileno, card_direntry *entry)"]
+    #[doc = "\\brief Set the directory entry (preferably from a GCI header), except block index and lenght"]
+    #[doc = "\\param[in] chn CARD slot."]
+    #[doc = "\\param[in] fileno file index. returned by a previous call to CARD_Open()."]
+    #[doc = "\\param[out] entry pointer to a directory entry structure (or GCI header)."]
+    #[doc = "\\return \\ref card_errors \"card error codes\""]
+    pub fn CARD_SetStatusEx(chn: s32, fileno: s32, entry: *mut card_direntry) -> s32;
 }
 extern "C" {
     #[doc = " \\fn s32 CARD_GetAttributes(s32 chn,s32 fileno,u8 *attr)"]
@@ -3210,6 +3285,22 @@ extern "C" {
     #[doc = ""]
     #[doc = "\\return \\ref card_errors \"card error codes\""]
     pub fn CARD_SetGamecode(gamecode: *const ::libc::c_char) -> s32;
+}
+extern "C" {
+    #[doc = " \\fn s32 CARD_GetSerialNo(s32 chn, u32 *serial1, u32 *serial2)"]
+    #[doc = "\\brief Get the encrypted serial numbers of the memory card"]
+    #[doc = "\\param[in] chn CARD slot."]
+    #[doc = "\\param[in] serial1 & serial2 CARD slot."]
+    #[doc = "\\return \\ref card_errors \"card error codes\" or free blocks"]
+    pub fn CARD_GetSerialNo(chn: s32, serial1: *mut u32_, serial2: *mut u32_) -> s32;
+}
+extern "C" {
+    #[doc = " \\fn s32 CARD_GetFreeBlocks(s32 chn, u16* freeblocks)"]
+    #[doc = "\\brief Get the free blocks in memory card"]
+    #[doc = "\\param[in] chn CARD slot."]
+    #[doc = "\\param[in] freeblocks pointer to receive freeblocks value."]
+    #[doc = "\\return \\ref card_errors \"card error codes\" or free blocks"]
+    pub fn CARD_GetFreeBlocks(chn: s32, freeblocks: *mut u16_) -> s32;
 }
 #[doc = "\\typedef struct _gx_rmodeobj GXRModeObj"]
 #[doc = "\\brief structure to hold the selected video and render settings"]
@@ -10140,7 +10231,7 @@ pub struct _tmd {
     pub title_version: u16_,
     pub num_contents: u16_,
     pub boot_index: u16_,
-    pub fill3: u16_,
+    pub fill2: u16_,
     pub contents: __IncompleteArrayField<tmd_content>,
 }
 pub type tmd = _tmd;
