@@ -157,6 +157,57 @@ pub enum LogicOp {
     Xor = ffi::GX_LO_XOR as _,
 }
 
+/// Performance counter 1 is used for measuring texturing and caching performance as well as FIFO
+/// performance.
+///
+/// `Perf1::Tc*` can be used to compute the texture cache (TC) miss rate. The `TcCheck*` parameters
+/// count how many texture cache lines are accessed for each pixel. In the worst case, for a
+/// mipmap, up to 8 cache lines may be accessed to produce one textured pixel. `Perf1::TcMiss`
+/// counts how many of those accesses missed the texture cache. To compute the miss rate, divide
+/// `Perf1::TcMiss` by the sum of all four `Perf1::TcCheck*` values.
+///
+/// `Perf1::Vc*` count different vertex cache stall conditions.
+#[derive(Copy, Clone, Debug)]
+#[repr(u32)]
+pub enum Perf1 {
+    /// Number of lines (32B) read from called display lists.
+    CallReq = ffi::GX_PERF1_CALL_REQ,
+    /// Number of GP clocks that have elapsed since the last call to `Gx::read_gp1_metric()`.
+    Clocks = ffi::GX_PERF1_CLOCKS,
+    /// Counts all requests (32B/request) from the GP Command Processor (CP). It should be equal to
+    /// the sum of counts returned by `Perf1::FifoReq`, `Perf1::CallReq`, and `Perf1::VcMissReq`.
+    CpAllReq = ffi::GX_PERF1_CP_ALL_REQ,
+    /// Number of lines (32B) read from the GP FIFO.
+    FifoReq = ffi::GX_PERF1_FIFO_REQ,
+    /// Disables performance measurement for perf1 and resets the counter.
+    None = ffi::GX_PERF1_NONE,
+    TcCheck12 = ffi::GX_PERF1_TC_CHECK1_2,
+    TcCheck34 = ffi::GX_PERF1_TC_CHECK3_4,
+    TcCheck56 = ffi::GX_PERF1_TC_CHECK5_6,
+    TcCheck78 = ffi::GX_PERF1_TC_CHECK7_8,
+    /// Number of texture cache misses in total?
+    TcMiss = ffi::GX_PERF1_TC_MISS,
+    /// Number of texels processed by the GP.
+    Texels = ffi::GX_PERF1_TEXELS,
+    /// Number of clocks that the texture unit (TX) is idle.
+    TxIdle = ffi::GX_PERF1_TX_IDLE,
+    /// Number of GP clocks the TX unit is stalled waiting for main memory.
+    TxMemStall = ffi::GX_PERF1_TX_MEMSTALL,
+    /// Number of GP clocks spent writing to state registers in the TX unit.
+    TxRegs = ffi::GX_PERF1_TX_REGS,
+    VcAllStalls = ffi::GX_PERF1_VC_ALL_STALLS,
+    VcElemqFull = ffi::GX_PERF1_VC_ELEMQ_FULL,
+    VcMemreqFull = ffi::GX_PERF1_VC_MEMREQ_FULL,
+    /// Number vertex cache miss request. Each miss requests a 32B transfer from main memory.
+    VcMissReq = ffi::GX_PERF1_VC_MISS_REQ,
+    VcMissqFull = ffi::GX_PERF1_VC_MISSQ_FULL,
+    VcMissrepFull = ffi::GX_PERF1_VC_MISSREP_FULL,
+    VcStatus7 = ffi::GX_PERF1_VC_STATUS7,
+    VcStreamBufLow = ffi::GX_PERF1_VC_STREAMBUF_LOW,
+    /// Number of vertices processed by the GP.
+    Vertices = ffi::GX_PERF1_VERTICES,
+ }
+
 /// Each pixel (source or destination) is multiplied by any of these controls.
 #[derive(Copy, Clone, Debug)]
 #[repr(u8)]
