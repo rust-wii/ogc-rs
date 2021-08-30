@@ -9,7 +9,7 @@ use embedded_graphics::{
 };
 use ogc_rs::{
     ffi::{
-        GX_Color4u8, Mtx, GX_BL_INVSRCALPHA, GX_BL_SRCALPHA, GX_BM_BLEND,
+        GX_Color4u8, Mtx, GX_BL_INVSRCALPHA, GX_BL_SRCALPHA,
         GX_CLIP_ENABLE, GX_CLR_RGBA, GX_COLOR0A0, GX_DIRECT, GX_F32,
         GX_GM_1_0, GX_LO_CLEAR, GX_MAX_Z24, GX_NONE, GX_ORTHOGRAPHIC,
         GX_PASSCLR, GX_PF_RGB8_Z24, GX_PNMTX0, GX_POS_XYZ, GX_RGBA8, GX_TEVSTAGE0,
@@ -132,7 +132,7 @@ impl Display {
             1.0,
         );
         Gx::set_blend_mode(
-            GX_BM_BLEND as _,
+            BlendMode::Blend,
             GX_BL_SRCALPHA as _,
             GX_BL_INVSRCALPHA as _,
             GX_LO_CLEAR as _,
