@@ -64,6 +64,41 @@ pub enum AlphaOp {
     Xor  = ffi::GX_AOP_XOR as _,
 }
 
+/// Collection of primitive types that can be drawn by the GP.
+///
+/// Which type you use depends on your needs; however, performance can increase by using triangle
+/// strips or fans instead of discrete triangles.
+#[derive(Copy, Clone, Debug)]
+#[repr(u8)]
+pub enum Primitive {
+    /// Draws a series of unconnected quads. Every four vertices completes a quad. Internally, each
+    /// quad is translated into a pair of triangles.
+    Quads = ffi::GX_QUADS as _,
+
+    /// Draws a series of unconnected triangles. Three vertices make a single triangle.
+    Triangles = ffi::GX_TRIANGLES as _,
+
+    /// Draws a series of triangles. Each triangle (besides the first) shares a side with the
+    /// previous triangle. Each vertex (besides the first two) completes a triangle.
+    TriangleStrip = ffi::GX_TRIANGLESTRIP as _,
+
+    /// Draws a single triangle fan. The first vertex is the "centerpoint". The second and third
+    /// vertex complete the first triangle. Each subsequent vertex completes another triangle which
+    /// shares a side with the previous triangle (except the first triangle) and has the
+    // centerpoint vertex as one of the vertices.
+    TriangleFan = ffi::GX_TRIANGLEFAN as _,
+
+    /// Draws a series of unconnected line segments. Each pair of vertices makes a line.
+    Lines = ffi::GX_LINES as _,
+
+    /// Draws a series of lines. Each vertex (besides the first) makes a line between it and the
+    /// previous.
+    LineStrip = ffi::GX_LINESTRIP as _,
+
+    /// Draws a series of points. Each vertex is a single point.
+    Points = ffi::GX_POINTS as _,
+}
+
 /// Represents the GX service.
 pub struct Gx;
 
@@ -285,8 +320,8 @@ impl Gx {
 
     /// Begins drawing of a graphics primitive.
     /// See [GX_Begin](https://libogc.devkitpro.org/gx_8h.html#ac1e1239130a33d9fae1352aee8d2cab9) for more.
-    pub fn begin(primitive: u8, vtxfmt: u8, vtxcnt: u16) {
-        unsafe { ogc_sys::GX_Begin(primitive, vtxfmt, vtxcnt) }
+    pub fn begin(primitive: Primitive, vtxfmt: u8, vtxcnt: u16) {
+        unsafe { ogc_sys::GX_Begin(primitive as u8, vtxfmt, vtxcnt) }
     }
 
     /// Sets the parameters for the alpha compare function which uses the alpha output from the last active TEV stage.
