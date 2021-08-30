@@ -11,7 +11,7 @@ use ogc_rs::{
     ffi::{
         GX_Color4u8, Mtx, GX_BL_INVSRCALPHA, GX_BL_SRCALPHA,
         GX_CLIP_ENABLE, GX_CLR_RGBA, GX_COLOR0A0, GX_DIRECT, GX_F32,
-        GX_GM_1_0, GX_LO_CLEAR, GX_MAX_Z24, GX_NONE, GX_ORTHOGRAPHIC,
+        GX_GM_1_0, GX_MAX_Z24, GX_NONE, GX_ORTHOGRAPHIC,
         GX_PASSCLR, GX_PF_RGB8_Z24, GX_PNMTX0, GX_POS_XYZ, GX_RGBA8, GX_TEVSTAGE0,
         GX_TEXCOORD0, GX_TEXMAP0, GX_TEX_ST, GX_VA_CLR0, GX_VA_POS, GX_VA_TEX0,
         GX_VTXFMT0, GX_ZC_LINEAR,
@@ -135,7 +135,7 @@ impl Display {
             BlendMode::Blend,
             GX_BL_SRCALPHA as _,
             GX_BL_INVSRCALPHA as _,
-            GX_LO_CLEAR as _,
+            LogicOp::Clear,
         );
         Gx::set_alpha_update(true);
         Gx::set_alpha_compare(CmpFn::Greater, 0, AlphaOp::And, CmpFn::Always, 0);
