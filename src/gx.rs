@@ -230,6 +230,18 @@ pub enum BlendCtrl {
     Zero = ffi::GX_BL_ZERO as _,
 }
 
+/// Compressed Z format.
+///
+/// See [`Gx::set_pixel_fmt`] for details.
+#[derive(Copy, Clone, Debug)]
+#[repr(u8)]
+pub enum ZCompress {
+    Linear = ffi::GX_ZC_LINEAR as _,
+    Near = ffi::GX_ZC_NEAR as _,
+    Mid = ffi::GX_ZC_MID as _,
+    Far = ffi::GX_ZC_FAR as _,
+}
+
 /// Represents the GX service.
 pub struct Gx;
 
@@ -310,8 +322,8 @@ impl Gx {
 
     /// Sets the format of pixels in the Embedded Frame Buffer (EFB).
     /// See [GX_SetPixelFmt](https://libogc.devkitpro.org/gx_8h.html#a018d9b0359f9689ac41f44f0b2374ffb) for more.
-    pub fn set_pixel_fmt(pix_fmt: u8, z_fmt: u8) {
-        unsafe { ogc_sys::GX_SetPixelFmt(pix_fmt, z_fmt) }
+    pub fn set_pixel_fmt(pix_fmt: u8, z_fmt: ZCompress) {
+        unsafe { ogc_sys::GX_SetPixelFmt(pix_fmt, z_fmt as u8) }
     }
 
     /// Enables or disables culling of geometry based on its orientation to the viewer.
