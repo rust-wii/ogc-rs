@@ -31,27 +31,30 @@ impl Color {
 #[repr(u8)]
 pub enum CullMode {
     /// Do not cull any primitives.
-    None = 0,
+    None = ffi::GX_CULL_NONE as _,
+
     /// Cull front-facing primitives.
-    Front = 1,
+    Front = ffi::GX_CULL_FRONT as _,
+
     /// Cull back-facing primitives.
-    Back = 2,
+    Back = ffi::GX_CULL_BACK as _,
+
     /// Cull all primitives.
-    All = 3,
+    All = ffi::GX_CULL_ALL as _,
 }
 
 /// Comparison functions.
 #[derive(Copy, Clone, Debug)]
 #[repr(u8)]
 pub enum CmpFn {
-    Never     = ffi::GX_NEVER as u8,
-    Less      = ffi::GX_LESS as u8,
-    Equal     = ffi::GX_EQUAL as u8,
-    LessEq    = ffi::GX_LEQUAL as u8,
-    Greater   = ffi::GX_GREATER as u8,
-    NotEq     = ffi::GX_NEQUAL as u8,
-    GreaterEq = ffi::GX_GEQUAL as u8,
-    Always    = ffi::GX_ALWAYS as u8,
+    Never     = ffi::GX_NEVER as _,
+    Less      = ffi::GX_LESS as _,
+    Equal     = ffi::GX_EQUAL as _,
+    LessEq    = ffi::GX_LEQUAL as _,
+    Greater   = ffi::GX_GREATER as _,
+    NotEq     = ffi::GX_NEQUAL as _,
+    GreaterEq = ffi::GX_GEQUAL as _,
+    Always    = ffi::GX_ALWAYS as _,
 }
 
 #[derive(Copy, Clone, Debug)]
