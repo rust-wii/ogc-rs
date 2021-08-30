@@ -11,7 +11,7 @@ use ogc_rs::{
     ffi::{
         GX_Color4u8, Mtx, GX_ALWAYS, GX_AOP_AND, GX_BL_INVSRCALPHA, GX_BL_SRCALPHA, GX_BM_BLEND,
         GX_CLIP_ENABLE, GX_CLR_RGBA, GX_COLOR0A0, GX_DIRECT, GX_F32,
-        GX_GM_1_0, GX_GREATER, GX_LEQUAL, GX_LO_CLEAR, GX_MAX_Z24, GX_NONE, GX_ORTHOGRAPHIC,
+        GX_GM_1_0, GX_LO_CLEAR, GX_MAX_Z24, GX_NONE, GX_ORTHOGRAPHIC,
         GX_PASSCLR, GX_PF_RGB8_Z24, GX_PNMTX0, GX_POS_XYZ, GX_QUADS, GX_RGBA8, GX_TEVSTAGE0,
         GX_TEXCOORD0, GX_TEXMAP0, GX_TEX_ST, GX_VA_CLR0, GX_VA_POS, GX_VA_TEX0,
         GX_VTXFMT0, GX_ZC_LINEAR,
@@ -37,7 +37,7 @@ impl Display {
 
     pub fn flush(&self, framebuffer: *mut c_void) {
         Gx::draw_done();
-        Gx::set_z_mode(true, GX_LEQUAL as _, true);
+        Gx::set_z_mode(true, CmpFn::LessEq, true);
         Gx::copy_disp(framebuffer, true);
     }
 
@@ -95,7 +95,7 @@ impl Display {
             GX_RGBA8 as _,
             0,
         );
-        Gx::set_z_mode(true, GX_LEQUAL as _, true);
+        Gx::set_z_mode(true, CmpFn::LessEq, true);
 
         Gx::set_num_chans(1);
         Gx::set_num_tex_gens(1);
@@ -138,7 +138,7 @@ impl Display {
             GX_LO_CLEAR as _,
         );
         Gx::set_alpha_update(true);
-        Gx::set_alpha_compare(GX_GREATER as _, 0, GX_AOP_AND as _, GX_ALWAYS as _, 0);
+        Gx::set_alpha_compare(CmpFn::Greater, 0, GX_AOP_AND as _, CmpFn::Always, 0);
         Gx::set_color_update(true);
         Gx::set_cull_mode(CullMode::None);
 
