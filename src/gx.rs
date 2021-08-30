@@ -54,6 +54,16 @@ pub enum CmpFn {
     Always    = ffi::GX_ALWAYS as u8,
 }
 
+#[derive(Copy, Clone, Debug)]
+#[repr(u8)]
+/// Alpha combining operations.
+pub enum AlphaOp {
+    And  = ffi::GX_AOP_AND as _,
+    Or   = ffi::GX_AOP_OR as _,
+    Xnor = ffi::GX_AOP_XNOR as _,
+    Xor  = ffi::GX_AOP_XOR as _,
+}
+
 /// Represents the GX service.
 pub struct Gx;
 
@@ -281,8 +291,8 @@ impl Gx {
 
     /// Sets the parameters for the alpha compare function which uses the alpha output from the last active TEV stage.
     /// See [Gx_SetAlphaCompare](https://libogc.devkitpro.org/gx_8h.html#a23ac269062a1b2c2efc8ad5aae24b26a) for more.
-    pub fn set_alpha_compare(comp0: CmpFn, ref0: u8, aop: u8, comp1: CmpFn, ref1: u8) {
-        unsafe { ogc_sys::GX_SetAlphaCompare(comp0 as u8, ref0, aop, comp1 as u8, ref1) }
+    pub fn set_alpha_compare(comp0: CmpFn, ref0: u8, aop: AlphaOp, comp1: CmpFn, ref1: u8) {
+        unsafe { ogc_sys::GX_SetAlphaCompare(comp0 as u8, ref0, aop as u8, comp1 as u8, ref1) }
     }
 
     /// Sets the parameters for the alpha compare function which uses the alpha output from the last active TEV stage.

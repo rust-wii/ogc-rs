@@ -9,7 +9,7 @@ use embedded_graphics::{
 };
 use ogc_rs::{
     ffi::{
-        GX_Color4u8, Mtx, GX_ALWAYS, GX_AOP_AND, GX_BL_INVSRCALPHA, GX_BL_SRCALPHA, GX_BM_BLEND,
+        GX_Color4u8, Mtx, GX_BL_INVSRCALPHA, GX_BL_SRCALPHA, GX_BM_BLEND,
         GX_CLIP_ENABLE, GX_CLR_RGBA, GX_COLOR0A0, GX_DIRECT, GX_F32,
         GX_GM_1_0, GX_LO_CLEAR, GX_MAX_Z24, GX_NONE, GX_ORTHOGRAPHIC,
         GX_PASSCLR, GX_PF_RGB8_Z24, GX_PNMTX0, GX_POS_XYZ, GX_QUADS, GX_RGBA8, GX_TEVSTAGE0,
@@ -138,7 +138,7 @@ impl Display {
             GX_LO_CLEAR as _,
         );
         Gx::set_alpha_update(true);
-        Gx::set_alpha_compare(CmpFn::Greater, 0, GX_AOP_AND as _, CmpFn::Always, 0);
+        Gx::set_alpha_compare(CmpFn::Greater, 0, AlphaOp::And, CmpFn::Always, 0);
         Gx::set_color_update(true);
         Gx::set_cull_mode(CullMode::None);
 
