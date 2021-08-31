@@ -157,6 +157,88 @@ pub enum LogicOp {
     Xor = ffi::GX_LO_XOR as _,
 }
 
+/// Performance counter 0 is used to measure attributes dealing with geometry and primitives, such
+/// as triangle counts and clipping ratios.
+///
+/// `Perf0::Xf*` measure how many GP cycles are spent in each stage of the XF.
+///
+/// The triangle metrics (`Perf0::Triangles*`) allow counting triangles under specific conditions
+/// or with specific attributes.
+///
+/// `Perf0::Triangles*Tex` count triangles based on the number of texture coordinates supplied;
+/// `Perf0::Triangles*Clr` count triangles based on the number of colors supplied.
+///
+/// The quad metrics allow you to count the number of quads (2x2 pixels) the GP processes. The term
+/// coverage is used to indicate how many pixels in the quad are actually part of the triangle
+/// being rasterized. For example, a coverage of 4 means all pixels in the quad intersect the
+/// triangle. A coverage of 1 indicates that only 1 pixel in the quad intersected the triangle.
+#[derive(Copy, Clone, Debug)]
+#[repr(u32)]
+pub enum Perf0 {
+    /// Average quad count; average based on what is unknown
+    AvgQuadCnt = ffi::GX_PERF0_AVG_QUAD_CNT,
+    /// Number of GP clocks spent clipping.
+    ClipClks = ffi::GX_PERF0_CLIP_CLKS,
+    ClipRatio = ffi::GX_PERF0_CLIP_RATIO,
+    /// Number of vertices that were clipped by the GP.
+    ClipVtx = ffi::GX_PERF0_CLIP_VTX,
+    /// Number of GP clocks that have elapsed since the previous call to `Gx::read_gp0_metric()`.
+    Clocks = ffi::GX_PERF0_CLOCKS,
+    /// Disables performance measurement for perf0 and resets the counter.
+    None = ffi::GX_PERF0_NONE,
+    /// Number of quads having zero coverage.
+    Quad0Cvg = ffi::GX_PERF0_QUAD_0CVG,
+    /// Number of quads with 1 pixel coverage.
+    Quad1Cvg = ffi::GX_PERF0_QUAD_1CVG,
+    /// Number of quads with 2 pixel coverage.
+    Quad2Cvg = ffi::GX_PERF0_QUAD_2CVG,
+    /// Number of quads with 3 pixel coverage.
+    Quad3Cvg = ffi::GX_PERF0_QUAD_3CVG,
+    /// Number of quads with 4 pixel coverage.
+    Quad4Cvg = ffi::GX_PERF0_QUAD_4CVG,
+    /// Number of quads having coverage greater than zero.
+    QuadNon0Cvg = ffi::GX_PERF0_QUAD_NON0CVG,
+    /// Number of triangles.
+    Triangles = ffi::GX_PERF0_TRIANGLES,
+    Triangles0Clr = ffi::GX_PERF0_TRIANGLES_0CLR,
+    Triangles0Tex = ffi::GX_PERF0_TRIANGLES_0TEX,
+    Triangles1Clr = ffi::GX_PERF0_TRIANGLES_1CLR,
+    Triangles1Tex = ffi::GX_PERF0_TRIANGLES_1TEX,
+    Triangles2Clr = ffi::GX_PERF0_TRIANGLES_2CLR,
+    Triangles2Tex = ffi::GX_PERF0_TRIANGLES_2TEX,
+    Triangles3Tex = ffi::GX_PERF0_TRIANGLES_3TEX,
+    Triangles4Tex = ffi::GX_PERF0_TRIANGLES_4TEX,
+    Triangles5Tex = ffi::GX_PERF0_TRIANGLES_5TEX,
+    Triangles6Tex = ffi::GX_PERF0_TRIANGLES_6TEX,
+    Triangles7Tex = ffi::GX_PERF0_TRIANGLES_7TEX,
+    Triangles8Tex = ffi::GX_PERF0_TRIANGLES_8TEX,
+    /// Number of triangles that *failed* the front-face/back-face culling test.
+    TrianglesCulled = ffi::GX_PERF0_TRIANGLES_CULLED,
+    /// Number of triangles that *passed* the front-face/back-face culling test.
+    TrianglesPassed = ffi::GX_PERF0_TRIANGLES_PASSED,
+    /// Number of triangles that are scissored.
+    TrianglesScissored = ffi::GX_PERF0_TRIANGLES_SCISSORED,
+    /// Number of vertices processed by the GP.
+    Vertices = ffi::GX_PERF0_VERTICES,
+    /// Number of cycles the bottom of the pipe (result combiner) is busy.
+    XfBotClks = ffi::GX_PERF0_XF_BOT_CLKS,
+    /// Number of cycles the lighting engine is busy.
+    XfLitClks = ffi::GX_PERF0_XF_LIT_CLKS,
+    /// Number of cycles are spent loading XF state registers.
+    XfRegldClks = ffi::GX_PERF0_XF_REGLD_CLKS,
+    /// Number of cycles the XF reads the state registers.
+    XfRegrdClks = ffi::GX_PERF0_XF_REGRD_CLKS,
+    /// Number of cycles the XF is waiting on input. If the XF is waiting a large percentage of the
+    /// total time, it may indicate that the CPU is not supplying data fast enough to keep the GP
+    /// busy.
+    XfWaitIn = ffi::GX_PERF0_XF_WAIT_IN,
+    /// Number of cycles the XF waits to send its output to the rest of the GP pipeline. If the XF
+    /// cannot output, it may indicate that the GP is currently fill-rate limited.
+    XfWaitOut = ffi::GX_PERF0_XF_WAIT_OUT,
+    /// Number of cycles the transform engine is busy.
+    XfXfrmClks = ffi::GX_PERF0_XF_XFRM_CLKS,
+}
+
 /// Performance counter 1 is used for measuring texturing and caching performance as well as FIFO
 /// performance.
 ///
