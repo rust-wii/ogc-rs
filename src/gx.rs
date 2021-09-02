@@ -2,9 +2,11 @@
 //!
 //! This module implements a safe wrapper around the graphics functions found in ``gx.h``.
 
+use crate::ffi::{self, Mtx as Mtx34, Mtx44};
 use core::ffi::c_void;
-use crate::ffi;
-use ogc_sys::{Mtx as Mtx34, Mtx44};
+
+/// Function for the drawsync-token callback.
+pub type DrawSyncCallback = fn(u16);
 
 /// Helper function for `Gx::init`
 pub fn gp_fifo(fifo_size: usize) -> *mut c_void {
@@ -47,24 +49,24 @@ pub enum CullMode {
 #[derive(Copy, Clone, Debug)]
 #[repr(u8)]
 pub enum CmpFn {
-    Never     = ffi::GX_NEVER as _,
-    Less      = ffi::GX_LESS as _,
-    Equal     = ffi::GX_EQUAL as _,
-    LessEq    = ffi::GX_LEQUAL as _,
-    Greater   = ffi::GX_GREATER as _,
-    NotEq     = ffi::GX_NEQUAL as _,
+    Never = ffi::GX_NEVER as _,
+    Less = ffi::GX_LESS as _,
+    Equal = ffi::GX_EQUAL as _,
+    LessEq = ffi::GX_LEQUAL as _,
+    Greater = ffi::GX_GREATER as _,
+    NotEq = ffi::GX_NEQUAL as _,
     GreaterEq = ffi::GX_GEQUAL as _,
-    Always    = ffi::GX_ALWAYS as _,
+    Always = ffi::GX_ALWAYS as _,
 }
 
 #[derive(Copy, Clone, Debug)]
 #[repr(u8)]
 /// Alpha combining operations.
 pub enum AlphaOp {
-    And  = ffi::GX_AOP_AND as _,
-    Or   = ffi::GX_AOP_OR as _,
+    And = ffi::GX_AOP_AND as _,
+    Or = ffi::GX_AOP_OR as _,
     Xnor = ffi::GX_AOP_XNOR as _,
-    Xor  = ffi::GX_AOP_XOR as _,
+    Xor = ffi::GX_AOP_XOR as _,
 }
 
 /// Collection of primitive types that can be drawn by the GP.
@@ -288,7 +290,7 @@ pub enum Perf1 {
     VcStreamBufLow = ffi::GX_PERF1_VC_STREAMBUF_LOW,
     /// Number of vertices processed by the GP.
     Vertices = ffi::GX_PERF1_VERTICES,
- }
+}
 
 /// Each pixel (source or destination) is multiplied by any of these controls.
 #[derive(Copy, Clone, Debug)]
@@ -314,7 +316,7 @@ pub enum BlendCtrl {
 
 /// Compressed Z format.
 ///
-/// See [`Gx::set_pixel_fmt`] for details.
+/// See [`Gx::set_pixel_fmt()`] for details.
 #[derive(Copy, Clone, Debug)]
 #[repr(u8)]
 pub enum ZCompress {
@@ -324,28 +326,81 @@ pub enum ZCompress {
     Far = ffi::GX_ZC_FAR as _,
 }
 
+/// Specifies whether the input source color for a color channel comes from a register or a vertex.
+#[derive(Copy, Clone, Debug)]
+#[repr(u8)]
+pub enum Source {
+    Register = ffi::GX_SRC_REG as _,
+    Vertex = ffi::GX_SRC_VTX as _,
+}
+
+#[derive(Copy, Clone, Debug)]
+#[repr(u8)]
+pub enum DiffFn {
+    None = ffi::GX_DF_NONE as _,
+    Signed = ffi::GX_DF_SIGNED as _,
+    Clamp = ffi::GX_DF_CLAMP as _,
+}
+
+#[derive(Copy, Clone, Debug)]
+#[repr(u8)]
+pub enum AttnFn {
+    /// No attenuation
+    None = ffi::GX_AF_NONE as _,
+    /// Specular computation
+    Spec = ffi::GX_AF_SPEC as _,
+    /// Spot light attenuation
+    Spot = ffi::GX_AF_SPOT as _,
+}
+
+/// Object describing a graphics FIFO.
+#[repr(transparent)]
+pub struct FifoObj(ffi::GXFifoObj);
+
+impl FifoObj {
+    pub fn set_fifo_limits(&mut self, hiwatermark: u32, lowatermark: u32) {
+        assert_eq!(0, hiwatermark % 32);
+        assert_eq!(0, lowatermark % 32);
+        // assert!(hiwatermark < self.len());
+        // assert!(lowatermark < self.len());
+        unsafe { ffi::GX_InitFifoLimits(&mut self.0, hiwatermark, lowatermark) }
+    }
+    /*
+    TODO turn these into &self once upstream changes in libogc go through.
+    /// Returns number of cache lines in the FIFO.
+    pub fn count(&mut self) -> usize {
+        unsafe { ffi::GX_GetFifoCount(&mut self.0) as usize }
+    }
+
+    /// Get the size of a given FIFO.
+    pub fn len(&mut self) -> usize {
+        unsafe { ffi::GX_GetFifoSize(&mut self.0) as usize }
+    }
+    */
+}
+
 /// Object containing information on a light.
 #[repr(transparent)]
-pub struct LightObj(ogc_sys::GXLightObj);
+pub struct LightObj(ffi::GXLightObj);
 
 /// Type of the brightness decreasing function by distance.
 #[derive(Copy, Clone, Debug)]
 #[repr(u8)]
 pub enum DistFn {
-    Off    = ffi::GX_DA_OFF as _,
+    Off = ffi::GX_DA_OFF as _,
     Gentle = ffi::GX_DA_GENTLE as _,
     Medium = ffi::GX_DA_MEDIUM as _,
-    Steep  = ffi::GX_DA_STEEP as _,
+    Steep = ffi::GX_DA_STEEP as _,
 }
 
 /// Spot illumination distribution function
 #[derive(Copy, Clone, Debug)]
 #[repr(u8)]
 pub enum SpotFn {
-    Off   = ffi::GX_SP_OFF as _,
-    Flat  = ffi::GX_SP_FLAT as _,
-    Cos   = ffi::GX_SP_COS as _,
-    Cos2  = ffi::GX_SP_COS2 as _,
+    Off = ffi::GX_SP_OFF as _,
+    Flat = ffi::GX_SP_FLAT as _,
+    Cos = ffi::GX_SP_COS as _,
+    Cos2 = ffi::GX_SP_COS2 as _,
     Sharp = ffi::GX_SP_SHARP as _,
     Ring1 = ffi::GX_SP_RING1 as _,
     Ring2 = ffi::GX_SP_RING2 as _,
@@ -362,24 +417,24 @@ impl LightObj {
     ///
     /// where `aattn` is the cosine of the angle between the light direction and the vector from
     /// the light position to the vertex, and `d` is the distance from the light position to the
-    /// vertex when the channel attenuation function is `GX_AF_SPOT`. The light color will be
+    /// vertex when the channel attenuation function is `AttnFn::Spot`. The light color will be
     /// multiplied by the `atten` factor when the attenuation function for the color channel
-    /// referencing this light is set to `GX_AF_SPOT` (see [`GX_SetChanCtrl()`]).
+    /// referencing this light is set to `AttnFn::Spot` (see [`Gx::set_channel_controls()`]).
     ///
     /// # Note
     /// The convenience function [`LightObj::set_spot_attn()`] can be used to set the angle
     /// attenuation coefficents based on several spot light types. The convenience function
-    /// [`LightObj::set_dist_attn()`] can be used to set the distance attenuation coefficients using
-    /// one of several common attenuation functions.
+    /// [`LightObj::set_dist_attn()`] can be used to set the distance attenuation coefficients
+    /// using one of several common attenuation functions.
     ///
-    /// The convenience macro [`GX_InitLightShininess()`] can be used to set the attenuation
+    /// The convenience macro [`LightObj::set_shininess()`] can be used to set the attenuation
     /// parameters for specular lights.
     ///
-    /// When the channel attenuation function is set to `GX_AF_SPEC`, the `aattn` and `d` parameter
-    /// are equal to the dot product of the eye-space vertex normal and the half-angle vector set
-    /// by [`LightObj::set_specular_dir()`].
+    /// When the channel attenuation function is set to `AttnFn::Spec`, the `aattn` and `d`
+    /// parameter are equal to the dot product of the eye-space vertex normal and the half-angle
+    /// vector set by [`LightObj::set_specular_dir()`].
     pub fn set_attn(&mut self, a0: f32, a1: f32, a2: f32, k0: f32, k1: f32, k2: f32) {
-        //unsafe { ogc_sys::GX_InitLightAttn(&mut self.0, a0, a1, a2, k0, k1, k2) }
+        //unsafe { ffi::GX_InitLightAttn(&mut self.0, a0, a1, a2, k0, k1, k2) }
         self.set_attn_a(a0, a1, a2);
         self.set_attn_k(k0, k1, k2);
     }
@@ -392,8 +447,8 @@ impl LightObj {
     /// parameters (see [`LightObj::set_attn()`]). Note that the equation is attempting to
     /// approximate the function `(N*H)^shininess`. Since the attenuation equation is only a ratio
     /// of quadratics, a true exponential function is not possible. To enable the specular
-    /// calculation, you must set the attenuation parameter of the lighting channel to `GX_AF_SPEC`
-    /// using [`GX_SetChanCtrl()`].
+    /// calculation, you must set the attenuation parameter of the lighting channel to
+    /// `AttnFn::Spec` using [`Gx::set_channel_controls()`].
     pub fn set_shininess(&mut self, shininess: f32) {
         self.set_attn(0.0, 0.0, 1.0, shininess / 2.0, 0.0, 1.0 - shininess / 2.0);
     }
@@ -411,18 +466,20 @@ impl LightObj {
     /// vertex. The `k0-2` coefficients can be set using [`LightObj::set_attn_k()`]. You can set
     /// both the `a0-2` and `k0-2` coefficients can be set using [`LightObj::set_attn()`]. The
     /// light color will be multiplied by the atten factor when the attenuation function for the
-    /// color channel referencing this light is set to `GX_AF_SPOT` (see [`GX_SetChanCtrl()`]).
+    /// color channel referencing this light is set to `AttnFn::Spot` (see
+    /// [`Gx::set_channel_controls()`]).
     ///
     /// # Note
     /// The convenience function [`LightObj::set_spot_attn()`] can be used to set the angle
     /// attenuation coefficents based on several spot light types. The convenience function
-    /// [`LightObj::set_dist_attn()`] can be used to set the distance attenuation coefficients using
-    /// one of several common attenuation functions.
+    /// [`LightObj::set_dist_attn()`] can be used to set the distance attenuation coefficients
+    /// using one of several common attenuation functions.
     pub fn set_attn_a(&mut self, a0: f32, a1: f32, a2: f32) {
-        unsafe { ogc_sys::GX_InitLightAttnA(&mut self.0, a0, a1, a2) }
+        unsafe { ffi::GX_InitLightAttnA(&mut self.0, a0, a1, a2) }
     }
 
-    /// Sets coefficients used in the lighting distance attenuation calculation in a given light object.
+    /// Sets coefficients used in the lighting distance attenuation calculation in a given light
+    /// object.
     ///
     /// The coefficients `k0`, `k1`, and `k2` are used for distance attenuation. The attenuation
     /// function is:
@@ -434,7 +491,8 @@ impl LightObj {
     /// vertex. The `a0-2` coefficients can be set using [`LightObj::set_attn_a()`]. You can set
     /// both the `a0-2` and `k0-2` coefficients can be set using [`LightObj::set_attn()`]. The
     /// light color will be multiplied by the atten factor when the attenuation function for the
-    /// color channel referencing this light is set to `GX_AF_SPOT` (see `GX_SetChanCtrl()`).
+    /// color channel referencing this light is set to `AttnFn::Spot` (see
+    /// [`Gx::set_channel_controls()`]).
     ///
     /// # Note
     /// The convenience function [`LightObj::set_spot_attn()`] can be used to set the angle
@@ -442,18 +500,18 @@ impl LightObj {
     /// [`LightObj::set_dist_attn()`] can be used to set the distance attenuation coefficients
     /// using one of several common attenuation functions.
     pub fn set_attn_k(&mut self, k0: f32, k1: f32, k2: f32) {
-        unsafe { ogc_sys::GX_InitLightAttnK(&mut self.0, k0, k1, k2) }
+        unsafe { ffi::GX_InitLightAttnK(&mut self.0, k0, k1, k2) }
     }
     /*
     /// Sets the color of the light in the light object.
     pub fn set_color(&mut self, color: GxColor) {
-        unsafe { ogc_sys::GX_InitLightColor(&mut self.0, color) }
+        unsafe { ffi::GX_InitLightColor(&mut self.0, color) }
     }
     */
     /// Sets the direction of a light in the light object.
     ///
     /// This direction is used when the light object is used as spotlight or a specular light (see
-    /// the `attn_fn` parameter of [`GX_SetChanCtrl()`]).
+    /// the `attn_fn` parameter of [`Gx::set_channel_controls()`]).
     ///
     /// # Note
     /// The coordinate space of the light normal should be consistent with a vertex normal
@@ -461,9 +519,9 @@ impl LightObj {
     ///
     /// This function does not set the direction of parallel directional diffuse lights. If you
     /// want parallel diffuse lights, you may put the light position very far from every objects to
-    /// be lit. (See [`LightObj::set_pos()`] and [`GX_SetChanCtrl()`])
+    /// be lit. (See [`LightObj::set_pos()`] and [`Gx::set_channel_controls()`])
     pub fn set_direction(&mut self, nx: f32, ny: f32, nz: f32) {
-        unsafe { ogc_sys::GX_InitLightDir(&mut self.0, nx, ny, nz) }
+        unsafe { ffi::GX_InitLightDir(&mut self.0, nx, ny, nz) }
     }
 
     /// Sets coefficients for distance attenuation in a light object.
@@ -487,7 +545,7 @@ impl LightObj {
     /// attenuation should be set by using [`LightObj::set_spot_attn()`] or
     /// [`LightObj::set_attn_a()`].
     pub fn set_dist_attn(&mut self, ref_dist: f32, ref_brite: f32, dist_fn: DistFn) {
-        unsafe { ogc_sys::GX_InitLightDistAttn(&mut self.0, ref_dist, ref_brite, dist_fn as u8) }
+        unsafe { ffi::GX_InitLightDistAttn(&mut self.0, ref_dist, ref_brite, dist_fn as u8) }
     }
 
     /// Sets the position of the light in the light object.
@@ -501,7 +559,7 @@ impl LightObj {
     /// (x, y and z) which makes the light position very far away from objects to be lit and all
     /// rays considered almost parallel.
     pub fn set_pos(&mut self, x: f32, y: f32, z: f32) {
-        unsafe { ogc_sys::GX_InitLightPos(&mut self.0, x, y, z) }
+        unsafe { ffi::GX_InitLightPos(&mut self.0, x, y, z) }
     }
 
     /// Sets coefficients for angular (spotlight) attenuation in light object.
@@ -517,7 +575,7 @@ impl LightObj {
     ///
     /// The parameter `spotfn` defines type of the illumination distribution within cutoff angle.
     /// The value `SpotFn::Off` turns spotlight feature off even if color channel setting is using
-    /// `GX_AF_SPOT` (see [`GX_SetChanCtrl()`]).
+    /// `AttnFn::Spot` (see [`Gx::set_channel_controls()`]).
     ///
     /// # Note
     /// This function can generate only some kind of simple spotlights. If you want more flexible
@@ -528,7 +586,7 @@ impl LightObj {
     /// attenuation should be set by using [`LightObj::set_dist_attn()`] or
     /// [`LightObj::set_attn_k()`].
     pub fn set_spot_attn(&mut self, cut_off: f32, spotfn: SpotFn) {
-        unsafe { ogc_sys::GX_InitLightSpot(&mut self.0, cut_off, spotfn as u8) }
+        unsafe { ffi::GX_InitLightSpot(&mut self.0, cut_off, spotfn as u8) }
     }
 
     /// Sets the direction of a specular light in the light object.
@@ -539,16 +597,16 @@ impl LightObj {
     ///
     /// # Note
     /// This function should be used if and only if the light object is used as specular light. One
-    /// specifies a specular light in [`GX_SetChanCtrl()`] by setting the [Attenuation function] to
-    /// `GX_AF_SPEC`. Furthermore, one must not use [`LightObj::set_direction()`] or
-    /// [`LightObj::set_pos()`] to set up a light object which will be used as a specular light
-    /// since these functions will destroy the information set by [`LightObj::set_specular_dir`].
-    /// In contrast to diffuse lights (including spotlights) that are considered local lights, a
-    /// specular light is a parallel light (i.e. the specular light is infinitely far away such
-    /// that all the rays of the light are parallel), and thus one can only specify directional
-    /// information.
+    /// specifies a specular light in [`Gx::set_channel_controls()`] by setting the [attenuation
+    /// function](`AttnFn`) to `AttnFn::Spec`. Furthermore, one must not use
+    /// [`LightObj::set_direction()`] or [`LightObj::set_pos()`] to set up a light object which
+    /// will be used as a specular light since these functions will destroy the information set by
+    /// [`LightObj::set_specular_dir()`]. In contrast to diffuse lights (including spotlights) that
+    /// are considered local lights, a specular light is a parallel light (i.e. the specular light
+    /// is infinitely far away such that all the rays of the light are parallel), and thus one can
+    /// only specify directional information.
     pub fn set_specular_dir(&mut self, nx: f32, ny: f32, nz: f32) {
-        unsafe { ogc_sys::GX_InitSpecularDir(&mut self.0, nx, ny, nz) }
+        unsafe { ffi::GX_InitSpecularDir(&mut self.0, nx, ny, nz) }
     }
 
     /// Sets the direction and half-angle vector of a specular light in the light object.
@@ -561,7 +619,201 @@ impl LightObj {
     ///
     /// See also [`LightObj::set_specular_dir()`].
     pub fn set_specular_dir_ha(&mut self, nx: f32, ny: f32, nz: f32, hx: f32, hy: f32, hz: f32) {
-        unsafe { ogc_sys::GX_InitSpecularDirHA(&mut self.0, nx, ny, nz, hx, hy, hz) }
+        unsafe { ffi::GX_InitSpecularDirHA(&mut self.0, nx, ny, nz, hx, hy, hz) }
+    }
+}
+
+/// Texture filter types
+#[derive(Copy, Clone, Debug)]
+#[repr(u8)]
+pub enum TexFilter {
+    /// Point sampling, no mipmap
+    Near = ffi::GX_NEAR as _,
+    /// Point sampling, linear mipmap
+    NearMipLin = ffi::GX_NEAR_MIP_LIN as _,
+    /// Point sampling, discrete mipmap
+    NearMipNear = ffi::GX_NEAR_MIP_NEAR as _,
+    /// Trilinear filtering
+    LinMipLin = ffi::GX_LIN_MIP_LIN as _,
+    /// Bilinear filtering, discrete mipmap
+    LinMipNear = ffi::GX_LIN_MIP_NEAR as _,
+    /// Bilinear filtering, no mipmap
+    Linear = ffi::GX_LINEAR as _,
+}
+
+/// Texture wrap modes
+#[derive(Copy, Clone, Debug)]
+#[repr(u8)]
+pub enum WrapMode {
+    Clamp = ffi::GX_CLAMP as _,
+    Repeat = ffi::GX_REPEAT as _,
+    Mirror = ffi::GX_MIRROR as _,
+}
+
+#[repr(transparent)]
+pub struct TexObj(ffi::GXTexObj);
+
+impl TexObj {
+    /// Used to initialize or change a texture object for non-color index textures.
+    pub fn new(
+        img: &[u8],
+        width: u16,
+        height: u16,
+        format: u8,
+        wrap_s: WrapMode,
+        wrap_t: WrapMode,
+        mipmap: bool
+    ) -> Self {
+        let texture = MaybeUninit::uninit();
+        unimplemented!()
+        unsafe {
+            ffi::GX_InitTexObj(
+                texture.as_mut_ptr(),
+                width,
+                height,
+                format,
+                wrap_s as u8,
+                wrap_t as u8,
+                mipmap as u8,
+            );
+        }
+        TexObj(texture.assume_init())
+    }
+
+    /// Enables bias clamping for texture LOD.
+    ///
+    /// If set to `true`, the sum of LOD and `lodbias` (given in [`TexObj::set_lod_bias()`])
+    /// is clamped so that it is never less than the minimum extent of the pixel projected in
+    /// texture space. This prevents over-biasing the LOD when the polygon is perpendicular to the
+    /// view direction.
+    pub fn set_bias_clamp(&mut self, enable: bool) {
+        unsafe { ffi::GX_InitTexObjBiasClamp(&mut self.0, enable as u8) }
+    }
+
+    /// Changes LOD computing mode.
+    ///
+    /// When set to `true`, the LOD is computed using adjacent texels; when `false`, diagonal
+    /// texels are used instead. This should be set to `true` if you use bias clamping (see
+    /// [`TexObj::set_bias_clamp()`]) or anisotropic filtering (`GX_ANISO_2` or `GX_ANISO_4` for
+    /// [`TexObj::set_max_aniso()`] argument).
+    pub fn set_edge_lod(&mut self, enable: bool) {
+        unsafe { ffi::GX_InitTexObjEdgeLOD(&mut self.0, enable as u8) }
+    }
+
+    /// Sets the filter mode for a texture.
+    ///
+    /// When the ratio of texels for this texture to pixels is not 1:1, the filter type for
+    /// `minfilt` or `magfilt` is used. `minfilt` is used when the texel/pixel ratio is >= 1.0.
+    /// `magfilt` is used when the texel/pixel ratio is < 1.0; needs to be `Near` or `Linear`.
+    pub fn set_filter_mode(&mut self, minfilt: TexFilter, magfilt: TexFilter) {
+        debug_assert!(
+            matches!(magfilt, TexFilter::Near | TexFilter::Linear),
+            "magfilt can only be `TexFilter::Near` or `TexFilter::Linear`"
+        );
+        unsafe { ffi::GX_InitTexObjFilterMode(&mut self.0, minfilt as u8, magfilt as u8) }
+    }
+
+    /// Sets texture Level Of Detail (LOD) controls explicitly for a texture object.
+    ///
+    /// It is the application's responsibility to provide memory for a texture object. When
+    /// initializing a texture object using [`GX_InitTexObj()`] or [`GX_InitTexObjCI()`], this
+    /// information is set to default values based on the mipmap flag. This function allows the
+    /// programmer to override those defaults.
+    ///
+    /// # Note
+    /// This function should be called after [`GX_InitTexObj()`] or [`GX_InitTexObjCI()`] for a
+    /// particular texture object.
+    ///
+    /// Setting `biasclamp` prevents over-biasing the LOD when the polygon is perpendicular to the
+    /// view direction.
+    ///
+    /// `edgelod` should be set if `biasclamp` is set or `maxaniso` is set to `GX_ANISO_2` or
+    /// `GX_ANISO_4`.
+    ///
+    /// Theoretically, there is no performance difference amongst various
+    /// magnification/minification filter settings except `GX_LIN_MIP_LIN` filter with
+    /// `GX_TF_RGBA8` texture format which takes twice as much as other formats. However, this
+    /// argument is assuming an environment where texture cache always hits. On real environments,
+    /// you will see some performance differences by changing filter modes (especially minification
+    /// filter) because cache-hit ratio changes according to which filter mode is being used.
+    pub fn set_lod(&mut self,
+        minfilt: TexFilter,
+        magfilt: TexFilter,
+        minlod: f32,
+        maxlod: f32,
+        lodbias: f32,
+        biasclamp: bool,
+        edgelod: bool,
+        maxaniso: u8,
+    ) {
+        debug_assert!(
+            (0.0..=10.0).contains(&minlod),
+            "valid range for min LOD is 0.0 to 10.0"
+        );
+        debug_assert!(
+            (0.0..=10.0).contains(&maxlod),
+            "valid range for max LOD is 0.0 to 10.0"
+        );
+        debug_assert!(
+            matches!(magfilt, TexFilter::Near | TexFilter::Linear),
+            "magfilt can only be `TexFilter::Near` or `TexFilter::Linear`"
+        );
+        debug_assert!(
+            !(biasclamp || maxaniso == 1 || maxaniso == 2) || edgelod,
+            "`edgelod` should be set if `biasclamp` is set or `maxaniso` is set to `GX_ANISO_2` or\
+            `GX_ANISO_4`."
+        );
+        unsafe {
+            GX_InitTexObjLOD(
+                &mut self.0,
+                minfilt as u8,
+                magfilt as u8,
+                minlod,
+                maxlod,
+                lodbias,
+                biasclamp as u8,
+                edgelod as u8,
+                maxaniso
+            );
+        }
+    }
+
+    /// Sets the LOD bias for a given texture.
+    pub fn set_lod_bias(&mut self, lodbias: f32) {
+        unsafe { ffi::GX_InitTexObjLODBias(&mut self.0, lodbias) }
+    }
+
+    /// Sets the maximum anisotropic filter to use for a texture.
+    pub fn set_max_aniso(&mut self, maxaniso: u8) {
+        unsafe { ffi::GX_InitTexObjMaxAniso(&mut self.0, maxaniso) }
+    }
+
+    /// Sets the maximum LOD for a given texture.
+    pub fn set_max_lod(&mut self, maxlod: f32) {
+        debug_assert!(
+            (0.0..=10.0).contains(&maxlod),
+            "valid range for max LOD is 0.0 to 10.0"
+        );
+        unsafe { ffi::GX_InitTexObjMaxLOD(&mut self.0, maxlod) }
+    }
+
+    /// Sets the minimum LOD for a given texture.
+    pub fn set_min_lod(&mut self, minlod: f32) {
+        debug_assert!(
+            (0.0..=10.0).contains(&minlod),
+            "valid range for min LOD is 0.0 to 10.0"
+        );
+        unsafe { ffi::GX_InitTexObjMinLOD(&mut self.0, minlod) }
+    }
+
+    /// Allows one to modify the TLUT that is associated with an existing texture object.
+    pub fn set_tlut(&mut self, tlut_name: u32) {
+        unsafe { ffi::GX_InitTexObjTlut(&mut self.0, tlut_name) }
+    }
+
+    /// Allows one to modify the texture coordinate wrap modes for an existing texture object.
+    pub fn set_wrap_mode(&mut self, wrap_s: WrapMode, wrap_t: WrapMode) {
+        unsafe { ffi::GX_InitTexObjWrapMode(&mut self.0, wrap_s as u8, wrap_t as u8) }
     }
 }
 
@@ -571,42 +823,42 @@ pub struct Gx;
 impl Gx {
     /// Initializes the graphics processor to its initial state.
     /// See [GX_Init](https://libogc.devkitpro.org/gx_8h.html#aea24cfd5f8f2b168dc4f60d4883a6a8e) for more.
-    pub fn init(gp_fifo: *mut c_void, fifo_size: u32) -> *mut ogc_sys::GXFifoObj {
+    pub fn init(gp_fifo: *mut c_void, fifo_size: u32) -> *mut ffi::GXFifoObj {
         // SAFETY: Both `fifo_size` and `gp_fifo` is aligned to a 32-byte boundary.
         assert_eq!(0, fifo_size % 32);
-        unsafe { ogc_sys::GX_Init(gp_fifo, fifo_size) }
+        unsafe { ffi::GX_Init(gp_fifo, fifo_size) }
     }
 
     /// Sets color and Z value to clear the EFB to during copy operations.
     /// See [GX_SetCopyClear](https://libogc.devkitpro.org/gx_8h.html#a17265aefd7e64820de53abd9113334bc) for more.
     pub fn set_copy_clear(background: Color, z_value: u32) {
         let Color(r, g, b, a) = background;
-        let background = ogc_sys::_gx_color { r, g, b, a };
-        unsafe { ogc_sys::GX_SetCopyClear(background, z_value) }
+        let background = ffi::_gx_color { r, g, b, a };
+        unsafe { ffi::GX_SetCopyClear(background, z_value) }
     }
 
     /// Sets the viewport rectangle in screen coordinates.
     /// See [GX_SetViewport](https://libogc.devkitpro.org/gx_8h.html#aaccd37675da5a22596fad756c73badc2) for more.
     pub fn set_viewport(x_orig: f32, y_orig: f32, wd: f32, hd: f32, near_z: f32, far_z: f32) {
-        unsafe { ogc_sys::GX_SetViewport(x_orig, y_orig, wd, hd, near_z, far_z) }
+        unsafe { ffi::GX_SetViewport(x_orig, y_orig, wd, hd, near_z, far_z) }
     }
 
     /// Calculates an appropriate Y scale factor value for GX_SetDispCopyYScale() based on the height of the EFB and the height of the XFB.
     /// See [GX_GetYScaleFactor](https://libogc.devkitpro.org/gx_8h.html#a1558cf7d2eb9a6690fee4b64c4fc5a8e) for more.
     pub fn get_y_scale_factor(efb_height: u16, xfb_height: u16) -> f32 {
-        unsafe { ogc_sys::GX_GetYScaleFactor(efb_height, xfb_height) }
+        unsafe { ffi::GX_GetYScaleFactor(efb_height, xfb_height) }
     }
 
     /// Sets the vertical scale factor for the EFB to XFB copy operation.
     /// See [GX_SetDispCopyYScale](https://libogc.devkitpro.org/gx_8h.html#a1a4ebb4e742f4ce2f010768e09e07c48) for more.
     pub fn set_disp_copy_y_scale(y_scale: f32) -> u32 {
-        unsafe { ogc_sys::GX_SetDispCopyYScale(y_scale) }
+        unsafe { ffi::GX_SetDispCopyYScale(y_scale) }
     }
 
     /// Sets the scissor rectangle.
     /// See [GX_SetScissor](https://libogc.devkitpro.org/gx_8h.html#a689bdd17fc74bf86a4c4f00418a2c596) for more.
     pub fn set_scissor(x_origin: u32, y_origin: u32, wd: u32, hd: u32) {
-        unsafe { ogc_sys::GX_SetScissor(x_origin, y_origin, wd, hd) }
+        unsafe { ffi::GX_SetScissor(x_origin, y_origin, wd, hd) }
     }
 
     /// Sets the source parameters for the EFB to XFB copy operation.
@@ -616,14 +868,14 @@ impl Gx {
         assert_eq!(0, top % 2);
         assert_eq!(0, wd % 2);
         assert_eq!(0, hd % 2);
-        unsafe { ogc_sys::GX_SetDispCopySrc(left, top, wd, hd) }
+        unsafe { ffi::GX_SetDispCopySrc(left, top, wd, hd) }
     }
 
     /// Sets the witth and height of the display buffer in pixels.
     /// See [GX_SetDispCopyDst](https://libogc.devkitpro.org/gx_8h.html#ab6f639059b750e57af4c593ba92982c5) for more.
     pub fn set_disp_copy_dst(width: u16, height: u16) {
         assert_eq!(0, width % 16);
-        unsafe { ogc_sys::GX_SetDispCopyDst(width, height) }
+        unsafe { ffi::GX_SetDispCopyDst(width, height) }
     }
 
     /// Sets the subpixel sample patterns and vertical filter coefficients used to filter subpixels into pixels.
@@ -634,19 +886,49 @@ impl Gx {
         vf: bool,
         v_filter: &mut [u8; 7],
     ) {
-        unsafe { ogc_sys::GX_SetCopyFilter(aa as u8, sample_pattern as *mut _, vf as u8, v_filter as *mut _) }
+        unsafe {
+            ffi::GX_SetCopyFilter(
+                aa as u8,
+                sample_pattern as *mut _,
+                vf as u8,
+                v_filter as *mut _,
+            )
+        }
+    }
+
+    /// Sets the lighting controls for a particular color channel.
+    pub fn set_channel_controls(
+        channel: i32,
+        enable: bool,
+        ambsrc: Source,
+        matsrc: Source,
+        litmask: u8,
+        diff_fn: DiffFn,
+        attn_fn: AttnFn,
+    ) {
+        unsafe {
+            ffi::GX_SetChanCtrl(
+                channel,
+                enable as u8,
+                ambsrc as u8,
+                matsrc as u8,
+                litmask,
+                diff_fn as u8,
+                attn_fn as u8,
+            );
+        }
     }
 
     /// Controls various rasterization and texturing parameters that relate to field-mode and double-strike rendering.
     /// See [GX_SetFieldMode](https://libogc.devkitpro.org/gx_8h.html#a13f0df0011d04c3d986135e800fbcd21) for more.
     pub fn set_field_mode(field_mode: bool, half_aspect_ratio: bool) {
-        unsafe { ogc_sys::GX_SetFieldMode(field_mode as u8, half_aspect_ratio as u8) }
+        unsafe { ffi::GX_SetFieldMode(field_mode as u8, half_aspect_ratio as u8) }
     }
 
     /// Sets the format of pixels in the Embedded Frame Buffer (EFB).
     /// See [GX_SetPixelFmt](https://libogc.devkitpro.org/gx_8h.html#a018d9b0359f9689ac41f44f0b2374ffb) for more.
     pub fn set_pixel_fmt(pix_fmt: u8, z_fmt: ZCompress) {
-        unsafe { ogc_sys::GX_SetPixelFmt(pix_fmt, z_fmt as u8) }
+        unsafe { ffi::GX_SetPixelFmt(pix_fmt, z_fmt as u8) }
     }
 
     /// Enables or disables culling of geometry based on its orientation to the viewer.
@@ -655,151 +937,171 @@ impl Gx {
     ///
     /// See [GX_SetCullMode](https://libogc.devkitpro.org/gx_8h.html#adb4b17c39b24073c3e961458ecf02e87) for more.
     pub fn set_cull_mode(mode: CullMode) {
-        unsafe { ogc_sys::GX_SetCullMode(mode as u8) }
+        unsafe { ffi::GX_SetCullMode(mode as u8) }
     }
 
     /// Copies the embedded framebuffer (EFB) to the external framebuffer(XFB) in main memory.
     /// See [GX_CopyDisp](https://libogc.devkitpro.org/gx_8h.html#a9ed0ae3f900abb6af2e930dff7a6bc28) for more.
     pub fn copy_disp(dest: *mut c_void, clear: bool) {
-        unsafe { ogc_sys::GX_CopyDisp(dest, clear as u8) }
+        unsafe { ffi::GX_CopyDisp(dest, clear as u8) }
     }
 
     /// Sets the gamma correction applied to pixels during EFB to XFB copy operation.
     /// See [GX_SetDispCopyGamma](https://libogc.devkitpro.org/gx_8h.html#aa8e5bc962cc786b2049345fa698d4efa) for more.
     pub fn set_disp_copy_gamma(gamma: u8) {
-        unsafe { ogc_sys::GX_SetDispCopyGamma(gamma) }
+        unsafe { ffi::GX_SetDispCopyGamma(gamma) }
     }
 
     /// Sets the attribute format (vtxattr) for a single attribute in the Vertex Attribute Table (VAT).
     /// See [GX_SetVtxAttrFmt](https://libogc.devkitpro.org/gx_8h.html#a87437061debcc0457b6b6dc2eb021f23) for more.
     pub fn set_vtx_attr_fmt(vtxfmt: u8, vtxattr: u32, comptype: u32, compsize: u32, frac: u32) {
-        unsafe { ogc_sys::GX_SetVtxAttrFmt(vtxfmt, vtxattr, comptype, compsize, frac) }
+        unsafe { ffi::GX_SetVtxAttrFmt(vtxfmt, vtxattr, comptype, compsize, frac) }
     }
 
     /// Sets the number of color channels that are output to the TEV stages.
     /// See [GX_SetNumChans](https://libogc.devkitpro.org/gx_8h.html#a390c37e594986403c623df2bed61c2b2) for more.
     pub fn set_num_chans(num: u8) {
-        unsafe { ogc_sys::GX_SetNumChans(num) }
+        unsafe { ffi::GX_SetNumChans(num) }
     }
 
     /// Sets the number of texture coordinates that are generated and available for use in the Texture Environment TEV stages.
     /// See [GX_SetNumTexGens](https://libogc.devkitpro.org/gx_8h.html#a55a79a1688d3a6957ee0c37d6323d159) for more.
     pub fn set_num_tex_gens(nr: u32) {
-        unsafe { ogc_sys::GX_SetNumTexGens(nr) }
+        unsafe { ffi::GX_SetNumTexGens(nr) }
     }
 
     /// Simplified function to set various TEV parameters for this tevstage based on a predefined combiner mode.
     /// See [GX_SetTevOp](https://libogc.devkitpro.org/gx_8h.html#a68554713cdde7b45ae4d5ce156239cf8) for more.
     pub fn set_tev_op(tevstage: u8, mode: u8) {
-        unsafe { ogc_sys::GX_SetTevOp(tevstage, mode) }
+        unsafe { ffi::GX_SetTevOp(tevstage, mode) }
     }
 
     /// Specifies the texture and rasterized color that will be available as inputs to this TEV tevstage.
     /// See [GX_SetTevOrder](https://libogc.devkitpro.org/gx_8h.html#ae64799e52298de39efc74bf989fc57f5) for more.
     pub fn set_tev_order(tevstage: u8, texcoord: u8, texmap: u32, color: u8) {
-        unsafe { ogc_sys::GX_SetTevOrder(tevstage, texcoord, texmap, color) }
+        unsafe { ffi::GX_SetTevOrder(tevstage, texcoord, texmap, color) }
     }
 
     /// Specifies how texture coordinates are generated.
     /// See [GX_SetTexCoordGen](https://libogc.devkitpro.org/gx_8h.html#a7d3139b693ace5587c3224e7df2d8245) for more.
     pub fn set_tex_coord_gen(texcoord: u16, tgen_typ: u32, tgen_src: u32, mtxsrc: u32) {
-        unsafe { ogc_sys::GX_SetTexCoordGen(texcoord, tgen_typ, tgen_src, mtxsrc) }
+        unsafe { ffi::GX_SetTexCoordGen(texcoord, tgen_typ, tgen_src, mtxsrc) }
     }
 
     /// Invalidates the current caches of the Texture Memory (TMEM).
     /// See [GX_InvalidateTexAll](https://libogc.devkitpro.org/gx_8h.html#a1e5666740bcd3c9325dd2b82006621ee) for more.
     pub fn invalidate_tex_all() {
-        unsafe { ogc_sys::GX_InvalidateTexAll() }
+        unsafe { ffi::GX_InvalidateTexAll() }
     }
 
     /// Loads the state describing a texture into one of eight hardware register sets.
     /// See [GX_LoadTexObj](https://libogc.devkitpro.org/gx_8h.html#ad6388b0e4a0f2ffb5daa16a8851fa567) for more.
-    pub fn load_tex_obj(obj: &mut ogc_sys::GXTexObj, mapid: u8) {
-        unsafe { ogc_sys::GX_LoadTexObj(obj, mapid) }
+    pub fn load_tex_obj(obj: &mut ffi::GXTexObj, mapid: u8) {
+        unsafe { ffi::GX_LoadTexObj(obj, mapid) }
     }
 
     /// Sets the projection matrix.
     /// See [GX_LoadProjectionMtx](https://libogc.devkitpro.org/gx_8h.html#a241a1301f006ed04b7895c051959f64e) for more.
     pub fn load_projection_mtx(mt: &mut Mtx44, p_type: u8) {
-        unsafe { ogc_sys::GX_LoadProjectionMtx(mt as *mut _, p_type) }
+        unsafe { ffi::GX_LoadProjectionMtx(mt as *mut _, p_type) }
     }
 
     /// Invalidates the vertex cache.
     /// See [GX_InvVtxCache](https://libogc.devkitpro.org/gx_8h.html#a188bc7f388f971bc845dded41a24d1dc) for more.
     pub fn inv_vtx_cache() {
-        unsafe { ogc_sys::GX_InvVtxCache() }
+        unsafe { ffi::GX_InvVtxCache() }
     }
 
     /// Clears all vertex attributes of the current vertex descriptor to GX_NONE.
     /// See [GX_ClearVtxDesc](https://libogc.devkitpro.org/gx_8h.html#acf1f933c4c653e399106e8ac244fabd0) for more.
     pub fn clear_vtx_desc() {
-        unsafe { ogc_sys::GX_ClearVtxDesc() }
+        unsafe { ffi::GX_ClearVtxDesc() }
     }
 
     /// Sets the type of a single attribute (attr) in the current vertex descriptor.
     /// See [GX_SetVtxDesc](https://libogc.devkitpro.org/gx_8h.html#af41b45011ae731ae5697b26b2bf97e2f) for more.
     pub fn set_vtx_desc(attr: u8, v_type: u8) {
-        unsafe { ogc_sys::GX_SetVtxDesc(attr, v_type) }
+        unsafe { ffi::GX_SetVtxDesc(attr, v_type) }
     }
 
     /// Used to load a 3x4 modelview matrix mt into matrix memory at location pnidx.
     /// See [GX_LoadPosMtxImm](https://libogc.devkitpro.org/gx_8h.html#a90349e713128a1fa4fd6048dcab7b5e7) for more.
     pub fn load_pos_mtx_imm(mt: &mut Mtx34, pnidx: u32) {
-        unsafe { ogc_sys::GX_LoadPosMtxImm(mt as *mut _, pnidx) }
+        unsafe { ffi::GX_LoadPosMtxImm(mt as *mut _, pnidx) }
+    }
+
+    /// Enables or disables dithering.
+    ///
+    /// A 4x4 Bayer matrix is used for dithering.
+    ///
+    /// # Note
+    /// Only valid when the pixel format (see GX_SetPixelFmt()) is either `GX_PF_RGBA6_Z24` or
+    /// `GX_PF_RGB565_Z16`.
+    ///
+    /// Dithering should probably be turned off if you are planning on using the result of
+    /// rendering for comparisons (e.g. outline rendering algorithm that writes IDs to the alpha
+    /// channel, copies the alpha channel to a texture, and later compares the texture in the TEV).
+    pub fn set_dither(dither: bool) {
+        unsafe { ffi::GX_SetDither(dither as u8) }
     }
 
     /// Sends a DrawDone command to the GP and stalls until its subsequent execution.
     /// See [GX_DrawDone](https://libogc.devkitpro.org/gx_8h.html#a00f07b60ae2124fe027a82d7d9ae64b0) for more.
     pub fn draw_done() {
-        unsafe { ogc_sys::GX_DrawDone() }
+        unsafe { ffi::GX_DrawDone() }
     }
 
     /// Sets the Z-buffer compare mode.
     /// See [GX_SetZMode](https://libogc.devkitpro.org/gx_8h.html#a2af0d050f56ef45dd25d0db18909fa00) for more.
     pub fn set_z_mode(enable: bool, func: CmpFn, update_enable: bool) {
-        unsafe { ogc_sys::GX_SetZMode(enable as u8, func as u8, update_enable as u8) }
+        unsafe { ffi::GX_SetZMode(enable as u8, func as u8, update_enable as u8) }
     }
 
     /// Determines how the source image, generated by the graphics processor, is blended with the Embedded Frame Buffer (EFB).
     /// See [GX_SetBlendMode](https://libogc.devkitpro.org/gx_8h.html#a1d9c43b161f3c5a30b9fd8ea182c8eb6) for more.
-    pub fn set_blend_mode(b_type: BlendMode, src_fact: BlendCtrl, dst_fact: BlendCtrl, op: LogicOp) {
-        unsafe { ogc_sys::GX_SetBlendMode(b_type as u8, src_fact as u8, dst_fact as u8, op as u8) }
+    pub fn set_blend_mode(
+        b_type: BlendMode,
+        src_fact: BlendCtrl,
+        dst_fact: BlendCtrl,
+        op: LogicOp,
+    ) {
+        unsafe { ffi::GX_SetBlendMode(b_type as u8, src_fact as u8, dst_fact as u8, op as u8) }
     }
 
     /// Enables or disables alpha-buffer updates of the Embedded Frame Buffer (EFB).
     /// See [GX_SetAlphaUpdate](https://libogc.devkitpro.org/gx_8h.html#ac238051bda896c8bb11802184882a2a0) for more.
     pub fn set_alpha_update(enable: bool) {
-        unsafe { ogc_sys::GX_SetAlphaUpdate(enable as u8) }
+        unsafe { ffi::GX_SetAlphaUpdate(enable as u8) }
     }
 
     /// Enables or disables color-buffer updates when rendering into the Embedded Frame Buffer (EFB).
     /// See [GX_SetColorUpdate](https://libogc.devkitpro.org/gx_8h.html#a3978e3b08198e52d7cea411e90ece3e5) for more.
     pub fn set_color_update(enable: bool) {
-        unsafe { ogc_sys::GX_SetColorUpdate(enable as u8) }
+        unsafe { ffi::GX_SetColorUpdate(enable as u8) }
     }
 
     /// Sets the array base pointer and stride for a single attribute.
     /// See [GX_SetArray](https://libogc.devkitpro.org/gx_8h.html#a5164fc6aa2a678d792af80d94bfa1ec2) for more.
     pub fn set_array(attr: u32, ptr: *mut c_void, stride: u8) {
-        unsafe { ogc_sys::GX_SetArray(attr, ptr, stride) }
+        unsafe { ffi::GX_SetArray(attr, ptr, stride) }
     }
 
     /// Begins drawing of a graphics primitive.
     /// See [GX_Begin](https://libogc.devkitpro.org/gx_8h.html#ac1e1239130a33d9fae1352aee8d2cab9) for more.
     pub fn begin(primitive: Primitive, vtxfmt: u8, vtxcnt: u16) {
-        unsafe { ogc_sys::GX_Begin(primitive as u8, vtxfmt, vtxcnt) }
+        unsafe { ffi::GX_Begin(primitive as u8, vtxfmt, vtxcnt) }
     }
 
     /// Sets the parameters for the alpha compare function which uses the alpha output from the last active TEV stage.
     /// See [Gx_SetAlphaCompare](https://libogc.devkitpro.org/gx_8h.html#a23ac269062a1b2c2efc8ad5aae24b26a) for more.
     pub fn set_alpha_compare(comp0: CmpFn, ref0: u8, aop: AlphaOp, comp1: CmpFn, ref1: u8) {
-        unsafe { ogc_sys::GX_SetAlphaCompare(comp0 as u8, ref0, aop as u8, comp1 as u8, ref1) }
+        unsafe { ffi::GX_SetAlphaCompare(comp0 as u8, ref0, aop as u8, comp1 as u8, ref1) }
     }
 
     /// Sets the parameters for the alpha compare function which uses the alpha output from the last active TEV stage.
     /// See [GX_SetClipMode](https://libogc.devkitpro.org/gx_8h.html#a3d348d7af8ded25b57352e956f43d974) for more.
     pub fn set_clip_mode(mode: u8) {
-        unsafe { ogc_sys::GX_SetClipMode(mode) }
+        unsafe { ffi::GX_SetClipMode(mode) }
     }
 
     /// Allows the CPU to write color directly to the Embedded Frame Buffer (EFB) at position x, y.
@@ -808,138 +1110,138 @@ impl Gx {
         assert!(x < 640, "x must be less than 640, currently {}", x);
         assert!(y < 528, "y must be less than 527, currently {}", y);
         let Color(r, g, b, a) = color;
-        let color = ogc_sys::_gx_color { r, g, b, a };
+        let color = ffi::_gx_color { r, g, b, a };
         unsafe {
-            ogc_sys::GX_PokeARGB(x, y, color);
+            ffi::GX_PokeARGB(x, y, color);
         }
     }
 
     pub fn position_3f32(x: f32, y: f32, z: f32) {
         unsafe {
-            ogc_sys::GX_Position3f32(x, y, z);
+            ffi::GX_Position3f32(x, y, z);
         }
     }
 
     pub fn position_3u16(x: u16, y: u16, z: u16) {
         unsafe {
-            ogc_sys::GX_Position3u16(x, y, z);
+            ffi::GX_Position3u16(x, y, z);
         }
     }
 
     pub fn position_3i16(x: i16, y: i16, z: i16) {
         unsafe {
-            ogc_sys::GX_Position3s16(x, y, z);
+            ffi::GX_Position3s16(x, y, z);
         }
     }
 
     pub fn position_3u8(x: u8, y: u8, z: u8) {
         unsafe {
-            ogc_sys::GX_Position3u8(x, y, z);
+            ffi::GX_Position3u8(x, y, z);
         }
     }
 
     pub fn position_3i8(x: i8, y: i8, z: i8) {
         unsafe {
-            ogc_sys::GX_Position3s8(x, y, z);
+            ffi::GX_Position3s8(x, y, z);
         }
     }
 
     pub fn position_2f32(x: f32, y: f32) {
         unsafe {
-            ogc_sys::GX_Position2f32(x, y);
+            ffi::GX_Position2f32(x, y);
         }
     }
 
     pub fn position_2u16(x: u16, y: u16) {
         unsafe {
-            ogc_sys::GX_Position2u16(x, y);
+            ffi::GX_Position2u16(x, y);
         }
     }
 
     pub fn position_2i16(x: i16, y: i16) {
         unsafe {
-            ogc_sys::GX_Position2s16(x, y);
+            ffi::GX_Position2s16(x, y);
         }
     }
 
     pub fn position_2u8(x: u8, y: u8) {
         unsafe {
-            ogc_sys::GX_Position2u8(x, y);
+            ffi::GX_Position2u8(x, y);
         }
     }
 
     pub fn position_2i8(x: i8, y: i8) {
         unsafe {
-            ogc_sys::GX_Position2s8(x, y);
+            ffi::GX_Position2s8(x, y);
         }
     }
 
     pub fn position1x8(index: u8) {
-        unsafe { ogc_sys::GX_Position1x8(index) }
+        unsafe { ffi::GX_Position1x8(index) }
     }
 
     pub fn position1x16(index: u16) {
-        unsafe { ogc_sys::GX_Position1x16(index) }
+        unsafe { ffi::GX_Position1x16(index) }
     }
 
     pub fn color_4u8(r: u8, b: u8, g: u8, a: u8) {
         unsafe {
-            ogc_sys::GX_Color4u8(r, g, b, a);
+            ffi::GX_Color4u8(r, g, b, a);
         }
     }
 
     pub fn color_3u8(r: u8, b: u8, g: u8) {
         unsafe {
-            ogc_sys::GX_Color3u8(r, g, b);
+            ffi::GX_Color3u8(r, g, b);
         }
     }
 
     pub fn color_3f32(r: f32, g: f32, b: f32) {
         unsafe {
-            ogc_sys::GX_Color3f32(r, g, b);
+            ffi::GX_Color3f32(r, g, b);
         }
     }
 
     pub fn color_1u32(clr: u32) {
         unsafe {
-            ogc_sys::GX_Color1u32(clr);
+            ffi::GX_Color1u32(clr);
         }
     }
 
     pub fn color_1u16(clr: u16) {
         unsafe {
-            ogc_sys::GX_Color1u16(clr);
+            ffi::GX_Color1u16(clr);
         }
     }
 
     pub fn color1x8(index: u8) {
         unsafe {
-            ogc_sys::GX_Color1x8(index);
+            ffi::GX_Color1x8(index);
         }
     }
 
     pub fn color1x16(index: u16) {
         unsafe {
-            ogc_sys::GX_Color1x16(index);
+            ffi::GX_Color1x16(index);
         }
     }
 
     ///Helper functions to just pass in a color object
     pub fn color_color(clr: Color) {
         unsafe {
-            ogc_sys::GX_Color4u8(clr.0, clr.1, clr.2, clr.3);
+            ffi::GX_Color4u8(clr.0, clr.1, clr.2, clr.3);
         }
     }
 
     pub fn tex_coord_2f32(s: f32, t: f32) {
-        unsafe { ogc_sys::GX_TexCoord2f32(s, t) }
+        unsafe { ffi::GX_TexCoord2f32(s, t) }
     }
 
     pub fn flush() {
-        unsafe { ogc_sys::GX_Flush() }
+        unsafe { ffi::GX_Flush() }
     }
 
     pub fn end() {
-        unsafe { ogc_sys::GX_End() }
+        unsafe { ffi::GX_End() }
     }
 }
