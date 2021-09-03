@@ -9,11 +9,9 @@ use embedded_graphics::{
 };
 use ogc_rs::{
     ffi::{
-        GX_Color4u8, Mtx,
-        GX_CLIP_ENABLE, GX_CLR_RGBA, GX_COLOR0A0, GX_DIRECT, GX_F32,
-        GX_GM_1_0, GX_MAX_Z24, GX_NONE, GX_ORTHOGRAPHIC,
-        GX_PASSCLR, GX_PF_RGB8_Z24, GX_PNMTX0, GX_POS_XYZ, GX_RGBA8, GX_TEVSTAGE0,
-        GX_TEXCOORD0, GX_TEXMAP0, GX_TEX_ST, GX_VA_CLR0, GX_VA_POS, GX_VA_TEX0,
+        GX_Color4u8, Mtx, GX_CLIP_ENABLE, GX_CLR_RGBA, GX_COLOR0A0, GX_DIRECT, GX_F32, GX_GM_1_0,
+        GX_MAX_Z24, GX_NONE, GX_ORTHOGRAPHIC, GX_PASSCLR, GX_PF_RGB8_Z24, GX_PNMTX0, GX_POS_XYZ,
+        GX_RGBA8, GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_TEX_ST,
         GX_VTXFMT0,
     },
     mem_cached_to_uncached,
@@ -76,21 +74,27 @@ impl Display {
         Gx::inv_vtx_cache();
         Gx::invalidate_tex_all();
 
-        Gx::set_vtx_desc(GX_VA_TEX0 as _, GX_NONE as _);
-        Gx::set_vtx_desc(GX_VA_POS as _, GX_DIRECT as _);
-        Gx::set_vtx_desc(GX_VA_CLR0 as _, GX_DIRECT as _);
+        Gx::set_vtx_desc(VtxAttr::Tex0, GX_NONE as _);
+        Gx::set_vtx_desc(VtxAttr::Pos, GX_DIRECT as _);
+        Gx::set_vtx_desc(VtxAttr::Color0, GX_DIRECT as _);
 
         Gx::set_vtx_attr_fmt(
             GX_VTXFMT0 as _,
-            GX_VA_POS as _,
+            VtxAttr::Pos,
             GX_POS_XYZ as _,
             GX_F32 as _,
             0,
         );
-        Gx::set_vtx_attr_fmt(GX_VTXFMT0 as _, GX_VA_TEX0, GX_TEX_ST as _, GX_F32 as _, 0);
         Gx::set_vtx_attr_fmt(
             GX_VTXFMT0 as _,
-            GX_VA_CLR0,
+            VtxAttr::Tex0,
+            GX_TEX_ST as _,
+            GX_F32 as _,
+            0,
+        );
+        Gx::set_vtx_attr_fmt(
+            GX_VTXFMT0 as _,
+            VtxAttr::Color0,
             GX_CLR_RGBA as _,
             GX_RGBA8 as _,
             0,

@@ -662,13 +662,15 @@ impl TexObj {
         format: u8,
         wrap_s: WrapMode,
         wrap_t: WrapMode,
-        mipmap: bool
+        mipmap: bool,
     ) -> Self {
+        use core::mem::MaybeUninit;
         let texture = MaybeUninit::uninit();
-        unimplemented!()
+        unimplemented!();
         unsafe {
             ffi::GX_InitTexObj(
                 texture.as_mut_ptr(),
+                img.as_ptr() as _,
                 width,
                 height,
                 format,
@@ -676,8 +678,8 @@ impl TexObj {
                 wrap_t as u8,
                 mipmap as u8,
             );
+            TexObj(texture.assume_init())
         }
-        TexObj(texture.assume_init())
     }
 
     /// Enables bias clamping for texture LOD.
@@ -736,7 +738,8 @@ impl TexObj {
     /// argument is assuming an environment where texture cache always hits. On real environments,
     /// you will see some performance differences by changing filter modes (especially minification
     /// filter) because cache-hit ratio changes according to which filter mode is being used.
-    pub fn set_lod(&mut self,
+    pub fn set_lod(
+        &mut self,
         minfilt: TexFilter,
         magfilt: TexFilter,
         minlod: f32,
@@ -764,7 +767,7 @@ impl TexObj {
             `GX_ANISO_4`."
         );
         unsafe {
-            GX_InitTexObjLOD(
+            ffi::GX_InitTexObjLOD(
                 &mut self.0,
                 minfilt as u8,
                 magfilt as u8,
@@ -773,7 +776,7 @@ impl TexObj {
                 lodbias,
                 biasclamp as u8,
                 edgelod as u8,
-                maxaniso
+                maxaniso,
             );
         }
     }
@@ -815,6 +818,41 @@ impl TexObj {
     pub fn set_wrap_mode(&mut self, wrap_s: WrapMode, wrap_t: WrapMode) {
         unsafe { ffi::GX_InitTexObjWrapMode(&mut self.0, wrap_s as u8, wrap_t as u8) }
     }
+}
+
+/// Vertex attribute array type
+#[derive(Copy, Clone, Debug)]
+#[repr(u8)]
+pub enum VtxAttr {
+    Null = ffi::GX_VA_NULL as _,
+    LightArray = ffi::GX_LIGHTARRAY as _,
+    NrmMtxArray = ffi::GX_NRMMTXARRAY as _,
+    PosMtxArray = ffi::GX_POSMTXARRAY as _,
+    TexMtxArray = ffi::GX_TEXMTXARRAY as _,
+    Color0 = ffi::GX_VA_CLR0 as _,
+    Color1 = ffi::GX_VA_CLR1 as _,
+    MaxAttr = ffi::GX_VA_MAXATTR as _,
+    /// Normal, binormal, tangent
+    Nbt = ffi::GX_VA_NBT as _,
+    Nrm = ffi::GX_VA_NRM as _,
+    Pos = ffi::GX_VA_POS as _,
+    PtnMtxIdx = ffi::GX_VA_PTNMTXIDX as _,
+    Tex0 = ffi::GX_VA_TEX0 as _,
+    Tex0MtxIdx = ffi::GX_VA_TEX0MTXIDX as _,
+    Tex1 = ffi::GX_VA_TEX1 as _,
+    Tex1MtxIdx = ffi::GX_VA_TEX1MTXIDX as _,
+    Tex2 = ffi::GX_VA_TEX2 as _,
+    Tex2MtxIdx = ffi::GX_VA_TEX2MTXIDX as _,
+    Tex3 = ffi::GX_VA_TEX3 as _,
+    Tex3MtxIdx = ffi::GX_VA_TEX3MTXIDX as _,
+    Tex4 = ffi::GX_VA_TEX4 as _,
+    Tex4MtxIdx = ffi::GX_VA_TEX4MTXIDX as _,
+    Tex5 = ffi::GX_VA_TEX5 as _,
+    Tex5MtxIdx = ffi::GX_VA_TEX5MTXIDX as _,
+    Tex6 = ffi::GX_VA_TEX6 as _,
+    Tex6MtxIdx = ffi::GX_VA_TEX6MTXIDX as _,
+    Tex7 = ffi::GX_VA_TEX7 as _,
+    Tex7MtxIdx = ffi::GX_VA_TEX7MTXIDX as _,
 }
 
 /// Represents the GX service.
@@ -954,8 +992,8 @@ impl Gx {
 
     /// Sets the attribute format (vtxattr) for a single attribute in the Vertex Attribute Table (VAT).
     /// See [GX_SetVtxAttrFmt](https://libogc.devkitpro.org/gx_8h.html#a87437061debcc0457b6b6dc2eb021f23) for more.
-    pub fn set_vtx_attr_fmt(vtxfmt: u8, vtxattr: u32, comptype: u32, compsize: u32, frac: u32) {
-        unsafe { ffi::GX_SetVtxAttrFmt(vtxfmt, vtxattr, comptype, compsize, frac) }
+    pub fn set_vtx_attr_fmt(vtxfmt: u8, vtxattr: VtxAttr, comptype: u32, compsize: u32, frac: u32) {
+        unsafe { ffi::GX_SetVtxAttrFmt(vtxfmt, vtxattr as u32, comptype, compsize, frac) }
     }
 
     /// Sets the number of color channels that are output to the TEV stages.
@@ -1020,8 +1058,8 @@ impl Gx {
 
     /// Sets the type of a single attribute (attr) in the current vertex descriptor.
     /// See [GX_SetVtxDesc](https://libogc.devkitpro.org/gx_8h.html#af41b45011ae731ae5697b26b2bf97e2f) for more.
-    pub fn set_vtx_desc(attr: u8, v_type: u8) {
-        unsafe { ffi::GX_SetVtxDesc(attr, v_type) }
+    pub fn set_vtx_desc(attr: VtxAttr, v_type: u8) {
+        unsafe { ffi::GX_SetVtxDesc(attr as u8, v_type) }
     }
 
     /// Used to load a 3x4 modelview matrix mt into matrix memory at location pnidx.
