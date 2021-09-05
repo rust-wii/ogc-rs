@@ -434,9 +434,7 @@ impl LightObj {
     /// parameter are equal to the dot product of the eye-space vertex normal and the half-angle
     /// vector set by [`LightObj::set_specular_dir()`].
     pub fn set_attn(&mut self, a0: f32, a1: f32, a2: f32, k0: f32, k1: f32, k2: f32) {
-        //unsafe { ffi::GX_InitLightAttn(&mut self.0, a0, a1, a2, k0, k1, k2) }
-        self.set_attn_a(a0, a1, a2);
-        self.set_attn_k(k0, k1, k2);
+        unsafe { ogc_sys::GX_InitLightAttn(&mut self.0, a0, a1, a2, k0, k1, k2) }
     }
 
     /// Sets shininess of a per-vertex specular light.
