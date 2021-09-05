@@ -313,7 +313,7 @@ pub enum BlendCtrl {
 
 /// Compressed Z format.
 ///
-/// See [`Gx::set_pixel_fmt`] for details.
+/// See [`Gx::set_pixel_fmt()`] for details.
 #[derive(Copy, Clone, Debug)]
 #[repr(u8)]
 pub enum ZCompress {
@@ -378,9 +378,7 @@ impl LightObj {
     /// are equal to the dot product of the eye-space vertex normal and the half-angle vector set
     /// by [`LightObj::set_specular_dir()`].
     pub fn set_attn(&mut self, a0: f32, a1: f32, a2: f32, k0: f32, k1: f32, k2: f32) {
-        //unsafe { ogc_sys::GX_InitLightAttn(&mut self.0, a0, a1, a2, k0, k1, k2) }
-        self.set_attn_a(a0, a1, a2);
-        self.set_attn_k(k0, k1, k2);
+        unsafe { ogc_sys::GX_InitLightAttn(&mut self.0, a0, a1, a2, k0, k1, k2) }
     }
 
     /// Sets shininess of a per-vertex specular light.
@@ -541,7 +539,7 @@ impl LightObj {
     /// specifies a specular light in [`GX_SetChanCtrl()`] by setting the [Attenuation function] to
     /// `GX_AF_SPEC`. Furthermore, one must not use [`LightObj::set_direction()`] or
     /// [`LightObj::set_pos()`] to set up a light object which will be used as a specular light
-    /// since these functions will destroy the information set by [`LightObj::set_specular_dir`].
+    /// since these functions will destroy the information set by [`LightObj::set_specular_dir()`].
     /// In contrast to diffuse lights (including spotlights) that are considered local lights, a
     /// specular light is a parallel light (i.e. the specular light is infinitely far away such
     /// that all the rays of the light are parallel), and thus one can only specify directional
