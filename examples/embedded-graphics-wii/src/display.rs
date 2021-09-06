@@ -9,12 +9,10 @@ use embedded_graphics::{
 };
 use ogc_rs::{
     ffi::{
-        Mtx,
-        GX_CLR_RGBA, GX_COLOR0A0, GX_DIRECT, GX_F32,
-        GX_GM_1_0, GX_MAX_Z24, GX_NONE, GX_ORTHOGRAPHIC,
-        GX_PASSCLR, GX_PF_RGB8_Z24, GX_PNMTX0, GX_POS_XYZ, GX_RGBA8, GX_TEVSTAGE0,
-        GX_TEXCOORD0, GX_TEXMAP0, GX_TEX_ST, GX_VA_CLR0, GX_VA_POS, GX_VA_TEX0,
-        GX_VTXFMT0, GX_ZC_LINEAR,
+        Mtx, GX_CLR_RGBA, GX_COLOR0A0, GX_DIRECT, GX_F32, GX_GM_1_0, GX_MAX_Z24, GX_NONE,
+        GX_ORTHOGRAPHIC, GX_PASSCLR, GX_PF_RGB8_Z24, GX_PNMTX0, GX_POS_XYZ, GX_RGBA8, GX_TEVSTAGE0,
+        GX_TEXCOORD0, GX_TEXMAP0, GX_TEX_ST, GX_VA_CLR0, GX_VA_POS, GX_VA_TEX0, GX_VTXFMT0,
+        GX_ZC_LINEAR,
     },
     mem_cached_to_uncached,
     prelude::*,
@@ -23,12 +21,12 @@ use ogc_rs::{
 pub struct Display;
 impl Display {
     pub fn new(fifo_size: usize) -> Self {
-        let buf: *mut c_void = unsafe {  
+        let buf: *mut c_void = unsafe {
             mem_cached_to_uncached!(alloc::alloc::alloc(
                 Layout::from_size_align(fifo_size, 32).unwrap()
             )) as *mut c_void
         };
-        unsafe { 
+        unsafe {
             write_bytes(buf, 0, fifo_size);
         }
         Gx::init(buf, fifo_size as u32);
@@ -178,33 +176,33 @@ impl DrawTarget for Display {
     fn fill_solid(&mut self, area: &Rectangle, color: Self::Color) -> Result<(), Self::Error> {
         Gx::begin(Primitive::Quads, GX_VTXFMT0 as _, 4);
         Gx::position_3f32(area.top_left.x as _, area.top_left.y as _, 0.0);
-         
-            Gx::color_4u8(color.r(), color.g(), color.b(), 255);
-        
+
+        Gx::color_4u8(color.r(), color.g(), color.b(), 255);
+
         Gx::position_3f32(
             area.bottom_right().unwrap().x as _,
             area.top_left.y as _,
             0.0,
         );
-         
-            Gx::color_4u8(color.r(), color.g(), color.b(), 255);
-        
+
+        Gx::color_4u8(color.r(), color.g(), color.b(), 255);
+
         Gx::position_3f32(
             area.bottom_right().unwrap().x as _,
             area.bottom_right().unwrap().y as _,
             0.0,
         );
-         
-            Gx::color_4u8(color.r(), color.g(), color.b(), 255);
-        
+
+        Gx::color_4u8(color.r(), color.g(), color.b(), 255);
+
         Gx::position_3f32(
             area.top_left.x as _,
             area.bottom_right().unwrap().y as _,
             0.0,
         );
-         
-            Gx::color_4u8(color.r(), color.g(), color.b(), 255);
-        
+
+        Gx::color_4u8(color.r(), color.g(), color.b(), 255);
+
         Gx::end();
 
         Ok(())
