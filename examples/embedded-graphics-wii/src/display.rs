@@ -140,7 +140,7 @@ impl Display {
         Gx::set_color_update(true);
         Gx::set_cull_mode(CullMode::None);
 
-        Gx::enable_clip(true);
+        Gx::enable_clip();
         Gx::set_scissor(
             0,
             0,
