@@ -429,12 +429,12 @@ impl Gx {
 
     /// Wrapper around set_clip_mode, since its a simple enable or disbale.
     pub fn enable_clip() {
-        Gx::set_clip_mode(ffi::GX_CLIP_ENABLE);
+        Gx::set_clip_mode(ffi::GX_CLIP_ENABLE as u8);
     }
 
     ///Wrapper around set_clip_mode, since it a simple disable or enable.
     pub fn disable_clip() {
-        Gx::set_clip_mode(ffi::GX_CLIP_DISABLE);
+        Gx::set_clip_mode(ffi::GX_CLIP_DISABLE as u8);
     }
 
     /// Allows the CPU to write color directly to the Embedded Frame Buffer (EFB) at position x, y.
