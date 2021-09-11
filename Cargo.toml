@@ -2,7 +2,7 @@
 name = "ogc-rs"
 version = "0.7.1"
 authors = ["rust-wii"]
-edition = "2018"
+edition = "2021"
 
 [lib]
 crate-type = ["rlib"]
