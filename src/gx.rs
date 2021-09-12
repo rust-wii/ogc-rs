@@ -355,9 +355,9 @@ pub enum AttnFn {
 
 /// Object describing a graphics FIFO.
 #[repr(transparent)]
-pub struct FifoObj(ffi::GXFifoObj);
+pub struct Fifo(ffi::GXFifoObj);
 
-impl FifoObj {
+impl Fifo {
     pub fn set_fifo_limits(&mut self, hiwatermark: u32, lowatermark: u32) {
         assert_eq!(0, hiwatermark % 32);
         assert_eq!(0, lowatermark % 32);
@@ -381,7 +381,7 @@ impl FifoObj {
 
 /// Object containing information on a light.
 #[repr(transparent)]
-pub struct LightObj(ffi::GXLightObj);
+pub struct Light(ffi::GXLightObj);
 
 /// Type of the brightness decreasing function by distance.
 #[derive(Copy, Clone, Debug)]
@@ -406,7 +406,7 @@ pub enum SpotFn {
     Ring2 = ffi::GX_SP_RING2 as _,
 }
 
-impl LightObj {
+impl Light {
     /// Sets coefficients used in the lighting attenuation calculation in a given light object.
     ///
     /// The parameters `a0`, `a1`, and `a2` are used for angular (spotlight) attenuation. The
@@ -648,13 +648,16 @@ pub enum WrapMode {
     Mirror = ffi::GX_MIRROR as _,
 }
 
-#[repr(transparent)]
-pub struct TexObj(ffi::GXTexObj);
+#[repr(C, align(32))]
+pub struct Img<T: ?Sized = [u8]>(T);
 
-impl TexObj {
+#[repr(transparent)]
+pub struct Texture(ffi::GXTexObj);
+
+impl Texture {
     /// Used to initialize or change a texture object for non-color index textures.
     pub fn new(
-        img: &[u8],
+        img: &mut Img,
         width: u16,
         height: u16,
         format: u8,
@@ -662,13 +665,13 @@ impl TexObj {
         wrap_t: WrapMode,
         mipmap: bool,
     ) -> Self {
-        use core::mem::MaybeUninit;
-        let texture = MaybeUninit::uninit();
-        unimplemented!();
+        let mut texture = core::mem::MaybeUninit::zeroed();
+        debug_assert!(width <= 1024, "max width for texture is 1024");
+        debug_assert!(height <= 1024, "max height for texture is 1024");
         unsafe {
             ffi::GX_InitTexObj(
                 texture.as_mut_ptr(),
-                img.as_ptr() as _,
+                img.0.as_mut_ptr() as *mut _,
                 width,
                 height,
                 format,
@@ -676,7 +679,7 @@ impl TexObj {
                 wrap_t as u8,
                 mipmap as u8,
             );
-            TexObj(texture.assume_init())
+            Texture(texture.assume_init())
         }
     }
 
@@ -761,8 +764,8 @@ impl TexObj {
         );
         debug_assert!(
             !(biasclamp || maxaniso == 1 || maxaniso == 2) || edgelod,
-            "`edgelod` should be set if `biasclamp` is set or `maxaniso` is set to `GX_ANISO_2` or\
-            `GX_ANISO_4`."
+            "`edgelod` should be set if `biasclamp` is set or `maxaniso` is set to `GX_ANISO_2` \
+            or `GX_ANISO_4`."
         );
         unsafe {
             ffi::GX_InitTexObjLOD(
@@ -863,6 +866,146 @@ impl Gx {
         // SAFETY: Both `fifo_size` and `gp_fifo` is aligned to a 32-byte boundary.
         assert_eq!(0, fifo_size % 32);
         unsafe { ffi::GX_Init(gp_fifo, fifo_size) }
+    }
+
+    /// Aborts the current frame.
+    ///
+    /// This command will reset the entire graphics pipeline, including any commands in the
+    /// graphics FIFO.
+    ///
+    /// # Note
+    /// Texture memory will not be reset, so currently loaded textures will still be valid;
+    /// however, when loading texture using [`Gx::preload_entire_texture()`] or TLUTs using
+    /// [`Gx::load_tlut()`], you must make sure the command completed. You can use the draw sync
+    /// mechanism to do this; see [`Gx::set_draw_sync()`] and [`Gx::get_draw_sync()`].
+    pub fn abort_frame() {
+        unsafe { ffi::GX_AbortFrame() }
+    }
+
+    /// Clears the bounding box values before a new image is drawn.
+    ///
+    /// The graphics hardware keeps track of a bounding box of pixel coordinates that are drawn in
+    /// the Embedded Frame Buffer (EFB).
+    pub fn clear_bounding_box() {
+        unsafe { ffi::GX_ClearBoundingBox() }
+    }
+
+    /// Clears the two virtual GP performance counters to zero.
+    ///
+    /// # Note
+    /// The counter's function is set using [`Gx::set_gp_metric()`]; the counter's value is read
+    /// using [`Gx::read_gp_metric()`]. Consult these for more details.
+    ///
+    /// # Safety
+    /// This function resets CPU accessible counters, so it should **not** be used in a display list.
+    pub unsafe fn clear_gp_metric() {
+        unsafe { ffi::GX_ClearGPMetric() }
+    }
+
+    /// Clears the Vertex Cache performance counter.
+    ///
+    /// This function clears the performance counter by sending a special clear token via the
+    /// Graphics FIFO.
+    ///
+    /// # Note
+    /// To set the metric for the counter, call [`Gx::set_vcache_metric()`]; to read the counter
+    /// value, call [`Gx::read_vcache_metric()`].
+    pub fn clear_vcache_metric() {
+        unsafe { ffi::GX_ClearVCacheMetric() }
+    }
+
+    /// Allows reads from the FIFO currently attached to the Graphics Processor (GP) to resume.
+    ///
+    /// See [`Gx::enable_breakpt()`] for an explanation of the FIFO break point feature.
+    ///
+    /// # Note
+    /// The breakpoint applies to the FIFO currently attached to the Graphics Processor (GP) (see
+    /// [`Gx::set_gp_fifo()`]).
+    pub fn disable_breakpt() {
+        unsafe { ffi::GX_DisableBreakPt() }
+    }
+
+    /// Initialize the transformation unit (XF) rasterizer unit (RAS) to take performance
+    /// measurements.
+    ///
+    /// # Safety
+    /// This function should be avoided; use the GP performance metric functions instead.
+    pub unsafe fn init_xf_ras_metric() {
+        unsafe { ffi::GX_InitXfRasMetric() }
+    }
+
+    /// Causes the GPU to wait for the pipe to flush.
+    ///
+    /// This function inserts a synchronization command into the graphics FIFO. When the GPU sees
+    /// this command it will allow the rest of the pipe to flush before continuing. This command is
+    /// useful in certain situation such as after using [`Gx::copy_tex()`] and before a primitive
+    /// that uses the copied texture.
+    ///
+    /// # Note
+    /// The command is actually implemented by writing the control register that determines the
+    /// format of the embedded frame buffer (EFB). As a result, care should be used if this command
+    /// is placed within a display list.
+    pub fn pix_mode_sync() {
+        unsafe { ffi::GX_PixModeSync() }
+    }
+
+    /// Restores the write-gather pipe.
+    ///
+    /// The CPU fifo that was attached at the time [`Gx::redirect_write_gather_pipe()`] was called
+    /// will be re-attached. If there is data pending in the write gather pipe (e.g. if the amount
+    /// of data written was not a multiple of 32 bytes), the data will be padded with zeroes and
+    /// flushed out.
+    ///
+    /// # Safety
+    /// This function must be called between successive calls to [`Gx::redirect_write_gather_pipe()`].
+    pub unsafe fn restore_write_gather_pipe() {
+        unsafe { ffi::GX_RestoreWriteGatherPipe() }
+    }
+
+    /// Sends a DrawDone command to the GP.
+    ///
+    /// When all previous commands have been processed and the pipeline is empty, a *DrawDone*
+    /// status bit will be set, and an interrupt will occur. You can receive notification of this
+    /// event by installing a callback on the interrupt with [`Gx::set_draw_done_callback()`], or
+    /// you can poll the status bit with [`Gx::wait_draw_done()`]. This function also flushes the
+    /// write-gather FIFO in the CPU to make sure that all commands are sent to the graphics
+    /// processor.
+    ///
+    /// # Note
+    /// This function is normally used in multibuffer mode (see [`Gx::set_cpu_fifo()`]). In
+    /// immediate mode, the [`Gx::draw_done()`] command can be used, which both sends the command
+    /// and stalls until the *DrawDone* status is true.
+    pub fn set_draw_done() {
+        unsafe { ffi::GX_SetDrawDone() }
+    }
+
+    /// Inserts a synchronization command into the graphics FIFO. When the Graphics Processor sees
+    /// this command, it will allow the texture pipeline to flush before continuing.
+    ///
+    /// This command is necessary when changing the usage of regions of texture memory from
+    /// preloaded or TLUT to cached areas. It makes sure that the texture pipeline is finished with
+    /// that area of the texture memory prior to changing its usage. This function should be called
+    /// prior to drawing any primitives that uses the texture memory region in its new mode. It is
+    /// not necessary to call this command when changing texture memory regions from cached to
+    /// preloaded (or TLUT), since the commands to load the regions with data will cause the
+    /// necessary synchronization to happen automatically.
+    pub fn tex_mode_sync() {
+        unsafe { ffi::GX_TexModeSync() }
+    }
+
+    /// Stalls until DrawDone is encountered by the GP.
+    ///
+    /// It means all graphics commands sent before this *DrawDone* command have executed and the
+    /// last pixel has been written to the frame buffer. You may want to execute some non-graphics
+    /// operations between executing [`Gx::set_draw_done()`] and this function, but if you simply
+    /// want to wait and have nothing to execute, you can use [`Gx::draw_done()`].
+    ///
+    /// # Note
+    /// This function is normally used in immediate mode (see [`Gx::set_cpu_fifo()`]). In
+    /// multibuffer mode, sending the 'done' command is separated from polling the 'done' status
+    /// (see [`Gx::set_draw_done()`] and [`Gx::wait_draw_done()`]).
+    pub fn wait_draw_done() {
+        unsafe { ffi::GX_WaitDrawDone() }
     }
 
     /// Sets color and Z value to clear the EFB to during copy operations.
@@ -1025,7 +1168,11 @@ impl Gx {
     }
 
     /// Invalidates the current caches of the Texture Memory (TMEM).
-    /// See [GX_InvalidateTexAll](https://libogc.devkitpro.org/gx_8h.html#a1e5666740bcd3c9325dd2b82006621ee) for more.
+    ///
+    /// It takes about 512 GP clocks to invalidate all the texture caches.
+    ///
+    /// # Note
+    /// Preloaded textures (see [`Gx::preload_entire_texture()`]) are not affected.
     pub fn invalidate_tex_all() {
         unsafe { ffi::GX_InvalidateTexAll() }
     }
@@ -1043,13 +1190,26 @@ impl Gx {
     }
 
     /// Invalidates the vertex cache.
-    /// See [GX_InvVtxCache](https://libogc.devkitpro.org/gx_8h.html#a188bc7f388f971bc845dded41a24d1dc) for more.
+    ///
+    /// Specifically, this functions invalidates the vertex cache tags. This function should be
+    /// used whenever you relocate or modify data that is read by, or may be cached by, the vertex
+    /// cache. The invalidation is very fast, taking only two Graphics Processor (GP) clock cycles
+    /// to complete.
+    ///
+    /// # Note
+    /// The vertex cache is used to cache indexed attribute data. Any attribute that is set to
+    /// `GX_INDEX8` or `GX_INDEX16` in the current vertex descriptor (see [`Gx::set_vtx_desc()`])
+    /// is indexed. Direct data bypasses the vertex cache. Direct data is any attribute that is set
+    /// to `GX_DIRECT` in the current vertex descriptor.
     pub fn inv_vtx_cache() {
         unsafe { ffi::GX_InvVtxCache() }
     }
 
-    /// Clears all vertex attributes of the current vertex descriptor to GX_NONE.
-    /// See [GX_ClearVtxDesc](https://libogc.devkitpro.org/gx_8h.html#acf1f933c4c653e399106e8ac244fabd0) for more.
+    /// Clears all vertex attributes of the current vertex descriptor to `GX_NONE`.
+    ///
+    /// # Note
+    /// The same functionality can be obtained using [`Gx::set_vtx_descv()`], however using
+    /// [`Gx::clear_vtx_desc()`] is much more efficient.
     pub fn clear_vtx_desc() {
         unsafe { ffi::GX_ClearVtxDesc() }
     }
@@ -1082,7 +1242,10 @@ impl Gx {
     }
 
     /// Sends a DrawDone command to the GP and stalls until its subsequent execution.
-    /// See [GX_DrawDone](https://libogc.devkitpro.org/gx_8h.html#a00f07b60ae2124fe027a82d7d9ae64b0) for more.
+    ///
+    /// # Note
+    /// This function is equivalent to calling [`Gx::set_draw_done()`] then
+    /// [`Gx::wait_draw_done()`].
     pub fn draw_done() {
         unsafe { ffi::GX_DrawDone() }
     }
@@ -1152,110 +1315,129 @@ impl Gx {
         }
     }
 
+    #[inline]
     pub fn position_3f32(x: f32, y: f32, z: f32) {
         unsafe {
             ffi::GX_Position3f32(x, y, z);
         }
     }
 
+    #[inline]
     pub fn position_3u16(x: u16, y: u16, z: u16) {
         unsafe {
             ffi::GX_Position3u16(x, y, z);
         }
     }
 
+    #[inline]
     pub fn position_3i16(x: i16, y: i16, z: i16) {
         unsafe {
             ffi::GX_Position3s16(x, y, z);
         }
     }
 
+    #[inline]
     pub fn position_3u8(x: u8, y: u8, z: u8) {
         unsafe {
             ffi::GX_Position3u8(x, y, z);
         }
     }
 
+    #[inline]
     pub fn position_3i8(x: i8, y: i8, z: i8) {
         unsafe {
             ffi::GX_Position3s8(x, y, z);
         }
     }
 
+    #[inline]
     pub fn position_2f32(x: f32, y: f32) {
         unsafe {
             ffi::GX_Position2f32(x, y);
         }
     }
 
+    #[inline]
     pub fn position_2u16(x: u16, y: u16) {
         unsafe {
             ffi::GX_Position2u16(x, y);
         }
     }
 
+    #[inline]
     pub fn position_2i16(x: i16, y: i16) {
         unsafe {
             ffi::GX_Position2s16(x, y);
         }
     }
 
+    #[inline]
     pub fn position_2u8(x: u8, y: u8) {
         unsafe {
             ffi::GX_Position2u8(x, y);
         }
     }
 
+    #[inline]
     pub fn position_2i8(x: i8, y: i8) {
         unsafe {
             ffi::GX_Position2s8(x, y);
         }
     }
 
+    #[inline]
     pub fn position1x8(index: u8) {
         unsafe { ffi::GX_Position1x8(index) }
     }
 
+    #[inline]
     pub fn position1x16(index: u16) {
         unsafe { ffi::GX_Position1x16(index) }
     }
 
+    #[inline]
     pub fn color_4u8(r: u8, b: u8, g: u8, a: u8) {
         unsafe {
             ffi::GX_Color4u8(r, g, b, a);
         }
     }
 
+    #[inline]
     pub fn color_3u8(r: u8, b: u8, g: u8) {
         unsafe {
             ffi::GX_Color3u8(r, g, b);
         }
     }
 
+    #[inline]
     pub fn color_3f32(r: f32, g: f32, b: f32) {
         unsafe {
             ffi::GX_Color3f32(r, g, b);
         }
     }
 
+    #[inline]
     pub fn color_1u32(clr: u32) {
         unsafe {
             ffi::GX_Color1u32(clr);
         }
     }
 
+    #[inline]
     pub fn color_1u16(clr: u16) {
         unsafe {
             ffi::GX_Color1u16(clr);
         }
     }
 
+    #[inline]
     pub fn color1x8(index: u8) {
         unsafe {
             ffi::GX_Color1x8(index);
         }
     }
 
+    #[inline]
     pub fn color1x16(index: u16) {
         unsafe {
             ffi::GX_Color1x16(index);
@@ -1269,6 +1451,7 @@ impl Gx {
         }
     }
 
+    #[inline]
     pub fn tex_coord_2f32(s: f32, t: f32) {
         unsafe { ffi::GX_TexCoord2f32(s, t) }
     }
@@ -1277,6 +1460,7 @@ impl Gx {
         unsafe { ffi::GX_Flush() }
     }
 
+    #[inline]
     pub fn end() {
         unsafe { ffi::GX_End() }
     }
