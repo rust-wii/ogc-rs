@@ -899,7 +899,7 @@ impl Gx {
     /// # Safety
     /// This function resets CPU accessible counters, so it should **not** be used in a display list.
     pub unsafe fn clear_gp_metric() {
-        unsafe { ffi::GX_ClearGPMetric() }
+        ffi::GX_ClearGPMetric()
     }
 
     /// Clears the Vertex Cache performance counter.
@@ -931,7 +931,7 @@ impl Gx {
     /// # Safety
     /// This function should be avoided; use the GP performance metric functions instead.
     pub unsafe fn init_xf_ras_metric() {
-        unsafe { ffi::GX_InitXfRasMetric() }
+        ffi::GX_InitXfRasMetric()
     }
 
     /// Causes the GPU to wait for the pipe to flush.
@@ -959,7 +959,7 @@ impl Gx {
     /// # Safety
     /// This function must be called between successive calls to [`Gx::redirect_write_gather_pipe()`].
     pub unsafe fn restore_write_gather_pipe() {
-        unsafe { ffi::GX_RestoreWriteGatherPipe() }
+        ffi::GX_RestoreWriteGatherPipe()
     }
 
     /// Sends a DrawDone command to the GP.
@@ -1006,6 +1006,15 @@ impl Gx {
     /// (see [`Gx::set_draw_done()`] and [`Gx::wait_draw_done()`]).
     pub fn wait_draw_done() {
         unsafe { ffi::GX_WaitDrawDone() }
+    }
+
+    /// Sets whether Z buffering happens before or after texturing.
+    ///
+    /// Normally, Z buffering should happen before texturing, as this enables better performance by
+    /// not texturing pixels that are not visible; however, when alpha compare is used, Z buffering
+    /// must be done after texturing (see [`Gx::set_alpha_compare()`]).
+    pub fn set_zcomp_loc(before_tex: bool) {
+        unsafe { ffi::GX_SetZCompLoc(before_tex as u8) }
     }
 
     /// Sets color and Z value to clear the EFB to during copy operations.
