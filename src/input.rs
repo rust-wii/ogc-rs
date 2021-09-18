@@ -25,22 +25,12 @@ pub enum DataFmt {
     ButtonsAccelIR = 2,
 }
 
-#[derive(Copy, Clone)]
-pub struct Point {
-    x: u32,
-    y: u32,
-}
-
-impl Point {
-    pub fn new(x: u32, y: u32) -> Self {
-        Self { x, y }
-    }
-}
+pub type Stick = (u32, u32);
 
 #[derive(Clone)]
 pub enum RawData {
     Gamecube,
-    Wii(Box<ogc_sys::WPADData>),
+    Wii(Option<ogc_sys::WPADData>),
     Unknown,
 }
 
@@ -82,8 +72,8 @@ pub struct Input {
     buttons_up: u32,
     buttons_down: u32,
     buttons_held: u32,
-    right_stick: Option<Point>,
-    left_stick: Option<Point>,
+    right_stick: Option<Stick>,
+    left_stick: Option<Stick>,
     raw: RawData,
 }
 
@@ -164,6 +154,39 @@ impl Input {
         }
     }
 
+    pub fn is_button_up(&mut self, button: Button) -> bool {
+        match self.controller_type {
+            ControllerType::Gamecube => {
+                Gamepad::is_button_in_state(self.controller_port, button, ButtonState::ButtonUp)
+            }
+            ControllerType::Wii => {
+                Wiipad::is_button_in_state(self.controller_port, button, ButtonState::ButtonUp)
+            }
+        }
+    }
+
+    pub fn is_button_down(&mut self, button: Button) -> bool {
+        match self.controller_type {
+            ControllerType::Gamecube => {
+                Gamepad::is_button_in_state(self.controller_port, button, ButtonState::ButtonDown)
+            }
+            ControllerType::Wii => {
+                Wiipad::is_button_in_state(self.controller_port, button, ButtonState::ButtonDown)
+            }
+        }
+    }
+
+    pub fn is_button_held(&mut self, button: Button) -> bool {
+        match self.controller_type {
+            ControllerType::Gamecube => {
+                Gamepad::is_button_in_state(self.controller_port, button, ButtonState::ButtonHeld)
+            }
+            ControllerType::Wii => {
+                Wiipad::is_button_in_state(self.controller_port, button, ButtonState::ButtonHeld)
+            }
+        }
+    }
+
     pub fn get_trigger_data(&mut self, button: Button) -> f32 {
         match self.controller_type {
             ControllerType::Gamecube => {
@@ -173,7 +196,7 @@ impl Input {
         }
     }
 
-    pub fn get_left_stick(&mut self) -> Option<Point> {
+    pub fn get_left_stick(&mut self) -> Option<Stick> {
         match self.controller_type {
             ControllerType::Gamecube => {
                 self.left_stick = Gamepad::get_left_stick(self.controller_port);
@@ -186,7 +209,7 @@ impl Input {
         }
     }
 
-    pub fn get_right_stick(&mut self) -> Option<Point> {
+    pub fn get_right_stick(&mut self) -> Option<Stick> {
         match self.controller_type {
             ControllerType::Gamecube => {
                 self.right_stick = Gamepad::get_right_stick(self.controller_port);
@@ -213,11 +236,30 @@ impl Input {
                 self.raw.clone()
             }
             ControllerType::Wii => {
-                self.raw = RawData::Wii(Box::new(Wiipad::get_raw(self.controller_port)));
+                self.raw = RawData::Wii(Wiipad::get_raw(self.controller_port));
                 self.raw.clone()
             }
         }
     }
+
+    pub fn ir(&mut self) -> (f32, f32) {
+        match self.controller_type {
+            ControllerType::Wii => {
+                    let data = match self.get_raw() {
+                        RawData::Wii(raw) => raw,
+                        _ => None,
+                    };
+                    
+                    if let Some(data) = data {
+                        (data.ir.x, data.ir.y)
+                    } else {
+                        (0., 0.) 
+                    }
+
+                }
+            _ => (0., 0.),
+        }
+    }   
 }
 
 bitflags! {
@@ -301,19 +343,19 @@ impl Gamepad {
         }
     }
 
-    pub fn get_left_stick(ctrl_port: ControllerPort) -> Option<Point> {
+    pub fn get_left_stick(ctrl_port: ControllerPort) -> Option<Stick> {
         unsafe {
             let x = ogc_sys::PAD_StickX(ctrl_port as i32);
             let y = ogc_sys::PAD_StickY(ctrl_port as i32);
-            Some(Point::new(x as u32, y as u32))
+            Some((x as u32, y as u32))
         }
     }
 
-    pub fn get_right_stick(ctrl_port: ControllerPort) -> Option<Point> {
+    pub fn get_right_stick(ctrl_port: ControllerPort) -> Option<Stick> {
         unsafe {
             let x = ogc_sys::PAD_SubStickX(ctrl_port as i32);
             let y = ogc_sys::PAD_SubStickY(ctrl_port as i32);
-            Some(Point::new(x as u32, y as u32))
+            Some((x as u32, y as u32))
         }
     }
 }
@@ -422,17 +464,21 @@ impl Wiipad {
 
     pub fn get_trigger_data(ctrl_port: ControllerPort, button: Button) -> f32 {
         let raw = Wiipad::get_raw(ctrl_port);
-        match raw.exp.type_ {
-            2 => match button {
-                Button::TrigL => unsafe { raw.exp.__bindgen_anon_1.classic.as_ref().l_shoulder },
-                Button::TrigR => unsafe { raw.exp.__bindgen_anon_1.classic.as_ref().r_shoulder },
+        if let Some(raw) = raw { 
+        let value = match raw.exp.type_ {
+                2 => match button {
+                    Button::TrigL => unsafe { raw.exp.__bindgen_anon_1.classic.as_ref().l_shoulder },
+                    Button::TrigR => unsafe { raw.exp.__bindgen_anon_1.classic.as_ref().r_shoulder },
+                    _ => 0.0,
+                },
                 _ => 0.0,
-            },
-            _ => 0.0,
+            };
+        return value
         }
+        return 0.;
     }
 
-    pub fn get_left_stick(ctrl_port: ControllerPort) -> Option<Point> {
+    pub fn get_left_stick(ctrl_port: ControllerPort) -> Option<Stick> {
         let raw = unsafe { *ogc_sys::WPAD_Data(ctrl_port as i32) };
 
         match raw.exp.type_ {
@@ -440,13 +486,13 @@ impl Wiipad {
                 let x = unsafe { raw.exp.__bindgen_anon_1.nunchuk.as_ref().js.pos.x };
                 let y = unsafe { raw.exp.__bindgen_anon_1.nunchuk.as_ref().js.pos.y };
 
-                Some(Point::new(x as u32, y as u32))
+                Some((x.into(), y.into()))
             }
             2 => {
                 let x = unsafe { raw.exp.__bindgen_anon_1.classic.as_ref().ljs.pos.x };
                 let y = unsafe { raw.exp.__bindgen_anon_1.classic.as_ref().ljs.pos.y };
 
-                Some(Point::new(x as u32, y as u32))
+                Some((x.into(), y.into()))
             }
             _ => None,
         }
@@ -458,7 +504,7 @@ impl Wiipad {
         }
     }
 
-    pub fn get_right_stick(ctrl_port: ControllerPort) -> Option<Point> {
+    pub fn get_right_stick(ctrl_port: ControllerPort) -> Option<Stick> {
         let raw = unsafe { *ogc_sys::WPAD_Data(ctrl_port as i32) };
 
         match raw.exp.type_ {
@@ -466,16 +512,21 @@ impl Wiipad {
                 let x = unsafe { raw.exp.__bindgen_anon_1.classic.as_ref().rjs.pos.x };
                 let y = unsafe { raw.exp.__bindgen_anon_1.classic.as_ref().rjs.pos.y };
 
-                Some(Point::new(x as u32, y as u32))
+                Some((x.into(), y.into()))
             }
             _ => None,
         }
     }
 
-    pub fn get_raw(ctrl_port: ControllerPort) -> ogc_sys::WPADData {
+    pub fn get_raw(ctrl_port: ControllerPort) -> Option<ogc_sys::WPADData> {
         unsafe {
             let data = ogc_sys::WPAD_Data(ctrl_port as i32);
-            *data
+            if data.is_null() {
+                None 
+            } else {
+                Some(*data)
+            }
+
         }
     }
 }
