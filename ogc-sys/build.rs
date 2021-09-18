@@ -4,9 +4,9 @@ use regex::Regex;
 use std::env;
 use std::process::Command;
 
-fn get_clang_version() -> String {
+ fn get_clang_version() -> String {
     // Check if the clang version env variable exists.
-   {
+    if env::var("CLANG_VERSION").is_err() {
         // Attempt to retrieve clang version through the command line.
         let clang_output = match Command::new("clang").arg("--version").output() {
             Ok(output) => output,
@@ -36,6 +36,10 @@ fn get_clang_version() -> String {
 
         // Return the final joined string.
         version.to_string()
+    } else {
+        // Clang version env variable exists, use that over parsing.
+        env::var("CLANG_VERSION").unwrap()
+    }
 }
 
 fn main() {
