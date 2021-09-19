@@ -2,6 +2,7 @@
 //!
 //! This module implements a safe wrapper around the audio functions found in ``audio.h``.
 
+use crate::ffi;
 use alloc::boxed::Box;
 use core::{convert::TryFrom, mem, ptr};
 use num_enum::{IntoPrimitive, TryFromPrimitive};
@@ -34,7 +35,7 @@ impl Audio {
         unsafe {
             // For now this is a mutable null pointer.
             // libogc is fine with this, but this should be changed in the future.
-            ogc_sys::AUDIO_Init(ptr::null_mut());
+            ffi::AUDIO_Init(ptr::null_mut());
 
             Self
         }
@@ -51,7 +52,7 @@ impl Audio {
             );
             assert_eq!(0, data.len() % 32, "Data length is not a multiple of 32.");
 
-            ogc_sys::AUDIO_InitDMA(data.as_ptr() as u32, data.len() as u32);
+            ffi::AUDIO_InitDMA(data.as_ptr() as u32, data.len() as u32);
         }
     }
 
@@ -61,14 +62,14 @@ impl Audio {
     /// This call should follow the call to ``init_dma`` which is used to initialize DMA transfers.
     fn start_dma() {
         unsafe {
-            ogc_sys::AUDIO_StartDMA();
+            ffi::AUDIO_StartDMA();
         }
     }
 
     /// Stop the previously started audio DMA operation.
     fn stop_dma() {
         unsafe {
-            ogc_sys::AUDIO_StopDMA();
+            ffi::AUDIO_StopDMA();
         }
     }
 
@@ -83,7 +84,7 @@ impl Audio {
         unsafe {
             let code: extern "C" fn(smp_cnt: u32) = mem::transmute(ptr);
             // TODO: Do something with the returned callback.
-            let _ = ogc_sys::AUDIO_RegisterStreamCallback(Some(code));
+            let _ = ffi::AUDIO_RegisterStreamCallback(Some(code));
         }
     }
 
@@ -101,60 +102,60 @@ impl Audio {
         unsafe {
             let code: extern "C" fn() = mem::transmute(ptr);
             // TODO: Do something with the returned callback.
-            let _ = ogc_sys::AUDIO_RegisterDMACallback(Some(code));
+            let _ = ffi::AUDIO_RegisterDMACallback(Some(code));
         }
     }
 
     /// Get the count of bytes, left to play, from the audio DMA interface.
     fn get_dma_bytes_left() -> u32 {
-        unsafe { ogc_sys::AUDIO_GetDMABytesLeft() }
+        unsafe { ffi::AUDIO_GetDMABytesLeft() }
     }
 
     /// Get the audio DMA flag.
     fn get_dma_enable_flag() -> u16 {
-        unsafe { ogc_sys::AUDIO_GetDMAEnableFlag() }
+        unsafe { ffi::AUDIO_GetDMAEnableFlag() }
     }
 
     /// Get the DMA transfer length configured in the audio DMA interface.
     fn get_dma_length() -> u32 {
-        unsafe { ogc_sys::AUDIO_GetDMALength() }
+        unsafe { ffi::AUDIO_GetDMALength() }
     }
 
     /// Get the main memory address for the DMA operation.
     fn get_dma_address() -> u32 {
-        unsafe { ogc_sys::AUDIO_GetDMAStartAddr() }
+        unsafe { ffi::AUDIO_GetDMAStartAddr() }
     }
 
     /// Reset the stream sample count register.
     fn reset_sample_count() {
         unsafe {
-            ogc_sys::AUDIO_ResetStreamSampleCnt();
+            ffi::AUDIO_ResetStreamSampleCnt();
         }
     }
 
     /// Set the sample count for the stream trigger.
     fn set_trigger_count(count: u32) {
         unsafe {
-            ogc_sys::AUDIO_SetStreamTrigger(count);
+            ffi::AUDIO_SetStreamTrigger(count);
         }
     }
 
     /// Get streaming sample rate.
     fn get_samplerate() -> SampleRate {
-        let r = unsafe { ogc_sys::AUDIO_GetStreamSampleRate() };
+        let r = unsafe { ffi::AUDIO_GetStreamSampleRate() };
         SampleRate::try_from(r).unwrap()
     }
 
     /// Get the sampling rate for the DSP interface.
     fn get_dsp_samplerate() -> SampleRate {
-        let r = unsafe { ogc_sys::AUDIO_GetDSPSampleRate() };
+        let r = unsafe { ffi::AUDIO_GetDSPSampleRate() };
         SampleRate::try_from(r).unwrap()
     }
 
     /// Set the sample rate for the streaming audio interface.
     fn set_samplerate(samplerate: SampleRate) {
         unsafe {
-            ogc_sys::AUDIO_SetStreamSampleRate(samplerate.into());
+            ffi::AUDIO_SetStreamSampleRate(samplerate.into());
         }
     }
 
@@ -164,40 +165,40 @@ impl Audio {
         let sample_rate: u32 = samplerate.into();
 
         unsafe {
-            ogc_sys::AUDIO_SetDSPSampleRate(sample_rate as u8);
+            ffi::AUDIO_SetDSPSampleRate(sample_rate as u8);
         }
     }
 
     /// Get the play state from the streaming audio interface.
     fn get_playstate() -> PlayState {
-        let r = unsafe { ogc_sys::AUDIO_GetStreamPlayState() };
+        let r = unsafe { ffi::AUDIO_GetStreamPlayState() };
         PlayState::try_from(r).unwrap()
     }
 
     /// Set the play state for the streaming audio interface.
     fn set_playstate(playstate: PlayState) {
         unsafe {
-            ogc_sys::AUDIO_SetStreamPlayState(playstate.into());
+            ffi::AUDIO_SetStreamPlayState(playstate.into());
         }
     }
 
     /// Get streaming volume on the left channel.
     fn get_volume_left() -> u8 {
-        unsafe { ogc_sys::AUDIO_GetStreamVolLeft() }
+        unsafe { ffi::AUDIO_GetStreamVolLeft() }
     }
 
     /// Set streaming volume on the left channel.
     fn set_volume_left(volume: u8) {
-        unsafe { ogc_sys::AUDIO_SetStreamVolLeft(volume) }
+        unsafe { ffi::AUDIO_SetStreamVolLeft(volume) }
     }
 
     /// Get streaming volume on the right channel.
     fn get_volume_right() -> u8 {
-        unsafe { ogc_sys::AUDIO_GetStreamVolRight() }
+        unsafe { ffi::AUDIO_GetStreamVolRight() }
     }
 
     /// Set streaming volume on the right channel.
     fn set_volume_right(volume: u8) {
-        unsafe { ogc_sys::AUDIO_SetStreamVolRight(volume) }
+        unsafe { ffi::AUDIO_SetStreamVolRight(volume) }
     }
 }

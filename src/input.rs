@@ -1,4 +1,8 @@
-use alloc::boxed::Box;
+//! The ``input`` module of ``ogc-rs``.
+//!
+//! This module implements a safe wrapper around the input functions.
+
+use crate::ffi;
 use bitflags::bitflags;
 use num_enum::IntoPrimitive;
 
@@ -30,7 +34,7 @@ pub type Stick = (u32, u32);
 #[derive(Clone)]
 pub enum RawData {
     Gamecube,
-    Wii(Option<ogc_sys::WPADData>),
+    Wii(Option<ffi::WPADData>),
     Unknown,
 }
 
@@ -245,21 +249,20 @@ impl Input {
     pub fn ir(&mut self) -> (f32, f32) {
         match self.controller_type {
             ControllerType::Wii => {
-                    let data = match self.get_raw() {
-                        RawData::Wii(raw) => raw,
-                        _ => None,
-                    };
-                    
-                    if let Some(data) = data {
-                        (data.ir.x, data.ir.y)
-                    } else {
-                        (0., 0.) 
-                    }
+                let data = match self.get_raw() {
+                    RawData::Wii(raw) => raw,
+                    _ => None,
+                };
 
+                if let Some(data) = data {
+                    (data.ir.x, data.ir.y)
+                } else {
+                    (0., 0.)
                 }
+            }
             _ => (0., 0.),
         }
-    }   
+    }
 }
 
 bitflags! {
@@ -285,30 +288,30 @@ pub struct Gamepad;
 impl Gamepad {
     pub fn init() {
         unsafe {
-            ogc_sys::PAD_Init();
+            ffi::PAD_Init();
         }
     }
 
     pub fn update() {
         unsafe {
-            ogc_sys::PAD_ScanPads();
+            ffi::PAD_ScanPads();
         }
     }
 
     pub fn buttons_up(ctrl_port: ControllerPort) -> u32 {
-        unsafe { ogc_sys::PAD_ButtonsUp(ctrl_port as i32) as u32 }
+        unsafe { ffi::PAD_ButtonsUp(ctrl_port as i32) as u32 }
     }
 
     pub fn buttons_down(ctrl_port: ControllerPort) -> u32 {
-        unsafe { ogc_sys::PAD_ButtonsDown(ctrl_port as i32) as u32 }
+        unsafe { ffi::PAD_ButtonsDown(ctrl_port as i32) as u32 }
     }
 
     pub fn buttons_held(ctrl_port: ControllerPort) -> u32 {
-        unsafe { ogc_sys::PAD_ButtonsHeld(ctrl_port as i32) as u32 }
+        unsafe { ffi::PAD_ButtonsHeld(ctrl_port as i32) as u32 }
     }
 
-    ///This does not do triggers.
-    ///Please use the `get_trigger_data` function
+    /// This does not do triggers.
+    /// Please use the `get_trigger_data` function.
     pub fn is_button_in_state(
         ctrl_port: ControllerPort,
         button: Button,
@@ -337,24 +340,24 @@ impl Gamepad {
 
     pub fn get_trigger_data(ctrl_port: ControllerPort, button: Button) -> u32 {
         match button {
-            Button::TrigL => unsafe { ogc_sys::PAD_TriggerL(ctrl_port as i32) as u32 },
-            Button::TrigR => unsafe { ogc_sys::PAD_TriggerR(ctrl_port as i32) as u32 },
-            _ => 0, //Nothing else is a trigger on this.
+            Button::TrigL => unsafe { ffi::PAD_TriggerL(ctrl_port as i32) as u32 },
+            Button::TrigR => unsafe { ffi::PAD_TriggerR(ctrl_port as i32) as u32 },
+            _ => 0, // Nothing else is a trigger on this.
         }
     }
 
     pub fn get_left_stick(ctrl_port: ControllerPort) -> Option<Stick> {
         unsafe {
-            let x = ogc_sys::PAD_StickX(ctrl_port as i32);
-            let y = ogc_sys::PAD_StickY(ctrl_port as i32);
+            let x = ffi::PAD_StickX(ctrl_port as i32);
+            let y = ffi::PAD_StickY(ctrl_port as i32);
             Some((x as u32, y as u32))
         }
     }
 
     pub fn get_right_stick(ctrl_port: ControllerPort) -> Option<Stick> {
         unsafe {
-            let x = ogc_sys::PAD_SubStickX(ctrl_port as i32);
-            let y = ogc_sys::PAD_SubStickY(ctrl_port as i32);
+            let x = ffi::PAD_SubStickX(ctrl_port as i32);
+            let y = ffi::PAD_SubStickY(ctrl_port as i32);
             Some((x as u32, y as u32))
         }
     }
@@ -374,11 +377,11 @@ bitflags! {
         const DOWN  = 0x0800;
         const PLUS = 0x1000;
 
-        //Nunchunk
+        // Nunchunk
         const NUNCHUNK_Z = (0x0001<<16);
         const NUNCHUNK_C = (0x0002<<16);
 
-        //Classic Controller
+        // Classic Controller
         const CLASSIC_UP = (0x0001u32<<16);
         const CLASSIC_LEFT = (0x0002u32<<16);
         const CLASSIC_ZR = (0x0004u32<<16);
@@ -395,7 +398,7 @@ bitflags! {
         const CLASSIC_DOWN = (0x4000u32<<16);
         const CLASIC_RIGHT = (0x8000u32<<16);
 
-        //GH3 Controller????
+        // GH3 Controller????
         const GH3_STRUM_UP = (0x0001<<16);
         const GH3_YELLOW = (0x0008<<16);
         const GH3_GREEN = (0x0010<<16);
@@ -413,29 +416,29 @@ pub struct Wiipad;
 impl Wiipad {
     pub fn init() {
         unsafe {
-            ogc_sys::WPAD_Init();
+            ffi::WPAD_Init();
         }
     }
 
     pub fn update() {
         unsafe {
-            ogc_sys::WPAD_ScanPads();
+            ffi::WPAD_ScanPads();
         }
     }
 
     pub fn buttons_up(ctrl_port: ControllerPort) -> u32 {
-        unsafe { ogc_sys::WPAD_ButtonsUp(ctrl_port as i32) }
+        unsafe { ffi::WPAD_ButtonsUp(ctrl_port as i32) }
     }
 
     pub fn buttons_down(ctrl_port: ControllerPort) -> u32 {
-        unsafe { ogc_sys::WPAD_ButtonsDown(ctrl_port as i32) }
+        unsafe { ffi::WPAD_ButtonsDown(ctrl_port as i32) }
     }
 
     pub fn buttons_held(ctrl_port: ControllerPort) -> u32 {
-        unsafe { ogc_sys::WPAD_ButtonsHeld(ctrl_port as i32) }
+        unsafe { ffi::WPAD_ButtonsHeld(ctrl_port as i32) }
     }
 
-    ///THIS DOES NOT DO EXPANSIONS YET.  
+    /// THIS DOES NOT DO EXPANSIONS YET.  
     pub fn is_button_in_state(
         ctrl_port: ControllerPort,
         button: Button,
@@ -464,22 +467,26 @@ impl Wiipad {
 
     pub fn get_trigger_data(ctrl_port: ControllerPort, button: Button) -> f32 {
         let raw = Wiipad::get_raw(ctrl_port);
-        if let Some(raw) = raw { 
-        let value = match raw.exp.type_ {
+        if let Some(raw) = raw {
+            match raw.exp.type_ {
                 2 => match button {
-                    Button::TrigL => unsafe { raw.exp.__bindgen_anon_1.classic.as_ref().l_shoulder },
-                    Button::TrigR => unsafe { raw.exp.__bindgen_anon_1.classic.as_ref().r_shoulder },
+                    Button::TrigL => unsafe {
+                        raw.exp.__bindgen_anon_1.classic.as_ref().l_shoulder
+                    },
+                    Button::TrigR => unsafe {
+                        raw.exp.__bindgen_anon_1.classic.as_ref().r_shoulder
+                    },
                     _ => 0.0,
                 },
                 _ => 0.0,
-            };
-        return value
+            }
+        } else {
+            0.0
         }
-        return 0.;
     }
 
     pub fn get_left_stick(ctrl_port: ControllerPort) -> Option<Stick> {
-        let raw = unsafe { *ogc_sys::WPAD_Data(ctrl_port as i32) };
+        let raw = unsafe { *ffi::WPAD_Data(ctrl_port as i32) };
 
         match raw.exp.type_ {
             1 => {
@@ -500,12 +507,12 @@ impl Wiipad {
 
     pub fn set_data_fmt(ctrl_port: ControllerPort, fmt: DataFmt) {
         unsafe {
-            ogc_sys::WPAD_SetDataFormat(ctrl_port as i32, fmt as i32);
+            ffi::WPAD_SetDataFormat(ctrl_port as i32, fmt as i32);
         }
     }
 
     pub fn get_right_stick(ctrl_port: ControllerPort) -> Option<Stick> {
-        let raw = unsafe { *ogc_sys::WPAD_Data(ctrl_port as i32) };
+        let raw = unsafe { *ffi::WPAD_Data(ctrl_port as i32) };
 
         match raw.exp.type_ {
             2 => {
@@ -518,15 +525,14 @@ impl Wiipad {
         }
     }
 
-    pub fn get_raw(ctrl_port: ControllerPort) -> Option<ogc_sys::WPADData> {
+    pub fn get_raw(ctrl_port: ControllerPort) -> Option<ffi::WPADData> {
         unsafe {
-            let data = ogc_sys::WPAD_Data(ctrl_port as i32);
+            let data = ffi::WPAD_Data(ctrl_port as i32);
             if data.is_null() {
-                None 
+                None
             } else {
                 Some(*data)
             }
-
         }
     }
 }

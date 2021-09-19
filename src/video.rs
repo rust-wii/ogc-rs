@@ -2,7 +2,7 @@
 //!
 //! This module implements a safe wrapper around video functions.
 
-use crate::{mem_cached_to_uncached, system::System};
+use crate::{ffi, mem_cached_to_uncached, system::System};
 use alloc::boxed::Box;
 use core::{convert::TryFrom, ffi::c_void, mem, ptr};
 use num_enum::{IntoPrimitive, TryFromPrimitive};
@@ -24,9 +24,9 @@ pub struct RenderConfig {
     pub v_filter: [u8; 7usize],
 }
 
-impl Into<*mut ogc_sys::GXRModeObj> for RenderConfig {
-    fn into(self) -> *mut ogc_sys::GXRModeObj {
-        Box::into_raw(Box::new(ogc_sys::GXRModeObj {
+impl Into<*mut ffi::GXRModeObj> for RenderConfig {
+    fn into(self) -> *mut ffi::GXRModeObj {
+        Box::into_raw(Box::new(ffi::GXRModeObj {
             viTVMode: self.tv_type,
             fbWidth: self.framebuffer_width,
             efbHeight: self.embed_framebuffer_height,
@@ -44,7 +44,7 @@ impl Into<*mut ogc_sys::GXRModeObj> for RenderConfig {
     }
 }
 
-impl Into<RenderConfig> for *mut ogc_sys::GXRModeObj {
+impl Into<RenderConfig> for *mut ffi::GXRModeObj {
     fn into(self) -> RenderConfig {
         // i'll do this the right way one day
         // :gun:
@@ -101,14 +101,14 @@ pub struct Video {
 impl Video {
     pub fn init() -> Self {
         unsafe {
-            ogc_sys::VIDEO_Init();
+            ffi::VIDEO_Init();
 
-            let r_mode = ogc_sys::VIDEO_GetPreferredMode(ptr::null_mut()).into();
+            let r_mode = ffi::VIDEO_GetPreferredMode(ptr::null_mut()).into();
 
             Self {
                 render_config: r_mode,
                 framebuffer: mem_cached_to_uncached!(System::allocate_framebuffer(
-                    Self::get_preferred_mode().into()
+                    Self::get_preferred_mode()
                 )),
             }
         }
@@ -116,62 +116,62 @@ impl Video {
 
     pub fn clear_framebuffer(&mut self, rconf: RenderConfig, colour: u32) {
         unsafe {
-            ogc_sys::VIDEO_ClearFrameBuffer(rconf.into(), self.framebuffer, colour);
+            ffi::VIDEO_ClearFrameBuffer(rconf.into(), self.framebuffer, colour);
         }
     }
 
     pub fn get_preferred_mode() -> RenderConfig {
-        unsafe { ogc_sys::VIDEO_GetPreferredMode(ptr::null_mut()).into() }
+        unsafe { ffi::VIDEO_GetPreferredMode(ptr::null_mut()).into() }
     }
 
     pub fn configure(render_config: RenderConfig) {
         unsafe {
-            ogc_sys::VIDEO_Configure(render_config.into());
+            ffi::VIDEO_Configure(render_config.into());
         }
     }
 
     pub fn flush() {
         unsafe {
-            ogc_sys::VIDEO_Flush();
+            ffi::VIDEO_Flush();
         }
     }
 
     pub fn get_current_line() {
         unsafe {
-            ogc_sys::VIDEO_GetCurrentLine();
+            ffi::VIDEO_GetCurrentLine();
         }
     }
 
     pub fn get_tv_mode() -> TVMode {
-        let mode = unsafe { ogc_sys::VIDEO_GetCurrentTvMode() };
+        let mode = unsafe { ffi::VIDEO_GetCurrentTvMode() };
         TVMode::try_from(mode).unwrap()
     }
 
     pub fn get_next_field() -> ViField {
-        let next_field = unsafe { ogc_sys::VIDEO_GetNextField() };
+        let next_field = unsafe { ffi::VIDEO_GetNextField() };
         ViField::try_from(next_field).unwrap()
     }
 
     pub fn is_component_cable() -> bool {
-        let component = unsafe { ogc_sys::VIDEO_HaveComponentCable() };
+        let component = unsafe { ffi::VIDEO_HaveComponentCable() };
         component == 1
     }
 
     pub fn set_black(is_black: bool) {
         unsafe {
-            ogc_sys::VIDEO_SetBlack(is_black);
+            ffi::VIDEO_SetBlack(is_black);
         }
     }
 
     pub fn set_next_framebuffer(framebuffer: *mut c_void) {
         unsafe {
-            ogc_sys::VIDEO_SetNextFramebuffer(framebuffer);
+            ffi::VIDEO_SetNextFramebuffer(framebuffer);
         }
     }
 
     pub fn set_next_right_framebuffer(framebuffer: *mut c_void) {
         unsafe {
-            ogc_sys::VIDEO_SetNextRightFramebuffer(framebuffer);
+            ffi::VIDEO_SetNextRightFramebuffer(framebuffer);
         }
     }
 
@@ -184,7 +184,7 @@ impl Video {
         unsafe {
             let code: extern "C" fn(vi_retrace_callback: u32) = mem::transmute(ptr);
 
-            let _ = ogc_sys::VIDEO_SetPostRetraceCallback(Some(code));
+            let _ = ffi::VIDEO_SetPostRetraceCallback(Some(code));
         }
     }
 
@@ -197,13 +197,13 @@ impl Video {
         unsafe {
             let code: extern "C" fn(vi_retrace_callback: u32) = mem::transmute(ptr);
 
-            let _ = ogc_sys::VIDEO_SetPreRetraceCallback(Some(code));
+            let _ = ffi::VIDEO_SetPreRetraceCallback(Some(code));
         }
     }
 
     pub fn wait_vsync() {
         unsafe {
-            ogc_sys::VIDEO_WaitVSync();
+            ffi::VIDEO_WaitVSync();
         }
     }
 }
