@@ -1,4 +1,4 @@
-use core::{alloc::Layout, convert::TryInto, ffi::c_void, intrinsics::write_bytes};
+use core::{alloc::Layout, convert::TryInto, ffi::c_void};
 
 use embedded_graphics::{
     draw_target::DrawTarget,
@@ -21,15 +21,23 @@ use ogc_rs::{
 pub struct Display;
 impl Display {
     pub fn new(fifo_size: usize) -> Self {
-        let buf: *mut c_void = unsafe {
-            mem_cached_to_uncached!(alloc::alloc::alloc(
+        // SAFETY:
+        // + `fifo_size` is checked to be between zero and `isize::MAX` before being passed to
+        //   `alloc_zeroed()`.
+        // + the resulting pointer `base` is checked to be non-null when passed to
+        //   `slice::from_raw_parts_mut()`.
+        // + size of allocation corresponds to size given for slice.
+        // + pointer was just created, so it should be unique (no aliases to a `&mut`).
+        let buf = unsafe {
+            assert_ne!(0, fifo_size, "fifo_size must not be zero");
+            assert!(fifo_size <= isize::MAX, "fifo_size must be isize::MAX bytes or less")
+            let base = mem_cached_to_uncached!(alloc::alloc::alloc_zeroed(
                 Layout::from_size_align(fifo_size, 32).unwrap()
-            )) as *mut c_void
+            )) as *mut u8;
+            assert!(! base.is_null(), "could not allocate memory for Display");
+            core::slice::from_raw_parts_mut(base, fifo_size)
         };
-        unsafe {
-            write_bytes(buf, 0, fifo_size);
-        }
-        Gx::init(buf, fifo_size as u32);
+        Gx::init(buf);
         Self
     }
 

@@ -354,10 +354,69 @@ pub enum AttnFn {
 }
 
 /// Object describing a graphics FIFO.
+#[derive(Debug)]
 #[repr(transparent)]
 pub struct Fifo(ffi::GXFifoObj);
 
 impl Fifo {
+    /// Describes the area of main memory that will be used for this *fifo*.
+    ///
+    /// The Graphics FIFO is the mechanism used to communicate graphics commands from the CPU to
+    /// the Graphics Processor (GP). The FIFO base pointer should be 32-byte aligned. The size
+    /// should also be a multiple of 32B.
+    ///
+    /// The CPU's write-gather pipe is used to write data to the FIFO. Therefore, the FIFO memory
+    /// area must be forced out of the CPU cache prior to being used. `DCInvalidateRange()` may be
+    /// used for this purpose. Due to the mechanics of flushing the write-gather pipe, the FIFO
+    /// memory area should be at least 32 bytes larger than the maximum expected amount of data
+    /// stored. Up to 32 NOPs may be written at the end during flushing.
+    ///
+    /// # Note
+    /// [`Gx::init()`] also takes the argument *buf* and initializes a FIFO using this value and
+    /// attaches the FIFO to both the CPU and GP. The application must allocate the memory for the
+    /// graphics FIFO before calling [`Gx::init()`]. Therefore, it is not necessary to call this
+    /// function unless you want to resize the default FIFO sometime after [`Gx::init()`] has been
+    /// called or you are creating a new FIFO. The minimum size is 64kB defined by
+    /// `GX_FIFO_MINSIZE`.
+    ///
+    /// This function will also set the read and write pointers for the FIFO to the base address,
+    /// so ordinarily it is not necessary to call [`Fifo::set_pointers()`] when initializing the
+    /// FIFO. In addition, This function sets the FIFO's high water mark to (size-16kB) and the low
+    /// water mark to (size/2), so it is also not necessary to call [`Fifo::set_limits()`].
+    pub fn new(buf: &mut [u8]) -> Self {
+        let mut fifo = core::mem::MaybeUninit::uninit();
+        let size = buf.len();
+        let base = buf.as_mut_ptr();
+        // SAFETY:
+        // + both `size` and `base` are checked to be aligned to a 32-byte boundary.
+        // + original documentation for `GX_InitFifoBase()` implies that the FIFO is initialized
+        //   completely, so we can assume that `fifo` here is initialized.
+        assert_eq!(0, size % 32);
+        assert_eq!(0, base.align_offset(32));
+        unsafe {
+            ffi::GX_InitFifoBase(fifo.as_mut_ptr(), base as *mut _, size as u32);
+            Fifo(fifo.assume_init())
+        }
+    }
+
+    /// Sets the high and low water mark for the fifo.
+    ///
+    /// The high and low water marks are used in *immediate-mode*, i.e. when the fifo is attached
+    /// to both the CPU and Graphics Processor (GP) (see `Gx::set_cpu_fifo()` and
+    /// `Gx::set_gp_fifo()`).
+    ///
+    /// The hardware keeps track of the number of bytes between the read and write pointers. This
+    /// number represents how full the FIFO is, and when it is greater than or equal to the
+    /// *hiwatermark*, the hardware issues an interrupt. The GX API will suspend sending graphics
+    /// to the Graphics FIFO until it has emptied to a certain point. The *lowatermark* is used to
+    /// set the point at which the FIFO is empty enough to resume sending graphics commands to the
+    /// FIFO. Both *hiwatermark* and *lowatermark* should be in multiples of 32B. The count for
+    /// *lowatermark* should be less than *hiwatermark*. Of course, *hiwatermark* and *lowatermark*
+    /// must be less than the size of the FIFO.
+    ///
+    /// # Note
+    /// When the FIFO is only attached to the CPU or only attached to the GP, the high and low
+    /// watermark interrupts are disabled.
     pub fn set_fifo_limits(&mut self, hiwatermark: u32, lowatermark: u32) {
         assert_eq!(0, hiwatermark % 32);
         assert_eq!(0, lowatermark % 32);
@@ -365,18 +424,63 @@ impl Fifo {
         // assert!(lowatermark < self.len());
         unsafe { ffi::GX_InitFifoLimits(&mut self.0, hiwatermark, lowatermark) }
     }
-    /*
-    TODO turn these into &self once upstream changes in libogc go through.
+
+    /// Get the base address for a given *fifo*.
+    pub fn get_base(&self) -> *mut u8 {
+        unsafe { ffi::GX_GetFifoBase(self as *const _ as *mut _) as *mut _ }
+    }
+
     /// Returns number of cache lines in the FIFO.
-    pub fn count(&mut self) -> usize {
-        unsafe { ffi::GX_GetFifoCount(&mut self.0) as usize }
+    ///
+    /// # Note
+    /// The count is incorrect if an overflow has occurred (i.e. you have written more data than
+    /// the size of the fifo), as the hardware cannot detect an overflow in general.
+    pub fn count(&self) -> usize {
+        // TODO: remove conversions when upstream changes pass.
+        unsafe { ffi::GX_GetFifoCount(self as *const _ as *mut _) as usize }
     }
 
     /// Get the size of a given FIFO.
-    pub fn len(&mut self) -> usize {
-        unsafe { ffi::GX_GetFifoSize(&mut self.0) as usize }
+    pub fn len(&self) -> usize {
+        // TODO: remove conversions when upstream changes pass.
+        unsafe { ffi::GX_GetFifoSize(self as *const _ as *mut _) as usize }
     }
-    */
+
+    /// Returns a non-zero value if the write pointer has passed the TOP of the FIFO.
+    ///
+    /// Returns true only if the FIFO is attached to the CPU and the FIFO write pointer has passed
+    /// the top of the FIFO. Use the return value to detect whether or not an overflow has occured
+    /// by initializing the FIFO's write pointer to the base of the FIFO before sending any
+    /// commands to the FIFO.
+    ///
+    /// # Note
+    /// If the FIFO write pointer is not explicitly set to the base of the FIFO, you cannot rely on
+    /// this function to detect overflows.
+    pub fn get_wrap(&self) -> u8 {
+        unsafe { ffi::GX_GetFifoWrap(self as *const _ as *mut _) }
+    }
+
+    /// Returns the current value of the Graphics FIFO read and write pointers.
+    ///
+    /// # Note
+    /// See `Gx::enable_breakpoint()` for an example of why you would do this.
+    pub fn get_pointers(&self) -> (*const u8, *mut u8) {
+        let mut rd_ptr = core::ptr::null_mut();
+        let mut wt_ptr = core::ptr::null_mut();
+        unsafe {
+            ffi::GX_GetFifoPtrs(self as *const _ as *mut _, &mut rd_ptr, &mut wt_ptr);
+        }
+        (rd_ptr as *const _, wt_ptr as *mut _)
+    }
+
+    /// Sets the *fifo* read and write pointers.
+    ///
+    /// # Note
+    /// This is normally done only during initialization of the FIFO. After that, the graphics
+    /// hardware manages the FIFO pointers.
+    pub fn set_pointers(&mut self, rd_ptr: *const u8, wt_ptr: *mut u8) {
+        unsafe { ffi::GX_InitFifoPtrs(&mut self.0, rd_ptr as *mut _, wt_ptr as *mut _) }
+    }
 }
 
 /// Object containing information on a light.
@@ -862,10 +966,19 @@ pub struct Gx;
 impl Gx {
     /// Initializes the graphics processor to its initial state.
     /// See [GX_Init](https://libogc.devkitpro.org/gx_8h.html#aea24cfd5f8f2b168dc4f60d4883a6a8e) for more.
-    pub fn init(gp_fifo: *mut c_void, fifo_size: u32) -> *mut ffi::GXFifoObj {
-        // SAFETY: Both `fifo_size` and `gp_fifo` is aligned to a 32-byte boundary.
-        assert_eq!(0, fifo_size % 32);
-        unsafe { ffi::GX_Init(gp_fifo, fifo_size) }
+    pub fn init(buf: &mut [u8]) -> &mut Fifo {
+        let size = buf.len();
+        let base = buf.as_mut_ptr();
+        // SAFETY:
+        // + both `size` and `base` are checked to be aligned to a 32-byte boundary.
+        // + `Fifo` is transparent to `ffi::GXFifoObj`, so casting a pointer from the first to the
+        //   second is safe, and reborrowing a pointer into a reference is safe.
+        assert_eq!(0, size % 32);
+        assert_eq!(0, base.align_offset(32));
+        unsafe {
+            let fifo = ffi::GX_Init(base as *mut _, size as u32);
+            &mut *(fifo as *mut Fifo)
+        }
     }
 
     /// Aborts the current frame.
