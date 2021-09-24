@@ -17,12 +17,13 @@ pub fn gp_fifo(fifo_size: usize) -> *mut c_void {
     }
 }
 
-#[derive(Copy, Clone, Default, Debug)]
-pub struct Color(u8, u8, u8, u8);
+#[derive(Copy, Clone, Debug)]
+#[repr(transparent)]
+pub struct Color(ffi::GXColor);
 
 impl Color {
     pub fn new(r: u8, g: u8, b: u8, a: u8) -> Self {
-        Self(r, g, b, a)
+        Self(ffi::GXColor {r, g, b, a})
     }
 }
 
@@ -1133,9 +1134,7 @@ impl Gx {
     /// Sets color and Z value to clear the EFB to during copy operations.
     /// See [GX_SetCopyClear](https://libogc.devkitpro.org/gx_8h.html#a17265aefd7e64820de53abd9113334bc) for more.
     pub fn set_copy_clear(background: Color, z_value: u32) {
-        let Color(r, g, b, a) = background;
-        let background = ffi::_gx_color { r, g, b, a };
-        unsafe { ffi::GX_SetCopyClear(background, z_value) }
+        unsafe { ffi::GX_SetCopyClear(background.0, z_value) }
     }
 
     /// Sets the viewport rectangle in screen coordinates.
@@ -1430,10 +1429,8 @@ impl Gx {
     pub fn poke_argb(x: u16, y: u16, color: Color) {
         assert!(x < 640, "x must be less than 640, currently {}", x);
         assert!(y < 528, "y must be less than 527, currently {}", y);
-        let Color(r, g, b, a) = color;
-        let color = ffi::_gx_color { r, g, b, a };
         unsafe {
-            ffi::GX_PokeARGB(x, y, color);
+            ffi::GX_PokeARGB(x, y, color.0);
         }
     }
 
@@ -1569,7 +1566,7 @@ impl Gx {
     ///Helper functions to just pass in a color object
     pub fn color_color(clr: Color) {
         unsafe {
-            ffi::GX_Color4u8(clr.0, clr.1, clr.2, clr.3);
+            ffi::GX_Color4u8(clr.0.r, clr.0.g, clr.0.b, clr.0.a);
         }
     }
 
