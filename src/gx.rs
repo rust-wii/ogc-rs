@@ -979,6 +979,14 @@ pub enum VtxAttr {
     Tex7MtxIdx = ffi::GX_VA_TEX7MTXIDX as _,
 }
 
+/// Structure describing how a single vertex attribute will be referenced.
+///
+/// An array of these structures can be used to describe all the attributes in a vertex. The
+/// attribute `GX_VA_NULL` should be used to mark the end of the array.
+#[derive(Clone, Copy, Debug)]
+#[repr(transparent)]
+pub struct VtxDesc(ffi::GXVtxDesc);
+
 /// Represents the GX service.
 pub struct Gx;
 
@@ -1303,6 +1311,13 @@ impl Gx {
     /// Sets the attribute format (vtxattr) for a single attribute in the Vertex Attribute Table (VAT).
     /// See [GX_SetVtxAttrFmt](https://libogc.devkitpro.org/gx_8h.html#a87437061debcc0457b6b6dc2eb021f23) for more.
     pub fn set_vtx_attr_fmt(vtxfmt: u8, vtxattr: VtxAttr, comptype: u32, compsize: u32, frac: u32) {
+        // this is debug_assert because libogc just uses the lowest 3 bits
+        debug_assert!(
+            vtxfmt < ffi::GX_MAXVTXFMT as u8,
+            "index out of bounds: the len is {} but the index is {}",
+            ffi::GX_MAXVTXFMT,
+            vtxfmt,
+        );
         unsafe { ffi::GX_SetVtxAttrFmt(vtxfmt, vtxattr as u32, comptype, compsize, frac) }
     }
 

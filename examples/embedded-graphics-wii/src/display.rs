@@ -87,21 +87,21 @@ impl Display {
         Gx::set_vtx_desc(VtxAttr::Color0, GX_DIRECT as _);
 
         Gx::set_vtx_attr_fmt(
-            GX_VTXFMT0 as _,
+            0,
             VtxAttr::Pos,
             GX_POS_XYZ as _,
             GX_F32 as _,
             0,
         );
         Gx::set_vtx_attr_fmt(
-            GX_VTXFMT0 as _,
+            0,
             VtxAttr::Tex0,
             GX_TEX_ST as _,
             GX_F32 as _,
             0,
         );
         Gx::set_vtx_attr_fmt(
-            GX_VTXFMT0 as _,
+            0,
             VtxAttr::Color0,
             GX_CLR_RGBA as _,
             GX_RGBA8 as _,
