@@ -2,7 +2,7 @@
 //!
 //! This module implements a safe wrapper around the networking functions found in ``network.h``.
 
-use crate::{bitflags, raw_to_string, raw_to_strings, OgcError, Result};
+use crate::{bitflags, ffi, raw_to_string, raw_to_strings, OgcError, Result};
 use alloc::{
     boxed::Box,
     format,
@@ -151,17 +151,17 @@ pub struct IPV4Address {
 }
 
 /// Implementation to convert from a ``IPV4Address`` into a ``in_addr`` used by ogc_sys.
-impl Into<ogc_sys::in_addr> for &mut IPV4Address {
-    fn into(self) -> ogc_sys::in_addr {
-        ogc_sys::in_addr {
+impl Into<ffi::in_addr> for &mut IPV4Address {
+    fn into(self) -> ffi::in_addr {
+        ffi::in_addr {
             s_addr: self.address,
         }
     }
 }
 
-impl Into<*mut ogc_sys::in_addr> for &mut IPV4Address {
-    fn into(self) -> *mut ogc_sys::in_addr {
-        Box::into_raw(Box::new(ogc_sys::in_addr {
+impl Into<*mut ffi::in_addr> for &mut IPV4Address {
+    fn into(self) -> *mut ffi::in_addr {
+        Box::into_raw(Box::new(ffi::in_addr {
             s_addr: self.address,
         }))
     }
@@ -190,11 +190,11 @@ pub struct SocketAddress {
 }
 
 /// Convert ``SocketAddress`` into a ``ogc_sys::sockaddr``.
-impl Into<*mut ogc_sys::sockaddr> for SocketAddress {
-    fn into(self) -> *mut ogc_sys::sockaddr {
+impl Into<*mut ffi::sockaddr> for SocketAddress {
+    fn into(self) -> *mut ffi::sockaddr {
         // TODO: Check implementation.
         let sa_family: u32 = self.family.into();
-        Box::into_raw(Box::new(ogc_sys::sockaddr {
+        Box::into_raw(Box::new(ffi::sockaddr {
             sa_len: self.length,
             sa_family: sa_family as u8,
             sa_data: self.data,
@@ -222,7 +222,7 @@ pub struct HostInformation {
 /// to an integer value suitable for use as an Internet address.
 /// The converted address will be in Network Byte Order.
 pub fn dot_to_nbo(dot: &str) -> Result<IPV4Address> {
-    let r = unsafe { ogc_sys::inet_addr(dot.as_ptr()) };
+    let r = unsafe { ffi::inet_addr(dot.as_ptr()) };
 
     if r == 0 {
         Err(OgcError::Network("network dot_to_nbo failed".to_string()))
@@ -235,7 +235,7 @@ pub fn dot_to_nbo(dot: &str) -> Result<IPV4Address> {
 /// to a network address, and stores the address in the structure provided.
 /// The converted address will be in Network Byte Order.
 pub fn dot_to_net_addr(dot: &str, addr: &mut IPV4Address) -> Result<()> {
-    let r = unsafe { ogc_sys::inet_aton(dot.as_ptr(), addr.into()) };
+    let r = unsafe { ffi::inet_aton(dot.as_ptr(), addr.into()) };
 
     if r < 0 {
         Err(OgcError::Network(format!("network dot_to_net_addr: {}", r)))
@@ -247,7 +247,7 @@ pub fn dot_to_net_addr(dot: &str, addr: &mut IPV4Address) -> Result<()> {
 /// This function call converts the specified Internet host address
 /// to a string in the Internet standard dot notation.
 pub fn addr_to_dot(addr: &mut IPV4Address) -> Result<String> {
-    let r = unsafe { ogc_sys::inet_ntoa(addr.into()) };
+    let r = unsafe { ffi::inet_ntoa(addr.into()) };
     let r = raw_to_string(r);
 
     if r.is_empty() {
@@ -261,7 +261,7 @@ pub fn addr_to_dot(addr: &mut IPV4Address) -> Result<String> {
 /// Here ``addr_string`` is either a hostname, or an IPv4 address in standard dot notation.
 pub fn get_host_by_name(addr_string: &str) -> Result<HostInformation> {
     unsafe {
-        let r = ogc_sys::net_gethostbyname(addr_string.as_ptr());
+        let r = ffi::net_gethostbyname(addr_string.as_ptr());
 
         if r == ptr::null_mut() {
             Err(OgcError::Network("host provided doesnt exist".into()))
@@ -288,7 +288,7 @@ pub struct Network;
 impl Network {
     /// Initialization of the networking service.
     pub fn init() -> Result<Self> {
-        let r = unsafe { ogc_sys::net_init() };
+        let r = unsafe { ffi::net_init() };
 
         if r < 0 {
             Err(OgcError::Network(format!("network init: {}", r)))
@@ -299,7 +299,7 @@ impl Network {
 
     /// Create a socket.
     pub fn new(domain: ProtocolFamily, socket_type: SocketType) -> Result<Socket> {
-        let r = unsafe { ogc_sys::net_socket(domain.into(), socket_type.into(), 0) };
+        let r = unsafe { ffi::net_socket(domain.into(), socket_type.into(), 0) };
 
         if r == INVALID_SOCKET {
             Err(OgcError::Network(format!("network socket creation: {}", r)))
@@ -318,7 +318,7 @@ pub struct Socket(i32);
 impl Socket {
     /// Initiate a connection on a socket.
     pub fn connect(&self, socket_addr: SocketAddress, address_length: u32) -> Result<()> {
-        let r = unsafe { ogc_sys::net_connect(self.0, socket_addr.into(), address_length) };
+        let r = unsafe { ffi::net_connect(self.0, socket_addr.into(), address_length) };
 
         if r < 0 {
             Err(OgcError::Network(format!("network socket connect: {}", r)))
@@ -329,7 +329,7 @@ impl Socket {
 
     /// Assign a local protocol address to a socket.
     pub fn bind(&self, socket_addr: SocketAddress, address_length: u32) -> Result<()> {
-        let r = unsafe { ogc_sys::net_bind(self.0, socket_addr.into(), address_length) };
+        let r = unsafe { ffi::net_bind(self.0, socket_addr.into(), address_length) };
 
         if r < 0 {
             Err(OgcError::Network(format!("network socket bind: {}", r)))
@@ -340,7 +340,7 @@ impl Socket {
 
     /// This function is called only by a TCP server to listen for the client request.
     pub fn listen(&self, backlog: u32) -> Result<()> {
-        let r = unsafe { ogc_sys::net_listen(self.0, backlog) };
+        let r = unsafe { ffi::net_listen(self.0, backlog) };
 
         if r < 0 {
             Err(OgcError::Network(format!("network socket listen: {}", r)))
@@ -352,7 +352,7 @@ impl Socket {
     /// The accept function is called by a TCP server to accept client requests and
     /// to establish actual connection.
     pub fn accept(&self, socket_addr: SocketAddress, address_length: &mut u32) -> Result<i32> {
-        let r = unsafe { ogc_sys::net_accept(self.0, socket_addr.into(), address_length) };
+        let r = unsafe { ffi::net_accept(self.0, socket_addr.into(), address_length) };
 
         if r < 0 {
             Err(OgcError::Network(format!("network socket accept: {}", r)))
@@ -363,7 +363,7 @@ impl Socket {
 
     /// Write to the file descriptor, in this case the socket.
     pub fn write(descriptor: i32, buffer: &[u8], count: i32) -> Result<i32> {
-        let r = unsafe { ogc_sys::net_write(descriptor, buffer.as_ptr() as *const c_void, count) };
+        let r = unsafe { ffi::net_write(descriptor, buffer.as_ptr() as *const c_void, count) };
 
         if r < 0 {
             Err(OgcError::Network(format!("network writing failure: {}", r)))
@@ -374,9 +374,8 @@ impl Socket {
 
     /// Send data over stream sockets or CONNECTED datagram sockets.
     pub fn send(descriptor: i32, buffer: &[u8], length: i32, flags: u32) -> Result<i32> {
-        let r = unsafe {
-            ogc_sys::net_send(descriptor, buffer.as_ptr() as *const c_void, length, flags)
-        };
+        let r =
+            unsafe { ffi::net_send(descriptor, buffer.as_ptr() as *const c_void, length, flags) };
 
         if r < 0 {
             Err(OgcError::Network(format!("network sending failure: {}", r)))
@@ -387,7 +386,7 @@ impl Socket {
 
     /// Read from the file descriptor, in this case the socket.
     pub fn read(descriptor: i32, buffer: &mut [u8], count: i32) -> Result<i32> {
-        let r = unsafe { ogc_sys::net_read(descriptor, buffer.as_ptr() as *mut c_void, count) };
+        let r = unsafe { ffi::net_read(descriptor, buffer.as_ptr() as *mut c_void, count) };
 
         if r < 0 {
             Err(OgcError::Network(format!("network reading failure: {}", r)))
@@ -398,8 +397,7 @@ impl Socket {
 
     /// Receive data over stream sockets or CONNECTED datagram sockets.
     pub fn recieve(descriptor: i32, buffer: &mut [u8], length: i32, flags: u32) -> Result<i32> {
-        let r =
-            unsafe { ogc_sys::net_recv(descriptor, buffer.as_ptr() as *mut c_void, length, flags) };
+        let r = unsafe { ffi::net_recv(descriptor, buffer.as_ptr() as *mut c_void, length, flags) };
 
         if r < 0 {
             Err(OgcError::Network(format!("network recieve failure: {}", r)))
@@ -414,7 +412,7 @@ impl Socket {
 impl Drop for Socket {
     fn drop(&mut self) {
         unsafe {
-            ogc_sys::net_close(self.0);
+            ffi::net_close(self.0);
         }
     }
 }

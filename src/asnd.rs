@@ -2,14 +2,13 @@
 //!
 //! This module implements a safe wrapper around the audio functions found in ``asndlib.h``.
 
-use crate::{OgcError, Result};
-use alloc::boxed::Box;
-use alloc::format;
+use crate::{ffi, OgcError, Result};
+use alloc::{boxed::Box, format};
 use core::mem;
 
 macro_rules! if_not {
     ($valid:ident => $error_output:expr, $var:ident $(,)*) => {
-        if $var == ogc_sys::$valid as _ {
+        if $var == ffi::$valid as _ {
             Ok(())
         } else {
             Err(OgcError::Audio(format!($error_output, $var)))
@@ -109,7 +108,7 @@ pub enum VoiceFormat {
 }
 
 impl VoiceFormat {
-    fn as_i32(self) -> i32 {
+    fn as_i32(&self) -> i32 {
         match self {
             VoiceFormat::Mono8Bit => 0,
             VoiceFormat::Mono16Bit => 1,
@@ -132,54 +131,54 @@ impl VoiceFormat {
 pub struct Asnd;
 
 /// Implementation of the asnd service.
-#[allow(unused_unsafe)]
 impl Asnd {
     /// Initializes the asnd lib and fixes the hardware sample rate to 48000hz.
     pub fn init() -> Self {
         unsafe {
-            ogc_sys::ASND_Init();
-            Self
+            ffi::ASND_Init();
         }
+
+        Self
     }
 
     /// De-initializes the asnd lib. This is also called when `Asnd` gets dropped.
     pub fn end() {
         unsafe {
-            ogc_sys::ASND_End();
+            ffi::ASND_End();
         }
     }
 
     /// Pauses if true and resumes if false.
     pub fn pause(should_pause: bool) {
         unsafe {
-            ogc_sys::ASND_Pause(should_pause as i32);
+            ffi::ASND_Pause(should_pause as i32);
         }
     }
 
     /// Returns true if paused, false if not paused.
     pub fn is_paused() -> bool {
-        unsafe { ogc_sys::ASND_Is_Paused() > 0 }
+        unsafe { ffi::ASND_Is_Paused() > 0 }
     }
 
     /// Returns the global time in milliseconds. Time is updated from the IRQ.
     pub fn get_time() -> u32 {
-        unsafe { ogc_sys::ASND_GetTime() }
+        unsafe { ffi::ASND_GetTime() }
     }
 
     /// Returns the global sample counter. Can be used to implement timers with high precision.
     pub fn get_sample_counter() -> u32 {
-        unsafe { ogc_sys::ASND_GetSampleCounter() }
+        unsafe { ffi::ASND_GetSampleCounter() }
     }
 
     /// Returns the samples sent from the IRQ in one tick.
     pub fn get_samples_per_tick() -> u32 {
-        unsafe { ogc_sys::ASND_GetSamplesPerTick() }
+        unsafe { ffi::ASND_GetSamplesPerTick() }
     }
 
     /// Sets the global time, in milliseconds.
     pub fn set_time(time: u32) {
         unsafe {
-            ogc_sys::ASND_SetTime(time);
+            ffi::ASND_SetTime(time);
         }
     }
 
@@ -193,13 +192,13 @@ impl Asnd {
 
         unsafe {
             let code: extern "C" fn() = mem::transmute(ptr);
-            ogc_sys::ASND_SetCallback(Some(code));
+            ffi::ASND_SetCallback(Some(code));
         }
     }
 
     /// Returs the current audio rate. Default is 48000hz.
     pub fn get_audio_rate() -> i32 {
-        unsafe { ogc_sys::ASND_GetAudioRate() }
+        unsafe { ffi::ASND_GetAudioRate() }
     }
 
     /// Sets a PCM voice to play. This function stops one previous voice. Use
@@ -215,7 +214,7 @@ impl Asnd {
         });
 
         let err = unsafe {
-            ogc_sys::ASND_SetVoice(
+            ffi::ASND_SetVoice(
                 options.voice as i32,
                 options.format.as_i32(),
                 options.pitch as i32,
@@ -237,7 +236,7 @@ impl Asnd {
         Self::validate_buffer(sound_buffer);
 
         let err = unsafe {
-            ogc_sys::ASND_SetInfiniteVoice(
+            ffi::ASND_SetInfiniteVoice(
                 options.voice as i32,
                 options.format.as_i32(),
                 options.pitch as i32,
@@ -261,7 +260,7 @@ impl Asnd {
         Self::validate_buffer(sound_buffer);
 
         let err = unsafe {
-            ogc_sys::ASND_AddVoice(
+            ffi::ASND_AddVoice(
                 voice as i32,
                 sound_buffer.as_mut_ptr() as *mut _,
                 sound_buffer.len() as i32,
@@ -275,27 +274,27 @@ impl Asnd {
     /// assign the samples with `Asnd::set_song_sample_voice()`.
     pub fn stop_voice(voice: u32) -> Result<()> {
         assert!(voice < 16, "Voice index {} is >= 16", voice);
-        let err = unsafe { ogc_sys::ASND_StopVoice(voice as i32) };
+        let err = unsafe { ffi::ASND_StopVoice(voice as i32) };
         if_not!(SND_OK => "Asnd::stop_voice() failed with error {}", err)
     }
 
     /// Pauses the selected voice. Can also be used to resume voice.
     pub fn pause_voice(voice: u32, pause: bool) -> Result<()> {
         assert!(voice < 16, "Voice index {} is >= 16", voice);
-        let err = unsafe { ogc_sys::ASND_PauseVoice(voice as i32, pause as i32) };
+        let err = unsafe { ffi::ASND_PauseVoice(voice as i32, pause as i32) };
         if_not!(SND_OK => "Asnd::pause_voice() failed with error {}", err)
     }
 
     /// Returns the state of the selected voice.
     pub fn status_voice(voice: u32) -> Result<()> {
         assert!(voice < 16, "Voice index {} is >= 16", voice);
-        let err = unsafe { ogc_sys::ASND_StatusVoice(voice as i32) };
+        let err = unsafe { ffi::ASND_StatusVoice(voice as i32) };
         if_not!(SND_WORKING => "Asnd::status_voice() failed with error {}", err)
     }
 
     /// Returns the first unused voice. Fails if no voices are available.
     pub fn get_first_unused_voice() -> Result<u32> {
-        let err = unsafe { ogc_sys::ASND_GetFirstUnusedVoice() };
+        let err = unsafe { ffi::ASND_GetFirstUnusedVoice() };
         match err {
             x if x < 16 => Ok(x as u32),
             _ => Err(OgcError::Audio(format!(
@@ -309,7 +308,7 @@ impl Asnd {
     /// create audio effects such as Doppler effect simulation.
     pub fn change_pitch_voice(voice: u32, pitch: u32) -> Result<()> {
         assert!(voice < 16, "Voice index {} is >= 16", voice);
-        let err = unsafe { ogc_sys::ASND_ChangePitchVoice(voice as i32, pitch as i32) };
+        let err = unsafe { ffi::ASND_ChangePitchVoice(voice as i32, pitch as i32) };
         if_not!(SND_OK => "Asnd::change_pitch_voice() failed with error {}", err)
     }
 
@@ -318,7 +317,7 @@ impl Asnd {
     pub fn change_volume_voice(voice: u32, volume_left: u8, volume_right: u8) -> Result<()> {
         assert!(voice < 16, "Voice index {} is >= 16", voice);
         let err = unsafe {
-            ogc_sys::ASND_ChangeVolumeVoice(voice as i32, volume_left as i32, volume_right as i32)
+            ffi::ASND_ChangeVolumeVoice(voice as i32, volume_left as i32, volume_right as i32)
         };
         if_not!(SND_OK => "Asnd::change_volume_voice() failed with error {}", err)
     }
@@ -328,14 +327,14 @@ impl Asnd {
     /// `INIT_RATE=48000`, a return value of 24000 is equal to 0.5 seconds.
     pub fn get_tick_counter_voice(voice: u32) -> u32 {
         assert!(voice < 16, "Voice index {} is >= 16", voice);
-        unsafe { ogc_sys::ASND_GetTickCounterVoice(voice as i32) }
+        unsafe { ffi::ASND_GetTickCounterVoice(voice as i32) }
     }
 
     /// Returns the voice playback time. This value represents the time in milliseconds
     /// since this voice started playing.
     pub fn get_timer_voice(voice: u32) -> u32 {
         assert!(voice < 16, "Voice index {} is >= 16", voice);
-        unsafe { ogc_sys::ASND_GetTimerVoice(voice as i32) }
+        unsafe { ffi::ASND_GetTimerVoice(voice as i32) }
     }
 
     /// Tests if a pointer is in use by a voice as a buffer.
@@ -345,24 +344,24 @@ impl Asnd {
     /// Returns `ogc_sys::SND_INVALID` if invalid.
     pub fn test_pointer<T>(voice: u32, pointer: *mut T) -> i32 {
         assert!(voice < 16, "Voice index {} is >= 16", voice);
-        unsafe { ogc_sys::ASND_TestPointer(voice as i32, pointer as *mut _) }
+        unsafe { ffi::ASND_TestPointer(voice as i32, pointer as *mut _) }
     }
 
     /// Tests to determine if the voice is ready to receive a new buffer sample
     /// with `Asnd::add_voice()`. Returns true if voice is ready.
     pub fn test_voice_buffer_ready(voice: u32) -> bool {
         assert!(voice < 16, "Voice index {} is >= 16", voice);
-        unsafe { ogc_sys::ASND_TestVoiceBufferReady(voice as i32) > 0 }
+        unsafe { ffi::ASND_TestVoiceBufferReady(voice as i32) > 0 }
     }
 
     /// Returns the DSP usage, in percent `(0..=100)`.
     pub fn get_dsp_percent_use() -> u32 {
-        unsafe { ogc_sys::ASND_GetDSP_PercentUse() }
+        unsafe { ffi::ASND_GetDSP_PercentUse() }
     }
 
     /// Returns DSP process time, in nano seconds.
     pub fn get_dsp_process_time() -> u32 {
-        unsafe { ogc_sys::ASND_GetDSP_ProcessTime() }
+        unsafe { ffi::ASND_GetDSP_ProcessTime() }
     }
 
     fn validate_buffer(sound_buffer: &mut [u8]) {
