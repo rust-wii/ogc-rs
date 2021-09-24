@@ -788,6 +788,24 @@ impl Texture {
         }
     }
 
+    /// Returns the texture height.
+    pub fn height(&self) -> u16 {
+        // TODO: remove conversions when upstream changes pass.
+        unsafe { ffi::GX_GetTexObjHeight(self as *const _ as *mut _) }
+    }
+
+    /// Returns the texture width.
+    pub fn width(&self) -> u16 {
+        // TODO: remove conversions when upstream changes pass.
+        unsafe { ffi::GX_GetTexObjWidth(self as *const _ as *mut _) }
+    }
+
+    /// Returns `true` if the texture's mipmap flag is enabled.
+    pub fn is_mipmapped(&self) -> bool {
+        // TODO: remove conversions when upstream changes pass.
+        unsafe { ffi::GX_GetTexObjMipMap(self as *const _ as *mut _) != 0 }
+    }
+
     /// Enables bias clamping for texture LOD.
     ///
     /// If set to `true`, the sum of LOD and `lodbias` (given in [`TexObj::set_lod_bias()`])
@@ -1046,6 +1064,36 @@ impl Gx {
     /// This function should be avoided; use the GP performance metric functions instead.
     pub unsafe fn init_xf_ras_metric() {
         ffi::GX_InitXfRasMetric()
+    }
+
+    /// Loads a light object into a set of hardware registers associated with a Light ID.
+    ///
+    /// This function copies the light object data into the graphics FIFO through the CPU
+    /// write-gather buffer mechanism. This guarantees that the light object is coherent with the
+    /// CPU cache.
+    ///
+    /// # Note
+    /// The light object must have been initialized first using the necessary `GX_InitLight*()`
+    /// functions.
+    ///
+    /// Another way to load a light object is with `Gx::load_light_idx()`.
+    pub fn load_light(lit_obj: &Light, lit_id: u8) {
+        unsafe { ffi::GX_LoadLightObj(lit_obj as *const _ as *mut _, lit_id) }
+    }
+
+    /// Instructs the GP to fetch the light object at *litobjidx* from an array.
+    ///
+    /// The light object is retrieved from the array to which
+    /// `Gx::set_array(GX_VA_LIGHTARRAY, ...)` points. Then it loads the object into the hardware
+    /// register associated with Light ID.
+    ///
+    /// # Note
+    /// Data flows directly from the array in DRAM to the GP; therefore, the light object data may
+    /// not be coherent with the CPU's cache. The application is responsible for storing the light
+    /// object data from the CPU cache (using `DCStoreRange()`) before calling
+    /// `Gx::load_light_idx()`.
+    pub fn load_light_idx(litobjidx: usize, litid: u8) {
+        unsafe { ffi::GX_LoadLightObjIdx(litobjidx as u32, litid) }
     }
 
     /// Causes the GPU to wait for the pipe to flush.
