@@ -253,16 +253,16 @@ impl Gu {
         unsafe { ffi::c_guMtxRotTrig(mt.as_mut_ptr().cast(), axis as u8, sin, cos) }
     }
 
-    pub fn mtx_rotation_axis_radians(mt: &mut Mtx34, axis: &mut guVector, rot_radians: f32) {
-        unsafe { ffi::c_guMtxRotAxisRad(mt.as_mut_ptr().cast(), axis, rot_radians) }
+    pub fn mtx_rotation_axis_radians(mt: &mut Mtx34, axis: (f32, f32, f32), rot_radians: f32) {
+        unsafe { ffi::c_guMtxRotAxisRad(mt.as_mut_ptr().cast(), &mut guVector { x: axis.0, y: axis.1, z: axis.2 } , rot_radians) }
     }
 
-    pub fn mtx_reflect(mt: &mut Mtx34, point: &mut guVector, normal: &mut guVector) {
-        unsafe { ffi::c_guMtxReflect(mt.as_mut_ptr().cast(), point, normal) }
+    pub fn mtx_reflect(mt: &mut Mtx34, point: (f32, f32, f32), normal: (f32, f32, f32)) {
+        unsafe { ffi::c_guMtxReflect(mt.as_mut_ptr().cast(), &mut guVector {x: point.0, y: point.1, z: point.2}, &mut guVector {x: normal.0, y: normal.1, z: normal.2}) }
     }
 
-    pub fn mtx_quaternion(mt: &mut Mtx34, quaternion: &mut guQuaternion) {
-        unsafe { ffi::c_guMtxQuat(mt.as_mut_ptr().cast(), quaternion) }
+    pub fn mtx_quaternion(mt: &mut Mtx34, quaternion: (f32, f32, f32, f32)) {
+        unsafe { ffi::c_guMtxQuat(mt.as_mut_ptr().cast(), &mut guQuaternion {x: quaternion.0, y: quaternion.1, z: quaternion.2, w: quaternion.3}) }
     }
 }
 
