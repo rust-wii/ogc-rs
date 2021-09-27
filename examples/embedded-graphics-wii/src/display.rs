@@ -104,7 +104,7 @@ impl Display {
             GX_COLOR0A0 as _,
         );
         Gu::mtx_identity(&mut ident);
-        Gu::mtx_trans_apply(&mut ident.clone(), &mut ident, 0.0, 0.0, -100.0);
+        Gu::mtx_translation_apply(&mut ident.clone(), &mut ident, (0.0, 0.0, -100.0));
         Gx::load_pos_mtx_imm(&mut ident, GX_PNMTX0 as _);
 
         let mut perspective: ogc_rs::ffi::Mtx44 = [[0f32; 4]; 4];
