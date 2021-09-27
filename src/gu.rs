@@ -2,6 +2,7 @@
 //!
 //! This module implements a safe wrapper around the matrix subsystem functions found in ``gu.h``.
 
+use ffi::guQuaternion;
 use libm::tanf;
 
 use crate::{
@@ -9,20 +10,133 @@ use crate::{
     gx::{self, Gx},
 };
 
+#[repr(u8)]
+pub enum RotationAxis {
+    X = 0x58,
+    Y = 0x59,
+    Z = 0x5A,
+}
+
 /// Represents the gu service.
 pub struct Gu;
 
 impl Gu {
-    /// Sets a 4x4 matrix for orthographic projection.
-    /// See [guOrtho](https://libogc.devkitpro.org/gu_8h.html#acce7b8b77ff8c321fbc6a797ea307541) for more.
-    pub fn ortho(mt: &mut Mtx44, t: f32, b: f32, l: f32, r: f32, n: f32, f: f32) {
-        unsafe { ffi::guOrtho(mt as *mut _, t, b, l, r, n, f) }
+    pub fn frustrum(
+        mt: &mut Mtx44,
+        top: f32,
+        bottom: f32,
+        left: f32,
+        right: f32,
+        z_near: f32,
+        z_far: f32,
+    ) {
+        unsafe {
+            ffi::guFrustum(
+                mt.as_mut_ptr().cast(),
+                top,
+                bottom,
+                left,
+                right,
+                z_near,
+                z_far,
+            )
+        }
     }
 
     /// Sets a 4x4 perspective projection matrix from field of view and aspect ratio parameters.
     /// See [guPerspective](https://libogc.devkitpro.org/gu_8h.html#af22f5e7e20c24dc11f2d58dfb64cdc95) for more.
     pub fn perspective(mt: &mut Mtx44, fovy: f32, aspect: f32, n: f32, f: f32) {
         unsafe { ffi::guPerspective(mt as *mut _, fovy, aspect, n, f) }
+    }
+
+    /// Sets a 4x4 matrix for orthographic projection.
+    /// See [guOrtho](https://libogc.devkitpro.org/gu_8h.html#acce7b8b77ff8c321fbc6a797ea307541) for more.
+    pub fn ortho(mt: &mut Mtx44, t: f32, b: f32, l: f32, r: f32, n: f32, f: f32) {
+        unsafe { ffi::guOrtho(mt as *mut _, t, b, l, r, n, f) }
+    }
+
+    pub fn mtx44_identity(mt: &mut Mtx44) {
+        unsafe { ffi::guMtx44Identity(mt.as_mut_ptr().cast()) }
+    }
+
+    pub fn mtx44_copy(src: &mut Mtx44, dst: &mut Mtx44) {
+        unsafe { ffi::guMtx44Copy(src.as_mut_ptr().cast(), dst.as_mut_ptr().cast()) }
+    }
+
+    pub fn mtx44_inverse(src: &mut Mtx44, inverse: &mut Mtx44) {
+        unsafe {
+            ffi::guMtx44Inverse(src.as_mut_ptr().cast(), inverse.as_mut_ptr().cast());
+        }
+    }
+
+    pub fn light_frustum(
+        mt: &mut Mtx34,
+        top: f32,
+        bottom: f32,
+        left: f32,
+        right: f32,
+        z_near: f32,
+        scale: (f32, f32),
+        translation: (f32, f32),
+    ) {
+        unsafe {
+            ffi::guLightFrustum(
+                mt.as_mut_ptr().cast(),
+                top,
+                bottom,
+                left,
+                right,
+                z_near,
+                scale.0,
+                scale.1,
+                translation.0,
+                translation.1,
+            )
+        }
+    }
+
+    pub fn light_perspective(
+        mt: &mut Mtx34,
+        fov_y: f32,
+        aspect_ratio: f32,
+        scale: (f32, f32),
+        translation: (f32, f32),
+    ) {
+        unsafe {
+            ffi::guLightPerspective(
+                mt.as_mut_ptr().cast(),
+                fov_y,
+                aspect_ratio,
+                scale.0,
+                scale.1,
+                translation.0,
+                translation.1,
+            )
+        }
+    }
+
+    pub fn light_ortho(
+        mt: &mut Mtx34,
+        top: f32,
+        bottom: f32,
+        left: f32,
+        right: f32,
+        scale: (f32, f32),
+        translation: (f32, f32),
+    ) {
+        unsafe {
+            ffi::guLightOrtho(
+                mt.as_mut_ptr().cast(),
+                top,
+                bottom,
+                left,
+                right,
+                scale.0,
+                scale.1,
+                translation.0,
+                translation.1,
+            )
+        }
     }
 
     /// Sets a world-space to camera-space transformation matrix.
@@ -42,17 +156,113 @@ impl Gu {
             )
         }
     }
+    pub fn mtx_identity(mt: &mut Mtx34) {
+        unsafe { ffi::c_guMtxIdentity(mt.as_mut_ptr().cast()) }
+    }
 
     pub fn mtx_concat(a: &mut Mtx34, b: &mut Mtx34, ab: &mut Mtx34) {
         unsafe { ffi::c_guMtxConcat(a as *mut _, b as *mut _, ab as *mut _) }
     }
 
-    pub fn mtx_identity(mt: &mut Mtx34) {
-        unsafe { ffi::c_guMtxIdentity(mt as *mut _) }
+    pub fn mtx_scale(mt: &mut Mtx34, scale: (f32, f32, f32)) {
+        unsafe { ffi::c_guMtxScale(mt.as_mut_ptr().cast(), scale.0, scale.1, scale.2) }
     }
 
-    pub fn mtx_trans_apply(src: &mut Mtx34, dst: &mut Mtx34, x_t: f32, y_t: f32, z_t: f32) {
-        unsafe { ffi::c_guMtxTransApply(src as *mut _, dst as *mut _, x_t, y_t, z_t) }
+    pub fn mtx_scale_apply(src: &mut Mtx34, dst: &mut Mtx34, scale: (f32, f32, f32)) {
+        unsafe {
+            ffi::c_guMtxScaleApply(
+                src.as_mut_ptr().cast(),
+                dst.as_mut_ptr().cast(),
+                scale.0,
+                scale.1,
+                scale.2,
+            )
+        }
+    }
+
+    pub fn mtx_apply_scale(src: &mut Mtx34, dst: &mut Mtx34, scale: (f32, f32, f32)) {
+        unsafe {
+            ffi::c_guMtxApplyScale(
+                src.as_mut_ptr().cast(),
+                dst.as_mut_ptr().cast(),
+                scale.0,
+                scale.1,
+                scale.2,
+            )
+        }
+    }
+
+    pub fn mtx_translation(mt: &mut Mtx34, translation: (f32, f32, f32)) {
+        unsafe {
+            ffi::c_guMtxTrans(
+                mt.as_mut_ptr().cast(),
+                translation.0,
+                translation.1,
+                translation.2,
+            )
+        }
+    }
+
+    pub fn mtx_translation_apply(src: &mut Mtx34, dst: &mut Mtx34, translation: (f32, f32, f32)) {
+        unsafe {
+            ffi::c_guMtxTransApply(
+                src.as_mut_ptr().cast(),
+                dst.as_mut_ptr().cast(),
+                translation.0,
+                translation.1,
+                translation.2,
+            )
+        }
+    }
+
+    pub fn mtx_apply_translation(src: &mut Mtx34, dst: &mut Mtx34, translation: (f32, f32, f32)) {
+        unsafe {
+            ffi::c_guMtxApplyTrans(
+                src.as_mut_ptr().cast(),
+                dst.as_mut_ptr().cast(),
+                translation.0,
+                translation.1,
+                translation.2,
+            )
+        }
+    }
+
+    pub fn mtx_inverse(src: &mut Mtx34, inverse: &mut Mtx34) {
+        unsafe {
+            ffi::c_guMtxInverse(src.as_mut_ptr().cast(), inverse.as_mut_ptr().cast());
+        }
+    }
+
+    pub fn mtx_inv_xpose(src: &mut Mtx34, xpose: &mut Mtx34) {
+        unsafe {
+            ffi::c_guMtxInvXpose(src.as_mut_ptr().cast(), xpose.as_mut_ptr().cast());
+        }
+    }
+
+    pub fn mtx_transpose(src: &mut Mtx34, xpose: &mut Mtx34) {
+        unsafe {
+            ffi::c_guMtxTranspose(src.as_mut_ptr().cast(), xpose.as_mut_ptr().cast());
+        }
+    }
+
+    pub fn mtx_rotation_radians(mt: &mut Mtx34, axis: RotationAxis, rot_radians: f32) {
+        unsafe { ffi::c_guMtxRotRad(mt.as_mut_ptr().cast(), axis as u8, rot_radians) }
+    }
+
+    pub fn mtx_rotation_trig(mt: &mut Mtx34, axis: RotationAxis, sin: f32, cos: f32) {
+        unsafe { ffi::c_guMtxRotTrig(mt.as_mut_ptr().cast(), axis as u8, sin, cos) }
+    }
+
+    pub fn mtx_rotation_axis_radians(mt: &mut Mtx34, axis: &mut guVector, rot_radians: f32) {
+        unsafe { ffi::c_guMtxRotAxisRad(mt.as_mut_ptr().cast(), axis, rot_radians) }
+    }
+
+    pub fn mtx_reflect(mt: &mut Mtx34, point: &mut guVector, normal: &mut guVector) {
+        unsafe { ffi::c_guMtxReflect(mt.as_mut_ptr().cast(), point, normal) }
+    }
+
+    pub fn mtx_quaternion(mt: &mut Mtx34, quaternion: &mut guQuaternion) {
+        unsafe { ffi::c_guMtxQuat(mt.as_mut_ptr().cast(), quaternion) }
     }
 }
 
@@ -292,7 +502,6 @@ impl Mat3x4 {
         self.0[2][3] += self.0[2][0] * translation.0
             + self.0[2][1] * translation.1
             + self.0[2][2] * translation.2
-            
     }
 
     pub fn concat(&mut self, other: &mut Mat3x4) {
