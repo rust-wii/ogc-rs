@@ -10,9 +10,8 @@ use embedded_graphics::{
 use ogc_rs::{
     ffi::{
         Mtx, GX_CLR_RGBA, GX_COLOR0A0, GX_DIRECT, GX_F32, GX_GM_1_0, GX_MAX_Z24, GX_NONE,
-        GX_ORTHOGRAPHIC, GX_PASSCLR, GX_PF_RGB8_Z24, GX_PNMTX0, GX_POS_XYZ, GX_RGBA8, GX_TEVSTAGE0,
-        GX_TEXCOORD0, GX_TEXMAP0, GX_TEX_ST, GX_VA_CLR0, GX_VA_POS, GX_VA_TEX0, GX_VTXFMT0,
-        GX_ZC_LINEAR,
+        GX_PASSCLR, GX_PF_RGB8_Z24, GX_PNMTX0, GX_POS_XYZ, GX_RGBA8, GX_TEVSTAGE0, GX_TEXCOORD0,
+        GX_TEXMAP0, GX_TEX_ST, GX_VA_CLR0, GX_VA_POS, GX_VA_TEX0, GX_VTXFMT0, GX_ZC_LINEAR,
     },
     mem_cached_to_uncached,
     prelude::*,
@@ -105,7 +104,7 @@ impl Display {
             GX_COLOR0A0 as _,
         );
         Gu::mtx_identity(&mut ident);
-        Gu::mtx_trans_apply(&mut ident.clone(), &mut ident, 0.0, 0.0, -100.0);
+        Gu::mtx_translation_apply(&mut ident.clone(), &mut ident, (0.0, 0.0, -100.0));
         Gx::load_pos_mtx_imm(&mut ident, GX_PNMTX0 as _);
 
         let mut perspective: ogc_rs::ffi::Mtx44 = [[0f32; 4]; 4];
@@ -119,7 +118,7 @@ impl Display {
             0.0,
             1000.0,
         );
-        Gx::load_projection_mtx(&mut perspective, GX_ORTHOGRAPHIC as _);
+        Gx::load_projection_mtx(&mut perspective, ProjectionType::Orthographic);
 
         Gx::set_viewport(
             0.0,
