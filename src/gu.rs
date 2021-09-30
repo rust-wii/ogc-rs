@@ -21,6 +21,67 @@ pub enum RotationAxis {
 pub struct Gu;
 
 impl Gu {
+    //guVec -> Vec3
+    pub fn vec_half_angle(a_vec: &mut guVector, b_vec: &mut guVector, ab_vec: &mut guVector) {
+        unsafe { ffi::guVecHalfAngle(a_vec, b_vec, ab_vec) }
+    }
+
+    pub fn vec_add(a_vec: &mut guVector, b_vec: &mut guVector, ab_vec: &mut guVector) {
+        unsafe { ffi::c_guVecAdd(a_vec, b_vec, ab_vec) }
+    }
+
+    pub fn vec_sub(a_vec: &mut guVector, b_vec: &mut guVector, ab_vec: &mut guVector) {
+        unsafe { ffi::c_guVecSub(a_vec, b_vec, ab_vec) }
+    }
+
+    pub fn vec_scale(src: &mut guVector, dest: &mut guVector, scale: f32) {
+        unsafe { ffi::c_guVecScale(src, dest, scale) }
+    }
+
+    pub fn vec_normalize(vector: &mut guVector) {
+        unsafe { ffi::c_guVecNormalize(vector) }
+    }
+
+    pub fn vec_mult(mat: &mut Mtx34, src: &mut guVector, dest: &mut guVector) {
+        unsafe { ffi::c_guVecMultiply(mat.as_mut_ptr().cast(), src, dest) }
+    }
+
+    pub fn vec_cross(a_vec: &mut guVector, b_vec: &mut guVector, ab_vec: &mut guVector) {
+        unsafe { ffi::c_guVecCross(a_vec, b_vec, ab_vec) }
+    }
+
+    pub fn vec_mult_sr(mat: &mut Mtx34, src: &mut guVector, dest: &mut guVector) {
+        unsafe { ffi::c_guVecMultiplySR(mat.as_mut_ptr().cast(), src, dest) }
+    }
+
+    pub fn vec_dot(a_vec: &mut guVector, b_vec: &mut guVector) -> f32 {
+        unsafe { ffi::c_guVecDotProduct(a_vec, b_vec) }
+    }
+
+    //guQuaternion > Quat
+    pub fn quat_add(
+        a_quat: &mut guQuaternion,
+        b_quat: &mut guQuaternion,
+        ab_quat: &mut guQuaternion,
+    ) {
+        unsafe { ffi::c_guQuatAdd(a_quat, b_quat, ab_quat) }
+    }
+
+    pub fn quat_sub(
+        a_quat: &mut guQuaternion,
+        b_quat: &mut guQuaternion,
+        ab_quat: &mut guQuaternion,
+    ) {
+        unsafe { ffi::c_guQuatSub(a_quat, b_quat, ab_quat) }
+    }
+
+    pub fn quat_norm(quaternion: &mut guQuaternion, dest: &mut guQuaternion) {
+        unsafe { ffi::c_guQuatNormalize(quaternion, dest) }
+    }
+    pub fn quat_inverse(quaternion: &mut guQuaternion, dest: &mut guQuaternion) {
+        unsafe { ffi::c_guQuatInverse(quaternion, dest) }
+    }
+
     pub fn frustrum(
         mt: &mut Mtx44,
         top: f32,
@@ -253,16 +314,33 @@ impl Gu {
         unsafe { ffi::c_guMtxRotTrig(mt.as_mut_ptr().cast(), axis as u8, sin, cos) }
     }
 
-    pub fn mtx_rotation_axis_radians(mt: &mut Mtx34, axis: (f32, f32, f32), rot_radians: f32) {
-        unsafe { ffi::c_guMtxRotAxisRad(mt.as_mut_ptr().cast(), &mut guVector { x: axis.0, y: axis.1, z: axis.2 } , rot_radians) }
+    pub fn mtx_rotation_axis_radians(mt: &mut Mtx34, axis: &mut guVector, rot_radians: f32) {
+        unsafe {
+            ffi::c_guMtxRotAxisRad(
+                mt.as_mut_ptr().cast(),
+                axis,
+                rot_radians,
+            )
+        }
     }
 
-    pub fn mtx_reflect(mt: &mut Mtx34, point: (f32, f32, f32), normal: (f32, f32, f32)) {
-        unsafe { ffi::c_guMtxReflect(mt.as_mut_ptr().cast(), &mut guVector {x: point.0, y: point.1, z: point.2}, &mut guVector {x: normal.0, y: normal.1, z: normal.2}) }
+    pub fn mtx_reflect(mt: &mut Mtx34, point: &mut guVector, normal: &mut guVector) {
+        unsafe {
+            ffi::c_guMtxReflect(
+                mt.as_mut_ptr().cast(),
+                point,
+                normal
+            )
+        }
     }
 
-    pub fn mtx_quaternion(mt: &mut Mtx34, quaternion: (f32, f32, f32, f32)) {
-        unsafe { ffi::c_guMtxQuat(mt.as_mut_ptr().cast(), &mut guQuaternion {x: quaternion.0, y: quaternion.1, z: quaternion.2, w: quaternion.3}) }
+    pub fn mtx_quaternion(mt: &mut Mtx34, quaternion: &mut guQuaternion) {
+        unsafe {
+            ffi::c_guMtxQuat(
+                mt.as_mut_ptr().cast(),
+                quaternion 
+            )
+        }
     }
 }
 
