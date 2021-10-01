@@ -23,7 +23,11 @@ pub fn gp_fifo(fifo_size: usize) -> *mut c_void {
 pub struct Color(ffi::GXColor);
 
 impl Color {
-    pub fn new(r: u8, g: u8, b: u8, a: u8) -> Self {
+    pub const fn new(r: u8, g: u8, b: u8) -> Self {
+        Self::with_alpha(r, g, b, 255)
+    }
+
+    pub const fn with_alpha(r: u8, g: u8, b: u8, a: u8) -> Self {
         Self(ffi::GXColor {r, g, b, a})
     }
 }
@@ -529,7 +533,7 @@ impl Light {
         // + padding: taken care of with zeroed() above.
         unsafe {
             ffi::GX_InitLightPos(light.as_mut_ptr(), 0.0, 0.0, 0.0);
-            ffi::GX_InitLightColor(light.as_mut_ptr(), Color::new(255, 255, 255, 255).0);
+            ffi::GX_InitLightColor(light.as_mut_ptr(), Color::new(255, 255, 255).0);
             ffi::GX_InitLightDir(light.as_mut_ptr(), nx, ny, nz);
             ffi::GX_InitLightAttn(light.as_mut_ptr(), 1.0, 0.0, 0.0, 1.0, 0.0, 0.0);
             Self(light.assume_init())
@@ -551,7 +555,7 @@ impl Light {
         // + attenuation: set by GX_InitLightAttn() to values documented above.
         // + padding: taken care of with zeroed() above.
         unsafe {
-            ffi::GX_InitLightColor(light.as_mut_ptr(), Color::new(255, 255, 255, 255).0);
+            ffi::GX_InitLightColor(light.as_mut_ptr(), Color::new(255, 255, 255).0);
             ffi::GX_InitSpecularDir(light.as_mut_ptr(), nx, ny, nz);
             ffi::GX_InitLightAttn(light.as_mut_ptr(), 1.0, 0.0, 0.0, 1.0, 0.0, 0.0);
             Self(light.assume_init())
