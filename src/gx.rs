@@ -892,7 +892,7 @@ impl Texture<'_> {
 
     /// Enables bias clamping for texture LOD.
     ///
-    /// If set to `true`, the sum of LOD and `lodbias` (given in [`TexObj::set_lod_bias()`])
+    /// If set to `true`, the sum of LOD and `lodbias` (given in [`Texture::set_lod_bias()`])
     /// is clamped so that it is never less than the minimum extent of the pixel projected in
     /// texture space. This prevents over-biasing the LOD when the polygon is perpendicular to the
     /// view direction.
@@ -904,8 +904,8 @@ impl Texture<'_> {
     ///
     /// When set to `true`, the LOD is computed using adjacent texels; when `false`, diagonal
     /// texels are used instead. This should be set to `true` if you use bias clamping (see
-    /// [`TexObj::set_bias_clamp()`]) or anisotropic filtering (`GX_ANISO_2` or `GX_ANISO_4` for
-    /// [`TexObj::set_max_aniso()`] argument).
+    /// [`Texture::set_bias_clamp()`]) or anisotropic filtering (`GX_ANISO_2` or `GX_ANISO_4` for
+    /// [`Texture::set_max_aniso()`] argument).
     pub fn set_edge_lod(&mut self, enable: bool) {
         unsafe { ffi::GX_InitTexObjEdgeLOD(&mut self.0, enable as u8) }
     }
