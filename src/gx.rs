@@ -423,7 +423,7 @@ impl Fifo<'_> {
     /// # Note
     /// When the FIFO is only attached to the CPU or only attached to the GP, the high and low
     /// watermark interrupts are disabled.
-    pub fn set_fifo_limits(&mut self, hiwatermark: u32, lowatermark: u32) {
+    pub fn set_limits(&mut self, hiwatermark: u32, lowatermark: u32) {
         assert_eq!(0, hiwatermark % 32);
         assert_eq!(0, lowatermark % 32);
         // assert!(hiwatermark < self.len());
@@ -490,6 +490,7 @@ impl Fifo<'_> {
 }
 
 /// Object containing information on a light.
+#[derive(Clone, Debug)]
 #[repr(transparent)]
 pub struct Light(ffi::GXLightObj);
 
@@ -1090,6 +1091,39 @@ impl Gx {
             let fifo = ffi::GX_Init(base as *mut _, size as u32);
             &mut *(fifo as *mut Fifo)
         }
+    }
+
+    /// Attaches *fifo* to the GP.
+    ///
+    /// # Note
+    /// If the FIFO is also attached to the CPU, the system is in immediate-mode, and the fifo acts
+    /// like a true FIFO. In immediate-mode, graphics commands are fed directly from the CPU to the
+    /// GP, and the FIFO's high and low water marks are active. The high and low water marks
+    /// implement the flow-control mechanism between the CPU and GP. When the FIFO becomes more
+    /// full than the high water mark, the CPU will stop writing graphics commands into the FIFO.
+    /// When the FIFO empties to a point lower than the low water mark, the CPU will resume writing
+    /// graphics commands into the FIFO. The high and low water marks are set with
+    /// [`Fifo::set_limits()`].
+    ///
+    /// If the FIFO is only attached to the GP, the FIFO acts like a buffer. In this case, high and
+    /// low water marks are disabled, and the GP reads the FIFO until it is empty. Before attaching
+    /// a new FIFO to the GP, you should make sure the previous FIFO is empty, using the *cmdIdle*
+    /// status returned by [`Gx::get_gp_status()`].
+    ///
+    /// The break point mechanism can be used to force the FIFO to stop reading commands at a
+    /// certain point; see [`Gx::enable_breakpoint()`].
+    pub fn set_gp_fifo(fifo: Fifo) {
+        unsafe { ffi::GX_SetGPFifo((&fifo) as *const _ as *mut _) }
+    }
+
+    /// Attaches a FIFO to the CPU.
+    ///
+    /// # Note
+    /// If the FIFO being attached is one already attached to the GP, the FIFO can be considered to
+    /// be in immediate mode. If not, the CPU can write commands, and the GP will execute them when
+    /// the GP attaches to this FIFO (multi-buffered mode).
+    pub fn set_cpu_fifo(fifo: Fifo) {
+        unsafe { ffi::GX_SetCPUFifo((&fifo) as *const _ as *mut _) }
     }
 
     /// Aborts the current frame.
