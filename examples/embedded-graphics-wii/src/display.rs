@@ -1,4 +1,4 @@
-use core::{alloc::Layout, convert::TryInto, ffi::c_void, intrinsics::write_bytes};
+use core::{alloc::Layout, convert::TryInto, ffi::c_void};
 
 use embedded_graphics::{
     draw_target::DrawTarget,
@@ -11,7 +11,7 @@ use ogc_rs::{
     ffi::{
         Mtx, GX_CLR_RGBA, GX_COLOR0A0, GX_DIRECT, GX_F32, GX_GM_1_0, GX_MAX_Z24, GX_NONE,
         GX_PASSCLR, GX_PF_RGB8_Z24, GX_PNMTX0, GX_POS_XYZ, GX_RGBA8, GX_TEVSTAGE0, GX_TEXCOORD0,
-        GX_TEXMAP0, GX_TEX_ST, GX_VA_CLR0, GX_VA_POS, GX_VA_TEX0, GX_VTXFMT0, GX_ZC_LINEAR,
+        GX_TEXMAP0, GX_TEX_ST, GX_VTXFMT0,
     },
     mem_cached_to_uncached,
     prelude::*,
@@ -20,15 +20,23 @@ use ogc_rs::{
 pub struct Display;
 impl Display {
     pub fn new(fifo_size: usize) -> Self {
-        let buf: *mut c_void = unsafe {
-            mem_cached_to_uncached!(alloc::alloc::alloc(
+        // SAFETY:
+        // + `fifo_size` is checked to be between zero and `isize::MAX` before being passed to
+        //   `alloc_zeroed()`.
+        // + the resulting pointer `base` is checked to be non-null when passed to
+        //   `slice::from_raw_parts_mut()`.
+        // + size of allocation corresponds to size given for slice.
+        // + pointer was just created, so it should be unique (no aliases to a `&mut`).
+        let buf = unsafe {
+            assert_ne!(0, fifo_size, "fifo_size must not be zero");
+            assert!(fifo_size as isize <= isize::MAX, "fifo_size must be isize::MAX bytes or less");
+            let base = mem_cached_to_uncached!(alloc::alloc::alloc_zeroed(
                 Layout::from_size_align(fifo_size, 32).unwrap()
-            )) as *mut c_void
+            )) as *mut u8;
+            assert!(! base.is_null(), "could not allocate memory for Display");
+            core::slice::from_raw_parts_mut(base, fifo_size)
         };
-        unsafe {
-            write_bytes(buf, 0, fifo_size);
-        }
-        Gx::init(buf, fifo_size as u32);
+        Gx::init(buf);
         Self
     }
 
@@ -41,7 +49,7 @@ impl Display {
     pub fn setup(&self, rc: &mut RenderConfig) {
         let mut ident: Mtx = [[0.0; 4]; 3];
         Gx::set_copy_clear(Color::new(0, 0, 0, 0), GX_MAX_Z24);
-        Gx::set_pixel_fmt(GX_PF_RGB8_Z24 as _, GX_ZC_LINEAR as _);
+        Gx::set_pixel_fmt(GX_PF_RGB8_Z24 as _, ZCompress::Linear);
         Gx::set_viewport(
             0.0,
             0.0,
@@ -73,21 +81,27 @@ impl Display {
         Gx::inv_vtx_cache();
         Gx::invalidate_tex_all();
 
-        Gx::set_vtx_desc(GX_VA_TEX0 as _, GX_NONE as _);
-        Gx::set_vtx_desc(GX_VA_POS as _, GX_DIRECT as _);
-        Gx::set_vtx_desc(GX_VA_CLR0 as _, GX_DIRECT as _);
+        Gx::set_vtx_desc(VtxAttr::Tex0, GX_NONE as _);
+        Gx::set_vtx_desc(VtxAttr::Pos, GX_DIRECT as _);
+        Gx::set_vtx_desc(VtxAttr::Color0, GX_DIRECT as _);
 
         Gx::set_vtx_attr_fmt(
-            GX_VTXFMT0 as _,
-            GX_VA_POS as _,
+            0,
+            VtxAttr::Pos,
             GX_POS_XYZ as _,
             GX_F32 as _,
             0,
         );
-        Gx::set_vtx_attr_fmt(GX_VTXFMT0 as _, GX_VA_TEX0, GX_TEX_ST as _, GX_F32 as _, 0);
         Gx::set_vtx_attr_fmt(
-            GX_VTXFMT0 as _,
-            GX_VA_CLR0,
+            0,
+            VtxAttr::Tex0,
+            GX_TEX_ST as _,
+            GX_F32 as _,
+            0,
+        );
+        Gx::set_vtx_attr_fmt(
+            0,
+            VtxAttr::Color0,
             GX_CLR_RGBA as _,
             GX_RGBA8 as _,
             0,
