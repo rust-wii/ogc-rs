@@ -66,15 +66,7 @@ fn main(_argc: isize, _argv: *const *const u8) -> isize {
             0.0,
         );
 
-        let raw = match wii_ctrl.get_raw() {
-            RawData::Wii(raw) => Some(raw),
-            _ => None,
-        };
-
-        let ir = Point::new(
-            raw.as_ref().unwrap().ir.x as i32,
-            raw.as_ref().unwrap().ir.y as i32,
-        );
+        let ir = Point::new(wii_ctrl.ir().0 as i32, wii_ctrl.ir().1 as i32);
 
         BACKGROUND
             .into_styled(PrimitiveStyle::with_fill(Rgb888::WHITE))
