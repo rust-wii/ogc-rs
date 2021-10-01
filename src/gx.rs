@@ -4,6 +4,7 @@
 
 use crate::ffi::{self, Mtx as Mtx34, Mtx44};
 use core::ffi::c_void;
+use core::marker::PhantomData;
 
 /// Function for the drawsync-token callback.
 pub type DrawSyncCallback = fn(u16);
@@ -357,9 +358,9 @@ pub enum AttnFn {
 /// Object describing a graphics FIFO.
 #[derive(Debug)]
 #[repr(transparent)]
-pub struct Fifo(ffi::GXFifoObj);
+pub struct Fifo<'buf>(ffi::GXFifoObj, PhantomData<&'buf mut [u8]>);
 
-impl Fifo {
+impl Fifo<'_> {
     /// Describes the area of main memory that will be used for this *fifo*.
     ///
     /// The Graphics FIFO is the mechanism used to communicate graphics commands from the CPU to
@@ -384,19 +385,19 @@ impl Fifo {
     /// so ordinarily it is not necessary to call [`Fifo::set_pointers()`] when initializing the
     /// FIFO. In addition, This function sets the FIFO's high water mark to (size-16kB) and the low
     /// water mark to (size/2), so it is also not necessary to call [`Fifo::set_limits()`].
-    pub fn new(buf: &mut [u8]) -> Self {
-        let mut fifo = core::mem::MaybeUninit::uninit();
+    pub fn new<'buf>(buf: &'buf mut [u8]) -> Fifo<'buf> {
+        let mut fifo = core::mem::MaybeUninit::zeroed();
         let size = buf.len();
         let base = buf.as_mut_ptr();
         // SAFETY:
         // + both `size` and `base` are checked to be aligned to a 32-byte boundary.
-        // + original documentation for `GX_InitFifoBase()` implies that the FIFO is initialized
-        //   completely, so we can assume that `fifo` here is initialized.
+        // + original libogc source suggests that available init functions don't completely
+        //   initialize the fifo, so it's been zeroed() just in case.
         assert_eq!(0, size % 32);
         assert_eq!(0, base.align_offset(32));
         unsafe {
             ffi::GX_InitFifoBase(fifo.as_mut_ptr(), base as *mut _, size as u32);
-            Fifo(fifo.assume_init())
+            Fifo(fifo.assume_init(), PhantomData)
         }
     }
 
@@ -753,30 +754,28 @@ pub enum WrapMode {
     Mirror = ffi::GX_MIRROR as _,
 }
 
-#[repr(C, align(32))]
-pub struct Img<T: ?Sized = [u8]>(T);
-
 #[repr(transparent)]
-pub struct Texture(ffi::GXTexObj);
+pub struct Texture<'img>(ffi::GXTexObj, PhantomData<&'img [u8]>);
 
-impl Texture {
+impl Texture<'_> {
     /// Used to initialize or change a texture object for non-color index textures.
-    pub fn new(
-        img: &mut Img,
+    pub fn new<'img>(
+        img: &'img [u8],
         width: u16,
         height: u16,
         format: u8,
         wrap_s: WrapMode,
         wrap_t: WrapMode,
         mipmap: bool,
-    ) -> Self {
-        let mut texture = core::mem::MaybeUninit::zeroed();
-        debug_assert!(width <= 1024, "max width for texture is 1024");
-        debug_assert!(height <= 1024, "max height for texture is 1024");
+    ) -> Texture<'img> {
+        let texture = core::mem::MaybeUninit::zeroed();
+        assert_eq!(0, img.as_ptr().align_offset(32));
+        assert!(width <= 1024, "max width for texture is 1024");
+        assert!(height <= 1024, "max height for texture is 1024");
         unsafe {
             ffi::GX_InitTexObj(
-                texture.as_mut_ptr(),
-                img.0.as_mut_ptr() as *mut _,
+                texture.as_ptr() as *mut _,
+                img.as_ptr() as *mut _,
                 width,
                 height,
                 format,
@@ -784,7 +783,38 @@ impl Texture {
                 wrap_t as u8,
                 mipmap as u8,
             );
-            Texture(texture.assume_init())
+            Texture(texture.assume_init(), PhantomData)
+        }
+    }
+
+    /// Used to initialize or change a texture object when the texture is color index format.
+    pub fn with_color_idx<'img>(
+        img: &'img [u8],
+        width: u16,
+        height: u16,
+        format: u8,
+        wrap_s: WrapMode,
+        wrap_t: WrapMode,
+        mipmap: bool,
+        tlut_name: u32,
+    ) -> Texture<'img> {
+        let texture = core::mem::MaybeUninit::zeroed();
+        assert_eq!(0, img.as_ptr().align_offset(32));
+        assert!(width <= 1024, "max width for texture is 1024");
+        assert!(height <= 1024, "max height for texture is 1024");
+        unsafe {
+            ffi::GX_InitTexObjCI(
+                texture.as_ptr() as *mut _,
+                img.as_ptr() as *mut _,
+                width,
+                height,
+                format,
+                wrap_s as u8,
+                wrap_t as u8,
+                mipmap as u8,
+                tlut_name,
+            );
+            Texture(texture.assume_init(), PhantomData)
         }
     }
 
@@ -1362,15 +1392,29 @@ impl Gx {
     }
 
     /// Loads the state describing a texture into one of eight hardware register sets.
-    /// See [GX_LoadTexObj](https://libogc.devkitpro.org/gx_8h.html#ad6388b0e4a0f2ffb5daa16a8851fa567) for more.
-    pub fn load_tex_obj(obj: &mut ffi::GXTexObj, mapid: u8) {
-        unsafe { ffi::GX_LoadTexObj(obj, mapid) }
+    ///
+    /// Before this happens, the texture object *obj* should be initialized using
+    /// [`Texture::new()`] or [`Texture::with_color_idx()`]. The *mapid* parameter refers to the
+    /// texture map slot that is set, and takes a value between 0 and 7 inclusive. Once loaded, the
+    /// texture can be used in any Texture Environment (TEV) stage using [`Gx::set_tev_order()`].
+    ///
+    /// # Note
+    /// This function will call the functions set by [`Gx::set_tex_region_callback()`] (and
+    /// [`Gx::set_tlut_region_callback()`] if the texture is color-index format) to obtain the
+    /// texture regions associated with this texture object. These callbacks are set to default
+    /// functions by [`Gx::init()`].
+    ///
+    /// # Safety
+    /// If the texture is a color-index texture, you **must** load the associated TLUT (using
+    /// [`Gx::load_tlut()`]) before calling this function.
+    pub fn load_texture(obj: &Texture, mapid: u8) {
+        unsafe { ffi::GX_LoadTexObj((&obj.0) as *const _ as *mut _, mapid) }
     }
 
     /// Sets the projection matrix.
     /// See [GX_LoadProjectionMtx](https://libogc.devkitpro.org/gx_8h.html#a241a1301f006ed04b7895c051959f64e) for more.
-    pub fn load_projection_mtx(mt: &mut Mtx44, p_type: u8) {
-        unsafe { ffi::GX_LoadProjectionMtx(mt as *mut _, p_type) }
+    pub fn load_projection_mtx(mt: &Mtx44, p_type: u8) {
+        unsafe { ffi::GX_LoadProjectionMtx(mt as *const _ as *mut _, p_type) }
     }
 
     /// Invalidates the vertex cache.

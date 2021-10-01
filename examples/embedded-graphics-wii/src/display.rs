@@ -11,8 +11,7 @@ use ogc_rs::{
     ffi::{
         GX_Color4u8, Mtx, GX_CLIP_ENABLE, GX_CLR_RGBA, GX_COLOR0A0, GX_DIRECT, GX_F32, GX_GM_1_0,
         GX_MAX_Z24, GX_NONE, GX_ORTHOGRAPHIC, GX_PASSCLR, GX_PF_RGB8_Z24, GX_PNMTX0, GX_POS_XYZ,
-        GX_RGBA8, GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_TEX_ST,
-        GX_VTXFMT0,
+        GX_RGBA8, GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_TEX_ST, GX_VTXFMT0,
     },
     mem_cached_to_uncached,
     prelude::*,
@@ -30,7 +29,7 @@ impl Display {
         // + pointer was just created, so it should be unique (no aliases to a `&mut`).
         let buf = unsafe {
             assert_ne!(0, fifo_size, "fifo_size must not be zero");
-            assert!(fifo_size <= isize::MAX, "fifo_size must be isize::MAX bytes or less")
+            assert!(fifo_size as isize <= isize::MAX, "fifo_size must be isize::MAX bytes or less");
             let base = mem_cached_to_uncached!(alloc::alloc::alloc_zeroed(
                 Layout::from_size_align(fifo_size, 32).unwrap()
             )) as *mut u8;
@@ -133,7 +132,7 @@ impl Display {
             0.0,
             1000.0,
         );
-        Gx::load_projection_mtx(&mut perspective, GX_ORTHOGRAPHIC as _);
+        Gx::load_projection_mtx(&perspective, GX_ORTHOGRAPHIC as _);
 
         Gx::set_viewport(
             0.0,
