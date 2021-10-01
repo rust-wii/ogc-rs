@@ -513,6 +513,51 @@ pub enum SpotFn {
 }
 
 impl Light {
+    /// Creates a white spotlight with the given normal at the view-space origin, and with angular
+    /// and distance attenuation turned off.
+    ///
+    /// If needed, these are the default angle (*a*) and distance (*k*) coefficients:
+    /// + a<sub>0</sub> = 1, a<sub>1</sub> = 0, a<sub>2</sub> = 0
+    /// + k<sub>0</sub> = 1, k<sub>1</sub> = 0, k<sub>2</sub> = 0
+    pub fn new_spotlight(nx: f32, ny: f32, nz: f32) -> Self {
+        let mut light = core::mem::MaybeUninit::zeroed();
+        // SAFETY: According to libogc source, light structs have 5 parts that must be initialized:
+        // + position: set to view-space origin with GX_InitLightPos()
+        // + color: set to white with GX_InitLightColor().
+        // + direction/half-angle vector: set to the given values with GX_InitLightDir().
+        // + attenuation: set to documented defaults with GX_InitLightAttn().
+        // + padding: taken care of with zeroed() above.
+        unsafe {
+            ffi::GX_InitLightPos(light.as_mut_ptr(), 0.0, 0.0, 0.0);
+            ffi::GX_InitLightColor(light.as_mut_ptr(), Color::new(255, 255, 255, 255).0);
+            ffi::GX_InitLightDir(light.as_mut_ptr(), nx, ny, nz);
+            ffi::GX_InitLightAttn(light.as_mut_ptr(), 1.0, 0.0, 0.0, 1.0, 0.0, 0.0);
+            Self(light.assume_init())
+        }
+    }
+
+    /// Creates a white specular light with the given normal, and with angular and distance
+    /// attenuation turned off.
+    ///
+    /// If needed, these are the default angle (*a*) and distance (*k*) coefficients:
+    /// + a<sub>0</sub> = 1, a<sub>1</sub> = 0, a<sub>2</sub> = 0
+    /// + k<sub>0</sub> = 1, k<sub>1</sub> = 0, k<sub>2</sub> = 0
+    pub fn new_specular(nx: f32, ny: f32, nz: f32) -> Self {
+        let mut light = core::mem::MaybeUninit::zeroed();
+        // SAFETY: According to libogc source, light structs have 5 parts that must be initialized:
+        // + position: set by GX_InitSpecularDir()
+        // + color: set to white by GX_InitLightColor().
+        // + direction/half-angle vector: set to the given values by GX_InitSpecularDir().
+        // + attenuation: set by GX_InitLightAttn() to values documented above.
+        // + padding: taken care of with zeroed() above.
+        unsafe {
+            ffi::GX_InitLightColor(light.as_mut_ptr(), Color::new(255, 255, 255, 255).0);
+            ffi::GX_InitSpecularDir(light.as_mut_ptr(), nx, ny, nz);
+            ffi::GX_InitLightAttn(light.as_mut_ptr(), 1.0, 0.0, 0.0, 1.0, 0.0, 0.0);
+            Self(light.assume_init())
+        }
+    }
+
     /// Sets coefficients used in the lighting attenuation calculation in a given light object.
     ///
     /// The parameters `a0`, `a1`, and `a2` are used for angular (spotlight) attenuation. The
@@ -528,19 +573,20 @@ impl Light {
     /// referencing this light is set to `AttnFn::Spot` (see [`Gx::set_channel_controls()`]).
     ///
     /// # Note
-    /// The convenience function [`LightObj::set_spot_attn()`] can be used to set the angle
+    /// The convenience function [`Light::spot_attn()`] can be used to set the angle
     /// attenuation coefficents based on several spot light types. The convenience function
-    /// [`LightObj::set_dist_attn()`] can be used to set the distance attenuation coefficients
+    /// [`Light::dist_attn()`] can be used to set the distance attenuation coefficients
     /// using one of several common attenuation functions.
     ///
-    /// The convenience macro [`LightObj::set_shininess()`] can be used to set the attenuation
+    /// The convenience macro [`Light::shininess()`] can be used to set the attenuation
     /// parameters for specular lights.
     ///
     /// When the channel attenuation function is set to `AttnFn::Spec`, the `aattn` and `d`
     /// parameter are equal to the dot product of the eye-space vertex normal and the half-angle
-    /// vector set by [`LightObj::set_specular_dir()`].
-    pub fn set_attn(&mut self, a0: f32, a1: f32, a2: f32, k0: f32, k1: f32, k2: f32) {
-        unsafe { ogc_sys::GX_InitLightAttn(&mut self.0, a0, a1, a2, k0, k1, k2) }
+    /// vector set by [`Light::specular_dir()`].
+    pub fn attn(&mut self, a0: f32, a1: f32, a2: f32, k0: f32, k1: f32, k2: f32) -> &mut Self {
+        unsafe { ogc_sys::GX_InitLightAttn(&mut self.0, a0, a1, a2, k0, k1, k2); }
+        self
     }
 
     /// Sets shininess of a per-vertex specular light.
@@ -548,13 +594,13 @@ impl Light {
     /// In reality, shininess is a property of the material being lit, not the light. However, in
     /// the Graphics Processor, the specular calculation is implemented by reusing the diffuse
     /// angle/distance attenuation function, so shininess is determined by the light attenuation
-    /// parameters (see [`LightObj::set_attn()`]). Note that the equation is attempting to
+    /// parameters (see [`Light::attn()`]). Note that the equation is attempting to
     /// approximate the function `(N*H)^shininess`. Since the attenuation equation is only a ratio
     /// of quadratics, a true exponential function is not possible. To enable the specular
     /// calculation, you must set the attenuation parameter of the lighting channel to
     /// `AttnFn::Spec` using [`Gx::set_channel_controls()`].
-    pub fn set_shininess(&mut self, shininess: f32) {
-        self.set_attn(0.0, 0.0, 1.0, shininess / 2.0, 0.0, 1.0 - shininess / 2.0);
+    pub fn shininess(&mut self, shininess: f32) -> &mut Self {
+        self.attn(0.0, 0.0, 1.0, shininess / 2.0, 0.0, 1.0 - shininess / 2.0)
     }
 
     /// Sets coefficients used in the lighting angle attenuation calculation in a given light
@@ -567,19 +613,20 @@ impl Light {
     ///
     /// where `cos(theta)` is the cosine of the angle between the light normal and the vector from
     /// the light position to the vertex, and `d` is the distance from the light position to the
-    /// vertex. The `k0-2` coefficients can be set using [`LightObj::set_attn_k()`]. You can set
-    /// both the `a0-2` and `k0-2` coefficients can be set using [`LightObj::set_attn()`]. The
+    /// vertex. The `k0-2` coefficients can be set using [`Light::attn_k()`]. You can set
+    /// both the `a0-2` and `k0-2` coefficients can be set using [`Light::attn()`]. The
     /// light color will be multiplied by the atten factor when the attenuation function for the
     /// color channel referencing this light is set to `AttnFn::Spot` (see
     /// [`Gx::set_channel_controls()`]).
     ///
     /// # Note
-    /// The convenience function [`LightObj::set_spot_attn()`] can be used to set the angle
+    /// The convenience function [`Light::spot_attn()`] can be used to set the angle
     /// attenuation coefficents based on several spot light types. The convenience function
-    /// [`LightObj::set_dist_attn()`] can be used to set the distance attenuation coefficients
+    /// [`Light::dist_attn()`] can be used to set the distance attenuation coefficients
     /// using one of several common attenuation functions.
-    pub fn set_attn_a(&mut self, a0: f32, a1: f32, a2: f32) {
-        unsafe { ffi::GX_InitLightAttnA(&mut self.0, a0, a1, a2) }
+    pub fn attn_a(&mut self, a0: f32, a1: f32, a2: f32) -> &mut Self {
+        unsafe { ffi::GX_InitLightAttnA(&mut self.0, a0, a1, a2); }
+        self
     }
 
     /// Sets coefficients used in the lighting distance attenuation calculation in a given light
@@ -592,26 +639,28 @@ impl Light {
     ///
     /// where `cos(theta)` is the cosine of the angle between the light normal and the vector from
     /// the light position to the vertex, and `d` is the distance from the light position to the
-    /// vertex. The `a0-2` coefficients can be set using [`LightObj::set_attn_a()`]. You can set
-    /// both the `a0-2` and `k0-2` coefficients can be set using [`LightObj::set_attn()`]. The
+    /// vertex. The `a0-2` coefficients can be set using [`Light::attn_a()`]. You can set
+    /// both the `a0-2` and `k0-2` coefficients can be set using [`Light::attn()`]. The
     /// light color will be multiplied by the atten factor when the attenuation function for the
     /// color channel referencing this light is set to `AttnFn::Spot` (see
     /// [`Gx::set_channel_controls()`]).
     ///
     /// # Note
-    /// The convenience function [`LightObj::set_spot_attn()`] can be used to set the angle
-    /// attenuation coefficents based on several spot light types. The convenience function
-    /// [`LightObj::set_dist_attn()`] can be used to set the distance attenuation coefficients
-    /// using one of several common attenuation functions.
-    pub fn set_attn_k(&mut self, k0: f32, k1: f32, k2: f32) {
-        unsafe { ffi::GX_InitLightAttnK(&mut self.0, k0, k1, k2) }
+    /// The convenience function [`Light::spot_attn()`] can be used to set the angle attenuation
+    /// coefficents based on several spot light types. The convenience function
+    /// [`Light::dist_attn()`] can be used to set the distance attenuation coefficients using one
+    /// of several common attenuation functions.
+    pub fn attn_k(&mut self, k0: f32, k1: f32, k2: f32) -> &mut Self {
+        unsafe { ffi::GX_InitLightAttnK(&mut self.0, k0, k1, k2); }
+        self
     }
-    /*
+
     /// Sets the color of the light in the light object.
-    pub fn set_color(&mut self, color: GxColor) {
-        unsafe { ffi::GX_InitLightColor(&mut self.0, color) }
+    pub fn color(&mut self, color: Color) -> &mut Self {
+        unsafe { ffi::GX_InitLightColor(&mut self.0, color.0); }
+        self
     }
-    */
+
     /// Sets the direction of a light in the light object.
     ///
     /// This direction is used when the light object is used as spotlight or a specular light (see
@@ -623,15 +672,16 @@ impl Light {
     ///
     /// This function does not set the direction of parallel directional diffuse lights. If you
     /// want parallel diffuse lights, you may put the light position very far from every objects to
-    /// be lit. (See [`LightObj::set_pos()`] and [`Gx::set_channel_controls()`])
-    pub fn set_direction(&mut self, nx: f32, ny: f32, nz: f32) {
-        unsafe { ffi::GX_InitLightDir(&mut self.0, nx, ny, nz) }
+    /// be lit. (See [`Light::pos()`] and [`Gx::set_channel_controls()`])
+    pub fn dir(&mut self, nx: f32, ny: f32, nz: f32) -> &mut Self {
+        unsafe { ffi::GX_InitLightDir(&mut self.0, nx, ny, nz); }
+        self
     }
 
     /// Sets coefficients for distance attenuation in a light object.
     ///
     /// This function uses three easy-to-control parameters instead of `k0`, `k1`, and `k2` in
-    /// [`LightObj::set_attn()`].
+    /// [`Light::attn()`].
     ///
     /// In this function, you can specify the brightness on an assumed reference point. The
     /// parameter `ref_dist` is distance between the light and the reference point. The parameter
@@ -642,19 +692,19 @@ impl Light {
     /// distance attenuation feature off.
     ///
     /// # Note
-    /// If you want more flexible control, it is better to use [`LightObj::set_attn()`] and
-    /// calculate appropriate coefficients.
+    /// If you want more flexible control, it is better to use [`Light::attn()`] and calculate
+    /// appropriate coefficients.
     ///
     /// This function sets parameters only for distance attenuation. Parameters for angular
-    /// attenuation should be set by using [`LightObj::set_spot_attn()`] or
-    /// [`LightObj::set_attn_a()`].
-    pub fn set_dist_attn(&mut self, ref_dist: f32, ref_brite: f32, dist_fn: DistFn) {
-        unsafe { ffi::GX_InitLightDistAttn(&mut self.0, ref_dist, ref_brite, dist_fn as u8) }
+    /// attenuation should be set by using [`Light::spot_attn()`] or [`Light::attn_a()`].
+    pub fn dist_attn(&mut self, ref_dist: f32, ref_brite: f32, dist_fn: DistFn) -> &mut Self {
+        unsafe { ffi::GX_InitLightDistAttn(&mut self.0, ref_dist, ref_brite, dist_fn as u8); }
+        self
     }
 
     /// Sets the position of the light in the light object.
     ///
-    /// The GameCube graphics hardware supports local diffuse lights. The position of the light\
+    /// The GameCube graphics hardware supports local diffuse lights. The position of the light
     /// should be in the same space as a transformed vertex position (i.e., view space).
     ///
     /// # Note
@@ -662,20 +712,20 @@ impl Light {
     /// to get "almost parallel" lights by setting sufficient large values to position parameters
     /// (x, y and z) which makes the light position very far away from objects to be lit and all
     /// rays considered almost parallel.
-    pub fn set_pos(&mut self, x: f32, y: f32, z: f32) {
-        unsafe { ffi::GX_InitLightPos(&mut self.0, x, y, z) }
+    pub fn pos(&mut self, x: f32, y: f32, z: f32) -> &mut Self {
+        unsafe { ffi::GX_InitLightPos(&mut self.0, x, y, z); }
+        self
     }
 
     /// Sets coefficients for angular (spotlight) attenuation in light object.
     ///
     /// This function uses two easy-to-control parameters instead of `a0`, `a1`, and `a2` on
-    /// [`LightObj::set_attn()`].
+    /// [`Light::attn()`].
     ///
     /// The parameter `cut_off` specifies cutoff angle of the spotlight by degree. The spotlight
     /// works while the angle between the ray for a vertex and the light direction given by
-    /// [`LightObj::set_direction()`] is smaller than this cutoff angle. The value for `cut_off`
-    /// should be within `0 < cut_off <= 90.0`, otherwise given light object doesn't become a
-    /// spotlight.
+    /// [`Light::dir()`] is smaller than this cutoff angle. The value for `cut_off` should be
+    /// within `0 < cut_off <= 90.0`, otherwise given light object doesn't become a spotlight.
     ///
     /// The parameter `spotfn` defines type of the illumination distribution within cutoff angle.
     /// The value `SpotFn::Off` turns spotlight feature off even if color channel setting is using
@@ -683,14 +733,13 @@ impl Light {
     ///
     /// # Note
     /// This function can generate only some kind of simple spotlights. If you want more flexible
-    /// control, it is better to use [`LightObj::set_attn()`] and calculate appropriate
-    /// coefficients.
+    /// control, it is better to use [`Light::attn()`] and calculate appropriate coefficients.
     ///
     /// This function sets parameters only for angular attenuation. Parameters for distance
-    /// attenuation should be set by using [`LightObj::set_dist_attn()`] or
-    /// [`LightObj::set_attn_k()`].
-    pub fn set_spot_attn(&mut self, cut_off: f32, spotfn: SpotFn) {
-        unsafe { ffi::GX_InitLightSpot(&mut self.0, cut_off, spotfn as u8) }
+    /// attenuation should be set by using [`Light::dist_attn()`] or [`Light::attn_k()`].
+    pub fn spot_attn(&mut self, cut_off: f32, spotfn: SpotFn) -> &mut Self {
+        unsafe { ffi::GX_InitLightSpot(&mut self.0, cut_off, spotfn as u8); }
+        self
     }
 
     /// Sets the direction of a specular light in the light object.
@@ -702,28 +751,29 @@ impl Light {
     /// # Note
     /// This function should be used if and only if the light object is used as specular light. One
     /// specifies a specular light in [`Gx::set_channel_controls()`] by setting the [attenuation
-    /// function](`AttnFn`) to `AttnFn::Spec`. Furthermore, one must not use
-    /// [`LightObj::set_direction()`] or [`LightObj::set_pos()`] to set up a light object which
-    /// will be used as a specular light since these functions will destroy the information set by
-    /// [`LightObj::set_specular_dir()`]. In contrast to diffuse lights (including spotlights) that
-    /// are considered local lights, a specular light is a parallel light (i.e. the specular light
-    /// is infinitely far away such that all the rays of the light are parallel), and thus one can
-    /// only specify directional information.
-    pub fn set_specular_dir(&mut self, nx: f32, ny: f32, nz: f32) {
-        unsafe { ffi::GX_InitSpecularDir(&mut self.0, nx, ny, nz) }
+    /// function](`AttnFn`) to `AttnFn::Spec`. Furthermore, one must not use [`Light::dir()`] or
+    /// [`Light::pos()`] to set up a light object which will be used as a specular light since
+    /// these functions will destroy the information set by [`Light::specular_dir()`]. In contrast
+    /// to diffuse lights (including spotlights) that are considered local lights, a specular light
+    /// is a parallel light (i.e. the specular light is infinitely far away such that all the rays
+    /// of the light are parallel), and thus one can only specify directional information.
+    pub fn specular_dir(&mut self, nx: f32, ny: f32, nz: f32) -> &mut Self {
+        unsafe { ffi::GX_InitSpecularDir(&mut self.0, nx, ny, nz); }
+        self
     }
 
     /// Sets the direction and half-angle vector of a specular light in the light object.
     ///
     /// These vectors are used when the light object is used only as specular light. In contrast to
-    /// [`LightObj::set_specular_dir()`], which caclulates half-angle vector automatically by
+    /// [`Light::specular_dir()`], which caclulates half-angle vector automatically by
     /// assuming the view vector as (0, 0, 1), this function allows users to specify half-angle
     /// vector directly as input arguments. It is useful to do detailed control for orientation of
     /// highlights.
     ///
-    /// See also [`LightObj::set_specular_dir()`].
-    pub fn set_specular_dir_ha(&mut self, nx: f32, ny: f32, nz: f32, hx: f32, hy: f32, hz: f32) {
-        unsafe { ffi::GX_InitSpecularDirHA(&mut self.0, nx, ny, nz, hx, hy, hz) }
+    /// See also [`Light::specular_dir()`].
+    pub fn specular_dir_ha(&mut self, nx: f32, ny: f32, nz: f32, hx: f32, hy: f32, hz: f32) -> &mut Self {
+        unsafe { ffi::GX_InitSpecularDirHA(&mut self.0, nx, ny, nz, hx, hy, hz); }
+        self
     }
 }
 
