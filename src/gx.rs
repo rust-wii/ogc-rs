@@ -1585,6 +1585,16 @@ impl Gx {
         unsafe { ffi::GX_SetClipMode(mode) }
     }
 
+    /// Wrapper around set_clip_mode, since its a simple enable or disbale.
+    pub fn enable_clip() {
+        Gx::set_clip_mode(ffi::GX_CLIP_ENABLE as u8);
+    }
+
+    ///Wrapper around set_clip_mode, since it a simple disable or enable.
+    pub fn disable_clip() {
+        Gx::set_clip_mode(ffi::GX_CLIP_DISABLE as u8);
+    }
+
     /// Allows the CPU to write color directly to the Embedded Frame Buffer (EFB) at position x, y.
     /// See [GX_PokeARGB](https://libogc.devkitpro.org/gx_8h.html#a5038d2f65e7959d64c68dcb1855353d8) for more.
     pub fn poke_argb(x: u16, y: u16, color: Color) {

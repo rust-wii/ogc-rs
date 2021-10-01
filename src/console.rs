@@ -2,7 +2,7 @@
 //!
 //! This module implements a safe wrapper around the console functions.
 
-use crate::{video::Video, OgcError, Result};
+use crate::{ffi, video::Video, OgcError, Result};
 use alloc::string::String;
 use core::ptr;
 
@@ -16,7 +16,7 @@ impl Console {
     /// Initializes the console subsystem with video.
     pub fn init(video: &Video) -> Self {
         unsafe {
-            ogc_sys::CON_Init(
+            ffi::CON_Init(
                 video.framebuffer,
                 20,
                 20,
@@ -32,8 +32,8 @@ impl Console {
     /// Initialize stdout console.
     pub fn init_stdout(xorigin: i32, yorigin: i32, width: i32, height: i32) -> Result<()> {
         let init = unsafe {
-            ogc_sys::CON_InitEx(
-                ogc_sys::VIDEO_GetPreferredMode(ptr::null_mut()),
+            ffi::CON_InitEx(
+                ffi::VIDEO_GetPreferredMode(ptr::null_mut()),
                 xorigin,
                 yorigin,
                 width,
@@ -53,7 +53,7 @@ impl Console {
     /// Enable or disable the USB gecko console.
     pub fn enable_gecko(channel: i32, safe: i32) {
         unsafe {
-            ogc_sys::CON_EnableGecko(channel, safe);
+            ffi::CON_EnableGecko(channel, safe);
         }
     }
 
@@ -62,7 +62,7 @@ impl Console {
         let coords: (i32, i32) = (0, 0);
 
         unsafe {
-            ogc_sys::CON_GetMetrics(coords.0 as *mut i32, coords.1 as *mut i32);
+            ffi::CON_GetMetrics(coords.0 as *mut i32, coords.1 as *mut i32);
         }
 
         coords
@@ -73,7 +73,7 @@ impl Console {
         let coords: (i32, i32) = (0, 0);
 
         unsafe {
-            ogc_sys::CON_GetPosition(coords.0 as *mut i32, coords.1 as *mut i32);
+            ffi::CON_GetPosition(coords.0 as *mut i32, coords.1 as *mut i32);
         }
 
         coords
