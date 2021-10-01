@@ -1072,6 +1072,13 @@ pub enum VtxAttr {
 #[repr(transparent)]
 pub struct VtxDesc(ffi::GXVtxDesc);
 
+#[derive(Copy, Clone, Debug)]
+#[repr(u8)]
+pub enum ProjectionType {
+    Perspective = ffi::GX_PERSPECTIVE as _,
+    Orthographic = ffi::GX_ORTHOGRAPHIC as _,
+}
+
 /// Represents the GX service.
 pub struct Gx;
 
@@ -1501,8 +1508,8 @@ impl Gx {
 
     /// Sets the projection matrix.
     /// See [GX_LoadProjectionMtx](https://libogc.devkitpro.org/gx_8h.html#a241a1301f006ed04b7895c051959f64e) for more.
-    pub fn load_projection_mtx(mt: &Mtx44, p_type: u8) {
-        unsafe { ffi::GX_LoadProjectionMtx(mt as *const _ as *mut _, p_type) }
+    pub fn load_projection_mtx(mt: &Mtx44, p_type: ProjectionType) {
+        unsafe { ffi::GX_LoadProjectionMtx(mt as *const _ as *mut _, p_type as u8) }
     }
 
     /// Invalidates the vertex cache.
