@@ -1,4 +1,4 @@
-use core::{alloc::Layout, convert::TryInto, ffi::c_void};
+use core::{convert::TryInto, ffi::c_void};
 
 use embedded_graphics::{
     draw_target::DrawTarget,
@@ -13,30 +13,13 @@ use ogc_rs::{
         GX_PASSCLR, GX_PF_RGB8_Z24, GX_PNMTX0, GX_POS_XYZ, GX_RGBA8, GX_TEVSTAGE0, GX_TEXCOORD0,
         GX_TEXMAP0, GX_TEX_ST, GX_VTXFMT0,
     },
-    mem_cached_to_uncached,
     prelude::*,
 };
 
 pub struct Display;
 impl Display {
     pub fn new(fifo_size: usize) -> Self {
-        // SAFETY:
-        // + `fifo_size` is checked to be between zero and `isize::MAX` before being passed to
-        //   `alloc_zeroed()`.
-        // + the resulting pointer `base` is checked to be non-null when passed to
-        //   `slice::from_raw_parts_mut()`.
-        // + size of allocation corresponds to size given for slice.
-        // + pointer was just created, so it should be unique (no aliases to a `&mut`).
-        let buf = unsafe {
-            assert_ne!(0, fifo_size, "fifo_size must not be zero");
-            assert!(fifo_size as isize <= isize::MAX, "fifo_size must be isize::MAX bytes or less");
-            let base = mem_cached_to_uncached!(alloc::alloc::alloc_zeroed(
-                Layout::from_size_align(fifo_size, 32).unwrap()
-            )) as *mut u8;
-            assert!(! base.is_null(), "could not allocate memory for Display");
-            core::slice::from_raw_parts_mut(base, fifo_size)
-        };
-        Gx::init(buf);
+        Gx::init(fifo_size);
         Self
     }
 
@@ -48,7 +31,7 @@ impl Display {
 
     pub fn setup(&self, rc: &mut RenderConfig) {
         let mut ident: Mtx = [[0.0; 4]; 3];
-        Gx::set_copy_clear(Color::new(0, 0, 0, 0), GX_MAX_Z24);
+        Gx::set_copy_clear(Color::with_alpha(0, 0, 0, 0), GX_MAX_Z24);
         Gx::set_pixel_fmt(GX_PF_RGB8_Z24 as _, ZCompress::Linear);
         Gx::set_viewport(
             0.0,
@@ -132,7 +115,7 @@ impl Display {
             0.0,
             1000.0,
         );
-        Gx::load_projection_mtx(&mut perspective, ProjectionType::Orthographic);
+        Gx::load_projection_mtx(&perspective, ProjectionType::Orthographic);
 
         Gx::set_viewport(
             0.0,
@@ -178,7 +161,7 @@ impl DrawTarget for Display {
                 Gx::poke_argb(
                     poke_x as u16,
                     poke_y as u16,
-                    Color::new(color.r(), color.g(), color.b(), 255),
+                    Color::new(color.r(), color.g(), color.b()),
                 )
             }
         }

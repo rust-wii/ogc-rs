@@ -6,9 +6,6 @@ use crate::ffi::{self, Mtx as Mtx34, Mtx44};
 use core::ffi::c_void;
 use core::marker::PhantomData;
 
-/// Function for the drawsync-token callback.
-pub type DrawSyncCallback = fn(u16);
-
 /// Helper function for `Gx::init`
 pub fn gp_fifo(fifo_size: usize) -> *mut c_void {
     unsafe {
@@ -360,48 +357,60 @@ pub enum AttnFn {
 }
 
 /// Object describing a graphics FIFO.
+///
+/// The Graphics FIFO is the mechanism used to communicate graphics commands from the CPU to
+/// the Graphics Processor (GP). The FIFO base pointer is 32-byte aligned and the size is a
+/// multiple of 32B.
+///
+/// The CPU's write-gather pipe is used to write data to the FIFO. Therefore, the FIFO memory
+/// area must be forced out of the CPU cache prior to being used. `DCInvalidateRange()` may be
+/// used for this purpose. Due to the mechanics of flushing the write-gather pipe, the FIFO
+/// memory area should be at least 32 bytes larger than the maximum expected amount of data
+/// stored. Up to 32 NOPs may be written at the end during flushing.
 #[derive(Debug)]
 #[repr(transparent)]
-pub struct Fifo<'buf>(ffi::GXFifoObj, PhantomData<&'buf mut [u8]>);
+pub struct Fifo(ffi::GXFifoObj);
 
-impl Fifo<'_> {
-    /// Describes the area of main memory that will be used for this *fifo*.
-    ///
-    /// The Graphics FIFO is the mechanism used to communicate graphics commands from the CPU to
-    /// the Graphics Processor (GP). The FIFO base pointer should be 32-byte aligned. The size
-    /// should also be a multiple of 32B.
-    ///
-    /// The CPU's write-gather pipe is used to write data to the FIFO. Therefore, the FIFO memory
-    /// area must be forced out of the CPU cache prior to being used. `DCInvalidateRange()` may be
-    /// used for this purpose. Due to the mechanics of flushing the write-gather pipe, the FIFO
-    /// memory area should be at least 32 bytes larger than the maximum expected amount of data
-    /// stored. Up to 32 NOPs may be written at the end during flushing.
-    ///
-    /// # Note
-    /// [`Gx::init()`] also takes the argument *buf* and initializes a FIFO using this value and
-    /// attaches the FIFO to both the CPU and GP. The application must allocate the memory for the
-    /// graphics FIFO before calling [`Gx::init()`]. Therefore, it is not necessary to call this
-    /// function unless you want to resize the default FIFO sometime after [`Gx::init()`] has been
-    /// called or you are creating a new FIFO. The minimum size is 64kB defined by
-    /// `GX_FIFO_MINSIZE`.
-    ///
-    /// This function will also set the read and write pointers for the FIFO to the base address,
-    /// so ordinarily it is not necessary to call [`Fifo::set_pointers()`] when initializing the
-    /// FIFO. In addition, This function sets the FIFO's high water mark to (size-16kB) and the low
-    /// water mark to (size/2), so it is also not necessary to call [`Fifo::set_limits()`].
-    pub fn new<'buf>(buf: &'buf mut [u8]) -> Fifo<'buf> {
+use core::alloc::Layout;
+impl Fifo {
+    /// The minimum allowed size for a FIFO.
+    pub const MIN_SIZE: usize = ffi::GX_FIFO_MINSIZE as usize;
+
+    /// Constructs a new `Fifo` with the minimum size.
+    pub fn new() -> Self {
+        Self::with_size(Self::MIN_SIZE)
+    }
+
+    /// Constructs a new `Fifo` with the given size. If the given size is less than the minimum,
+    /// the minimum size is allocated.
+    pub fn with_size(mut size: usize) -> Self {
         let mut fifo = core::mem::MaybeUninit::zeroed();
-        let size = buf.len();
-        let base = buf.as_mut_ptr();
+
+        if size < Fifo::MIN_SIZE { size = Fifo::MIN_SIZE; }
+
         // SAFETY:
-        // + both `size` and `base` are checked to be aligned to a 32-byte boundary.
+        // + `size` is checked to be less than `isize::MAX` before being passed to
+        //   `alloc_zeroed()`.
+        // + `base` is checked to be non-null, otherwise libogc returns early without initializing.
+        assert!(size as isize <= isize::MAX, "size must be isize::MAX bytes or less");
+        let base = unsafe {
+            crate::mem_cached_to_uncached!(alloc::alloc::alloc_zeroed(
+                Layout::from_size_align(size, 32).unwrap()
+            )) as *mut u8
+        };
+        assert!(! base.is_null(), "could not allocate memory for Fifo");
+
+        // SAFETY:
+        // + `fifo` is not null.
+        // + `base` is aligned to 32 bytes.
+        // + `size` is greater or equal to the minimum size.
+        // + `size` is a multiple of 32 bytes.
         // + original libogc source suggests that available init functions don't completely
-        //   initialize the fifo, so it's been zeroed() just in case.
+        //   initialize the fifo, so it's been zeroed() above just in case.
         assert_eq!(0, size % 32);
-        assert_eq!(0, base.align_offset(32));
         unsafe {
             ffi::GX_InitFifoBase(fifo.as_mut_ptr(), base as *mut _, size as u32);
-            Fifo(fifo.assume_init(), PhantomData)
+            Fifo(fifo.assume_init())
         }
     }
 
@@ -432,7 +441,7 @@ impl Fifo<'_> {
     }
 
     /// Get the base address for a given *fifo*.
-    pub fn get_base(&self) -> *mut u8 {
+    pub fn base(&self) -> *mut u8 {
         unsafe { ffi::GX_GetFifoBase(self as *const _ as *mut _) as *mut _ }
     }
 
@@ -441,7 +450,7 @@ impl Fifo<'_> {
     /// # Note
     /// The count is incorrect if an overflow has occurred (i.e. you have written more data than
     /// the size of the fifo), as the hardware cannot detect an overflow in general.
-    pub fn count(&self) -> usize {
+    pub fn cache_lines(&self) -> usize {
         // TODO: remove conversions when upstream changes pass.
         unsafe { ffi::GX_GetFifoCount(self as *const _ as *mut _) as usize }
     }
@@ -470,7 +479,7 @@ impl Fifo<'_> {
     ///
     /// # Note
     /// See `Gx::enable_breakpoint()` for an example of why you would do this.
-    pub fn get_pointers(&self) -> (*const u8, *mut u8) {
+    pub fn pointers(&self) -> (*const u8, *mut u8) {
         let mut rd_ptr = core::ptr::null_mut();
         let mut wt_ptr = core::ptr::null_mut();
         unsafe {
@@ -1084,16 +1093,47 @@ pub struct Gx;
 
 impl Gx {
     /// Initializes the graphics processor to its initial state.
-    /// See [GX_Init](https://libogc.devkitpro.org/gx_8h.html#aea24cfd5f8f2b168dc4f60d4883a6a8e) for more.
-    pub fn init(buf: &mut [u8]) -> &mut Fifo {
-        let size = buf.len();
-        let base = buf.as_mut_ptr();
+    ///
+    /// This function sets the default state of the graphics processor and should be called before
+    /// any other GX functions. This function sets up an immediate-mode method of communicating
+    /// graphics commands from the CPU to the Graphics Processor (GP). This function will
+    /// initialize a FIFO and attach it to both the CPU and GP. The CPU will write commands to the
+    /// FIFO and the GP will read the commands. This function returns a pointer to the initialized
+    /// FIFO. The application must allocate the memory for the FIFO. The parameter `base` is a
+    /// pointer to the allocated main memory and must be aligned to 32B. `size` is the size of the
+    /// FIFO in bytes and must be a multiple of 32B. Refer to additional notes in [`Fifo`]
+    /// concerning the FIFO memory.
+    ///
+    /// # Note
+    /// It is also possible to override the default immediate-mode style and instead buffer the
+    /// graphics for frame n+1 while the GP is reading the graphics for frame n. See
+    /// [`Gx::set_cpu_fifo()`] and [`Gx::set_gp_fifo()`] for further information.
+    ///
+    /// This function also designates the calling thread as the default GX thread; i.e., it assumes
+    /// the calling thread is the one responsible for generating graphics data. This thread will be
+    /// the thread to be suspended when the FIFO gets too full. The current GX thread can be
+    /// changed by calling [`Gx::set_current_gx_thread()`].
+    pub fn init(mut size: usize) -> &'static mut Fifo {
+        if size < Fifo::MIN_SIZE { size = Fifo::MIN_SIZE; }
+
         // SAFETY:
-        // + both `size` and `base` are checked to be aligned to a 32-byte boundary.
+        // + `size` is less than or equal to `isize::MAX` before being passed to `alloc_zeroed()`.
+        assert!(size as isize <= isize::MAX, "size must be isize::MAX bytes or less");
+        let base = unsafe {
+            crate::mem_cached_to_uncached!(alloc::alloc::alloc_zeroed(
+                Layout::from_size_align(size, 32).unwrap()
+            )) as *mut u8
+        };
+
+        // SAFETY:
+        // + `base` is non-null, else libogc won't initialize `fifo`.
+        // + `base` is aligned to 32 bytes (above).
+        // + `size` is greater than or equal to the minimum size.
+        // + `size` is a multiple of 32-bytes.
         // + `Fifo` is transparent to `ffi::GXFifoObj`, so casting a pointer from the first to the
         //   second is safe, and reborrowing a pointer into a reference is safe.
+        assert!(! base.is_null(), "could not allocate memory for Fifo");
         assert_eq!(0, size % 32);
-        assert_eq!(0, base.align_offset(32));
         unsafe {
             let fifo = ffi::GX_Init(base as *mut _, size as u32);
             &mut *(fifo as *mut Fifo)
