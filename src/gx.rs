@@ -350,9 +350,9 @@ pub enum AttnFn {
 
 /// Object describing a graphics FIFO.
 ///
-/// The Graphics FIFO is the mechanism used to communicate graphics commands from the CPU to
-/// the Graphics Processor (GP). The FIFO base pointer is 32-byte aligned and the size is a
-/// multiple of 32B.
+/// The Graphics FIFO is the mechanism used to communicate graphics commands from the CPU to the
+/// Graphics Processor (GP). The FIFO base pointer is 32-byte aligned and the size must be a
+/// multiple of 32 bytes.
 ///
 /// The CPU's write-gather pipe is used to write data to the FIFO. Therefore, the FIFO memory
 /// area must be forced out of the CPU cache prior to being used. `DCInvalidateRange()` may be
@@ -363,7 +363,6 @@ pub enum AttnFn {
 #[repr(transparent)]
 pub struct Fifo(ffi::GXFifoObj);
 
-use core::alloc::Layout;
 impl Fifo {
     /// The minimum allowed size for a FIFO.
     pub const MIN_SIZE: usize = ffi::GX_FIFO_MINSIZE as usize;
@@ -373,8 +372,9 @@ impl Fifo {
         Self::with_size(Self::MIN_SIZE)
     }
 
-    /// Constructs a new `Fifo` with the given size. If the given size is less than the minimum,
-    /// the minimum size is allocated.
+    /// Constructs a new `Fifo` with the given size.
+    ///
+    /// If the given size is less than the minimum, the minimum size is used.
     pub fn with_size(mut size: usize) -> Self {
         let mut fifo = core::mem::MaybeUninit::zeroed();
 
@@ -387,7 +387,7 @@ impl Fifo {
         assert!(size as isize <= isize::MAX, "size must be isize::MAX bytes or less");
         let base = unsafe {
             crate::mem_cached_to_uncached!(alloc::alloc::alloc_zeroed(
-                Layout::from_size_align(size, 32).unwrap()
+                core::alloc::Layout::from_size_align(size, 32).unwrap()
             )) as *mut u8
         };
         assert!(! base.is_null(), "could not allocate memory for Fifo");
@@ -1130,7 +1130,7 @@ impl Gx {
         assert!(size as isize <= isize::MAX, "size must be isize::MAX bytes or less");
         let base = unsafe {
             crate::mem_cached_to_uncached!(alloc::alloc::alloc_zeroed(
-                Layout::from_size_align(size, 32).unwrap()
+                core::alloc::Layout::from_size_align(size, 32).unwrap()
             )) as *mut u8
         };
 
@@ -1253,13 +1253,18 @@ impl Gx {
         unsafe { ffi::GX_EnableBreakPt(break_pt as _) }
     }
 
-    /// Registers *cb* as a function to be invoked when a break point is encountered. `None` means
-    /// no function will run.
+    /// Registers `cb` as a function to be invoked when a break point is encountered.
+    ///
+    /// Passing `None` means no function will run. The return value is a pointer to the previously
+    /// registered callback, if any.
     ///
     /// # Safety
     /// The callback will run with interrupts disabled, so it should terminate as quickly as
     /// possible.
-    pub unsafe fn set_breakpt_callback(cb: Option<unsafe extern "C" fn()>) {
+    pub unsafe fn set_breakpt_callback(
+        cb: Option<unsafe extern "C" fn()>
+    ) -> Option<unsafe extern "C" fn()>
+    {
         ffi::GX_SetBreakPtCallback(cb)
     }
 
