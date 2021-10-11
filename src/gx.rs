@@ -2,18 +2,10 @@
 //!
 //! This module implements a safe wrapper around the graphics functions found in ``gx.h``.
 
-use crate::ffi::{self, Mtx as Mtx34, Mtx44};
 use core::ffi::c_void;
 use core::marker::PhantomData;
 
-/// Helper function for `Gx::init`
-pub fn gp_fifo(fifo_size: usize) -> *mut c_void {
-    unsafe {
-        let gp_fifo = crate::mem_cached_to_uncached!(libc::memalign(32, fifo_size));
-        libc::memset(gp_fifo, 0, fifo_size);
-        gp_fifo
-    }
-}
+use crate::ffi::{self, Mtx as Mtx34, Mtx44};
 
 #[derive(Copy, Clone, Debug)]
 #[repr(transparent)]
@@ -531,6 +523,7 @@ impl Light {
     /// and distance attenuation turned off.
     ///
     /// If needed, these are the default angle (*a*) and distance (*k*) coefficients:
+    ///
     /// + a<sub>0</sub> = 1, a<sub>1</sub> = 0, a<sub>2</sub> = 0
     /// + k<sub>0</sub> = 1, k<sub>1</sub> = 0, k<sub>2</sub> = 0
     pub fn new_spotlight(nx: f32, ny: f32, nz: f32) -> Self {
@@ -554,6 +547,7 @@ impl Light {
     /// attenuation turned off.
     ///
     /// If needed, these are the default angle (*a*) and distance (*k*) coefficients:
+    ///
     /// + a<sub>0</sub> = 1, a<sub>1</sub> = 0, a<sub>2</sub> = 0
     /// + k<sub>0</sub> = 1, k<sub>1</sub> = 0, k<sub>2</sub> = 0
     pub fn new_specular(nx: f32, ny: f32, nz: f32) -> Self {
@@ -936,13 +930,13 @@ impl Texture<'_> {
     /// Sets texture Level Of Detail (LOD) controls explicitly for a texture object.
     ///
     /// It is the application's responsibility to provide memory for a texture object. When
-    /// initializing a texture object using [`GX_InitTexObj()`] or [`GX_InitTexObjCI()`], this
-    /// information is set to default values based on the mipmap flag. This function allows the
-    /// programmer to override those defaults.
+    /// initializing a texture object using [`Texture::new()`] or [`Texture::with_color_idx()`],
+    /// this information is set to default values based on the mipmap flag. This function allows
+    /// the programmer to override those defaults.
     ///
     /// # Note
-    /// This function should be called after [`GX_InitTexObj()`] or [`GX_InitTexObjCI()`] for a
-    /// particular texture object.
+    /// This function should be called after [`Texture::new()`] or [`Texture::with_color_idx()`]
+    /// for a particular texture object.
     ///
     /// Setting `biasclamp` prevents over-biasing the LOD when the polygon is perpendicular to the
     /// view direction.
@@ -1088,6 +1082,21 @@ pub enum ProjectionType {
     Orthographic = ffi::GX_ORTHOGRAPHIC as _,
 }
 
+#[derive(Clone, Copy, Debug)]
+pub struct GpStatus {
+    /// `true` if high watermark has been passed, or in the case when the CPU and GP FIFOs are the
+    /// same, then `true` if the current GX thread is suspended.
+    pub overhi: bool,
+    /// `true` if low watermark has been passed.
+    pub underlo: bool,
+    /// `true` if the GP read unit is idle.
+    pub read_idle: bool,
+    /// `true` if all commands have been flushed to XF.
+    pub cmd_idle: bool,
+    /// `true` if FIFO has reached a breakpoint and GP reads have been stopped.
+    pub brkpt: bool,
+}
+
 /// Represents the GX service.
 pub struct Gx;
 
@@ -1158,7 +1167,7 @@ impl Gx {
     /// status returned by [`Gx::get_gp_status()`].
     ///
     /// The break point mechanism can be used to force the FIFO to stop reading commands at a
-    /// certain point; see [`Gx::enable_breakpoint()`].
+    /// certain point; see [`Gx::enable_breakpt()`].
     pub fn set_gp_fifo(fifo: Fifo) {
         unsafe { ffi::GX_SetGPFifo((&fifo) as *const _ as *mut _) }
     }
@@ -1219,6 +1228,41 @@ impl Gx {
         unsafe { ffi::GX_ClearVCacheMetric() }
     }
 
+    /// Sets a breakpoint that causes the GP to halt when encountered.
+    ///
+    /// # Note
+    /// The break point feature allows the application to have two frames of graphics in the FIFO
+    /// at the same time, overlapping one frame's processing by the graphics processor with another
+    /// frame's processing by the CPU. For example, suppose you finish writing the graphics
+    /// commands for one frame and are ready to start on the next. First, execute a [`Gx::flush()`]
+    /// command to make sure all the data in the CPU write gatherer is flushed into the FIFO. This
+    /// will also align the FIFO write pointer to a 32B boundary. Next, read the value of the
+    /// current write pointer using [`Fifo::pointers()`]. Write the value of the write pointer as
+    /// the break point address using `Gx::enable_breakpt()`. When the FIFO read pointer reaches
+    /// the break point address the hardware will disable reads from the FIFO. The status `brkpt`,
+    /// returned by [`Gx::get_gp_status()`], can be polled to detect when the break point is
+    /// reached. The application can then decide when to disable the break point, using
+    /// [`Gx::disable_breakpt()`], which will allow the FIFO to resume reading graphics commands.
+    ///
+    /// FIFO reads will stall when the GP FIFO read pointer is equal to the break point address
+    /// `break_pt`. To re-enable reads of the GP FIFO, use [`Gx::disable_breakpt()`].
+    ///
+    /// Use [`Gx::set_breakpt_callback()`] to set what function runs when the breakpoint is
+    /// encountered.
+    pub fn enable_breakpt(break_pt: *mut u8) {
+        unsafe { ffi::GX_EnableBreakPt(break_pt as _) }
+    }
+
+    /// Registers *cb* as a function to be invoked when a break point is encountered. `None` means
+    /// no function will run.
+    ///
+    /// # Safety
+    /// The callback will run with interrupts disabled, so it should terminate as quickly as
+    /// possible.
+    pub unsafe fn set_breakpt_callback(cb: Option<unsafe extern "C" fn()>) {
+        ffi::GX_SetBreakPtCallback(cb)
+    }
+
     /// Allows reads from the FIFO currently attached to the Graphics Processor (GP) to resume.
     ///
     /// See [`Gx::enable_breakpt()`] for an explanation of the FIFO break point feature.
@@ -1237,6 +1281,28 @@ impl Gx {
     /// This function should be avoided; use the GP performance metric functions instead.
     pub unsafe fn init_xf_ras_metric() {
         ffi::GX_InitXfRasMetric()
+    }
+
+    /// Reads the current status of the GP.
+    ///
+    /// `overhi` and `underlow` will indicate whether or not the watermarks have been reached. If
+    /// the CPU and GP FIFOs are the same, then `overhi` will indicate whether or not the current
+    /// GX thread is suspended. The value of `brkpt` can be used to determine if a breakpoint is in
+    /// progress (i.e. GP reads are suspended; they are resumed by a call to
+    /// [`Gx::disable_breakpt()`]). A callback can also be used to notify your application that
+    /// the break point has been reached. (see [`Gx::set_breakpt_callback()`])
+    pub fn get_gp_status() -> GpStatus {
+        let mut ret = (0, 0, 0, 0, 0);
+        unsafe {
+            ffi::GX_GetGPStatus(&mut ret.0, &mut ret.1, &mut ret.2, &mut ret.3, &mut ret.4);
+        }
+        GpStatus {
+            overhi: ret.0 != 0,
+            underlo: ret.1 != 0,
+            read_idle: ret.2 != 0,
+            cmd_idle: ret.3 != 0,
+            brkpt: ret.4 != 0,
+        }
     }
 
     /// Loads a light object into a set of hardware registers associated with a Light ID.
