@@ -2,21 +2,10 @@
 //!
 //! This module implements a safe wrapper around the graphics functions found in ``gx.h``.
 
-use crate::ffi::{self, Mtx as Mtx34, Mtx44};
 use core::ffi::c_void;
 use core::marker::PhantomData;
 
-/// Function for the drawsync-token callback.
-pub type DrawSyncCallback = fn(u16);
-
-/// Helper function for `Gx::init`
-pub fn gp_fifo(fifo_size: usize) -> *mut c_void {
-    unsafe {
-        let gp_fifo = crate::mem_cached_to_uncached!(libc::memalign(32, fifo_size));
-        libc::memset(gp_fifo, 0, fifo_size);
-        gp_fifo
-    }
-}
+use crate::ffi::{self, Mtx as Mtx34, Mtx44};
 
 #[derive(Copy, Clone, Debug)]
 #[repr(transparent)]
@@ -360,48 +349,60 @@ pub enum AttnFn {
 }
 
 /// Object describing a graphics FIFO.
+///
+/// The Graphics FIFO is the mechanism used to communicate graphics commands from the CPU to the
+/// Graphics Processor (GP). The FIFO base pointer is 32-byte aligned and the size must be a
+/// multiple of 32 bytes.
+///
+/// The CPU's write-gather pipe is used to write data to the FIFO. Therefore, the FIFO memory
+/// area must be forced out of the CPU cache prior to being used. `DCInvalidateRange()` may be
+/// used for this purpose. Due to the mechanics of flushing the write-gather pipe, the FIFO
+/// memory area should be at least 32 bytes larger than the maximum expected amount of data
+/// stored. Up to 32 NOPs may be written at the end during flushing.
 #[derive(Debug)]
 #[repr(transparent)]
-pub struct Fifo<'buf>(ffi::GXFifoObj, PhantomData<&'buf mut [u8]>);
+pub struct Fifo(ffi::GXFifoObj);
 
-impl Fifo<'_> {
-    /// Describes the area of main memory that will be used for this *fifo*.
+impl Fifo {
+    /// The minimum allowed size for a FIFO.
+    pub const MIN_SIZE: usize = ffi::GX_FIFO_MINSIZE as usize;
+
+    /// Constructs a new `Fifo` with the minimum size.
+    pub fn new() -> Self {
+        Self::with_size(Self::MIN_SIZE)
+    }
+
+    /// Constructs a new `Fifo` with the given size.
     ///
-    /// The Graphics FIFO is the mechanism used to communicate graphics commands from the CPU to
-    /// the Graphics Processor (GP). The FIFO base pointer should be 32-byte aligned. The size
-    /// should also be a multiple of 32B.
-    ///
-    /// The CPU's write-gather pipe is used to write data to the FIFO. Therefore, the FIFO memory
-    /// area must be forced out of the CPU cache prior to being used. `DCInvalidateRange()` may be
-    /// used for this purpose. Due to the mechanics of flushing the write-gather pipe, the FIFO
-    /// memory area should be at least 32 bytes larger than the maximum expected amount of data
-    /// stored. Up to 32 NOPs may be written at the end during flushing.
-    ///
-    /// # Note
-    /// [`Gx::init()`] also takes the argument *buf* and initializes a FIFO using this value and
-    /// attaches the FIFO to both the CPU and GP. The application must allocate the memory for the
-    /// graphics FIFO before calling [`Gx::init()`]. Therefore, it is not necessary to call this
-    /// function unless you want to resize the default FIFO sometime after [`Gx::init()`] has been
-    /// called or you are creating a new FIFO. The minimum size is 64kB defined by
-    /// `GX_FIFO_MINSIZE`.
-    ///
-    /// This function will also set the read and write pointers for the FIFO to the base address,
-    /// so ordinarily it is not necessary to call [`Fifo::set_pointers()`] when initializing the
-    /// FIFO. In addition, This function sets the FIFO's high water mark to (size-16kB) and the low
-    /// water mark to (size/2), so it is also not necessary to call [`Fifo::set_limits()`].
-    pub fn new<'buf>(buf: &'buf mut [u8]) -> Fifo<'buf> {
+    /// If the given size is less than the minimum, the minimum size is used.
+    pub fn with_size(mut size: usize) -> Self {
         let mut fifo = core::mem::MaybeUninit::zeroed();
-        let size = buf.len();
-        let base = buf.as_mut_ptr();
+
+        if size < Fifo::MIN_SIZE { size = Fifo::MIN_SIZE; }
+
         // SAFETY:
-        // + both `size` and `base` are checked to be aligned to a 32-byte boundary.
+        // + `size` is checked to be less than `isize::MAX` before being passed to
+        //   `alloc_zeroed()`.
+        // + `base` is checked to be non-null, otherwise libogc returns early without initializing.
+        assert!(size as isize <= isize::MAX, "size must be isize::MAX bytes or less");
+        let base = unsafe {
+            crate::mem_cached_to_uncached!(alloc::alloc::alloc_zeroed(
+                core::alloc::Layout::from_size_align(size, 32).unwrap()
+            )) as *mut u8
+        };
+        assert!(! base.is_null(), "could not allocate memory for Fifo");
+
+        // SAFETY:
+        // + `fifo` is not null.
+        // + `base` is aligned to 32 bytes.
+        // + `size` is greater or equal to the minimum size.
+        // + `size` is a multiple of 32 bytes.
         // + original libogc source suggests that available init functions don't completely
-        //   initialize the fifo, so it's been zeroed() just in case.
+        //   initialize the fifo, so it's been zeroed() above just in case.
         assert_eq!(0, size % 32);
-        assert_eq!(0, base.align_offset(32));
         unsafe {
             ffi::GX_InitFifoBase(fifo.as_mut_ptr(), base as *mut _, size as u32);
-            Fifo(fifo.assume_init(), PhantomData)
+            Fifo(fifo.assume_init())
         }
     }
 
@@ -432,7 +433,7 @@ impl Fifo<'_> {
     }
 
     /// Get the base address for a given *fifo*.
-    pub fn get_base(&self) -> *mut u8 {
+    pub fn base(&self) -> *mut u8 {
         unsafe { ffi::GX_GetFifoBase(self as *const _ as *mut _) as *mut _ }
     }
 
@@ -441,7 +442,7 @@ impl Fifo<'_> {
     /// # Note
     /// The count is incorrect if an overflow has occurred (i.e. you have written more data than
     /// the size of the fifo), as the hardware cannot detect an overflow in general.
-    pub fn count(&self) -> usize {
+    pub fn cache_lines(&self) -> usize {
         // TODO: remove conversions when upstream changes pass.
         unsafe { ffi::GX_GetFifoCount(self as *const _ as *mut _) as usize }
     }
@@ -470,7 +471,7 @@ impl Fifo<'_> {
     ///
     /// # Note
     /// See `Gx::enable_breakpoint()` for an example of why you would do this.
-    pub fn get_pointers(&self) -> (*const u8, *mut u8) {
+    pub fn pointers(&self) -> (*const u8, *mut u8) {
         let mut rd_ptr = core::ptr::null_mut();
         let mut wt_ptr = core::ptr::null_mut();
         unsafe {
@@ -522,6 +523,7 @@ impl Light {
     /// and distance attenuation turned off.
     ///
     /// If needed, these are the default angle (*a*) and distance (*k*) coefficients:
+    ///
     /// + a<sub>0</sub> = 1, a<sub>1</sub> = 0, a<sub>2</sub> = 0
     /// + k<sub>0</sub> = 1, k<sub>1</sub> = 0, k<sub>2</sub> = 0
     pub fn new_spotlight(nx: f32, ny: f32, nz: f32) -> Self {
@@ -545,6 +547,7 @@ impl Light {
     /// attenuation turned off.
     ///
     /// If needed, these are the default angle (*a*) and distance (*k*) coefficients:
+    ///
     /// + a<sub>0</sub> = 1, a<sub>1</sub> = 0, a<sub>2</sub> = 0
     /// + k<sub>0</sub> = 1, k<sub>1</sub> = 0, k<sub>2</sub> = 0
     pub fn new_specular(nx: f32, ny: f32, nz: f32) -> Self {
@@ -927,13 +930,13 @@ impl Texture<'_> {
     /// Sets texture Level Of Detail (LOD) controls explicitly for a texture object.
     ///
     /// It is the application's responsibility to provide memory for a texture object. When
-    /// initializing a texture object using [`GX_InitTexObj()`] or [`GX_InitTexObjCI()`], this
-    /// information is set to default values based on the mipmap flag. This function allows the
-    /// programmer to override those defaults.
+    /// initializing a texture object using [`Texture::new()`] or [`Texture::with_color_idx()`],
+    /// this information is set to default values based on the mipmap flag. This function allows
+    /// the programmer to override those defaults.
     ///
     /// # Note
-    /// This function should be called after [`GX_InitTexObj()`] or [`GX_InitTexObjCI()`] for a
-    /// particular texture object.
+    /// This function should be called after [`Texture::new()`] or [`Texture::with_color_idx()`]
+    /// for a particular texture object.
     ///
     /// Setting `biasclamp` prevents over-biasing the LOD when the polygon is perpendicular to the
     /// view direction.
@@ -1079,21 +1082,67 @@ pub enum ProjectionType {
     Orthographic = ffi::GX_ORTHOGRAPHIC as _,
 }
 
+#[derive(Clone, Copy, Debug)]
+pub struct GpStatus {
+    /// `true` if high watermark has been passed, or in the case when the CPU and GP FIFOs are the
+    /// same, then `true` if the current GX thread is suspended.
+    pub overhi: bool,
+    /// `true` if low watermark has been passed.
+    pub underlo: bool,
+    /// `true` if the GP read unit is idle.
+    pub read_idle: bool,
+    /// `true` if all commands have been flushed to XF.
+    pub cmd_idle: bool,
+    /// `true` if FIFO has reached a breakpoint and GP reads have been stopped.
+    pub brkpt: bool,
+}
+
 /// Represents the GX service.
 pub struct Gx;
 
 impl Gx {
     /// Initializes the graphics processor to its initial state.
-    /// See [GX_Init](https://libogc.devkitpro.org/gx_8h.html#aea24cfd5f8f2b168dc4f60d4883a6a8e) for more.
-    pub fn init(buf: &mut [u8]) -> &mut Fifo {
-        let size = buf.len();
-        let base = buf.as_mut_ptr();
+    ///
+    /// This function sets the default state of the graphics processor and should be called before
+    /// any other GX functions. This function sets up an immediate-mode method of communicating
+    /// graphics commands from the CPU to the Graphics Processor (GP). This function will
+    /// initialize a FIFO and attach it to both the CPU and GP. The CPU will write commands to the
+    /// FIFO and the GP will read the commands. This function returns a pointer to the initialized
+    /// FIFO. The application must allocate the memory for the FIFO. The parameter `base` is a
+    /// pointer to the allocated main memory and must be aligned to 32B. `size` is the size of the
+    /// FIFO in bytes and must be a multiple of 32B. Refer to additional notes in [`Fifo`]
+    /// concerning the FIFO memory.
+    ///
+    /// # Note
+    /// It is also possible to override the default immediate-mode style and instead buffer the
+    /// graphics for frame n+1 while the GP is reading the graphics for frame n. See
+    /// [`Gx::set_cpu_fifo()`] and [`Gx::set_gp_fifo()`] for further information.
+    ///
+    /// This function also designates the calling thread as the default GX thread; i.e., it assumes
+    /// the calling thread is the one responsible for generating graphics data. This thread will be
+    /// the thread to be suspended when the FIFO gets too full. The current GX thread can be
+    /// changed by calling [`Gx::set_current_gx_thread()`].
+    pub fn init(mut size: usize) -> &'static mut Fifo {
+        if size < Fifo::MIN_SIZE { size = Fifo::MIN_SIZE; }
+
         // SAFETY:
-        // + both `size` and `base` are checked to be aligned to a 32-byte boundary.
+        // + `size` is less than or equal to `isize::MAX` before being passed to `alloc_zeroed()`.
+        assert!(size as isize <= isize::MAX, "size must be isize::MAX bytes or less");
+        let base = unsafe {
+            crate::mem_cached_to_uncached!(alloc::alloc::alloc_zeroed(
+                core::alloc::Layout::from_size_align(size, 32).unwrap()
+            )) as *mut u8
+        };
+
+        // SAFETY:
+        // + `base` is non-null, else libogc won't initialize `fifo`.
+        // + `base` is aligned to 32 bytes (above).
+        // + `size` is greater than or equal to the minimum size.
+        // + `size` is a multiple of 32-bytes.
         // + `Fifo` is transparent to `ffi::GXFifoObj`, so casting a pointer from the first to the
         //   second is safe, and reborrowing a pointer into a reference is safe.
+        assert!(! base.is_null(), "could not allocate memory for Fifo");
         assert_eq!(0, size % 32);
-        assert_eq!(0, base.align_offset(32));
         unsafe {
             let fifo = ffi::GX_Init(base as *mut _, size as u32);
             &mut *(fifo as *mut Fifo)
@@ -1118,7 +1167,7 @@ impl Gx {
     /// status returned by [`Gx::get_gp_status()`].
     ///
     /// The break point mechanism can be used to force the FIFO to stop reading commands at a
-    /// certain point; see [`Gx::enable_breakpoint()`].
+    /// certain point; see [`Gx::enable_breakpt()`].
     pub fn set_gp_fifo(fifo: Fifo) {
         unsafe { ffi::GX_SetGPFifo((&fifo) as *const _ as *mut _) }
     }
@@ -1179,6 +1228,46 @@ impl Gx {
         unsafe { ffi::GX_ClearVCacheMetric() }
     }
 
+    /// Sets a breakpoint that causes the GP to halt when encountered.
+    ///
+    /// # Note
+    /// The break point feature allows the application to have two frames of graphics in the FIFO
+    /// at the same time, overlapping one frame's processing by the graphics processor with another
+    /// frame's processing by the CPU. For example, suppose you finish writing the graphics
+    /// commands for one frame and are ready to start on the next. First, execute a [`Gx::flush()`]
+    /// command to make sure all the data in the CPU write gatherer is flushed into the FIFO. This
+    /// will also align the FIFO write pointer to a 32B boundary. Next, read the value of the
+    /// current write pointer using [`Fifo::pointers()`]. Write the value of the write pointer as
+    /// the break point address using `Gx::enable_breakpt()`. When the FIFO read pointer reaches
+    /// the break point address the hardware will disable reads from the FIFO. The status `brkpt`,
+    /// returned by [`Gx::get_gp_status()`], can be polled to detect when the break point is
+    /// reached. The application can then decide when to disable the break point, using
+    /// [`Gx::disable_breakpt()`], which will allow the FIFO to resume reading graphics commands.
+    ///
+    /// FIFO reads will stall when the GP FIFO read pointer is equal to the break point address
+    /// `break_pt`. To re-enable reads of the GP FIFO, use [`Gx::disable_breakpt()`].
+    ///
+    /// Use [`Gx::set_breakpt_callback()`] to set what function runs when the breakpoint is
+    /// encountered.
+    pub fn enable_breakpt(break_pt: *mut u8) {
+        unsafe { ffi::GX_EnableBreakPt(break_pt as _) }
+    }
+
+    /// Registers `cb` as a function to be invoked when a break point is encountered.
+    ///
+    /// Passing `None` means no function will run. The return value is a pointer to the previously
+    /// registered callback, if any.
+    ///
+    /// # Safety
+    /// The callback will run with interrupts disabled, so it should terminate as quickly as
+    /// possible.
+    pub unsafe fn set_breakpt_callback(
+        cb: Option<unsafe extern "C" fn()>
+    ) -> Option<unsafe extern "C" fn()>
+    {
+        ffi::GX_SetBreakPtCallback(cb)
+    }
+
     /// Allows reads from the FIFO currently attached to the Graphics Processor (GP) to resume.
     ///
     /// See [`Gx::enable_breakpt()`] for an explanation of the FIFO break point feature.
@@ -1197,6 +1286,28 @@ impl Gx {
     /// This function should be avoided; use the GP performance metric functions instead.
     pub unsafe fn init_xf_ras_metric() {
         ffi::GX_InitXfRasMetric()
+    }
+
+    /// Reads the current status of the GP.
+    ///
+    /// `overhi` and `underlow` will indicate whether or not the watermarks have been reached. If
+    /// the CPU and GP FIFOs are the same, then `overhi` will indicate whether or not the current
+    /// GX thread is suspended. The value of `brkpt` can be used to determine if a breakpoint is in
+    /// progress (i.e. GP reads are suspended; they are resumed by a call to
+    /// [`Gx::disable_breakpt()`]). A callback can also be used to notify your application that
+    /// the break point has been reached. (see [`Gx::set_breakpt_callback()`])
+    pub fn get_gp_status() -> GpStatus {
+        let mut ret = (0, 0, 0, 0, 0);
+        unsafe {
+            ffi::GX_GetGPStatus(&mut ret.0, &mut ret.1, &mut ret.2, &mut ret.3, &mut ret.4);
+        }
+        GpStatus {
+            overhi: ret.0 != 0,
+            underlo: ret.1 != 0,
+            read_idle: ret.2 != 0,
+            cmd_idle: ret.3 != 0,
+            brkpt: ret.4 != 0,
+        }
     }
 
     /// Loads a light object into a set of hardware registers associated with a Light ID.
