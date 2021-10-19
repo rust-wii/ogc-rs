@@ -2,6 +2,8 @@
 //!
 //! This module implements a safe wrapper around the matrix subsystem functions found in ``gu.h``.
 
+use core::fmt;
+
 use ffi::guQuaternion;
 use libm::tanf;
 
@@ -445,6 +447,22 @@ impl Mat4 {
     }
 }
 
+impl fmt::Display for Mat4 {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "[{}, {}, {}, {}]
+             [{}, {}, {}, {}]
+             [{}, {}, {}, {}]
+             [{}, {}, {}, {}]",
+             self.0[0][0], self.0[0][1], self.0[0][2], self.0[0][3],
+             self.0[1][0], self.0[1][1], self.0[1][2], self.0[1][3],
+             self.0[2][0], self.0[2][1], self.0[2][2], self.0[2][3],
+             self.0[3][0], self.0[3][1], self.0[3][2], self.0[3][3],
+        )
+    }
+}
+
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct Mat3x4([[f32; 4]; 3]);
@@ -590,7 +608,13 @@ impl Mat3x4 {
         );
     }
 
-    pub fn load_as_modelview(&mut self, pnidx: u32) {
+    pub fn load_as_pos_mtx(&mut self, pnidx: u32) {
         Gx::load_pos_mtx_imm(self.as_array_mut(), pnidx);
+    }
+    pub fn load_as_nrm_mtx(&mut self, pnidx: u32) {
+        Gx::load_nrm_mtx_imm(self.as_array_mut(), pnidx);
+    }
+    pub fn load_as_tex_mtx(&mut self, pnidx: u32) {
+        Gx::load_tex_mtx_imm(self.as_array_mut(), pnidx);
     }
 }

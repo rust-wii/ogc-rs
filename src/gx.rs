@@ -1660,6 +1660,14 @@ impl Gx {
         unsafe { ffi::GX_LoadPosMtxImm(mt as *mut _, pnidx) }
     }
 
+    pub fn load_nrm_mtx_imm(mt: &mut Mtx34, pnidx: u32) {
+        unsafe { ffi::GX_LoadNrmMtxImm(mt as *mut _, pnidx) }
+    }
+
+    pub fn load_tex_mtx_imm(mt: &mut Mtx34, pnidx: u32) {
+        unsafe { ffi::GX_LoadTexMtxImm(mt as *mut _, pnidx, ffi::GX_MTX3x4 as _) }
+    }
+
     /// Enables or disables dithering.
     ///
     /// A 4x4 Bayer matrix is used for dithering.
