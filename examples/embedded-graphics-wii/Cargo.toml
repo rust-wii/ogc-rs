@@ -12,3 +12,4 @@ release = { panic = "abort", lto = true, codegen-units = 1, strip = "symbols", o
 [dependencies]
 ogc-rs = { path = "../../", features = ["ffi"] }
 embedded-graphics = "0.7"
+

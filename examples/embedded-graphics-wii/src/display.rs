@@ -9,7 +9,7 @@ use embedded_graphics::{
 };
 use ogc_rs::{
     ffi::{
-        Mtx, GX_CLR_RGBA, GX_COLOR0A0, GX_DIRECT, GX_F32, GX_GM_1_0, GX_MAX_Z24, GX_NONE,
+        GX_CLR_RGBA, GX_COLOR0A0, GX_DIRECT, GX_F32, GX_GM_1_0, GX_MAX_Z24, GX_NONE,
         GX_PASSCLR, GX_PF_RGB8_Z24, GX_PNMTX0, GX_POS_XYZ, GX_RGBA8, GX_TEVSTAGE0, GX_TEXCOORD0,
         GX_TEXMAP0, GX_TEX_ST, GX_VTXFMT0,
     },
@@ -30,7 +30,7 @@ impl Display {
     }
 
     pub fn setup(&self, rc: &mut RenderConfig) {
-        let mut ident: Mtx = [[0.0; 4]; 3];
+        let mut ident: Mat3x4 = Mat3x4::IDENTITY;
         Gx::set_copy_clear(Color::with_alpha(0, 0, 0, 0), GX_MAX_Z24);
         Gx::set_pixel_fmt(GX_PF_RGB8_Z24 as _, ZCompress::Linear);
         Gx::set_viewport(
@@ -100,14 +100,9 @@ impl Display {
             GX_TEXMAP0 as _,
             GX_COLOR0A0 as _,
         );
-        Gu::mtx_identity(&mut ident);
-        Gu::mtx_translation_apply(&mut ident.clone(), &mut ident, (0.0, 0.0, -100.0));
-        Gx::load_pos_mtx_imm(&mut ident, GX_PNMTX0 as _);
-
-        let mut perspective: ogc_rs::ffi::Mtx44 = [[0f32; 4]; 4];
-
-        Gu::ortho(
-            &mut perspective,
+        ident.gu_translation_apply((0., 0., -100.));
+        ident.load_as_pos_mtx(GX_PNMTX0 as _);
+        let mut perspective: Mat4 = Mat4::gu_ortho(
             0.0,
             rc.embed_framebuffer_height as f32,
             0.0,
@@ -115,7 +110,7 @@ impl Display {
             0.0,
             1000.0,
         );
-        Gx::load_projection_mtx(&perspective, ProjectionType::Orthographic);
+        perspective.load_as_proj_mat(ProjectionType::Orthographic);
 
         Gx::set_viewport(
             0.0,
