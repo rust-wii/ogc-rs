@@ -65,6 +65,9 @@ pub mod asnd;
 // Input Implementation
 pub mod input;
 
+#[cfg(feature = "glam")]
+pub mod glam_impl;
+
 // FFI
 cfg_if::cfg_if! {
     if #[cfg(feature = "ffi")] {
