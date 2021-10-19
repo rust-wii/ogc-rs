@@ -32,6 +32,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "autocfg"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cdb031dd78e28731d87d56cc8ffef4a8f36ca26c38fe2de700543e627f8a464a"
+
+[[package]]
 name = "bindgen"
 version = "0.59.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -144,6 +150,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fed34cd105917e91daa4da6b3728c47b068749d6a62c59811f06ed2ac71d9da7"
 
 [[package]]
+name = "glam"
+version = "0.19.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2b8509e6791516e81c1a630d0bd7fbac36d2fa8712a9da8662e716b52d5051ca"
+dependencies = [
+ "num-traits",
+]
+
+[[package]]
 name = "glob"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -226,6 +241,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "num-traits"
+version = "0.2.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9a64b1ec5cda2586e284722486d802acf1f7dbdc623e2bfc57e65ca1cd099290"
+dependencies = [
+ "autocfg",
+ "libm",
+]
+
+[[package]]
 name = "num_enum"
 version = "0.5.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -252,6 +277,7 @@ version = "0.7.1"
 dependencies = [
  "bitflags",
  "cfg-if",
+ "glam",
  "libc",
  "libm",
  "num_enum",
