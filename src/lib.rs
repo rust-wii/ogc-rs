@@ -68,6 +68,9 @@ pub mod input;
 // Light-Weight Process implementation
 pub mod lwp;
 
+#[cfg(feature = "glam")]
+pub mod glam_impl;
+
 // FFI
 cfg_if::cfg_if! {
     if #[cfg(feature = "ffi")] {

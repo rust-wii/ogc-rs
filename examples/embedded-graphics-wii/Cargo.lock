@@ -329,6 +329,7 @@ dependencies = [
  "libm",
  "num_enum",
  "ogc-sys",
+ "voladdress",
 ]
 
 [[package]]
@@ -463,6 +464,12 @@ name = "version_check"
 version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5fecdca9a5291cc2b8dcf7dc02453fee791a280f3743cb0905f8822ae463b3fe"
+
+[[package]]
+name = "voladdress"
+version = "0.4.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5e1c00b315fa5b67ca61aa4b7ac802c92a014813e5c4c8dc77e2aee6d30527ae"
 
 [[package]]
 name = "which"

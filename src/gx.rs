@@ -5,8 +5,15 @@
 use core::ffi::c_void;
 use core::marker::PhantomData;
 
+use libm::ceilf;
+use voladdress::{Safe, VolAddress};
+
 use crate::ffi::{self, Mtx as Mtx34, Mtx44};
 use crate::lwp;
+
+
+pub const GX_PIPE: VolAddress<u8, (), Safe> = unsafe { VolAddress::new(0xCC00_8000) };
+
 
 #[derive(Copy, Clone, Debug)]
 #[repr(transparent)]
@@ -1703,6 +1710,14 @@ impl Gx {
         unsafe { ffi::GX_LoadPosMtxImm(mt as *mut _, pnidx) }
     }
 
+    pub fn load_nrm_mtx_imm(mt: &mut Mtx34, pnidx: u32) {
+        unsafe { ffi::GX_LoadNrmMtxImm(mt as *mut _, pnidx) }
+    }
+
+    pub fn load_tex_mtx_imm(mt: &mut Mtx34, pnidx: u32) {
+        unsafe { ffi::GX_LoadTexMtxImm(mt as *mut _, pnidx, ffi::GX_MTX3x4 as _) }
+    }
+
     /// Enables or disables dithering.
     ///
     /// A 4x4 Bayer matrix is used for dithering.
@@ -1802,143 +1817,293 @@ impl Gx {
 
     #[inline]
     pub fn position_3f32(x: f32, y: f32, z: f32) {
+        let x_bytes = x.to_be_bytes();
+        let y_bytes = y.to_be_bytes();
+        let z_bytes = z.to_be_bytes();
+        for byte in x_bytes {
+            GX_PIPE.write(byte);
+        }
+        for byte in y_bytes {
+            GX_PIPE.write(byte);
+        }
+
+        for byte in z_bytes {
+            GX_PIPE.write(byte);
+        }
+        /*
         unsafe {
             ffi::GX_Position3f32(x, y, z);
         }
+        */
     }
 
     #[inline]
     pub fn position_3u16(x: u16, y: u16, z: u16) {
-        unsafe {
-            ffi::GX_Position3u16(x, y, z);
+        let x_bytes = x.to_be_bytes();
+        let y_bytes = y.to_be_bytes();
+        let z_bytes = z.to_be_bytes();
+        for byte in x_bytes {
+            GX_PIPE.write(byte);
         }
+        for byte in y_bytes {
+            GX_PIPE.write(byte);
+        }
+
+        for byte in z_bytes {
+            GX_PIPE.write(byte);
+        } 
     }
 
     #[inline]
     pub fn position_3i16(x: i16, y: i16, z: i16) {
-        unsafe {
-            ffi::GX_Position3s16(x, y, z);
+        let x_bytes = x.to_be_bytes();
+        let y_bytes = y.to_be_bytes();
+        let z_bytes = z.to_be_bytes();
+        for byte in x_bytes {
+            GX_PIPE.write(byte);
+        }
+        for byte in y_bytes {
+            GX_PIPE.write(byte);
+        }
+
+        for byte in z_bytes {
+            GX_PIPE.write(byte);
         }
     }
 
     #[inline]
     pub fn position_3u8(x: u8, y: u8, z: u8) {
-        unsafe {
-            ffi::GX_Position3u8(x, y, z);
+        let x_bytes = x.to_be_bytes();
+        let y_bytes = y.to_be_bytes();
+        let z_bytes = z.to_be_bytes();
+        for byte in x_bytes {
+            GX_PIPE.write(byte);
+        }
+        for byte in y_bytes {
+            GX_PIPE.write(byte);
+        }
+
+        for byte in z_bytes {
+            GX_PIPE.write(byte);
         }
     }
 
     #[inline]
     pub fn position_3i8(x: i8, y: i8, z: i8) {
-        unsafe {
-            ffi::GX_Position3s8(x, y, z);
+        let x_bytes = x.to_be_bytes();
+        let y_bytes = y.to_be_bytes();
+        let z_bytes = z.to_be_bytes();
+        for byte in x_bytes {
+            GX_PIPE.write(byte);
+        }
+        for byte in y_bytes {
+            GX_PIPE.write(byte);
+        }
+
+        for byte in z_bytes {
+            GX_PIPE.write(byte);
         }
     }
 
     #[inline]
     pub fn position_2f32(x: f32, y: f32) {
-        unsafe {
-            ffi::GX_Position2f32(x, y);
+        let x_bytes = x.to_be_bytes();
+        let y_bytes = y.to_be_bytes();
+        
+        for byte in x_bytes {
+            GX_PIPE.write(byte);
         }
+        
+        for byte in y_bytes {
+            GX_PIPE.write(byte);
+        }
+ 
     }
 
     #[inline]
     pub fn position_2u16(x: u16, y: u16) {
-        unsafe {
-            ffi::GX_Position2u16(x, y);
+        let x_bytes = x.to_be_bytes();
+        let y_bytes = y.to_be_bytes();
+        
+        for byte in x_bytes {
+            GX_PIPE.write(byte);
+        }
+        
+        for byte in y_bytes {
+            GX_PIPE.write(byte);
         }
     }
 
     #[inline]
     pub fn position_2i16(x: i16, y: i16) {
-        unsafe {
-            ffi::GX_Position2s16(x, y);
+        let x_bytes = x.to_be_bytes();
+        let y_bytes = y.to_be_bytes();
+        
+        for byte in x_bytes {
+            GX_PIPE.write(byte);
+        }
+        
+        for byte in y_bytes {
+            GX_PIPE.write(byte);
         }
     }
 
     #[inline]
     pub fn position_2u8(x: u8, y: u8) {
-        unsafe {
-            ffi::GX_Position2u8(x, y);
+        let x_bytes = x.to_be_bytes();
+        let y_bytes = y.to_be_bytes();
+        
+        for byte in x_bytes {
+            GX_PIPE.write(byte);
+        }
+        
+        for byte in y_bytes {
+            GX_PIPE.write(byte);
         }
     }
 
     #[inline]
     pub fn position_2i8(x: i8, y: i8) {
-        unsafe {
-            ffi::GX_Position2s8(x, y);
+        let x_bytes = x.to_be_bytes();
+        let y_bytes = y.to_be_bytes();
+        
+        for byte in x_bytes {
+            GX_PIPE.write(byte);
+        }
+        
+        for byte in y_bytes {
+            GX_PIPE.write(byte);
         }
     }
 
     #[inline]
     pub fn position1x8(index: u8) {
-        unsafe { ffi::GX_Position1x8(index) }
+        let idx_bytes = index.to_be_bytes();
+        for byte in idx_bytes {
+            GX_PIPE.write(byte);
+        } 
     }
 
     #[inline]
     pub fn position1x16(index: u16) {
-        unsafe { ffi::GX_Position1x16(index) }
+        let idx_bytes = index.to_be_bytes();
+        for byte in idx_bytes {
+            GX_PIPE.write(byte);
+        }
     }
 
     #[inline]
     pub fn color_4u8(r: u8, b: u8, g: u8, a: u8) {
-        unsafe {
-            ffi::GX_Color4u8(r, g, b, a);
+        let r_bytes = r.to_be_bytes();
+        let g_bytes = g.to_be_bytes();
+        let b_bytes = b.to_be_bytes();
+        let a_bytes = a.to_be_bytes();
+
+        for byte in r_bytes {
+            GX_PIPE.write(byte);
+        }
+        for byte in g_bytes {
+            GX_PIPE.write(byte);
+        }
+        for byte in b_bytes {
+            GX_PIPE.write(byte);
+        }
+        for byte in a_bytes {
+            GX_PIPE.write(byte);
         }
     }
 
     #[inline]
     pub fn color_3u8(r: u8, b: u8, g: u8) {
-        unsafe {
-            ffi::GX_Color3u8(r, g, b);
+        let r_bytes = r.to_be_bytes();
+        let g_bytes = g.to_be_bytes();
+        let b_bytes = b.to_be_bytes();
+
+        for byte in r_bytes {
+            GX_PIPE.write(byte);
+        }
+        for byte in g_bytes {
+            GX_PIPE.write(byte);
+        }
+        for byte in b_bytes {
+            GX_PIPE.write(byte);
         }
     }
 
     #[inline]
     pub fn color_3f32(r: f32, g: f32, b: f32) {
-        unsafe {
-            ffi::GX_Color3f32(r, g, b);
-        }
+        assert!(r.is_normal());
+        assert!(g.is_normal());
+        assert!(b.is_normal());
+
+        let r: u8 = ceilf(r * 255.0) as u8;
+        let g: u8 = ceilf(g * 255.0) as u8;
+        let b: u8 = ceilf(b * 255.0) as u8;
+
+        GX_PIPE.write(r);
+        GX_PIPE.write(g);
+        GX_PIPE.write(b);
+    }
+    
+    #[inline]
+    pub fn color_4f32(r: f32, g: f32, b: f32, a: f32) {
+        assert!(a.is_normal());
+
+        let a = ceilf(a * 255.0) as u8;
+
+        Gx::color_3f32(r, g, b);
+        GX_PIPE.write(a);
     }
 
     #[inline]
     pub fn color_1u32(clr: u32) {
-        unsafe {
-            ffi::GX_Color1u32(clr);
-        }
+        let clr_bytes = clr.to_be_bytes();
+        for byte in clr_bytes {
+            GX_PIPE.write(byte);
+        } 
     }
 
     #[inline]
     pub fn color_1u16(clr: u16) {
-        unsafe {
-            ffi::GX_Color1u16(clr);
+        let clr_bytes = clr.to_be_bytes();
+        for byte in clr_bytes {
+            GX_PIPE.write(byte);
         }
     }
 
     #[inline]
     pub fn color1x8(index: u8) {
-        unsafe {
-            ffi::GX_Color1x8(index);
-        }
+        let idx_bytes = index.to_be_bytes();
+        for byte in idx_bytes {
+            GX_PIPE.write(byte);
+        }                       
     }
 
     #[inline]
     pub fn color1x16(index: u16) {
-        unsafe {
-            ffi::GX_Color1x16(index);
+        let idx_bytes = index.to_be_bytes();
+        for byte in idx_bytes {
+            GX_PIPE.write(byte);
         }
     }
 
     ///Helper functions to just pass in a color object
     pub fn color_color(clr: Color) {
-        unsafe {
-            ffi::GX_Color4u8(clr.0.r, clr.0.g, clr.0.b, clr.0.a);
-        }
+        Gx::color_4u8(clr.0.r, clr.0.g, clr.0.b, clr.0.a); 
     }
 
     #[inline]
     pub fn tex_coord_2f32(s: f32, t: f32) {
-        unsafe { ffi::GX_TexCoord2f32(s, t) }
+        let s_bytes = s.to_be_bytes();
+        let t_bytes = t.to_be_bytes();
+        
+        for byte in s_bytes {
+            GX_PIPE.write(byte);
+        }
+
+        for byte in t_bytes {
+            GX_PIPE.write(byte);
+        }
     }
 
     pub fn flush() {
