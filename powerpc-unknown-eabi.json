@@ -4,6 +4,7 @@
     "data-layout": "E-m:e-p:32:32-i64:64-n32",
     "dynamic-linking": false,
     "env": "newlib",
+    "exe-suffix": ".elf",
     "executables": true,
     "has-elf-tls": false,
     "has-rpath": true,
