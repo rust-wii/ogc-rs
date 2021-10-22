@@ -65,6 +65,9 @@ pub mod asnd;
 // Input Implementation
 pub mod input;
 
+// Light-Weight Process implementation
+pub mod lwp;
+
 // FFI
 cfg_if::cfg_if! {
     if #[cfg(feature = "ffi")] {

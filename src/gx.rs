@@ -6,6 +6,7 @@ use core::ffi::c_void;
 use core::marker::PhantomData;
 
 use crate::ffi::{self, Mtx as Mtx34, Mtx44};
+use crate::lwp;
 
 #[derive(Copy, Clone, Debug)]
 #[repr(transparent)]
@@ -1181,6 +1182,24 @@ impl Gx {
     pub fn set_cpu_fifo(fifo: Fifo) {
         unsafe { ffi::GX_SetCPUFifo((&fifo) as *const _ as *mut _) }
     }
+    
+    /// Returns the current GX thread.
+	/// 
+	/// The current GX thread should be the thread that is currently responsible
+	/// for generating graphics data. By default, the GX thread is the thread
+	/// that invoked [`Gx::init()`]; however, it may be changed by calling
+	/// [`Gx::set_current_gx_thread()`].
+	/// 
+	/// # Note
+	/// When graphics data is being generated in immediate mode (that is, the
+	/// CPU FIFO = GP FIFO, and the GP is actively consuming data), the high
+	/// watermark may be triggered. When this happens, the high watermark
+	/// interrupt handler will suspend the GX thread, thus preventing any
+	/// further graphics data from being generated. The low watermark interrupt
+	/// handler will resume the thread.
+    pub fn get_current_gx_thread() -> lwp::Thread {
+    	lwp::Thread::new(unsafe { ffi::GX_GetCurrentGXThread() })
+    }
 
     /// Aborts the current frame.
     ///
@@ -1530,6 +1549,30 @@ impl Gx {
     /// See [GX_SetCullMode](https://libogc.devkitpro.org/gx_8h.html#adb4b17c39b24073c3e961458ecf02e87) for more.
     pub fn set_cull_mode(mode: CullMode) {
         unsafe { ffi::GX_SetCullMode(mode as u8) }
+    }
+    
+    /// Sets the current GX thread to the calling thread.
+	/// 
+	/// The new thread should be the thread that will be responsible for
+	/// generating graphics data. By default, the GX thread is the thread that
+	/// invoked [`Gx::init()`]; however, it may be changed by calling this
+	/// function.
+	/// 
+	/// Returns the previous GX thread ID.
+	/// 
+	/// # Note
+	/// It is a programming error to change GX thread while the current GX
+	/// thread is suspended by a high water mark interrupt. This indicates that
+	/// you have two threads about to generate GX data.
+	/// 
+	/// When graphics data is being generated in immediate mode (that is, the
+	/// CPU FIFO = GP FIFO, and the GP is actively consuming data), the high
+	/// watermark may be triggered. When this happens, the high watermark
+	/// interrupt handler will suspend the GX thread, thus preventing any
+	/// further graphics data from being generated. The low watermark interrupt
+	/// handler will resume the thread.
+    pub fn set_current_gx_thread() -> lwp::Thread {
+    	lwp::Thread::new(unsafe { ffi::GX_SetCurrentGXThread() })
     }
 
     /// Copies the embedded framebuffer (EFB) to the external framebuffer(XFB) in main memory.
