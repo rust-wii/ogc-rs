@@ -65,6 +65,9 @@ pub mod asnd;
 // Input Implementation
 pub mod input;
 
+// Light-Weight Process implementation
+pub mod lwp;
+
 #[cfg(feature = "glam")]
 pub mod glam_impl;
 
