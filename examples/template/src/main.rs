@@ -2,7 +2,7 @@
 #![feature(start)]
 
 extern crate alloc;
-use ogc_rs::prelude::*;
+use ogc_rs::{input::controller::{Button, ControllerType}, prelude::*};
 
 #[start]
 fn main(_argc: isize, _argv: *const *const u8) -> isize {
@@ -10,8 +10,8 @@ fn main(_argc: isize, _argv: *const *const u8) -> isize {
     Input::init(ControllerType::Gamecube);
     Input::init(ControllerType::Wii);
 
-    let mut gcn_ctrl = Input::new(ControllerType::Gamecube, ControllerPort::One);
-    let mut wii_ctrl = Input::new(ControllerType::Wii, ControllerPort::One);
+    let gcn_ctrl = Input::new(ControllerPort::One, ControllerType::Gamecube);
+    let wii_ctrl = Input::new(ControllerPort::One, ControllerType::Gamecube);
 
     Console::init(&video);
     Video::configure(video.render_config.into());
@@ -23,14 +23,14 @@ fn main(_argc: isize, _argv: *const *const u8) -> isize {
     println!("Hello World!");
 
     loop {
-        gcn_ctrl.update();
-        wii_ctrl.update();
+        Input::update(ControllerType::Gamecube);
+        Input::update(ControllerType::Wii); 
 
-        if gcn_ctrl.is_button_in_state(Button::Start, ButtonState::ButtonDown) {
+        if gcn_ctrl.is_button_down(Button::Start) {
             break 0;
         }
 
-        if wii_ctrl.is_button_in_state(Button::Home, ButtonState::ButtonDown) {
+        if wii_ctrl.is_button_down(Button::Home) {
             break 0;
         }
 
