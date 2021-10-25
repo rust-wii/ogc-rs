@@ -20,9 +20,9 @@
 #![allow(dead_code)]
 #![feature(panic_info_message)]
 #![feature(alloc_error_handler)]
+#![feature(core_intrinsics)]
 
 extern crate alloc;
-use bitflags::bitflags;
 
 // Custom Error Implementation
 pub mod error;

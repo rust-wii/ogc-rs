@@ -29,3 +29,29 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: check
+
+  lints:
+    name: Lints
+    runs-on: ubuntu-latest
+    container:
+      image: "devkitpro/devkitppc"
+    steps:
+      - name: Install required packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc libc6-dev nodejs clang
+
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Install nightly toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+          components: clippy, rust-src
+
+      - name: Run cargo clippy
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy

@@ -11,9 +11,7 @@ use voladdress::{Safe, VolAddress};
 use crate::ffi::{self, Mtx as Mtx34, Mtx44};
 use crate::lwp;
 
-
 pub const GX_PIPE: VolAddress<u8, (), Safe> = unsafe { VolAddress::new(0xCC00_8000) };
-
 
 #[derive(Copy, Clone, Debug)]
 #[repr(transparent)]
@@ -25,7 +23,7 @@ impl Color {
     }
 
     pub const fn with_alpha(r: u8, g: u8, b: u8, a: u8) -> Self {
-        Self(ffi::GXColor {r, g, b, a})
+        Self(ffi::GXColor { r, g, b, a })
     }
 }
 
@@ -371,6 +369,12 @@ pub enum AttnFn {
 #[repr(transparent)]
 pub struct Fifo(ffi::GXFifoObj);
 
+impl Default for Fifo {
+    fn default() -> Self {
+        Fifo::new()
+    }
+}
+
 impl Fifo {
     /// The minimum allowed size for a FIFO.
     pub const MIN_SIZE: usize = ffi::GX_FIFO_MINSIZE as usize;
@@ -386,19 +390,24 @@ impl Fifo {
     pub fn with_size(mut size: usize) -> Self {
         let mut fifo = core::mem::MaybeUninit::zeroed();
 
-        if size < Fifo::MIN_SIZE { size = Fifo::MIN_SIZE; }
+        if size < Fifo::MIN_SIZE {
+            size = Fifo::MIN_SIZE;
+        }
 
         // SAFETY:
         // + `size` is checked to be less than `isize::MAX` before being passed to
         //   `alloc_zeroed()`.
         // + `base` is checked to be non-null, otherwise libogc returns early without initializing.
-        assert!(size as isize <= isize::MAX, "size must be isize::MAX bytes or less");
+        assert!(
+            size <= isize::MAX.try_into().unwrap(),
+            "size must be isize::MAX bytes or less"
+        );
         let base = unsafe {
             crate::mem_cached_to_uncached!(alloc::alloc::alloc_zeroed(
                 core::alloc::Layout::from_size_align(size, 32).unwrap()
             )) as *mut u8
         };
-        assert!(! base.is_null(), "could not allocate memory for Fifo");
+        assert!(!base.is_null(), "could not allocate memory for Fifo");
 
         // SAFETY:
         // + `fifo` is not null.
@@ -459,6 +468,10 @@ impl Fifo {
     pub fn len(&self) -> usize {
         // TODO: remove conversions when upstream changes pass.
         unsafe { ffi::GX_GetFifoSize(self as *const _ as *mut _) as usize }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        false
     }
 
     /// Returns a non-zero value if the write pointer has passed the TOP of the FIFO.
@@ -601,7 +614,9 @@ impl Light {
     /// parameter are equal to the dot product of the eye-space vertex normal and the half-angle
     /// vector set by [`Light::specular_dir()`].
     pub fn attn(&mut self, a0: f32, a1: f32, a2: f32, k0: f32, k1: f32, k2: f32) -> &mut Self {
-        unsafe { ogc_sys::GX_InitLightAttn(&mut self.0, a0, a1, a2, k0, k1, k2); }
+        unsafe {
+            ogc_sys::GX_InitLightAttn(&mut self.0, a0, a1, a2, k0, k1, k2);
+        }
         self
     }
 
@@ -641,7 +656,9 @@ impl Light {
     /// [`Light::dist_attn()`] can be used to set the distance attenuation coefficients
     /// using one of several common attenuation functions.
     pub fn attn_a(&mut self, a0: f32, a1: f32, a2: f32) -> &mut Self {
-        unsafe { ffi::GX_InitLightAttnA(&mut self.0, a0, a1, a2); }
+        unsafe {
+            ffi::GX_InitLightAttnA(&mut self.0, a0, a1, a2);
+        }
         self
     }
 
@@ -667,13 +684,17 @@ impl Light {
     /// [`Light::dist_attn()`] can be used to set the distance attenuation coefficients using one
     /// of several common attenuation functions.
     pub fn attn_k(&mut self, k0: f32, k1: f32, k2: f32) -> &mut Self {
-        unsafe { ffi::GX_InitLightAttnK(&mut self.0, k0, k1, k2); }
+        unsafe {
+            ffi::GX_InitLightAttnK(&mut self.0, k0, k1, k2);
+        }
         self
     }
 
     /// Sets the color of the light in the light object.
     pub fn color(&mut self, color: Color) -> &mut Self {
-        unsafe { ffi::GX_InitLightColor(&mut self.0, color.0); }
+        unsafe {
+            ffi::GX_InitLightColor(&mut self.0, color.0);
+        }
         self
     }
 
@@ -690,7 +711,9 @@ impl Light {
     /// want parallel diffuse lights, you may put the light position very far from every objects to
     /// be lit. (See [`Light::pos()`] and [`Gx::set_channel_controls()`])
     pub fn dir(&mut self, nx: f32, ny: f32, nz: f32) -> &mut Self {
-        unsafe { ffi::GX_InitLightDir(&mut self.0, nx, ny, nz); }
+        unsafe {
+            ffi::GX_InitLightDir(&mut self.0, nx, ny, nz);
+        }
         self
     }
 
@@ -714,7 +737,9 @@ impl Light {
     /// This function sets parameters only for distance attenuation. Parameters for angular
     /// attenuation should be set by using [`Light::spot_attn()`] or [`Light::attn_a()`].
     pub fn dist_attn(&mut self, ref_dist: f32, ref_brite: f32, dist_fn: DistFn) -> &mut Self {
-        unsafe { ffi::GX_InitLightDistAttn(&mut self.0, ref_dist, ref_brite, dist_fn as u8); }
+        unsafe {
+            ffi::GX_InitLightDistAttn(&mut self.0, ref_dist, ref_brite, dist_fn as u8);
+        }
         self
     }
 
@@ -729,7 +754,9 @@ impl Light {
     /// (x, y and z) which makes the light position very far away from objects to be lit and all
     /// rays considered almost parallel.
     pub fn pos(&mut self, x: f32, y: f32, z: f32) -> &mut Self {
-        unsafe { ffi::GX_InitLightPos(&mut self.0, x, y, z); }
+        unsafe {
+            ffi::GX_InitLightPos(&mut self.0, x, y, z);
+        }
         self
     }
 
@@ -754,7 +781,9 @@ impl Light {
     /// This function sets parameters only for angular attenuation. Parameters for distance
     /// attenuation should be set by using [`Light::dist_attn()`] or [`Light::attn_k()`].
     pub fn spot_attn(&mut self, cut_off: f32, spotfn: SpotFn) -> &mut Self {
-        unsafe { ffi::GX_InitLightSpot(&mut self.0, cut_off, spotfn as u8); }
+        unsafe {
+            ffi::GX_InitLightSpot(&mut self.0, cut_off, spotfn as u8);
+        }
         self
     }
 
@@ -774,7 +803,9 @@ impl Light {
     /// is a parallel light (i.e. the specular light is infinitely far away such that all the rays
     /// of the light are parallel), and thus one can only specify directional information.
     pub fn specular_dir(&mut self, nx: f32, ny: f32, nz: f32) -> &mut Self {
-        unsafe { ffi::GX_InitSpecularDir(&mut self.0, nx, ny, nz); }
+        unsafe {
+            ffi::GX_InitSpecularDir(&mut self.0, nx, ny, nz);
+        }
         self
     }
 
@@ -787,8 +818,18 @@ impl Light {
     /// highlights.
     ///
     /// See also [`Light::specular_dir()`].
-    pub fn specular_dir_ha(&mut self, nx: f32, ny: f32, nz: f32, hx: f32, hy: f32, hz: f32) -> &mut Self {
-        unsafe { ffi::GX_InitSpecularDirHA(&mut self.0, nx, ny, nz, hx, hy, hz); }
+    pub fn specular_dir_ha(
+        &mut self,
+        nx: f32,
+        ny: f32,
+        nz: f32,
+        hx: f32,
+        hy: f32,
+        hz: f32,
+    ) -> &mut Self {
+        unsafe {
+            ffi::GX_InitSpecularDirHA(&mut self.0, nx, ny, nz, hx, hy, hz);
+        }
         self
     }
 }
@@ -825,15 +866,15 @@ pub struct Texture<'img>(ffi::GXTexObj, PhantomData<&'img [u8]>);
 
 impl Texture<'_> {
     /// Used to initialize or change a texture object for non-color index textures.
-    pub fn new<'img>(
-        img: &'img [u8],
+    pub fn new(
+        img: &[u8],
         width: u16,
         height: u16,
         format: u8,
         wrap_s: WrapMode,
         wrap_t: WrapMode,
         mipmap: bool,
-    ) -> Texture<'img> {
+    ) -> Texture {
         let texture = core::mem::MaybeUninit::zeroed();
         assert_eq!(0, img.as_ptr().align_offset(32));
         assert!(width <= 1024, "max width for texture is 1024");
@@ -854,16 +895,15 @@ impl Texture<'_> {
     }
 
     /// Used to initialize or change a texture object when the texture is color index format.
-    pub fn with_color_idx<'img>(
-        img: &'img [u8],
+    pub fn with_color_idx(
+        img: &[u8],
         width: u16,
         height: u16,
         format: u8,
-        wrap_s: WrapMode,
-        wrap_t: WrapMode,
+        wrap: (WrapMode, WrapMode),
         mipmap: bool,
         tlut_name: u32,
-    ) -> Texture<'img> {
+    ) -> Texture {
         let texture = core::mem::MaybeUninit::zeroed();
         assert_eq!(0, img.as_ptr().align_offset(32));
         assert!(width <= 1024, "max width for texture is 1024");
@@ -875,8 +915,8 @@ impl Texture<'_> {
                 width,
                 height,
                 format,
-                wrap_s as u8,
-                wrap_t as u8,
+                wrap.0 as u8,
+                wrap.1 as u8,
                 mipmap as u8,
                 tlut_name,
             );
@@ -960,25 +1000,23 @@ impl Texture<'_> {
     /// filter) because cache-hit ratio changes according to which filter mode is being used.
     pub fn set_lod(
         &mut self,
-        minfilt: TexFilter,
-        magfilt: TexFilter,
-        minlod: f32,
-        maxlod: f32,
+        filters: (TexFilter, TexFilter),
+        lod_range: (f32, f32),
         lodbias: f32,
         biasclamp: bool,
         edgelod: bool,
         maxaniso: u8,
     ) {
         debug_assert!(
-            (0.0..=10.0).contains(&minlod),
+            (0.0..=10.0).contains(&lod_range.0),
             "valid range for min LOD is 0.0 to 10.0"
         );
         debug_assert!(
-            (0.0..=10.0).contains(&maxlod),
+            (0.0..=10.0).contains(&lod_range.1),
             "valid range for max LOD is 0.0 to 10.0"
         );
         debug_assert!(
-            matches!(magfilt, TexFilter::Near | TexFilter::Linear),
+            matches!(filters.1, TexFilter::Near | TexFilter::Linear),
             "magfilt can only be `TexFilter::Near` or `TexFilter::Linear`"
         );
         debug_assert!(
@@ -989,10 +1027,10 @@ impl Texture<'_> {
         unsafe {
             ffi::GX_InitTexObjLOD(
                 &mut self.0,
-                minfilt as u8,
-                magfilt as u8,
-                minlod,
-                maxlod,
+                filters.0 as u8,
+                filters.1 as u8,
+                lod_range.0,
+                lod_range.1,
                 lodbias,
                 biasclamp as u8,
                 edgelod as u8,
@@ -1131,11 +1169,16 @@ impl Gx {
     /// the thread to be suspended when the FIFO gets too full. The current GX thread can be
     /// changed by calling [`Gx::set_current_gx_thread()`].
     pub fn init(mut size: usize) -> &'static mut Fifo {
-        if size < Fifo::MIN_SIZE { size = Fifo::MIN_SIZE; }
+        if size < Fifo::MIN_SIZE {
+            size = Fifo::MIN_SIZE;
+        }
 
         // SAFETY:
         // + `size` is less than or equal to `isize::MAX` before being passed to `alloc_zeroed()`.
-        assert!(size as isize <= isize::MAX, "size must be isize::MAX bytes or less");
+        assert!(
+            size <= isize::MAX.try_into().unwrap(),
+            "size must be isize::MAX bytes or less"
+        );
         let base = unsafe {
             crate::mem_cached_to_uncached!(alloc::alloc::alloc_zeroed(
                 core::alloc::Layout::from_size_align(size, 32).unwrap()
@@ -1149,7 +1192,7 @@ impl Gx {
         // + `size` is a multiple of 32-bytes.
         // + `Fifo` is transparent to `ffi::GXFifoObj`, so casting a pointer from the first to the
         //   second is safe, and reborrowing a pointer into a reference is safe.
-        assert!(! base.is_null(), "could not allocate memory for Fifo");
+        assert!(!base.is_null(), "could not allocate memory for Fifo");
         assert_eq!(0, size % 32);
         unsafe {
             let fifo = ffi::GX_Init(base as *mut _, size as u32);
@@ -1189,23 +1232,23 @@ impl Gx {
     pub fn set_cpu_fifo(fifo: Fifo) {
         unsafe { ffi::GX_SetCPUFifo((&fifo) as *const _ as *mut _) }
     }
-    
+
     /// Returns the current GX thread.
-	/// 
-	/// The current GX thread should be the thread that is currently responsible
-	/// for generating graphics data. By default, the GX thread is the thread
-	/// that invoked [`Gx::init()`]; however, it may be changed by calling
-	/// [`Gx::set_current_gx_thread()`].
-	/// 
-	/// # Note
-	/// When graphics data is being generated in immediate mode (that is, the
-	/// CPU FIFO = GP FIFO, and the GP is actively consuming data), the high
-	/// watermark may be triggered. When this happens, the high watermark
-	/// interrupt handler will suspend the GX thread, thus preventing any
-	/// further graphics data from being generated. The low watermark interrupt
-	/// handler will resume the thread.
+    ///
+    /// The current GX thread should be the thread that is currently responsible
+    /// for generating graphics data. By default, the GX thread is the thread
+    /// that invoked [`Gx::init()`]; however, it may be changed by calling
+    /// [`Gx::set_current_gx_thread()`].
+    ///
+    /// # Note
+    /// When graphics data is being generated in immediate mode (that is, the
+    /// CPU FIFO = GP FIFO, and the GP is actively consuming data), the high
+    /// watermark may be triggered. When this happens, the high watermark
+    /// interrupt handler will suspend the GX thread, thus preventing any
+    /// further graphics data from being generated. The low watermark interrupt
+    /// handler will resume the thread.
     pub fn get_current_gx_thread() -> lwp::Thread {
-    	lwp::Thread::new(unsafe { ffi::GX_GetCurrentGXThread() })
+        lwp::Thread::new(unsafe { ffi::GX_GetCurrentGXThread() })
     }
 
     /// Aborts the current frame.
@@ -1288,9 +1331,8 @@ impl Gx {
     /// The callback will run with interrupts disabled, so it should terminate as quickly as
     /// possible.
     pub unsafe fn set_breakpt_callback(
-        cb: Option<unsafe extern "C" fn()>
-    ) -> Option<unsafe extern "C" fn()>
-    {
+        cb: Option<unsafe extern "C" fn()>,
+    ) -> Option<unsafe extern "C" fn()> {
         ffi::GX_SetBreakPtCallback(cb)
     }
 
@@ -1557,35 +1599,40 @@ impl Gx {
     pub fn set_cull_mode(mode: CullMode) {
         unsafe { ffi::GX_SetCullMode(mode as u8) }
     }
-    
+
     /// Sets the current GX thread to the calling thread.
-	/// 
-	/// The new thread should be the thread that will be responsible for
-	/// generating graphics data. By default, the GX thread is the thread that
-	/// invoked [`Gx::init()`]; however, it may be changed by calling this
-	/// function.
-	/// 
-	/// Returns the previous GX thread ID.
-	/// 
-	/// # Note
-	/// It is a programming error to change GX thread while the current GX
-	/// thread is suspended by a high water mark interrupt. This indicates that
-	/// you have two threads about to generate GX data.
-	/// 
-	/// When graphics data is being generated in immediate mode (that is, the
-	/// CPU FIFO = GP FIFO, and the GP is actively consuming data), the high
-	/// watermark may be triggered. When this happens, the high watermark
-	/// interrupt handler will suspend the GX thread, thus preventing any
-	/// further graphics data from being generated. The low watermark interrupt
-	/// handler will resume the thread.
+    ///
+    /// The new thread should be the thread that will be responsible for
+    /// generating graphics data. By default, the GX thread is the thread that
+    /// invoked [`Gx::init()`]; however, it may be changed by calling this
+    /// function.
+    ///
+    /// Returns the previous GX thread ID.
+    ///
+    /// # Note
+    /// It is a programming error to change GX thread while the current GX
+    /// thread is suspended by a high water mark interrupt. This indicates that
+    /// you have two threads about to generate GX data.
+    ///
+    /// When graphics data is being generated in immediate mode (that is, the
+    /// CPU FIFO = GP FIFO, and the GP is actively consuming data), the high
+    /// watermark may be triggered. When this happens, the high watermark
+    /// interrupt handler will suspend the GX thread, thus preventing any
+    /// further graphics data from being generated. The low watermark interrupt
+    /// handler will resume the thread.
     pub fn set_current_gx_thread() -> lwp::Thread {
-    	lwp::Thread::new(unsafe { ffi::GX_SetCurrentGXThread() })
+        lwp::Thread::new(unsafe { ffi::GX_SetCurrentGXThread() })
     }
 
     /// Copies the embedded framebuffer (EFB) to the external framebuffer(XFB) in main memory.
+    ///
+    /// # Safety
+    ///
+    /// The user must ensure the dest ptr is a valid pointer,
+    ///
     /// See [GX_CopyDisp](https://libogc.devkitpro.org/gx_8h.html#a9ed0ae3f900abb6af2e930dff7a6bc28) for more.
-    pub fn copy_disp(dest: *mut c_void, clear: bool) {
-        unsafe { ffi::GX_CopyDisp(dest, clear as u8) }
+    pub unsafe fn copy_disp(dest: *mut c_void, clear: bool) {
+        ffi::GX_CopyDisp(dest, clear as u8)
     }
 
     /// Sets the gamma correction applied to pixels during EFB to XFB copy operation.
@@ -1773,8 +1820,8 @@ impl Gx {
 
     /// Sets the array base pointer and stride for a single attribute.
     /// See [GX_SetArray](https://libogc.devkitpro.org/gx_8h.html#a5164fc6aa2a678d792af80d94bfa1ec2) for more.
-    pub fn set_array(attr: u32, ptr: *mut c_void, stride: u8) {
-        unsafe { ffi::GX_SetArray(attr, ptr, stride) }
+    pub fn set_array<T>(attr: u32, array: &[T], stride: u8) {
+        unsafe { ffi::GX_SetArray(attr, array.as_ptr() as *mut c_void, stride) }
     }
 
     /// Begins drawing of a graphics primitive.
@@ -1851,7 +1898,7 @@ impl Gx {
 
         for byte in z_bytes {
             GX_PIPE.write(byte);
-        } 
+        }
     }
 
     #[inline]
@@ -1909,26 +1956,25 @@ impl Gx {
     pub fn position_2f32(x: f32, y: f32) {
         let x_bytes = x.to_be_bytes();
         let y_bytes = y.to_be_bytes();
-        
+
         for byte in x_bytes {
             GX_PIPE.write(byte);
         }
-        
+
         for byte in y_bytes {
             GX_PIPE.write(byte);
         }
- 
     }
 
     #[inline]
     pub fn position_2u16(x: u16, y: u16) {
         let x_bytes = x.to_be_bytes();
         let y_bytes = y.to_be_bytes();
-        
+
         for byte in x_bytes {
             GX_PIPE.write(byte);
         }
-        
+
         for byte in y_bytes {
             GX_PIPE.write(byte);
         }
@@ -1938,11 +1984,11 @@ impl Gx {
     pub fn position_2i16(x: i16, y: i16) {
         let x_bytes = x.to_be_bytes();
         let y_bytes = y.to_be_bytes();
-        
+
         for byte in x_bytes {
             GX_PIPE.write(byte);
         }
-        
+
         for byte in y_bytes {
             GX_PIPE.write(byte);
         }
@@ -1952,11 +1998,11 @@ impl Gx {
     pub fn position_2u8(x: u8, y: u8) {
         let x_bytes = x.to_be_bytes();
         let y_bytes = y.to_be_bytes();
-        
+
         for byte in x_bytes {
             GX_PIPE.write(byte);
         }
-        
+
         for byte in y_bytes {
             GX_PIPE.write(byte);
         }
@@ -1966,11 +2012,11 @@ impl Gx {
     pub fn position_2i8(x: i8, y: i8) {
         let x_bytes = x.to_be_bytes();
         let y_bytes = y.to_be_bytes();
-        
+
         for byte in x_bytes {
             GX_PIPE.write(byte);
         }
-        
+
         for byte in y_bytes {
             GX_PIPE.write(byte);
         }
@@ -1981,7 +2027,7 @@ impl Gx {
         let idx_bytes = index.to_be_bytes();
         for byte in idx_bytes {
             GX_PIPE.write(byte);
-        } 
+        }
     }
 
     #[inline]
@@ -2044,7 +2090,7 @@ impl Gx {
         GX_PIPE.write(g);
         GX_PIPE.write(b);
     }
-    
+
     #[inline]
     pub fn color_4f32(r: f32, g: f32, b: f32, a: f32) {
         assert!(a.is_normal());
@@ -2060,7 +2106,7 @@ impl Gx {
         let clr_bytes = clr.to_be_bytes();
         for byte in clr_bytes {
             GX_PIPE.write(byte);
-        } 
+        }
     }
 
     #[inline]
@@ -2076,7 +2122,7 @@ impl Gx {
         let idx_bytes = index.to_be_bytes();
         for byte in idx_bytes {
             GX_PIPE.write(byte);
-        }                       
+        }
     }
 
     #[inline]
@@ -2089,14 +2135,14 @@ impl Gx {
 
     ///Helper functions to just pass in a color object
     pub fn color_color(clr: Color) {
-        Gx::color_4u8(clr.0.r, clr.0.g, clr.0.b, clr.0.a); 
+        Gx::color_4u8(clr.0.r, clr.0.g, clr.0.b, clr.0.a);
     }
 
     #[inline]
     pub fn tex_coord_2f32(s: f32, t: f32) {
         let s_bytes = s.to_be_bytes();
         let t_bytes = t.to_be_bytes();
-        
+
         for byte in s_bytes {
             GX_PIPE.write(byte);
         }

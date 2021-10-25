@@ -2,14 +2,17 @@
 //!
 //! This module implements a safe wrapper around the networking functions found in ``network.h``.
 
-use crate::{bitflags, ffi, raw_to_string, raw_to_strings, OgcError, Result};
+use crate::{ffi, OgcError, Result};
 use alloc::{
     boxed::Box,
     format,
     string::{String, ToString},
     vec::Vec,
 };
-use core::{ffi::c_void, ptr};
+
+use bitflags::bitflags;
+use core::{ffi::c_void, slice};
+use cstr_core::CStr;
 use num_enum::IntoPrimitive;
 
 bitflags! {
@@ -151,19 +154,11 @@ pub struct IPV4Address {
 }
 
 /// Implementation to convert from a ``IPV4Address`` into a ``in_addr`` used by ogc_sys.
-impl Into<ffi::in_addr> for &mut IPV4Address {
-    fn into(self) -> ffi::in_addr {
+impl From<&mut IPV4Address> for ffi::in_addr {
+    fn from(addr: &mut IPV4Address) -> ffi::in_addr {
         ffi::in_addr {
-            s_addr: self.address,
+            s_addr: addr.address,
         }
-    }
-}
-
-impl Into<*mut ffi::in_addr> for &mut IPV4Address {
-    fn into(self) -> *mut ffi::in_addr {
-        Box::into_raw(Box::new(ffi::in_addr {
-            s_addr: self.address,
-        }))
     }
 }
 
@@ -190,14 +185,14 @@ pub struct SocketAddress {
 }
 
 /// Convert ``SocketAddress`` into a ``ogc_sys::sockaddr``.
-impl Into<*mut ffi::sockaddr> for SocketAddress {
-    fn into(self) -> *mut ffi::sockaddr {
+impl From<SocketAddress> for *mut ffi::sockaddr {
+    fn from(s_addr: SocketAddress) -> Self {
         // TODO: Check implementation.
-        let sa_family: u32 = self.family.into();
+        let sa_family: u32 = s_addr.family.into();
         Box::into_raw(Box::new(ffi::sockaddr {
-            sa_len: self.length,
+            sa_len: s_addr.length,
             sa_family: sa_family as u8,
-            sa_data: self.data,
+            sa_data: s_addr.data,
         }))
     }
 }
@@ -235,7 +230,7 @@ pub fn dot_to_nbo(dot: &str) -> Result<IPV4Address> {
 /// to a network address, and stores the address in the structure provided.
 /// The converted address will be in Network Byte Order.
 pub fn dot_to_net_addr(dot: &str, addr: &mut IPV4Address) -> Result<()> {
-    let r = unsafe { ffi::inet_aton(dot.as_ptr(), addr.into()) };
+    let r = unsafe { ffi::inet_aton(dot.as_ptr(), &mut addr.into()) };
 
     if r < 0 {
         Err(OgcError::Network(format!("network dot_to_net_addr: {}", r)))
@@ -248,12 +243,18 @@ pub fn dot_to_net_addr(dot: &str, addr: &mut IPV4Address) -> Result<()> {
 /// to a string in the Internet standard dot notation.
 pub fn addr_to_dot(addr: &mut IPV4Address) -> Result<String> {
     let r = unsafe { ffi::inet_ntoa(addr.into()) };
-    let r = raw_to_string(r);
+    let r_res = unsafe { CStr::from_ptr(r).to_str() };
 
-    if r.is_empty() {
-        Err(OgcError::Network("addr_to_dot empty".to_string()))
+    if let Ok(r) = r_res {
+        if r.is_empty() {
+            Err(OgcError::Network("addr_to_dot empty".to_string()))
+        } else {
+            Ok(r.into())
+        }
     } else {
-        Ok(r)
+        Err(OgcError::Network(
+            "addr_to_dot string conversion failed".to_string(),
+        ))
     }
 }
 
@@ -263,15 +264,27 @@ pub fn get_host_by_name(addr_string: &str) -> Result<HostInformation> {
     unsafe {
         let r = ffi::net_gethostbyname(addr_string.as_ptr());
 
-        if r == ptr::null_mut() {
-            Err(OgcError::Network("host provided doesnt exist".into()))
+        if r.is_null() {
+            Err(OgcError::Network("host provided doesnt exist".to_string()))
         } else {
+            // TODO: Replace this with another method.
+            let arr_to_str = |p: *mut *mut u8| -> Vec<String> {
+                let slice = slice::from_raw_parts(p, 2);
+                slice
+                    .iter()
+                    .map(|x: &*mut u8| {
+                        let r = slice::from_raw_parts(*x, 1);
+                        String::from_utf8(r.to_vec()).unwrap()
+                    })
+                    .collect()
+            };
+
             Ok(HostInformation {
-                name: raw_to_string((*r).h_name),
-                aliases: raw_to_strings((*r).h_aliases),
+                name: CStr::from_ptr((*r).h_name).to_str().unwrap().to_string(),
+                aliases: arr_to_str((*r).h_aliases),
                 address_type: (*r).h_addrtype,
                 length: (*r).h_length,
-                address_list: raw_to_strings((*r).h_addr_list),
+                address_list: arr_to_str((*r).h_addr_list),
             })
         }
     }
@@ -298,7 +311,7 @@ impl Network {
     }
 
     /// Create a socket.
-    pub fn new(domain: ProtocolFamily, socket_type: SocketType) -> Result<Socket> {
+    pub fn new_socket(domain: ProtocolFamily, socket_type: SocketType) -> Result<Socket> {
         let r = unsafe { ffi::net_socket(domain.into(), socket_type.into(), 0) };
 
         if r == INVALID_SOCKET {

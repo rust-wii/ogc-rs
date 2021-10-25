@@ -76,7 +76,7 @@ impl Audio {
     /// Register a user callback function for the ``audio`` streaming interface.
     fn register_stream_callback<F>(callback: Box<F>)
     where
-        F: Fn(u32) -> (),
+        F: Fn(u32),
     {
         // TODO: Check if this implementation can be changed.
         let ptr = Box::into_raw(callback);
@@ -94,7 +94,7 @@ impl Audio {
     /// Internally the DMA buffers are double buffered.
     fn register_dma_callback<F>(callback: Box<F>)
     where
-        F: Fn() -> (),
+        F: Fn(),
     {
         // TODO: Check if this implementation can be changed.
         let ptr = Box::into_raw(callback);
