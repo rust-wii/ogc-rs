@@ -13,6 +13,6 @@ pub enum ControllerPort {
     Four = 3
 }
 
-pub use wpad::WPad;
-pub use pad::Pad;
-pub use controller::Input;
+pub use wpad::*;
+pub use pad::*;
+pub use controller::*;

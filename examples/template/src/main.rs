@@ -2,7 +2,7 @@
 #![feature(start)]
 
 extern crate alloc;
-use ogc_rs::{input::controller::{Button, ControllerType}, prelude::*};
+use ogc_rs::prelude::*;
 
 #[start]
 fn main(_argc: isize, _argv: *const *const u8) -> isize {

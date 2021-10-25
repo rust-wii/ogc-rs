@@ -12,7 +12,7 @@ use embedded_graphics::{
     primitives::{PrimitiveStyle, Rectangle},
     Drawable,
 };
-use ogc_rs::{input::{controller::{Button, ControllerType}, wpad::WPadDataFormat}, prelude::*};
+use ogc_rs::prelude::*;
 //use tinytga::Tga;
 //const IMG: &[u8] = include_bytes!("../img.tga");
 
