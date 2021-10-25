@@ -1,6 +1,9 @@
-use core::ffi::c_void;
+//! The ``lwp`` module of ``ogc-rs``.
+//!
+//! This module implements a safe wrapper around thread based functions.
 
 use crate::ffi;
+use core::ffi::c_void;
 
 /// A thread context handle.
 #[derive(Clone, Debug)]
@@ -24,9 +27,7 @@ impl Thread {
     /// On success, returns `Ok(1)` if the thread was already suspended, or `Ok(0)` if it was
     /// successfully suspended. Otherwise, returns an error code.
     pub fn suspend(&self) -> Result<i32, i32> {
-        let res = unsafe {
-            ffi::LWP_SuspendThread(self.handle)
-        };
+        let res = unsafe { ffi::LWP_SuspendThread(self.handle) };
 
         if res < 0 {
             Err(res)
@@ -40,9 +41,7 @@ impl Thread {
     /// On success, returns `Ok(1)` if the thread was already resumed, or `Ok(0)` if it was
     /// successfully resumed. Otherwise, returns an error code.
     pub fn resume(&self) -> Result<i32, i32> {
-        let res = unsafe {
-            ffi::LWP_ResumeThread(self.handle)
-        };
+        let res = unsafe { ffi::LWP_ResumeThread(self.handle) };
 
         if res < 0 {
             Err(res)
@@ -77,6 +76,12 @@ pub struct Builder {
     stack_base: *mut c_void,
     stack_size: usize,
     priority: u8,
+}
+
+impl Default for Builder {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Builder {
@@ -149,7 +154,9 @@ impl Queue {
             if res < 0 {
                 Err(res)
             } else {
-                Ok(Queue { handle: q.assume_init() })
+                Ok(Queue {
+                    handle: q.assume_init(),
+                })
             }
         }
     }
@@ -170,9 +177,7 @@ impl Queue {
 impl Drop for Queue {
     /// Close the thread synchronization queue and release the handle.
     fn drop(&mut self) {
-        unsafe {
-            ffi::LWP_CloseQueue(self.handle)
-        }
+        unsafe { ffi::LWP_CloseQueue(self.handle) }
     }
 }
 
