@@ -46,7 +46,7 @@ fn panic_handler(panic_info: &PanicInfo) -> ! {
     println!("# <[ PANIC ]> {} ", panic_info);
     println!("#######################################");
 
-     core::intrinsics::abort() 
+    core::intrinsics::abort()
 }
 
 /// Allocation Error Handler for the Wii.
@@ -64,5 +64,5 @@ fn alloc_error(layout: Layout) -> ! {
     );
     println!("#######################################");
 
-    core::intrinsics::abort() 
+    core::intrinsics::abort()
 }

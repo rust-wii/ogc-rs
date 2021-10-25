@@ -142,7 +142,7 @@ impl System {
     /// Set the alarm parameters for a one-shot alarm, add to the list of alarms and start.
     pub fn set_alarm<F>(context: u32, fire_time: Duration, callback: Box<F>) -> Result<()>
     where
-        F: Fn(u32, *mut c_void) ,
+        F: Fn(u32, *mut c_void),
     {
         unsafe {
             // Convert Duration to timespec
@@ -220,7 +220,13 @@ impl System {
     /// # Safety
     ///
     /// The user must ensure the pointer is valid
-    pub unsafe fn get_font_texel(c: i32, image: *mut c_void, position: i32, stride: i32, width: &mut i32) {
+    pub unsafe fn get_font_texel(
+        c: i32,
+        image: *mut c_void,
+        position: i32,
+        stride: i32,
+        width: &mut i32,
+    ) {
         ffi::SYS_GetFontTexel(c, image, position, stride, width);
     }
 
@@ -252,7 +258,7 @@ impl System {
     /// Set Arena 1 Lo
     ///
     /// # Safety
-    /// 
+    ///
     /// The user must ensure this point into the memory is valid and the arena doesn't go out
     /// memory
     pub unsafe fn set_arena_1_lo(new_lo: *mut c_void) {
@@ -267,7 +273,7 @@ impl System {
     /// Set Arena 1 Hi
     ///
     /// # Safety
-    /// 
+    ///
     /// The user must ensure this point into the memory is valid and the arena doesn't go out
     /// memory
     pub unsafe fn set_arena_1_hi(new_hi: *mut c_void) {
@@ -287,14 +293,14 @@ impl System {
     /// Set Arena 2 Lo
     ///
     /// # Safety
-    /// 
+    ///
     /// The user must ensure this point into the memory is valid and the arena doesn't go out
     /// memory
     pub unsafe fn set_arena_2_lo(new_lo: *mut c_void) {
         ffi::SYS_SetArena2Lo(new_lo)
     }
 
-    /// Get Arena 2 Hi 
+    /// Get Arena 2 Hi
     pub fn get_arena_2_hi() -> *mut c_void {
         unsafe { ffi::SYS_GetArena2Hi() }
     }
@@ -302,7 +308,7 @@ impl System {
     /// Set Arena 2 Hi
     ///
     /// # Safety
-    /// 
+    ///
     /// The user must ensure this point into the memory is valid and the arena doesn't go out
     /// memory
     pub unsafe fn set_arena_2_hi(new_hi: *mut c_void) {

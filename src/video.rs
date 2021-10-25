@@ -47,24 +47,22 @@ impl From<RenderConfig> for *mut ffi::GXRModeObj {
 impl From<&ffi::GXRModeObj> for RenderConfig {
     fn from(obj: &ffi::GXRModeObj) -> Self {
         RenderConfig {
-                tv_type: (*obj).viTVMode,
-                framebuffer_width: (*obj).fbWidth,
-                embed_framebuffer_height: (*obj).efbHeight,
-                extern_framebuffer_height: (*obj).xfbHeight,
-                vi_x_origin: (*obj).viXOrigin,
-                vi_y_origin: (*obj).viYOrigin,
-                vi_width: (*obj).viWidth,
-                vi_height: (*obj).viHeight,
-                extern_framebuffer_mode: (*obj).xfbMode,
-                field_rendering: (*obj).field_rendering,
-                anti_aliasing: (*obj).aa,
-                sample_pattern: (*obj).sample_pattern,
-                v_filter: (*obj).vfilter,
-            }
+            tv_type: (*obj).viTVMode,
+            framebuffer_width: (*obj).fbWidth,
+            embed_framebuffer_height: (*obj).efbHeight,
+            extern_framebuffer_height: (*obj).xfbHeight,
+            vi_x_origin: (*obj).viXOrigin,
+            vi_y_origin: (*obj).viYOrigin,
+            vi_width: (*obj).viWidth,
+            vi_height: (*obj).viHeight,
+            extern_framebuffer_mode: (*obj).xfbMode,
+            field_rendering: (*obj).field_rendering,
+            anti_aliasing: (*obj).aa,
+            sample_pattern: (*obj).sample_pattern,
+            v_filter: (*obj).vfilter,
         }
+    }
 }
-
-
 
 #[derive(IntoPrimitive, TryFromPrimitive, Debug, Eq, PartialEq)]
 #[repr(u32)]
@@ -101,7 +99,10 @@ impl Video {
         unsafe {
             ffi::VIDEO_Init();
 
-            let r_mode = ffi::VIDEO_GetPreferredMode(ptr::null_mut()).as_ref().unwrap().into();
+            let r_mode = ffi::VIDEO_GetPreferredMode(ptr::null_mut())
+                .as_ref()
+                .unwrap()
+                .into();
 
             Self {
                 render_config: r_mode,
@@ -119,7 +120,12 @@ impl Video {
     }
 
     pub fn get_preferred_mode() -> RenderConfig {
-        unsafe { ffi::VIDEO_GetPreferredMode(ptr::null_mut()).as_ref().unwrap().into() }
+        unsafe {
+            ffi::VIDEO_GetPreferredMode(ptr::null_mut())
+                .as_ref()
+                .unwrap()
+                .into()
+        }
     }
 
     pub fn configure(render_config: RenderConfig) {
@@ -160,14 +166,14 @@ impl Video {
             ffi::VIDEO_SetBlack(is_black);
         }
     }
-    
+
     /// # Safety
     ///
     /// The user must ensure this pointer to to valid framebuffer data
     pub unsafe fn set_next_framebuffer(framebuffer: *mut c_void) {
         ffi::VIDEO_SetNextFramebuffer(framebuffer);
     }
-    
+
     /// # Safety
     ///
     /// The user must ensure this pointer to to valid framebuffer data
@@ -177,7 +183,7 @@ impl Video {
 
     pub fn register_post_retrace_callback<F>(callback: Box<F>)
     where
-        F: Fn(u32) ,
+        F: Fn(u32),
     {
         let ptr = Box::into_raw(callback);
 
@@ -190,7 +196,7 @@ impl Video {
 
     pub fn register_pre_retrace_callback<F>(callback: Box<F>)
     where
-        F: Fn(u32) ,
+        F: Fn(u32),
     {
         let ptr = Box::into_raw(callback);
 

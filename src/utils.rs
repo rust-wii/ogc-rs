@@ -21,7 +21,7 @@ pub unsafe fn raw_to_string(raw: *mut u8) -> String {
 /// The use has to ensure this is a valid ptr to utf-8 data
 ///
 pub unsafe fn raw_to_strings(raw: *mut *mut u8) -> Vec<String> {
-    let slice = slice::from_raw_parts(raw, 2); 
+    let slice = slice::from_raw_parts(raw, 2);
     slice
         .iter()
         .map(|x: &*mut u8| {
