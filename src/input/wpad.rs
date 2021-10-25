@@ -81,7 +81,7 @@ impl WPad {
         unsafe { WPadButton::from_bits_truncate(ffi::WPAD_ButtonsDown(self.id as i32)) }
     }
 
-   pub fn is_button_down(&self, button: WPadButton) -> bool {
+    pub fn is_button_down(&self, button: WPadButton) -> bool {
         let buttons = self.buttons_down();
         buttons.contains(button)
     }
@@ -94,16 +94,16 @@ impl WPad {
         let buttons = self.buttons_held();
         buttons.contains(button)
     }
- 
+
     pub fn raw(&self) -> Box<ffi::WPADData> {
         unsafe { Box::new(*ffi::WPAD_Data(self.id as i32)) }
     }
-    
+
     pub fn ir(&self) -> (f32, f32) {
         let data = self.raw();
         (data.ir.x, data.ir.y)
     }
-    
+
     pub fn gforce(self) -> (f32, f32, f32) {
         let data = self.raw();
         (data.gforce.x, data.gforce.y, data.gforce.z)
@@ -113,7 +113,7 @@ impl WPad {
         let data = self.raw();
         (data.accel.x, data.accel.y, data.accel.z)
     }
-    
+
     pub fn expansion(&self) -> ffi::expansion_t {
         let data = self.raw();
         data.exp
@@ -126,7 +126,6 @@ impl WPad {
     pub fn set_motion_plus(&self, enable_motion_plus: bool) {
         unsafe { ffi::WPAD_SetMotionPlus(self.id as i32, enable_motion_plus as u8) };
     }
-
 
     pub fn init() {
         unsafe { ffi::WPAD_Init() };
