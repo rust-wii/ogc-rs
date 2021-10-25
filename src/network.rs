@@ -9,7 +9,7 @@ use alloc::{
     string::{String, ToString},
     vec::Vec,
 };
-use core::{ffi::c_void, ptr};
+use core::ffi::c_void;
 use num_enum::IntoPrimitive;
 
 bitflags! {
@@ -151,18 +151,18 @@ pub struct IPV4Address {
 }
 
 /// Implementation to convert from a ``IPV4Address`` into a ``in_addr`` used by ogc_sys.
-impl Into<ffi::in_addr> for &mut IPV4Address {
-    fn into(self) -> ffi::in_addr {
+impl From<&mut IPV4Address> for ffi::in_addr {
+    fn from(ipv4: &mut IPV4Address) -> ffi::in_addr {
         ffi::in_addr {
-            s_addr: self.address,
+            s_addr: ipv4.address,
         }
     }
 }
 
-impl Into<*mut ffi::in_addr> for &mut IPV4Address {
-    fn into(self) -> *mut ffi::in_addr {
+impl From<&mut IPV4Address> for *mut ffi::in_addr {
+    fn from(ipv4: &mut IPV4Address) -> *mut ffi::in_addr {
         Box::into_raw(Box::new(ffi::in_addr {
-            s_addr: self.address,
+            s_addr: ipv4.address,
         }))
     }
 }
@@ -190,14 +190,14 @@ pub struct SocketAddress {
 }
 
 /// Convert ``SocketAddress`` into a ``ogc_sys::sockaddr``.
-impl Into<*mut ffi::sockaddr> for SocketAddress {
-    fn into(self) -> *mut ffi::sockaddr {
+impl From<SocketAddress> for *mut ffi::sockaddr {
+    fn from(addr: SocketAddress) -> *mut ffi::sockaddr {
         // TODO: Check implementation.
-        let sa_family: u32 = self.family.into();
+        let sa_family: u32 = addr.family.into();
         Box::into_raw(Box::new(ffi::sockaddr {
-            sa_len: self.length,
+            sa_len: addr.length,
             sa_family: sa_family as u8,
-            sa_data: self.data,
+            sa_data: addr.data,
         }))
     }
 }
@@ -248,7 +248,7 @@ pub fn dot_to_net_addr(dot: &str, addr: &mut IPV4Address) -> Result<()> {
 /// to a string in the Internet standard dot notation.
 pub fn addr_to_dot(addr: &mut IPV4Address) -> Result<String> {
     let r = unsafe { ffi::inet_ntoa(addr.into()) };
-    let r = raw_to_string(r);
+    let r = unsafe { raw_to_string(r) };
 
     if r.is_empty() {
         Err(OgcError::Network("addr_to_dot empty".to_string()))
@@ -263,7 +263,7 @@ pub fn get_host_by_name(addr_string: &str) -> Result<HostInformation> {
     unsafe {
         let r = ffi::net_gethostbyname(addr_string.as_ptr());
 
-        if r == ptr::null_mut() {
+        if r.is_null() {
             Err(OgcError::Network("host provided doesnt exist".into()))
         } else {
             Ok(HostInformation {
@@ -298,7 +298,7 @@ impl Network {
     }
 
     /// Create a socket.
-    pub fn new(domain: ProtocolFamily, socket_type: SocketType) -> Result<Socket> {
+    pub fn new_socket(domain: ProtocolFamily, socket_type: SocketType) -> Result<Socket> {
         let r = unsafe { ffi::net_socket(domain.into(), socket_type.into(), 0) };
 
         if r == INVALID_SOCKET {

@@ -371,6 +371,13 @@ pub enum AttnFn {
 #[repr(transparent)]
 pub struct Fifo(ffi::GXFifoObj);
 
+impl Default for Fifo {
+    fn default() -> Self {
+        Fifo::new()
+    }
+}
+
+
 impl Fifo {
     /// The minimum allowed size for a FIFO.
     pub const MIN_SIZE: usize = ffi::GX_FIFO_MINSIZE as usize;
@@ -392,7 +399,7 @@ impl Fifo {
         // + `size` is checked to be less than `isize::MAX` before being passed to
         //   `alloc_zeroed()`.
         // + `base` is checked to be non-null, otherwise libogc returns early without initializing.
-        assert!(size as isize <= isize::MAX, "size must be isize::MAX bytes or less");
+        assert!(size <= isize::MAX.try_into().unwrap(), "size must be isize::MAX bytes or less");
         let base = unsafe {
             crate::mem_cached_to_uncached!(alloc::alloc::alloc_zeroed(
                 core::alloc::Layout::from_size_align(size, 32).unwrap()
@@ -459,6 +466,10 @@ impl Fifo {
     pub fn len(&self) -> usize {
         // TODO: remove conversions when upstream changes pass.
         unsafe { ffi::GX_GetFifoSize(self as *const _ as *mut _) as usize }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        false
     }
 
     /// Returns a non-zero value if the write pointer has passed the TOP of the FIFO.
@@ -825,15 +836,15 @@ pub struct Texture<'img>(ffi::GXTexObj, PhantomData<&'img [u8]>);
 
 impl Texture<'_> {
     /// Used to initialize or change a texture object for non-color index textures.
-    pub fn new<'img>(
-        img: &'img [u8],
+    pub fn new(
+        img: &[u8],
         width: u16,
         height: u16,
         format: u8,
         wrap_s: WrapMode,
         wrap_t: WrapMode,
         mipmap: bool,
-    ) -> Texture<'img> {
+    ) -> Texture {
         let texture = core::mem::MaybeUninit::zeroed();
         assert_eq!(0, img.as_ptr().align_offset(32));
         assert!(width <= 1024, "max width for texture is 1024");
@@ -854,16 +865,15 @@ impl Texture<'_> {
     }
 
     /// Used to initialize or change a texture object when the texture is color index format.
-    pub fn with_color_idx<'img>(
-        img: &'img [u8],
+    pub fn with_color_idx(
+        img: &[u8],
         width: u16,
         height: u16,
         format: u8,
-        wrap_s: WrapMode,
-        wrap_t: WrapMode,
+        wrap: (WrapMode, WrapMode),
         mipmap: bool,
         tlut_name: u32,
-    ) -> Texture<'img> {
+    ) -> Texture {
         let texture = core::mem::MaybeUninit::zeroed();
         assert_eq!(0, img.as_ptr().align_offset(32));
         assert!(width <= 1024, "max width for texture is 1024");
@@ -875,8 +885,8 @@ impl Texture<'_> {
                 width,
                 height,
                 format,
-                wrap_s as u8,
-                wrap_t as u8,
+                wrap.0 as u8,
+                wrap.1 as u8,
                 mipmap as u8,
                 tlut_name,
             );
@@ -960,25 +970,23 @@ impl Texture<'_> {
     /// filter) because cache-hit ratio changes according to which filter mode is being used.
     pub fn set_lod(
         &mut self,
-        minfilt: TexFilter,
-        magfilt: TexFilter,
-        minlod: f32,
-        maxlod: f32,
+        filters: (TexFilter, TexFilter),
+        lod_range: (f32, f32),
         lodbias: f32,
         biasclamp: bool,
         edgelod: bool,
         maxaniso: u8,
     ) {
         debug_assert!(
-            (0.0..=10.0).contains(&minlod),
+            (0.0..=10.0).contains(&lod_range.0),
             "valid range for min LOD is 0.0 to 10.0"
         );
         debug_assert!(
-            (0.0..=10.0).contains(&maxlod),
+            (0.0..=10.0).contains(&lod_range.1),
             "valid range for max LOD is 0.0 to 10.0"
         );
         debug_assert!(
-            matches!(magfilt, TexFilter::Near | TexFilter::Linear),
+            matches!(filters.1, TexFilter::Near | TexFilter::Linear),
             "magfilt can only be `TexFilter::Near` or `TexFilter::Linear`"
         );
         debug_assert!(
@@ -989,10 +997,10 @@ impl Texture<'_> {
         unsafe {
             ffi::GX_InitTexObjLOD(
                 &mut self.0,
-                minfilt as u8,
-                magfilt as u8,
-                minlod,
-                maxlod,
+                filters.0 as u8,
+                filters.1 as u8,
+                lod_range.0,
+                lod_range.1,
                 lodbias,
                 biasclamp as u8,
                 edgelod as u8,
@@ -1135,7 +1143,7 @@ impl Gx {
 
         // SAFETY:
         // + `size` is less than or equal to `isize::MAX` before being passed to `alloc_zeroed()`.
-        assert!(size as isize <= isize::MAX, "size must be isize::MAX bytes or less");
+        assert!(size <= isize::MAX.try_into().unwrap(), "size must be isize::MAX bytes or less");
         let base = unsafe {
             crate::mem_cached_to_uncached!(alloc::alloc::alloc_zeroed(
                 core::alloc::Layout::from_size_align(size, 32).unwrap()
@@ -1583,9 +1591,14 @@ impl Gx {
     }
 
     /// Copies the embedded framebuffer (EFB) to the external framebuffer(XFB) in main memory.
+    ///
+    /// # Safety 
+    /// 
+    /// The user must ensure the dest ptr is a valid pointer,
+    ///
     /// See [GX_CopyDisp](https://libogc.devkitpro.org/gx_8h.html#a9ed0ae3f900abb6af2e930dff7a6bc28) for more.
-    pub fn copy_disp(dest: *mut c_void, clear: bool) {
-        unsafe { ffi::GX_CopyDisp(dest, clear as u8) }
+    pub unsafe fn copy_disp(dest: *mut c_void, clear: bool) {
+        ffi::GX_CopyDisp(dest, clear as u8)
     }
 
     /// Sets the gamma correction applied to pixels during EFB to XFB copy operation.
@@ -1773,8 +1786,8 @@ impl Gx {
 
     /// Sets the array base pointer and stride for a single attribute.
     /// See [GX_SetArray](https://libogc.devkitpro.org/gx_8h.html#a5164fc6aa2a678d792af80d94bfa1ec2) for more.
-    pub fn set_array(attr: u32, ptr: *mut c_void, stride: u8) {
-        unsafe { ffi::GX_SetArray(attr, ptr, stride) }
+    pub fn set_array<T>(attr: u32, array: &[T], stride: u8) {
+        unsafe { ffi::GX_SetArray(attr, array.as_ptr() as *mut c_void, stride) }
     }
 
     /// Begins drawing of a graphics primitive.
