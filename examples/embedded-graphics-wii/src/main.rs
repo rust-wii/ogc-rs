@@ -22,8 +22,8 @@ fn main(_argc: isize, _argv: *const *const u8) -> isize {
     Input::init(ControllerType::Gamecube);
     Input::init(ControllerType::Wii);
 
-    let gcn_ctrl = Input::new(ControllerPort::One, ControllerType::Gamecube);
-    let wii_ctrl = Input::new( ControllerPort::One, ControllerType::Wii);
+    let gcn_ctrl = Input::new(ControllerType::Gamecube, ControllerPort::One);
+    let wii_ctrl = Input::new(ControllerType::Wii, ControllerPort::One);
     wii_ctrl.as_wpad().set_data_format(WPadDataFormat::ButtonsAccelIR);
 
     Console::init(&video);

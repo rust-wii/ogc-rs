@@ -77,7 +77,7 @@ pub struct Input {
 }
 
 impl Input {
-    pub fn new(id: ControllerPort, ctrl_type: ControllerType) -> Self {
+    pub fn new(ctrl_type: ControllerType, id: ControllerPort) -> Self {
         Self { id, ctrl_type }
     }
     
