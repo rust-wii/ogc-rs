@@ -22,11 +22,10 @@ fn main(_argc: isize, _argv: *const *const u8) -> isize {
     Input::init(ControllerType::Gamecube);
     Input::init(ControllerType::Wii);
 
-    let mut gcn_ctrl = Input::new(ControllerType::Gamecube, ControllerPort::One);
-    let mut wii_ctrl = Input::new(ControllerType::Wii, ControllerPort::One);
-    wii_ctrl.set_data_fmt(DataFmt::ButtonsAccelIR);
+    let gcn_ctrl = Input::new(ControllerType::Gamecube, ControllerPort::One);
+    let wii_ctrl = Input::new(ControllerType::Wii, ControllerPort::One);
+    wii_ctrl.as_wpad().set_data_format(WPadDataFormat::ButtonsAccelIR);
 
-    wii_ctrl.set_data_fmt(DataFmt::ButtonsAccelIR);
     Console::init(&video);
     Video::configure(video.render_config);
     Video::set_next_framebuffer(video.framebuffer);
@@ -47,14 +46,14 @@ fn main(_argc: isize, _argv: *const *const u8) -> isize {
 
     const POINTER: Rectangle = Rectangle::new(Point::zero(), Size::new_equal(10));
     loop {
-        gcn_ctrl.update();
-        wii_ctrl.update();
+        Input::update(ControllerType::Gamecube);
+        Input::update(ControllerType::Wii); 
 
-        if gcn_ctrl.is_button_in_state(Button::Start, ButtonState::ButtonDown) {
+        if gcn_ctrl.is_button_down(Button::Start) {
             break 0;
         }
 
-        if wii_ctrl.is_button_in_state(Button::Home, ButtonState::ButtonDown) {
+        if wii_ctrl.is_button_down(Button::Home) {
             break 0;
         }
         Gx::set_viewport(
@@ -66,7 +65,7 @@ fn main(_argc: isize, _argv: *const *const u8) -> isize {
             0.0,
         );
 
-        let ir = Point::new(wii_ctrl.ir().0 as i32, wii_ctrl.ir().1 as i32);
+        let ir = Point::new(wii_ctrl.as_wpad().ir().0 as i32, wii_ctrl.as_wpad().ir().1 as i32);
 
         BACKGROUND
             .into_styled(PrimitiveStyle::with_fill(Rgb888::WHITE))
@@ -77,7 +76,7 @@ fn main(_argc: isize, _argv: *const *const u8) -> isize {
             area.into_styled(PrimitiveStyle::with_fill(Rgb888::RED))
                 .draw(&mut wii_display)
                 .unwrap();
-            if wii_ctrl.is_button_in_state(Button::A, ButtonState::ButtonHeld) {
+            if wii_ctrl.is_button_held(Button::A) {
                 area.into_styled(PrimitiveStyle::with_fill(Rgb888::GREEN))
                     .draw(&mut wii_display)
                     .unwrap();
