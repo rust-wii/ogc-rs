@@ -26,7 +26,7 @@ impl Display {
     pub fn flush(&self, framebuffer: *mut c_void) {
         Gx::draw_done();
         Gx::set_z_mode(true, CmpFn::LessEq, true);
-        Gx::copy_disp(framebuffer, true);
+        unsafe { Gx::copy_disp(framebuffer, true); }
     }
 
     pub fn setup(&self, rc: &mut RenderConfig) {
