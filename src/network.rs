@@ -9,6 +9,7 @@ use alloc::{
     string::{String, ToString},
     vec::Vec,
 };
+
 use bitflags::bitflags;
 use core::{ffi::c_void, slice};
 use cstr_core::CStr;

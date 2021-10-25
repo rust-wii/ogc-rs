@@ -142,10 +142,7 @@ impl Gu {
 
     pub fn light_frustum(
         mt: &mut Mtx34,
-        top: f32,
-        bottom: f32,
-        left: f32,
-        right: f32,
+        frust_box: (f32, f32, f32, f32),
         z_near: f32,
         scale: (f32, f32),
         translation: (f32, f32),
@@ -153,10 +150,10 @@ impl Gu {
         unsafe {
             ffi::guLightFrustum(
                 mt.as_mut_ptr().cast(),
-                top,
-                bottom,
-                left,
-                right,
+                frust_box.0,
+                frust_box.1,
+                frust_box.2,
+                frust_box.3,
                 z_near,
                 scale.0,
                 scale.1,

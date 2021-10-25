@@ -65,28 +65,28 @@ pub struct FontHeader {
     pub sheet_fullsize: u32,
 }
 
-impl Into<*mut ffi::sys_fontheader> for &mut FontHeader {
-    fn into(self) -> *mut ffi::sys_fontheader {
+impl From<&mut FontHeader> for *mut ffi::sys_fontheader {
+    fn from(head: &mut FontHeader) -> *mut ffi::sys_fontheader {
         Box::into_raw(Box::new(ffi::sys_fontheader {
-            font_type: self.font_type,
-            first_char: self.first_char,
-            last_char: self.last_char,
-            inval_char: self.inval_char,
-            asc: self.asc,
-            desc: self.desc,
-            width: self.width,
-            leading: self.leading,
-            cell_width: self.cell_dimensions.0,
-            cell_height: self.cell_dimensions.1,
-            sheet_size: self.sheet_size,
-            sheet_format: self.sheet_format,
-            sheet_column: self.sheet_colrow.0,
-            sheet_row: self.sheet_colrow.1,
-            sheet_width: self.sheet_dimensions.0,
-            sheet_height: self.sheet_dimensions.1,
-            width_table: self.width_table,
-            sheet_image: self.sheet_image,
-            sheet_fullsize: self.sheet_fullsize,
+            font_type: head.font_type,
+            first_char: head.first_char,
+            last_char: head.last_char,
+            inval_char: head.inval_char,
+            asc: head.asc,
+            desc: head.desc,
+            width: head.width,
+            leading: head.leading,
+            cell_width: head.cell_dimensions.0,
+            cell_height: head.cell_dimensions.1,
+            sheet_size: head.sheet_size,
+            sheet_format: head.sheet_format,
+            sheet_column: head.sheet_colrow.0,
+            sheet_row: head.sheet_colrow.1,
+            sheet_width: head.sheet_dimensions.0,
+            sheet_height: head.sheet_dimensions.1,
+            width_table: head.width_table,
+            sheet_image: head.sheet_image,
+            sheet_fullsize: head.sheet_fullsize,
             c0: 0,
             c1: 0,
             c2: 0,
@@ -142,7 +142,7 @@ impl System {
     /// Set the alarm parameters for a one-shot alarm, add to the list of alarms and start.
     pub fn set_alarm<F>(context: u32, fire_time: Duration, callback: Box<F>) -> Result<()>
     where
-        F: Fn(u32, *mut c_void) -> (),
+        F: Fn(u32, *mut c_void),
     {
         unsafe {
             // Convert Duration to timespec
@@ -173,7 +173,7 @@ impl System {
         callback: Box<F>,
     ) -> Result<()>
     where
-        F: Fn(u32, *mut c_void) -> (),
+        F: Fn(u32, *mut c_void),
     {
         unsafe {
             // Convert Duration to timespec
@@ -216,23 +216,33 @@ impl System {
     }
 
     /// Get Font Texel
-    pub fn get_font_texel(c: i32, image: *mut c_void, position: i32, stride: i32, width: &mut i32) {
-        unsafe {
-            ffi::SYS_GetFontTexel(c, image, position, stride, width);
-        }
+    ///
+    /// # Safety
+    ///
+    /// The user must ensure the pointer is valid
+    pub unsafe fn get_font_texel(
+        c: i32,
+        image: *mut c_void,
+        position: i32,
+        stride: i32,
+        width: &mut i32,
+    ) {
+        ffi::SYS_GetFontTexel(c, image, position, stride, width);
     }
 
     /// Get Font Texture
-    pub fn get_font_texture(
+    ///
+    /// # Safety
+    ///
+    /// The user must ensure the pointer is valid
+    pub unsafe fn get_font_texture(
         c: i32,
         image: *mut *mut c_void,
         xpos: &mut i32,
         ypos: &mut i32,
         width: &mut i32,
     ) {
-        unsafe {
-            ffi::SYS_GetFontTexture(c, image, xpos, ypos, width);
-        }
+        ffi::SYS_GetFontTexture(c, image, xpos, ypos, width);
     }
 
     /// Get Font Encoding
@@ -246,8 +256,13 @@ impl System {
     }
 
     /// Set Arena 1 Lo
-    pub fn set_arena_1_lo(new_lo: *mut c_void) {
-        unsafe { ffi::SYS_SetArena1Lo(new_lo) }
+    ///
+    /// # Safety
+    ///
+    /// The user must ensure this point into the memory is valid and the arena doesn't go out
+    /// memory
+    pub unsafe fn set_arena_1_lo(new_lo: *mut c_void) {
+        ffi::SYS_SetArena1Lo(new_lo)
     }
 
     /// Get Arena 1 Hi
@@ -256,8 +271,13 @@ impl System {
     }
 
     /// Set Arena 1 Hi
-    pub fn set_arena_1_hi(new_hi: *mut c_void) {
-        unsafe { ffi::SYS_SetArena1Hi(new_hi) }
+    ///
+    /// # Safety
+    ///
+    /// The user must ensure this point into the memory is valid and the arena doesn't go out
+    /// memory
+    pub unsafe fn set_arena_1_hi(new_hi: *mut c_void) {
+        ffi::SYS_SetArena1Hi(new_hi)
     }
 
     /// Get Arena 1 Size
@@ -271,8 +291,13 @@ impl System {
     }
 
     /// Set Arena 2 Lo
-    pub fn set_arena_2_lo(new_lo: *mut c_void) {
-        unsafe { ffi::SYS_SetArena2Lo(new_lo) }
+    ///
+    /// # Safety
+    ///
+    /// The user must ensure this point into the memory is valid and the arena doesn't go out
+    /// memory
+    pub unsafe fn set_arena_2_lo(new_lo: *mut c_void) {
+        ffi::SYS_SetArena2Lo(new_lo)
     }
 
     /// Get Arena 2 Hi
@@ -281,8 +306,13 @@ impl System {
     }
 
     /// Set Arena 2 Hi
-    pub fn set_arena_2_hi(new_hi: *mut c_void) {
-        unsafe { ffi::SYS_SetArena2Hi(new_hi) }
+    ///
+    /// # Safety
+    ///
+    /// The user must ensure this point into the memory is valid and the arena doesn't go out
+    /// memory
+    pub unsafe fn set_arena_2_hi(new_hi: *mut c_void) {
+        ffi::SYS_SetArena2Hi(new_hi)
     }
 
     /// Get Arena 2 Size
