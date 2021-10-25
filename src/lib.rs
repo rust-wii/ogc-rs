@@ -23,7 +23,6 @@
 #![feature(core_intrinsics)]
 
 extern crate alloc;
-use bitflags::bitflags;
 
 // Custom Error Implementation
 pub mod error;
