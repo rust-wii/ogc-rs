@@ -68,6 +68,9 @@ pub mod input;
 // Light-Weight Process implementation
 pub mod lwp;
 
+// Cache operations.
+pub mod cache;
+
 #[cfg(feature = "glam")]
 pub mod glam_impl;
 
