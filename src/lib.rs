@@ -20,6 +20,7 @@
 #![allow(dead_code)]
 #![feature(panic_info_message)]
 #![feature(alloc_error_handler)]
+#![feature(negative_impls)]
 #![feature(core_intrinsics)]
 
 extern crate alloc;
@@ -67,6 +68,12 @@ pub mod input;
 
 // Light-Weight Process implementation
 pub mod lwp;
+
+// LWP Mutex implementation
+pub mod mutex;
+
+// Cache operations.
+pub mod cache;
 
 #[cfg(feature = "glam")]
 pub mod glam_impl;
