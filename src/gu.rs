@@ -108,14 +108,22 @@ impl Gu {
 
     /// Sets a 4x4 perspective projection matrix from field of view and aspect ratio parameters.
     /// See [guPerspective](https://libogc.devkitpro.org/gu_8h.html#af22f5e7e20c24dc11f2d58dfb64cdc95) for more.
-    pub fn perspective(mt: &mut Mtx44, fovy: f32, aspect: f32, n: f32, f: f32) {
-        unsafe { ffi::guPerspective(mt as *mut _, fovy, aspect, n, f) }
+    pub fn perspective(mt: &mut Mtx44, fovy: f32, aspect: f32, near: f32, far: f32) {
+        unsafe { ffi::guPerspective(mt as *mut _, fovy, aspect, near, far) }
     }
 
     /// Sets a 4x4 matrix for orthographic projection.
     /// See [guOrtho](https://libogc.devkitpro.org/gu_8h.html#acce7b8b77ff8c321fbc6a797ea307541) for more.
-    pub fn ortho(mt: &mut Mtx44, t: f32, b: f32, l: f32, r: f32, n: f32, f: f32) {
-        unsafe { ffi::guOrtho(mt as *mut _, t, b, l, r, n, f) }
+    pub fn ortho(
+        mt: &mut Mtx44,
+        top: f32,
+        bottom: f32,
+        left: f32,
+        right: f32,
+        near: f32,
+        far: f32,
+    ) {
+        unsafe { ffi::guOrtho(mt as *mut _, top, bottom, left, right, near, far) }
     }
 
     pub fn mtx44_identity(mt: &mut Mtx44) {
@@ -134,10 +142,7 @@ impl Gu {
 
     pub fn light_frustum(
         mt: &mut Mtx34,
-        top: f32,
-        bottom: f32,
-        left: f32,
-        right: f32,
+        frust_box: (f32, f32, f32, f32),
         z_near: f32,
         scale: (f32, f32),
         translation: (f32, f32),
@@ -145,10 +150,10 @@ impl Gu {
         unsafe {
             ffi::guLightFrustum(
                 mt.as_mut_ptr().cast(),
-                top,
-                bottom,
-                left,
-                right,
+                frust_box.0,
+                frust_box.1,
+                frust_box.2,
+                frust_box.3,
                 z_near,
                 scale.0,
                 scale.1,
@@ -317,32 +322,15 @@ impl Gu {
     }
 
     pub fn mtx_rotation_axis_radians(mt: &mut Mtx34, axis: &mut guVector, rot_radians: f32) {
-        unsafe {
-            ffi::c_guMtxRotAxisRad(
-                mt.as_mut_ptr().cast(),
-                axis,
-                rot_radians,
-            )
-        }
+        unsafe { ffi::c_guMtxRotAxisRad(mt.as_mut_ptr().cast(), axis, rot_radians) }
     }
 
     pub fn mtx_reflect(mt: &mut Mtx34, point: &mut guVector, normal: &mut guVector) {
-        unsafe {
-            ffi::c_guMtxReflect(
-                mt.as_mut_ptr().cast(),
-                point,
-                normal
-            )
-        }
+        unsafe { ffi::c_guMtxReflect(mt.as_mut_ptr().cast(), point, normal) }
     }
 
     pub fn mtx_quaternion(mt: &mut Mtx34, quaternion: &mut guQuaternion) {
-        unsafe {
-            ffi::c_guMtxQuat(
-                mt.as_mut_ptr().cast(),
-                quaternion 
-            )
-        }
+        unsafe { ffi::c_guMtxQuat(mt.as_mut_ptr().cast(), quaternion) }
     }
 }
 
@@ -455,10 +443,22 @@ impl fmt::Display for Mat4 {
              [{}, {}, {}, {}]
              [{}, {}, {}, {}]
              [{}, {}, {}, {}]",
-             self.0[0][0], self.0[0][1], self.0[0][2], self.0[0][3],
-             self.0[1][0], self.0[1][1], self.0[1][2], self.0[1][3],
-             self.0[2][0], self.0[2][1], self.0[2][2], self.0[2][3],
-             self.0[3][0], self.0[3][1], self.0[3][2], self.0[3][3],
+            self.0[0][0],
+            self.0[0][1],
+            self.0[0][2],
+            self.0[0][3],
+            self.0[1][0],
+            self.0[1][1],
+            self.0[1][2],
+            self.0[1][3],
+            self.0[2][0],
+            self.0[2][1],
+            self.0[2][2],
+            self.0[2][3],
+            self.0[3][0],
+            self.0[3][1],
+            self.0[3][2],
+            self.0[3][3],
         )
     }
 }

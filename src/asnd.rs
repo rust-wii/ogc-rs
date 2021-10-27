@@ -16,6 +16,9 @@ macro_rules! if_not {
     };
 }
 
+/// Voice Options Callback Type
+pub type VoiceOptionsCallback = Option<Box<fn(i32) -> ()>>;
+
 /// Options to be passed when creating a new voice.
 ///
 /// # Examples
@@ -32,7 +35,13 @@ pub struct VoiceOptions {
     delay: u32,
     volume_left: u8,
     volume_right: u8,
-    callback: Option<Box<fn(i32) -> ()>>,
+    callback: VoiceOptionsCallback,
+}
+
+impl Default for VoiceOptions {
+    fn default() -> Self {
+        VoiceOptions::new()
+    }
 }
 
 impl VoiceOptions {
@@ -185,7 +194,7 @@ impl Asnd {
     /// Sets a global callback for general purposes. It is called by the IRQ.
     pub fn set_callback<F>(callback: Box<F>)
     where
-        F: Fn() -> (),
+        F: Fn(),
     {
         // TODO: Check if this implementation can be changed.
         let ptr = Box::into_raw(callback);
