@@ -20,6 +20,7 @@
 #![allow(dead_code)]
 #![feature(panic_info_message)]
 #![feature(alloc_error_handler)]
+#![feature(negative_impls)]
 
 extern crate alloc;
 use bitflags::bitflags;
@@ -67,6 +68,9 @@ pub mod input;
 
 // Light-Weight Process implementation
 pub mod lwp;
+
+// LWP Mutex implementation
+pub mod mutex;
 
 // Cache operations.
 pub mod cache;
