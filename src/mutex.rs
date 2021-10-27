@@ -36,8 +36,6 @@ pub struct Mutex<T: ?Sized> {
 	data: UnsafeCell<T>,
 }
 
-/// Provides more fallible methods for using and acquiring locks. This is closer
-/// to how libogc works and is intentionally similar to `std`.
 impl<T> Mutex<T> {
 	/// Creates a new mutex in an unlocked state ready for use.
 	/// 
