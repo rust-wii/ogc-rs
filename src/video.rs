@@ -24,8 +24,8 @@ pub struct RenderConfig {
     pub v_filter: [u8; 7usize],
 }
 
-impl From<RenderConfig> for *mut ffi::GXRModeObj {
-    fn from(cfg: RenderConfig) -> *mut ffi::GXRModeObj {
+impl From<&RenderConfig> for *mut ffi::GXRModeObj {
+    fn from(cfg: &RenderConfig) -> *mut ffi::GXRModeObj {
         Box::into_raw(Box::new(ffi::GXRModeObj {
             viTVMode: cfg.tv_type,
             fbWidth: cfg.framebuffer_width,
@@ -107,13 +107,13 @@ impl Video {
             Self {
                 render_config: r_mode,
                 framebuffer: mem_cached_to_uncached!(System::allocate_framebuffer(
-                    Self::get_preferred_mode()
+                    &Self::get_preferred_mode()
                 )),
             }
         }
     }
 
-    pub fn clear_framebuffer(&mut self, rconf: RenderConfig, colour: u32) {
+    pub fn clear_framebuffer(&mut self, rconf: &RenderConfig, colour: u32) {
         unsafe {
             ffi::VIDEO_ClearFrameBuffer(rconf.into(), self.framebuffer, colour);
         }
@@ -128,7 +128,7 @@ impl Video {
         }
     }
 
-    pub fn configure(render_config: RenderConfig) {
+    pub fn configure(render_config: &RenderConfig) {
         unsafe {
             ffi::VIDEO_Configure(render_config.into());
         }
