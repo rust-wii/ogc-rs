@@ -2078,9 +2078,9 @@ impl Gx {
 
     #[inline]
     pub fn color_3f32(r: f32, g: f32, b: f32) {
-        assert!(0.0 <= r <= 1.0);
-        assert!(0.0 <= g <= 1.0);
-        assert!(0.0 <= b <= 1.0);
+        assert!(0.0 <= r && b <= 1.0);
+        assert!(0.0 <= g && b <= 1.0);
+        assert!(0.0 <= b && b <= 1.0);
 
         let r: u8 = ceilf(r * 255.0) as u8;
         let g: u8 = ceilf(g * 255.0) as u8;
@@ -2093,7 +2093,7 @@ impl Gx {
 
     #[inline]
     pub fn color_4f32(r: f32, g: f32, b: f32, a: f32) {
-        assert!(0.0 <= a <= 1.0);
+        assert!(0.0 <= a && a <= 1.0);
 
         let a = ceilf(a * 255.0) as u8;
 
