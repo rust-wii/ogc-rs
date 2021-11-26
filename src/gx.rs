@@ -2039,7 +2039,7 @@ impl Gx {
     }
 
     #[inline]
-    pub fn color_4u8(r: u8, b: u8, g: u8, a: u8) {
+    pub fn color_4u8(r: u8, g: u8, b: u8, a: u8) {
         let r_bytes = r.to_be_bytes();
         let g_bytes = g.to_be_bytes();
         let b_bytes = b.to_be_bytes();
@@ -2060,7 +2060,7 @@ impl Gx {
     }
 
     #[inline]
-    pub fn color_3u8(r: u8, b: u8, g: u8) {
+    pub fn color_3u8(r: u8, g: u8, b: u8) {
         let r_bytes = r.to_be_bytes();
         let g_bytes = g.to_be_bytes();
         let b_bytes = b.to_be_bytes();
@@ -2078,9 +2078,9 @@ impl Gx {
 
     #[inline]
     pub fn color_3f32(r: f32, g: f32, b: f32) {
-        assert!(0.0 <= r && b <= 1.0);
-        assert!(0.0 <= g && b <= 1.0);
-        assert!(0.0 <= b && b <= 1.0);
+        assert!((0.0..=1.0).contains(&r));
+        assert!((0.0..=1.0).contains(&g));
+        assert!((0.0..=1.0).contains(&b));
 
         let r: u8 = ceilf(r * 255.0) as u8;
         let g: u8 = ceilf(g * 255.0) as u8;
@@ -2093,7 +2093,7 @@ impl Gx {
 
     #[inline]
     pub fn color_4f32(r: f32, g: f32, b: f32, a: f32) {
-        assert!(0.0 <= a && a <= 1.0);
+        assert!((0.0..=1.0).contains(&a));
 
         let a = ceilf(a * 255.0) as u8;
 
