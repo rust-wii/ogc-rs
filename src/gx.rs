@@ -2039,7 +2039,7 @@ impl Gx {
     }
 
     #[inline]
-    pub fn color_4u8(r: u8, b: u8, g: u8, a: u8) {
+    pub fn color_4u8(r: u8, g: u8, b: u8, a: u8) {
         let r_bytes = r.to_be_bytes();
         let g_bytes = g.to_be_bytes();
         let b_bytes = b.to_be_bytes();
@@ -2060,7 +2060,7 @@ impl Gx {
     }
 
     #[inline]
-    pub fn color_3u8(r: u8, b: u8, g: u8) {
+    pub fn color_3u8(r: u8, g: u8, b: u8) {
         let r_bytes = r.to_be_bytes();
         let g_bytes = g.to_be_bytes();
         let b_bytes = b.to_be_bytes();
