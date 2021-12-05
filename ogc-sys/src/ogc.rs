@@ -1577,6 +1577,23 @@ pub const MAX_VOLUME: u32 = 255;
 pub const MIN_PITCH: u32 = 1;
 pub const F44100HZ_PITCH: u32 = 44100;
 pub const MAX_PITCH: u32 = 144000;
+pub const MAX_VOICES: u32 = 32;
+pub const SND_BUFFERSIZE: u32 = 384;
+pub const DSP_STREAMBUFFER_SIZE: u32 = 1152;
+pub const DSP_DEFAULT_FREQ: u32 = 48000;
+pub const VOICE_STATE_STOPPED: u32 = 0;
+pub const VOICE_STATE_RUNNING: u32 = 1;
+pub const VOICE_STATE_STREAM: u32 = 2;
+pub const VOICE_MONO8: u32 = 0;
+pub const VOICE_STEREO8: u32 = 1;
+pub const VOICE_MONO16: u32 = 2;
+pub const VOICE_STEREO16: u32 = 3;
+pub const VOICE_MONO8_UNSIGNED: u32 = 4;
+pub const VOICE_STEREO8_UNSIGNED: u32 = 5;
+pub const VOICE_MONO16_UNSIGNED: u32 = 6;
+pub const VOICE_STEREO16_UNSIGNED: u32 = 7;
+pub const VOICE_FREQ32KHZ: u32 = 32000;
+pub const VOICE_FREQ48KHZ: u32 = 48000;
 pub const WIIMOTE_LED_NONE: u32 = 0;
 pub const WIIMOTE_LED_1: u32 = 16;
 pub const WIIMOTE_LED_2: u32 = 32;
@@ -11992,6 +12009,84 @@ extern "C" {
 }
 extern "C" {
     pub fn ASND_GetDSP_ProcessTime() -> u32_;
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct aesndpb_t {
+    _unused: [u8; 0],
+}
+pub type AESNDPB = aesndpb_t;
+pub type AESNDVoiceCallback =
+    ::core::option::Option<unsafe extern "C" fn(pb: *mut AESNDPB, state: u32_)>;
+pub type AESNDAudioCallback =
+    ::core::option::Option<unsafe extern "C" fn(audio_buffer: *mut ::libc::c_void, len: u32_)>;
+extern "C" {
+    pub fn AESND_Init();
+}
+extern "C" {
+    pub fn AESND_Reset();
+}
+extern "C" {
+    pub fn AESND_Pause(pause: bool);
+}
+extern "C" {
+    pub fn AESND_GetDSPProcessTime() -> u32_;
+}
+extern "C" {
+    pub fn AESND_GetDSPProcessUsage() -> f32_;
+}
+extern "C" {
+    pub fn AESND_RegisterAudioCallback(cb: AESNDAudioCallback) -> AESNDAudioCallback;
+}
+extern "C" {
+    pub fn AESND_AllocateVoice(cb: AESNDVoiceCallback) -> *mut AESNDPB;
+}
+extern "C" {
+    pub fn AESND_FreeVoice(pb: *mut AESNDPB);
+}
+extern "C" {
+    pub fn AESND_SetVoiceStop(pb: *mut AESNDPB, stop: bool);
+}
+extern "C" {
+    pub fn AESND_SetVoiceMute(pb: *mut AESNDPB, mute: bool);
+}
+extern "C" {
+    pub fn AESND_SetVoiceLoop(pb: *mut AESNDPB, loop_: bool);
+}
+extern "C" {
+    pub fn AESND_SetVoiceFormat(pb: *mut AESNDPB, format: u32_);
+}
+extern "C" {
+    pub fn AESND_SetVoiceStream(pb: *mut AESNDPB, stream: bool);
+}
+extern "C" {
+    pub fn AESND_SetVoiceFrequency(pb: *mut AESNDPB, freq: f32_);
+}
+extern "C" {
+    pub fn AESND_SetVoiceVolume(pb: *mut AESNDPB, volume_l: u16_, volume_r: u16_);
+}
+extern "C" {
+    pub fn AESND_SetVoiceDelay(pb: *mut AESNDPB, delay: u32_);
+}
+extern "C" {
+    pub fn AESND_SetVoiceBuffer(pb: *mut AESNDPB, buffer: *const ::libc::c_void, len: u32_);
+}
+extern "C" {
+    pub fn AESND_PlayVoice(
+        pb: *mut AESNDPB,
+        format: u32_,
+        buffer: *const ::libc::c_void,
+        len: u32_,
+        freq: f32_,
+        delay: u32_,
+        looped: bool,
+    );
+}
+extern "C" {
+    pub fn AESND_RegisterVoiceCallback(
+        pb: *mut AESNDPB,
+        cb: AESNDVoiceCallback,
+    ) -> AESNDVoiceCallback;
 }
 pub const WIIUSE_IR_ABOVE: ir_position_t = 0;
 pub const WIIUSE_IR_BELOW: ir_position_t = 1;

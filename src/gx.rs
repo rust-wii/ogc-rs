@@ -5,6 +5,7 @@
 use core::ffi::c_void;
 use core::marker::PhantomData;
 
+use ffi::GXTexObj;
 use libm::ceilf;
 use voladdress::{Safe, VolAddress};
 
@@ -1077,6 +1078,17 @@ impl Texture<'_> {
         unsafe { ffi::GX_InitTexObjWrapMode(&mut self.0, wrap_s as u8, wrap_t as u8) }
     }
 }
+
+impl<'a> From<GXTexObj> for Texture<'a> {
+    fn from(obj: GXTexObj) -> Self {
+       Self {
+        0: obj,
+        1: PhantomData
+       } 
+    }
+}
+
+
 
 /// Vertex attribute array type
 #[derive(Copy, Clone, Debug)]
