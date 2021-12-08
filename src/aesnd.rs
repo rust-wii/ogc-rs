@@ -160,6 +160,8 @@ impl Aesnd {
     }
 }
 
+#[derive(Copy, Clone)]
+#[repr(C, align(32))]
 struct Align32<T>(pub T);
 
 fn alloc_sound_buffer(buffer: &[u8]) -> Align32<Vec<u8>> {
