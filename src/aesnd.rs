@@ -1,7 +1,7 @@
 use core::time::Duration;
 
 use crate::ffi;
-use alloc::boxed::Box;
+use alloc::{boxed::Box, vec::Vec};
 use ffi::AESNDPB;
 use libc::c_void;
 
@@ -18,6 +18,8 @@ pub enum AudioFormat {
     VoiceMono16U = ffi::VOICE_MONO16_UNSIGNED,
     VoiceStereo16U = ffi::VOICE_STEREO16_UNSIGNED
 }
+
+
 
 pub type VoiceCallback = Option<Box<fn(*mut AESNDPB, u32)>>;
 pub type AudioCallback = Option<Box<fn(*mut c_void, u32)>>;
@@ -60,15 +62,9 @@ impl Aesnd {
         unsafe { ffi::AESND_GetDSPProcessUsage() }
     }
 
-    pub fn register_audio_callback<F>(callback: Box<F>)
-    where
-        F: Fn(*mut c_void, u32),
-    {
-        let ptr = Box::into_raw(callback);
-
+    pub fn register_audio_callback<F>(callback: Option<unsafe extern "C" fn(*mut c_void, u32)>) {
         unsafe {
-            let code: extern "C" fn(*mut c_void, u32) = core::mem::transmute(ptr);
-            ffi::AESND_RegisterAudioCallback(Some(code));
+            ffi::AESND_RegisterAudioCallback(callback);
         }
     }
 
@@ -121,28 +117,39 @@ impl Aesnd {
         }
     }
 
-    pub fn set_voice_buffer(play_state: &mut AESNDPB, buffer: &[u8]) {
-        assert!(buffer.as_ptr().align_offset(32) == 0, "Buffer is not 32 byte aligned");
-        assert!(buffer.len() % 32 == 0, "Buffer is not padded to 32 bytes");
-        unsafe {
-            ffi::AESND_SetVoiceBuffer(play_state, buffer.as_ptr() as *const c_void, buffer.len().try_into().unwrap());
+    pub fn set_voice_buffer(play_state: &mut AESNDPB, buffer: &[u8]) { 
+        //if already aligned just use the buffer.
+        if buffer.as_ptr().align_offset(32) == 0 && buffer.len() % 32 == 0 {
+            unsafe {
+                ffi::AESND_SetVoiceBuffer(play_state, buffer.as_ptr() as *const c_void, buffer.len().try_into().unwrap());
+            }
+        } else {
+            // othersize copy and allocate a buffer for AESND :)
+            let align_buf = alloc_sound_buffer(buffer);
+            assert!(align_buf.0.len() % 32 == 0, "Buffer is not padded to 32 bytes");
+            unsafe {
+                ffi::AESND_SetVoiceBuffer(play_state, align_buf.0.as_ptr() as *const c_void, align_buf.0.len().try_into().unwrap());
+            }
         }
     }
 
     pub fn play_voice(play_state: &mut AESNDPB, format: AudioFormat, buffer: &[u8], frequency: f32, delay: u32, loop_: bool) {
-        assert!(buffer.as_ptr().align_offset(32) == 0, "Buffer is not 32 byte aligned");
-        assert!(buffer.len() % 32 == 0, "Buffer is not padded to 32 bytes");
-        unsafe {
-            ffi::AESND_PlayVoice(play_state, format as u32, buffer.as_ptr() as *const c_void, buffer.len().try_into().unwrap(), frequency, delay, loop_);
+        if buffer.as_ptr().align_offset(32) == 0 && buffer.len() % 32 == 0 { 
+            unsafe {
+                ffi::AESND_PlayVoice(play_state, format as u32, buffer.as_ptr() as *const c_void, buffer.len().try_into().unwrap(), frequency, delay, loop_);
+            }
+        } else {
+            let align_buf = alloc_sound_buffer(buffer); 
+            assert!(align_buf.0.len() % 32 == 0, "Buffer is not padded to 32 bytes");
+            unsafe {
+                ffi::AESND_PlayVoice(play_state, format as u32, align_buf.0.as_ptr() as *const c_void, align_buf.0.len().try_into().unwrap(), frequency, delay, loop_);
+            }
         }
     }
 
-    pub fn register_voice_callback<F>(play_state: &mut AESNDPB, callback: Box<F>) where F: Fn(*mut AESNDPB, u32) {
-        let ptr = Box::into_raw(callback);
-
+    pub fn register_voice_callback(play_state: &mut AESNDPB, callback: Option<unsafe extern "C" fn(*mut AESNDPB, u32)>){
         unsafe {
-            let code: extern "C" fn(*mut AESNDPB, u32) = core::mem::transmute(ptr);
-            ffi::AESND_RegisterVoiceCallback(play_state, Some(code));
+            ffi::AESND_RegisterVoiceCallback(play_state, callback);
         }
     }
 
@@ -151,4 +158,12 @@ impl Aesnd {
             *ffi::AESND_AllocateVoice(None)
         } 
     }
+}
+
+#[derive(Copy, Clone)]
+#[repr(C, align(32))]
+struct Align32<T>(pub T);
+
+fn alloc_sound_buffer(buffer: &[u8]) -> Align32<Vec<u8>> {
+    Align32((*buffer).to_vec())        
 }

@@ -3,8 +3,8 @@
 //! This module implements a safe wrapper around the audio functions found in ``asndlib.h``.
 
 use crate::{ffi, OgcError, Result};
-use alloc::{boxed::Box, format};
-use core::mem;
+use alloc::format;
+use core::{mem, time::Duration};
 
 macro_rules! if_not {
     ($valid:ident => $error_output:expr, $var:ident $(,)*) => {
@@ -17,7 +17,7 @@ macro_rules! if_not {
 }
 
 /// Voice Options Callback Type
-pub type VoiceOptionsCallback = Option<Box<fn(i32) -> ()>>;
+pub type VoiceOptionsCallback = Option<unsafe extern "C" fn(i32)>;
 
 /// Options to be passed when creating a new voice.
 ///
@@ -96,8 +96,8 @@ impl VoiceOptions {
     }
 
     /// Optional callback function to use.
-    pub fn callback(mut self, callback: Box<fn(i32) -> ()>) -> Self {
-        self.callback = Some(callback);
+    pub fn callback(mut self, callback: Option<unsafe extern "C" fn(i32)>) -> Self {
+        self.callback = callback;
         self
     }
 }
@@ -192,16 +192,9 @@ impl Asnd {
     }
 
     /// Sets a global callback for general purposes. It is called by the IRQ.
-    pub fn set_callback<F>(callback: Box<F>)
-    where
-        F: Fn(),
-    {
-        // TODO: Check if this implementation can be changed.
-        let ptr = Box::into_raw(callback);
-
+    pub fn set_callback<F>(callback: Option<unsafe extern "C" fn()>) {
         unsafe {
-            let code: extern "C" fn() = mem::transmute(ptr);
-            ffi::ASND_SetCallback(Some(code));
+            ffi::ASND_SetCallback(callback);
         }
     }
 
@@ -216,12 +209,6 @@ impl Asnd {
     pub fn set_voice(options: VoiceOptions, sound_buffer: &mut [u8]) -> Result<()> {
         Self::validate_buffer(sound_buffer);
 
-        let callback = options.callback.map(|f| {
-            let ptr = Box::into_raw(f);
-            let code: unsafe extern "C" fn(i32) = unsafe { mem::transmute(ptr) };
-            code
-        });
-
         let err = unsafe {
             ffi::ASND_SetVoice(
                 options.voice as i32,
@@ -232,7 +219,7 @@ impl Asnd {
                 sound_buffer.len() as i32,
                 options.volume_left as i32,
                 options.volume_right as i32,
-                callback,
+                options.callback,
             )
         };
 
@@ -369,8 +356,8 @@ impl Asnd {
     }
 
     /// Returns DSP process time, in nano seconds.
-    pub fn get_dsp_process_time() -> u32 {
-        unsafe { ffi::ASND_GetDSP_ProcessTime() }
+    pub fn get_dsp_process_time() -> Duration {
+        unsafe { Duration::from_nanos(ffi::ASND_GetDSP_ProcessTime().into()) }
     }
 
     fn validate_buffer(sound_buffer: &mut [u8]) {
