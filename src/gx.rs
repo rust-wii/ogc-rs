@@ -1081,14 +1081,12 @@ impl Texture<'_> {
 
 impl<'a> From<GXTexObj> for Texture<'a> {
     fn from(obj: GXTexObj) -> Self {
-       Self {
-        0: obj,
-        1: PhantomData
-       } 
+        Self {
+            0: obj,
+            1: PhantomData,
+        }
     }
 }
-
-
 
 /// Vertex attribute array type
 #[derive(Copy, Clone, Debug)]
