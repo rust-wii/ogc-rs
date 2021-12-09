@@ -1,4 +1,4 @@
-use core::time::Duration;
+use core::{time::Duration, alloc::Layout};
 
 use crate::ffi;
 use alloc::{boxed::Box, vec::Vec};
@@ -126,9 +126,9 @@ impl Aesnd {
         } else {
             // othersize copy and allocate a buffer for AESND :)
             let align_buf = alloc_sound_buffer(buffer);
-            assert!(align_buf.0.len() % 32 == 0, "Buffer is not padded to 32 bytes");
+            assert!(align_buf.len() % 32 == 0, "Buffer is not padded to 32 bytes");
             unsafe {
-                ffi::AESND_SetVoiceBuffer(play_state, align_buf.0.as_ptr() as *const c_void, align_buf.0.len().try_into().unwrap());
+                ffi::AESND_SetVoiceBuffer(play_state, align_buf.as_ptr() as *const c_void, align_buf.len().try_into().unwrap());
             }
         }
     }
@@ -140,9 +140,9 @@ impl Aesnd {
             }
         } else {
             let align_buf = alloc_sound_buffer(buffer); 
-            assert!(align_buf.0.len() % 32 == 0, "Buffer is not padded to 32 bytes");
+            assert!(align_buf.len() % 32 == 0, "Buffer is not padded to 32 bytes");
             unsafe {
-                ffi::AESND_PlayVoice(play_state, format as u32, align_buf.0.as_ptr() as *const c_void, align_buf.0.len().try_into().unwrap(), frequency, delay, loop_);
+                ffi::AESND_PlayVoice(play_state, format as u32, align_buf.as_ptr() as *const c_void, align_buf.len().try_into().unwrap(), frequency, delay, loop_);
             }
         }
     }
@@ -164,6 +164,33 @@ impl Aesnd {
 #[repr(C, align(32))]
 struct Align32<T>(pub T);
 
-fn alloc_sound_buffer(buffer: &[u8]) -> Align32<Vec<u8>> {
-    Align32((*buffer).to_vec())        
+fn alloc_sound_buffer(buffer: &[u8]) -> Vec<u8> {
+         let size = if buffer.len() % 32 == 0 {
+            buffer.len()
+        } else {
+            ((buffer.len() + 31) / 32) * 32
+        };   
+
+        let mut align_buf = unsafe {
+        
+
+
+        let ptr = crate::mem_cached_to_uncached!(alloc::alloc::alloc_zeroed(Layout::from_size_align(size, 32).unwrap())) as *mut u8; 
+        Vec::from_raw_parts(ptr, 0, size)
+    }; 
+        for byte in buffer {
+           align_buf.push(*byte); 
+        }
+            
+
+        //Since AESND::play_voice uses Vec::len() to get the length of the buffer we make sure its
+        //padded by setting the length.
+        //
+        // SAFETY: Capacity have already been allocated and zeroed out. all bytes have been moved
+        // to the new buffer.
+        // 
+        unsafe { align_buf.set_len(size) }
+
+        align_buf
+    
 }
