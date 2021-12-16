@@ -44,8 +44,6 @@ use std::process::Command;
 
 fn main() {
     let dkp_path = env::var("DEVKITPRO").expect("devkitPro is needed to use this crate");
-    let dkppc_path =
-        env::var("DEVKITPPC").expect("devkitPro's devkitPPC is needed to use this crate");
 
     println!(
         "cargo:rustc-link-search=native={}/devkitPPC/powerpc-eabi/lib",
@@ -57,6 +55,8 @@ fn main() {
     println!("cargo:rustc-link-lib=static=sysbase");
     println!("cargo:rustc-link-lib=static=m");
     println!("cargo:rustc-link-lib=static=ogc");
+    println!("cargo:rustc-link-lib=static=asnd");
+    println!("cargo:rustc-link-lib=static=aesnd");
 
     //Wiipad
     println!("cargo:rustc-link-lib=static=bte");
@@ -77,8 +77,8 @@ fn main() {
         .blocklist_type("i(8|16|32|64|128)")
         .blocklist_type("f(32|64)")
         .clang_arg("--target=powerpc-none-eabi")
-        .clang_arg(format!("--sysroot={}/powerpc-eabi", dkppc_path))
-        .clang_arg(format!("-isystem/{}/powerpc-eabi/include", dkppc_path))
+        .clang_arg(format!("--sysroot={}/devkitPPC/powerpc-eabi", dkp_path))
+        .clang_arg(format!("-isystem/{}/devkitPPC/powerpc-eabi/include", dkp_path))
         .clang_arg(format!(
             "-isystem/usr/lib/clang/{}/include",
             get_clang_version()
