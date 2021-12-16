@@ -282,7 +282,7 @@ dependencies = [
 
 [[package]]
 name = "ogc-rs"
-version = "0.7.1"
+version = "0.1.0"
 dependencies = [
  "bitflags",
  "cfg-if",
@@ -297,7 +297,9 @@ dependencies = [
 
 [[package]]
 name = "ogc-sys"
-version = "0.4.2"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6483bd412db6c1b601f70732232ac3aa779f47914da4db78525d86abacf01002"
 dependencies = [
  "bindgen",
  "libc",
