@@ -3,6 +3,13 @@ name = "ogc-sys"
 version = "0.4.2"
 authors = ["rust-wii"]
 edition = "2021"
+license = "MIT"
+readme = "README.md"
+description = "Rust bindings for devkitPro's libogc"
+documentation = "https://docs.rs/ogc-sys/"
+homepage = "https://github.com/rust-wii/ogc-rs"
+repository = "https://github.com/rust-wii/ogc-rs"
+keywords = ["wii", "embedded", "no-std"]
 
 [dependencies]
 libc = "0.2"
