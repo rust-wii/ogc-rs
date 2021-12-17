@@ -2,9 +2,9 @@
 //!
 //! This module implements a safe wrapper around the graphics functions found in ``gx.h``.
 
+use bit_field::BitField;
 use core::ffi::c_void;
 use core::marker::PhantomData;
-use bit_field::BitField;
 
 use ffi::GXTexObj;
 use libm::ceilf;
@@ -1744,16 +1744,16 @@ impl Gx {
                 values[3] = matrix[1][3];
             }
         }
-        
-        /*GX_PIPE.write(0x10);
-        for bytes in (6u16).to_be_bytes() {
-            GX_PIPE.write(bytes)
-        }
 
-        for bytes in (0x1020u16).to_be_bytes() {
-            GX_PIPE.write(bytes)
+        /*GX_PIPE.write(0x10);
+         for bytes in (6u16).to_be_bytes() {
+             GX_PIPE.write(bytes)
          }
-       */ 
+
+         for bytes in (0x1020u16).to_be_bytes() {
+             GX_PIPE.write(bytes)
+          }
+        */
         load_xf_regs(7, 0x1020);
 
         for val in values {
@@ -1761,11 +1761,10 @@ impl Gx {
                 GX_PIPE.write(byte);
             }
         }
-        
+
         for byte in (projection as u32).to_be_bytes() {
             GX_PIPE.write(byte);
         }
-    
     }
 
     /// Invalidates the vertex cache.
@@ -2210,9 +2209,8 @@ impl Gx {
     }
 }
 
-//All the following data is found from 
+//All the following data is found from
 // http://hitmen.c02.at/files/yagcd/yagcd/chap5.html#sec5.3
-
 
 fn load_bp_reg(register: u8, value: u32) {
     let mut x = 0u32;
@@ -2236,10 +2234,9 @@ fn load_cp_reg(register: u8, value: u32) {
     }
 }
 
-
 fn load_xf_regs(length: u16, address_base: u16) {
     GX_PIPE.write(GPCommand::LoadXFReg as u8);
-    
+
     for byte in (length - 1).to_be_bytes() {
         GX_PIPE.write(byte);
     }
@@ -2247,38 +2244,41 @@ fn load_xf_regs(length: u16, address_base: u16) {
     for byte in address_base.to_be_bytes() {
         GX_PIPE.write(byte);
     }
-
 }
-
 
 //THIS IS PROBABLY NOT CORRECT IF SOMEONE COULD correct it for me that would be amazing!
 fn call_display_list(display_list: &[u8]) {
     let ptr = mem_virtual_to_physical!(display_list.as_ptr()) as u32;
 
-    assert!(display_list.as_ptr().align_offset(32) == 0, "The display list is not correctly 32 byte aligned.");
-    assert!(display_list.len() % 32 == 0, "The display list is not correctly padded to 32 bytes. Please pad with GPCommand::Nop");
-    
+    assert!(
+        display_list.as_ptr().align_offset(32) == 0,
+        "The display list is not correctly 32 byte aligned."
+    );
+    assert!(
+        display_list.len() % 32 == 0,
+        "The display list is not correctly padded to 32 bytes. Please pad with GPCommand::Nop"
+    );
+
     GX_PIPE.write(GPCommand::CallDisplayList as u8);
-    
+
     for byte in ptr.to_be_bytes() {
         GX_PIPE.write(byte);
     }
 
     for byte in (display_list.len() as u32).to_be_bytes() {
         GX_PIPE.write(byte);
-    } 
-
+    }
 }
 
 //Currently doesnt check dirty state
 fn draw_begin(command: GPDrawCommand, vertex_format: u8, vertex_count: u16) {
-        assert!(vertex_format <= 7, "Incorrect vertex format");
-        let gp_cmd = (command as u8) | (vertex_format & 7);
+    assert!(vertex_format <= 7, "Incorrect vertex format");
+    let gp_cmd = (command as u8) | (vertex_format & 7);
 
-        GX_PIPE.write(gp_cmd);
-        for byte in vertex_count.to_be_bytes() {
-            GX_PIPE.write(byte);
-        }
+    GX_PIPE.write(gp_cmd);
+    for byte in vertex_count.to_be_bytes() {
+        GX_PIPE.write(byte);
+    }
 }
 
 #[derive(Copy, Clone)]
