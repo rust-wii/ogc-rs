@@ -78,6 +78,9 @@ pub mod mutex;
 // Cache operations.
 pub mod cache;
 
+// TPL implementation
+pub mod tpl;
+
 #[cfg(feature = "glam")]
 pub mod glam_impl;
 
@@ -106,6 +109,7 @@ pub mod prelude {
     pub use crate::input::*;
     pub use crate::system::*;
     pub use crate::video::*;
+    pub use crate::tpl::*;
     pub use crate::{print, println};
 
     // Global Allocator
