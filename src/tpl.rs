@@ -2,8 +2,8 @@
 //!
 //! This module implements a safe wrapper around the texture functions found in ``tpl.h``.
 
-use crate::ffi;
-use alloc::{vec::Vec, boxed::Box};
+use crate::{ffi, gx};
+use alloc::boxed::Box;
 
 #[derive(Copy, Clone)]
 enum FileType {
@@ -14,30 +14,41 @@ enum FileType {
 struct Tpl {
     type_: FileType,
     ntextures: u32,
-    texdesc: Vec<u8>,
+    texdesc: *mut libc::c_void,
     tpl_file: ffi::FHANDLE,
 }
 
 impl Tpl {
-    fn new() -> Self {
-        Self {
-            type_: FileType::Disc,
+    pub fn open_from_memory(memory: &mut [u8]) -> Self {
+        let mut tpl = Self {
+            type_: FileType::Memory,
             ntextures: 0,
-            texdesc: Vec::new(),
+            texdesc: 0 as _,
             tpl_file: 0 as _,
-        }
+        };
+        unsafe {
+            ffi::TPL_OpenTPLFromMemory(tpl.raw(), memory.as_mut_ptr() as *mut _, memory.len() as _)
+        };
+        tpl
     }
 
-    fn open_tpl_from_memory(&mut self, memory: &mut [u8]) {
-        unsafe { ffi::TPL_OpenTPLFromMemory(self.raw(), memory.as_mut_ptr() as *mut _, memory.len() as u32 )};
+    // Loads texture by id into texture
+    pub fn get_texture(&mut self, id: u32, texture: &mut gx::Texture) {
+        unsafe { ffi::TPL_GetTexture(self.raw(), id as _, texture.gxtexobj()) };
     }
 
     fn raw(&mut self) -> *mut ffi::TPLFile {
         Box::into_raw(Box::new(ffi::TPLFile {
             type_: self.type_ as _,
             ntextures: self.ntextures as _,
-            texdesc: self.texdesc.as_mut_ptr() as *mut _,
+            texdesc: self.texdesc,
             tpl_file: self.tpl_file,
         }))
+    }
+}
+
+impl Drop for Tpl {
+    fn drop(&mut self) {
+        unsafe { ffi::TPL_CloseTPLFile(self.raw()) }
     }
 }

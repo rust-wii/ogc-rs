@@ -1077,6 +1077,10 @@ impl Texture<'_> {
     pub fn set_wrap_mode(&mut self, wrap_s: WrapMode, wrap_t: WrapMode) {
         unsafe { ffi::GX_InitTexObjWrapMode(&mut self.0, wrap_s as u8, wrap_t as u8) }
     }
+
+    pub fn gxtexobj(&mut self) -> &mut GXTexObj {
+        &mut self.0 
+    }
 }
 
 impl<'a> From<GXTexObj> for Texture<'a> {
