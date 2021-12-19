@@ -27,7 +27,7 @@ unsafe impl GlobalAlloc for OGCAllocator {
                 layout.size()
             );
         } else {
-            libc::malloc(layout.size()) as *mut u8
+            libc::memalign(layout.align(), layout.size()) as *mut u8
         }
     }
 

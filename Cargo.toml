@@ -28,4 +28,5 @@ libc = "0.2"
 ogc-sys = "0.1.0"
 glam = { version = "0.19.0", default-features = false, features = ["libm"], optional = true }
 voladdress = "0.4"
+bit_field = "0.10.1"
 #lock_api = "0.4.5"

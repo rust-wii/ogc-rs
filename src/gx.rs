@@ -2,6 +2,7 @@
 //!
 //! This module implements a safe wrapper around the graphics functions found in ``gx.h``.
 
+use bit_field::BitField;
 use core::ffi::c_void;
 use core::marker::PhantomData;
 
@@ -10,7 +11,7 @@ use libm::ceilf;
 use voladdress::{Safe, VolAddress};
 
 use crate::ffi::{self, Mtx as Mtx34, Mtx44};
-use crate::lwp;
+use crate::{lwp, mem_virtual_to_physical};
 
 pub const GX_PIPE: VolAddress<u8, (), Safe> = unsafe { VolAddress::new(0xCC00_8000) };
 
@@ -1726,8 +1727,44 @@ impl Gx {
 
     /// Sets the projection matrix.
     /// See [GX_LoadProjectionMtx](https://libogc.devkitpro.org/gx_8h.html#a241a1301f006ed04b7895c051959f64e) for more.
-    pub fn load_projection_mtx(mt: &Mtx44, p_type: ProjectionType) {
-        unsafe { ffi::GX_LoadProjectionMtx(mt as *const _ as *mut _, p_type as u8) }
+    pub fn load_projection_mtx(matrix: &Mtx44, projection: ProjectionType) {
+        let mut values: [f32; 6] = [0.0; 6];
+        values[0] = matrix[0][0];
+        values[2] = matrix[1][1];
+        values[4] = matrix[2][2];
+        values[5] = matrix[2][3];
+
+        match projection {
+            ProjectionType::Perspective => {
+                values[1] = matrix[0][2];
+                values[3] = matrix[1][2];
+            }
+            ProjectionType::Orthographic => {
+                values[1] = matrix[0][3];
+                values[3] = matrix[1][3];
+            }
+        }
+
+        /*GX_PIPE.write(0x10);
+         for bytes in (6u16).to_be_bytes() {
+             GX_PIPE.write(bytes)
+         }
+
+         for bytes in (0x1020u16).to_be_bytes() {
+             GX_PIPE.write(bytes)
+          }
+        */
+        load_xf_regs(7, 0x1020);
+
+        for val in values {
+            for byte in val.to_be_bytes() {
+                GX_PIPE.write(byte);
+            }
+        }
+
+        for byte in (projection as u32).to_be_bytes() {
+            GX_PIPE.write(byte);
+        }
     }
 
     /// Invalidates the vertex cache.
@@ -2170,4 +2207,103 @@ impl Gx {
     pub fn end() {
         unsafe { ffi::GX_End() }
     }
+}
+
+//All the following data is found from
+// http://hitmen.c02.at/files/yagcd/yagcd/chap5.html#sec5.3
+
+fn load_bp_reg(register: u8, value: u32) {
+    let mut x = 0u32;
+    x.set_bits(0..7, register.into());
+    x.set_bits(8..31, value);
+
+    GX_PIPE.write(GPCommand::LoadBPReg as u8);
+    for byte in x.to_be_bytes() {
+        GX_PIPE.write(byte);
+    }
+}
+
+fn load_cp_reg(register: u8, value: u32) {
+    let mut x = 0u32;
+    x.set_bits(0..7, register.into());
+    x.set_bits(8..31, value);
+
+    GX_PIPE.write(GPCommand::LoadCPReg as u8);
+    for byte in x.to_be_bytes() {
+        GX_PIPE.write(byte);
+    }
+}
+
+fn load_xf_regs(length: u16, address_base: u16) {
+    GX_PIPE.write(GPCommand::LoadXFReg as u8);
+
+    for byte in (length - 1).to_be_bytes() {
+        GX_PIPE.write(byte);
+    }
+
+    for byte in address_base.to_be_bytes() {
+        GX_PIPE.write(byte);
+    }
+}
+
+//THIS IS PROBABLY NOT CORRECT IF SOMEONE COULD correct it for me that would be amazing!
+fn call_display_list(display_list: &[u8]) {
+    let ptr = mem_virtual_to_physical!(display_list.as_ptr()) as u32;
+
+    assert!(
+        display_list.as_ptr().align_offset(32) == 0,
+        "The display list is not correctly 32 byte aligned."
+    );
+    assert!(
+        display_list.len() % 32 == 0,
+        "The display list is not correctly padded to 32 bytes. Please pad with GPCommand::Nop"
+    );
+
+    GX_PIPE.write(GPCommand::CallDisplayList as u8);
+
+    for byte in ptr.to_be_bytes() {
+        GX_PIPE.write(byte);
+    }
+
+    for byte in (display_list.len() as u32).to_be_bytes() {
+        GX_PIPE.write(byte);
+    }
+}
+
+//Currently doesnt check dirty state
+fn draw_begin(command: GPDrawCommand, vertex_format: u8, vertex_count: u16) {
+    assert!(vertex_format <= 7, "Incorrect vertex format");
+    let gp_cmd = (command as u8) | (vertex_format & 7);
+
+    GX_PIPE.write(gp_cmd);
+    for byte in vertex_count.to_be_bytes() {
+        GX_PIPE.write(byte);
+    }
+}
+
+#[derive(Copy, Clone)]
+#[repr(u8)]
+pub enum GPCommand {
+    Nop = 0x00,
+    LoadCPReg = 0x08,
+    LoadXFReg = 0x10,
+    LoadPosIndexed = 0x20,
+    LoadNormalIndexed = 0x28,
+    LoadTexureIndexed = 0x30,
+    LoadLightIndexed = 0x38,
+    CallDisplayList = 0x40,
+    InvalidateVertexCache = 0x48,
+    LoadBPReg = 0x61,
+}
+
+#[derive(Copy, Clone)]
+#[repr(u8)]
+pub enum GPDrawCommand {
+    DrawQuads = 0x80,
+    DrawTriangles = 0x90,
+    DrawTriangleStrip = 0x98,
+    DrawTriangleFan = 0xA0,
+    DrawLines = 0xA8,
+    DrawLineStrip = 0xB0,
+    DrawPoints = 0xBB,
 }
