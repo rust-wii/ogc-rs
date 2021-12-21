@@ -4,7 +4,7 @@
 
 use crate::{ffi, OgcError, Result};
 use alloc::format;
-use core::{mem, time::Duration};
+use core::time::Duration;
 
 macro_rules! if_not {
     ($valid:ident => $error_output:expr, $var:ident $(,)*) => {
@@ -362,8 +362,8 @@ impl Asnd {
 
     fn validate_buffer(sound_buffer: &mut [u8]) {
         assert_eq!(
-            32,
-            mem::align_of_val(sound_buffer),
+            0,
+            sound_buffer.as_ptr().align_offset(32),
             "Data is not aligned correctly."
         );
         assert_eq!(
