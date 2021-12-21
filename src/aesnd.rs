@@ -1,7 +1,7 @@
-use core::{alloc::Layout, time::Duration};
+use core::time::Duration;
 
 use crate::ffi;
-use alloc::{boxed::Box, vec::Vec};
+use alloc::boxed::Box;
 use ffi::AESNDPB;
 use libc::c_void;
 
@@ -129,7 +129,7 @@ impl Aesnd {
             }
         } else {
             // othersize copy and allocate a buffer for AESND :)
-            let align_buf = alloc_sound_buffer(buffer);
+            let align_buf = crate::utils::alloc_aligned_buffer(buffer);
             assert!(
                 align_buf.len() % 32 == 0,
                 "Buffer is not padded to 32 bytes"
@@ -165,7 +165,7 @@ impl Aesnd {
                 );
             }
         } else {
-            let align_buf = alloc_sound_buffer(buffer);
+            let align_buf = crate::utils::alloc_aligned_buffer(buffer);
             assert!(
                 align_buf.len() % 32 == 0,
                 "Buffer is not padded to 32 bytes"
@@ -197,30 +197,4 @@ impl Aesnd {
         unsafe { *ffi::AESND_AllocateVoice(None) }
     }
 }
-fn alloc_sound_buffer(buffer: &[u8]) -> Vec<u8> {
-    let size = if buffer.len() % 32 == 0 {
-        buffer.len()
-    } else {
-        ((buffer.len() + 31) / 32) * 32
-    };
 
-    let mut align_buf = unsafe {
-        let ptr = crate::mem_cached_to_uncached!(alloc::alloc::alloc_zeroed(
-            Layout::from_size_align(size, 32).unwrap()
-        )) as *mut u8;
-        Vec::from_raw_parts(ptr, 0, size)
-    };
-    for byte in buffer {
-        align_buf.push(*byte);
-    }
-
-    //Since AESND::play_voice uses Vec::len() to get the length of the buffer we make sure its
-    //padded by setting the length.
-    //
-    // SAFETY: Capacity have already been allocated and zeroed out. all bytes have been moved
-    // to the new buffer.
-    //
-    unsafe { align_buf.set_len(size) }
-
-    align_buf
-}

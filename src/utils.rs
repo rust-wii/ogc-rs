@@ -1,5 +1,9 @@
 //! Utility Functions to convert between types.
 
+use core::alloc::Layout;
+
+use alloc::vec::Vec;
+
 /// OS memory casting macros.
 mod memory_casting {
     /// Cast a cached address to a uncached address.
@@ -103,4 +107,31 @@ mod console_printing {
         ($fmt:expr) => (print!(concat!($fmt, "\n")));
         ($fmt:expr, $($arg:tt)*) => (print!(concat!($fmt, "\n"), $($arg)*));
     }
+}
+pub fn alloc_aligned_buffer(buffer: &[u8]) -> Vec<u8> {
+    let size = if buffer.len() % 32 == 0 {
+        buffer.len()
+    } else {
+        ((buffer.len() + 31) / 32) * 32
+    };
+
+    let mut align_buf = unsafe {
+        let ptr = alloc::alloc::alloc_zeroed(
+            Layout::from_size_align(size, 32).unwrap()
+        ) as *mut u8;
+        Vec::from_raw_parts(ptr, 0, size)
+    };
+    for byte in buffer {
+        align_buf.push(*byte);
+    }
+
+    //Since AESND::play_voice uses Vec::len() to get the length of the buffer we make sure its
+    //padded by setting the length.
+    //
+    // SAFETY: Capacity have already been allocated and zeroed out. all bytes have been moved
+    // to the new buffer.
+    //
+    unsafe { align_buf.set_len(size) }
+
+    align_buf
 }
