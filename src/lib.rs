@@ -81,7 +81,7 @@ pub mod cache;
 // TPL implementation
 pub mod tpl;
 
-#[cfg(feature = "glam")]
+#[cfg(feature = "glam_compat")]
 pub mod glam_impl;
 
 // FFI
@@ -93,7 +93,10 @@ cfg_if::cfg_if! {
     }
 }
 
-/// Prelude
+#[cfg(feature = "mmio")]
+pub mod mmio;
+
+///Prelude
 pub mod prelude {
     // alloc Export
     pub use alloc::boxed::Box;
