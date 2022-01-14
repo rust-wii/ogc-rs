@@ -339,16 +339,14 @@ impl Gu {
 #[derive(Clone, Copy)]
 pub struct Mat4([[f32; 4]; 4]);
 impl Mat4 {
-    pub const IDENTITY: Mat4 = Mat4 {
-        0: [
-            [1.0, 0.0, 0.0, 0.0],
-            [0.0, 1.0, 0.0, 0.0],
-            [0.0, 0.0, 1.0, 0.0],
-            [0.0, 0.0, 0.0, 1.0],
-        ],
-    };
+    pub const IDENTITY: Mat4 = Mat4([
+        [1.0, 0.0, 0.0, 0.0],
+        [0.0, 1.0, 0.0, 0.0],
+        [0.0, 0.0, 1.0, 0.0],
+        [0.0, 0.0, 0.0, 1.0],
+    ]);
 
-    pub const ZERO: Mat4 = Mat4 { 0: [[0.0; 4]; 4] };
+    pub const ZERO: Mat4 = Mat4([[0.0; 4]; 4]);
 
     pub fn as_array(&self) -> &[[f32; 4]; 4] {
         &self.0
@@ -370,24 +368,22 @@ impl Mat4 {
         let top_bottom_aspect = 1.0 / (top - bottom);
         let plane = 1.0 / (z_far - z_near);
 
-        Mat4 {
-            0: [
-                [
-                    (2.0 * z_near) * right_left_aspect,
-                    0.0,
-                    (right + left) * right_left_aspect,
-                    0.0,
-                ],
-                [
-                    0.0,
-                    (2.0 * z_near) * top_bottom_aspect,
-                    (top + bottom) * top_bottom_aspect,
-                    0.0,
-                ],
-                [0.0, 0.0, -(z_near) * plane, -(z_far * z_near) * plane],
-                [0.0, 0.0, -1.0, 0.0],
+        Mat4([
+            [
+                (2.0 * z_near) * right_left_aspect,
+                0.0,
+                (right + left) * right_left_aspect,
+                0.0,
             ],
-        }
+            [
+                0.0,
+                (2.0 * z_near) * top_bottom_aspect,
+                (top + bottom) * top_bottom_aspect,
+                0.0,
+            ],
+            [0.0, 0.0, -(z_near) * plane, -(z_far * z_near) * plane],
+            [0.0, 0.0, -1.0, 0.0],
+        ])
     }
 
     pub fn gu_perspective(fov_y: f32, aspect_ratio: f32, z_near: f32, z_far: f32) -> Self {
@@ -395,14 +391,12 @@ impl Mat4 {
         let cot = 1.0 / tanf(fov_y_radians);
         let plane = 1.0 / (z_far - z_near);
 
-        Mat4 {
-            0: [
-                [cot / aspect_ratio, 0.0, 0.0, 0.0],
-                [0.0, cot, 0.0, 0.0],
-                [0.0, 0.0, -(z_near) * plane, -(z_far * z_near) * plane],
-                [0.0, 0.0, -1.0, 0.0],
-            ],
-        }
+        Mat4([
+            [cot / aspect_ratio, 0.0, 0.0, 0.0],
+            [0.0, cot, 0.0, 0.0],
+            [0.0, 0.0, -(z_near) * plane, -(z_far * z_near) * plane],
+            [0.0, 0.0, -1.0, 0.0],
+        ])
     }
 
     pub fn gu_ortho(top: f32, bottom: f32, left: f32, right: f32, z_near: f32, z_far: f32) -> Self {
@@ -410,24 +404,22 @@ impl Mat4 {
         let top_bottom_aspect = 1.0 / (top - bottom);
         let plane = 1.0 / (z_far - z_near);
 
-        Self {
-            0: [
-                [
-                    2.0 * right_left_aspect,
-                    0.0,
-                    0.0,
-                    -(right + left) * right_left_aspect,
-                ],
-                [
-                    0.0,
-                    2.0 * top_bottom_aspect,
-                    0.0,
-                    -(top + bottom) * top_bottom_aspect,
-                ],
-                [0.0, 0.0, -(1.0) * plane, -(z_far) * plane],
-                [0.0, 0.0, 0.0, 1.0],
+        Self([
+            [
+                2.0 * right_left_aspect,
+                0.0,
+                0.0,
+                -(right + left) * right_left_aspect,
             ],
-        }
+            [
+                0.0,
+                2.0 * top_bottom_aspect,
+                0.0,
+                -(top + bottom) * top_bottom_aspect,
+            ],
+            [0.0, 0.0, -(1.0) * plane, -(z_far) * plane],
+            [0.0, 0.0, 0.0, 1.0],
+        ])
     }
 
     pub fn load_as_proj_mat(&mut self, p: gx::ProjectionType) {
@@ -467,15 +459,13 @@ impl fmt::Display for Mat4 {
 #[derive(Clone, Copy)]
 pub struct Mat3x4([[f32; 4]; 3]);
 impl Mat3x4 {
-    pub const IDENTITY: Mat3x4 = Mat3x4 {
-        0: [
-            [1.0, 0.0, 0.0, 0.0],
-            [0.0, 1.0, 0.0, 0.0],
-            [0.0, 0.0, 1.0, 0.0],
-        ],
-    };
+    pub const IDENTITY: Mat3x4 = Mat3x4([
+        [1.0, 0.0, 0.0, 0.0],
+        [0.0, 1.0, 0.0, 0.0],
+        [0.0, 0.0, 1.0, 0.0],
+    ]);
 
-    pub const ZERO: Mat3x4 = Mat3x4 { 0: [[0.0; 4]; 3] };
+    pub const ZERO: Mat3x4 = Mat3x4([[0.0; 4]; 3]);
 
     pub fn as_array(&self) -> &[[f32; 4]; 3] {
         &self.0
@@ -497,23 +487,21 @@ impl Mat3x4 {
         let right_left_aspect = 1.0 / (right - left);
         let top_bottom_aspect = 1.0 / (top - bottom);
 
-        Mat3x4 {
-            0: [
-                [
-                    ((2.0 * z_near) * right_left_aspect) * scale.0,
-                    0.0,
-                    (((right + left) * right_left_aspect) * scale.0) - translation.0,
-                    0.0,
-                ],
-                [
-                    0.0,
-                    ((2.0 * z_near) * top_bottom_aspect) * scale.1,
-                    (((top + bottom) * top_bottom_aspect) * scale.1) - translation.1,
-                    0.0,
-                ],
-                [0.0, 0.0, -1.0, 0.0],
+        Mat3x4([
+            [
+                ((2.0 * z_near) * right_left_aspect) * scale.0,
+                0.0,
+                (((right + left) * right_left_aspect) * scale.0) - translation.0,
+                0.0,
             ],
-        }
+            [
+                0.0,
+                ((2.0 * z_near) * top_bottom_aspect) * scale.1,
+                (((top + bottom) * top_bottom_aspect) * scale.1) - translation.1,
+                0.0,
+            ],
+            [0.0, 0.0, -1.0, 0.0],
+        ])
     }
 
     pub fn gu_light_perspective(
@@ -525,13 +513,11 @@ impl Mat3x4 {
         let fov_y_radians = (fov_y * 0.5) * 0.017453292;
         let cot = 1.0 / tanf(fov_y_radians);
 
-        Mat3x4 {
-            0: [
-                [(cot / aspect_ratio) * scale.0, 0.0, -translation.0, 0.0],
-                [0.0, cot * scale.1, -translation.1, 0.0],
-                [0.0, 0.0, -1.0, 0.0],
-            ],
-        }
+        Mat3x4([
+            [(cot / aspect_ratio) * scale.0, 0.0, -translation.0, 0.0],
+            [0.0, cot * scale.1, -translation.1, 0.0],
+            [0.0, 0.0, -1.0, 0.0],
+        ])
     }
 
     pub fn gu_light_ortho(
@@ -545,23 +531,21 @@ impl Mat3x4 {
         let right_left_aspect = 1.0 / (right - left);
         let top_bottom_aspect = 1.0 / (top - bottom);
 
-        Self {
-            0: [
-                [
-                    2.0 * right_left_aspect * scale.0,
-                    0.0,
-                    0.0,
-                    (-(right + left) * right_left_aspect * scale.0) + translation.0,
-                ],
-                [
-                    0.0,
-                    2.0 * top_bottom_aspect * scale.1,
-                    0.0,
-                    (-(top + bottom) * top_bottom_aspect * scale.0) + translation.1,
-                ],
-                [0.0, 0.0, 0.0, 1.0],
+        Self([
+            [
+                2.0 * right_left_aspect * scale.0,
+                0.0,
+                0.0,
+                (-(right + left) * right_left_aspect * scale.0) + translation.0,
             ],
-        }
+            [
+                0.0,
+                2.0 * top_bottom_aspect * scale.1,
+                0.0,
+                (-(top + bottom) * top_bottom_aspect * scale.0) + translation.1,
+            ],
+            [0.0, 0.0, 0.0, 1.0],
+        ])
     }
 
     pub fn gu_look_at(pos: (f32, f32, f32), up: (f32, f32, f32), target: (f32, f32, f32)) -> Self {

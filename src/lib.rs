@@ -111,8 +111,8 @@ pub mod prelude {
     pub use crate::gx::*;
     pub use crate::input::*;
     pub use crate::system::*;
-    pub use crate::video::*;
     pub use crate::tpl::*;
+    pub use crate::video::*;
     pub use crate::{print, println};
 
     // Global Allocator

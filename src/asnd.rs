@@ -59,6 +59,7 @@ impl VoiceOptions {
     }
 
     /// Voice slot to use for this sound. Valid values are `0..16` non-inclusive.
+    #[must_use]
     pub fn voice(mut self, voice: u32) -> Self {
         assert!(voice < 16, "Voice index {} is >= 16", voice);
         self.voice = voice;
@@ -66,36 +67,42 @@ impl VoiceOptions {
     }
 
     /// Format to use for this sound.
+    #[must_use]
     pub fn format(mut self, format: VoiceFormat) -> Self {
         self.format = format;
         self
     }
 
     /// Frequency to use, in Hz.
+    #[must_use]
     pub fn pitch(mut self, pitch: u32) -> Self {
         self.pitch = pitch;
         self
     }
 
     /// Delay to wait before playing, in milliseconds.
+    #[must_use]
     pub fn delay(mut self, delay: u32) -> Self {
         self.delay = delay;
         self
     }
 
     /// Voice volume of the left channel.
+    #[must_use]
     pub fn volume_left(mut self, volume_left: u8) -> Self {
         self.volume_left = volume_left;
         self
     }
 
     /// Voice volume of the right channel.
+    #[must_use]
     pub fn volume_right(mut self, volume_right: u8) -> Self {
         self.volume_right = volume_right;
         self
     }
 
     /// Optional callback function to use.
+    #[must_use]
     pub fn callback(mut self, callback: Option<unsafe extern "C" fn(i32)>) -> Self {
         self.callback = callback;
         self
