@@ -2,18 +2,23 @@
 //!
 //! This module implements a safe wrapper around the graphics functions found in ``gx.h``.
 
-use bit_field::BitField;
 use core::ffi::c_void;
 use core::marker::PhantomData;
 
+use alloc::vec::Vec;
 use ffi::GXTexObj;
 use libm::ceilf;
 use voladdress::{Safe, VolAddress};
 
 use crate::ffi::{self, Mtx as Mtx34, Mtx44};
+use crate::gx::regs::BPReg;
 use crate::{lwp, mem_virtual_to_physical};
 
+use self::regs::XFReg;
+
 pub const GX_PIPE: VolAddress<u8, (), Safe> = unsafe { VolAddress::new(0xCC00_8000) };
+
+mod regs;
 
 #[derive(Copy, Clone, Debug)]
 #[repr(transparent)]
@@ -245,7 +250,7 @@ pub enum Perf0 {
 }
 
 /// Performance counter 1 is used for measuring texturing and caching performance as well as FIFO
-/// performance.
+//// performance.
 ///
 /// `Perf1::Tc*` can be used to compute the texture cache (TC) miss rate. The `TcCheck*` parameters
 /// count how many texture cache lines are accessed for each pixel. In the worst case, for a
@@ -1080,16 +1085,13 @@ impl Texture<'_> {
     }
 
     pub fn gxtexobj(&mut self) -> &mut GXTexObj {
-        &mut self.0 
+        &mut self.0
     }
 }
 
 impl<'a> From<GXTexObj> for Texture<'a> {
     fn from(obj: GXTexObj) -> Self {
-        Self {
-            0: obj,
-            1: PhantomData,
-        }
+        Self(obj, PhantomData)
     }
 }
 
@@ -1749,26 +1751,38 @@ impl Gx {
             }
         }
 
-        /*GX_PIPE.write(0x10);
-         for bytes in (6u16).to_be_bytes() {
-             GX_PIPE.write(bytes)
-         }
+        let mut vals = values
+            .iter()
+            .map(|val| val.to_be_bytes())
+            .collect::<Vec<[u8; 4]>>();
+        vals.push((projection as u32).to_be_bytes());
+        XFReg::PROJ_PRM_A.load_multi(7, &vals)
+    }
 
-         for bytes in (0x1020u16).to_be_bytes() {
-             GX_PIPE.write(bytes)
-          }
-        */
-        load_xf_regs(7, 0x1020);
-
-        for val in values {
-            for byte in val.to_be_bytes() {
-                GX_PIPE.write(byte);
-            }
+    ///Sets global material color 1 or 0 in gx regs.
+    pub fn set_global_mat_color(color_channel: ColorChannel, color: Color) {
+        match color_channel {
+            ColorChannel::Color0 => XFReg::MATERIAL0.load(u32::from_be_bytes([
+                color.0.a, color.0.b, color.0.g, color.0.r,
+            ])),
+            ColorChannel::Color1 => XFReg::MATERIAL1.load(u32::from_be_bytes([
+                color.0.a, color.0.b, color.0.g, color.0.r,
+            ])),
         }
+        Gx::color_color(color);
+    }
 
-        for byte in (projection as u32).to_be_bytes() {
-            GX_PIPE.write(byte);
+    ///Sets global ambient color 1 or 0 in gx regs.
+    pub fn set_global_ambient_color(color_channel: ColorChannel, color: Color) {
+        match color_channel {
+            ColorChannel::Color0 => XFReg::AMBIENT0.load(u32::from_be_bytes([
+                color.0.a, color.0.b, color.0.g, color.0.r,
+            ])),
+            ColorChannel::Color1 => XFReg::AMBIENT1.load(u32::from_be_bytes([
+                color.0.a, color.0.b, color.0.g, color.0.r,
+            ])),
         }
+        Gx::color_color(color);
     }
 
     /// Invalidates the vertex cache.
@@ -1784,7 +1798,7 @@ impl Gx {
     /// is indexed. Direct data bypasses the vertex cache. Direct data is any attribute that is set
     /// to `GX_DIRECT` in the current vertex descriptor.
     pub fn inv_vtx_cache() {
-        unsafe { ffi::GX_InvVtxCache() }
+        GX_PIPE.write(GPCommand::InvalidateVertexCache as u8);
     }
 
     /// Clears all vertex attributes of the current vertex descriptor to `GX_NONE`.
@@ -1837,7 +1851,15 @@ impl Gx {
     /// This function is equivalent to calling [`Gx::set_draw_done()`] then
     /// [`Gx::wait_draw_done()`].
     pub fn draw_done() {
-        unsafe { ffi::GX_DrawDone() }
+        //This should work :shrug:
+        BPReg::PE_DONE.load(2);
+
+        //THIS DIRECTLY OVERRUNS WPAR for a flush.
+        for _ in 0..8 {
+            for bytes in 0u32.to_be_bytes() {
+                GX_PIPE.write(bytes);
+            }
+        }
     }
 
     /// Sets the Z-buffer compare mode.
@@ -2216,40 +2238,6 @@ impl Gx {
 //All the following data is found from
 // http://hitmen.c02.at/files/yagcd/yagcd/chap5.html#sec5.3
 
-fn load_bp_reg(register: u8, value: u32) {
-    let mut x = 0u32;
-    x.set_bits(0..7, register.into());
-    x.set_bits(8..31, value);
-
-    GX_PIPE.write(GPCommand::LoadBPReg as u8);
-    for byte in x.to_be_bytes() {
-        GX_PIPE.write(byte);
-    }
-}
-
-fn load_cp_reg(register: u8, value: u32) {
-    let mut x = 0u32;
-    x.set_bits(0..7, register.into());
-    x.set_bits(8..31, value);
-
-    GX_PIPE.write(GPCommand::LoadCPReg as u8);
-    for byte in x.to_be_bytes() {
-        GX_PIPE.write(byte);
-    }
-}
-
-fn load_xf_regs(length: u16, address_base: u16) {
-    GX_PIPE.write(GPCommand::LoadXFReg as u8);
-
-    for byte in (length - 1).to_be_bytes() {
-        GX_PIPE.write(byte);
-    }
-
-    for byte in address_base.to_be_bytes() {
-        GX_PIPE.write(byte);
-    }
-}
-
 //THIS IS PROBABLY NOT CORRECT IF SOMEONE COULD correct it for me that would be amazing!
 fn call_display_list(display_list: &[u8]) {
     let ptr = mem_virtual_to_physical!(display_list.as_ptr()) as u32;
@@ -2310,4 +2298,10 @@ pub enum GPDrawCommand {
     DrawLines = 0xA8,
     DrawLineStrip = 0xB0,
     DrawPoints = 0xBB,
+}
+
+#[repr(u32)]
+pub enum ColorChannel {
+    Color0 = ffi::GX_COLOR0,
+    Color1 = ffi::GX_COLOR1,
 }
