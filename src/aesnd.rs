@@ -197,4 +197,3 @@ impl Aesnd {
         unsafe { *ffi::AESND_AllocateVoice(None) }
     }
 }
-

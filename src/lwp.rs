@@ -94,21 +94,25 @@ impl Builder {
         }
     }
 
+    #[must_use]
     pub fn arg(mut self, arg: *mut c_void) -> Self {
         self.arg = arg;
         self
     }
 
+    #[must_use]
     pub fn stack_base(mut self, base: *mut c_void) -> Self {
         self.stack_base = base;
         self
     }
 
+    #[must_use]
     pub fn stack_size(mut self, size: usize) -> Self {
         self.stack_size = size;
         self
     }
 
+    #[must_use]
     pub fn priority(mut self, prio: u8) -> Self {
         self.priority = prio;
         self
