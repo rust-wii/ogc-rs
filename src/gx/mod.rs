@@ -15,10 +15,12 @@ use crate::gx::regs::BPReg;
 use crate::{lwp, mem_virtual_to_physical};
 
 use self::regs::XFReg;
+use self::types::{PixelEngineControl, PixelFormat, ZFormat};
 
 pub const GX_PIPE: VolAddress<u8, (), Safe> = unsafe { VolAddress::new(0xCC00_8000) };
 
 mod regs;
+pub mod types;
 
 #[derive(Copy, Clone, Debug)]
 #[repr(transparent)]
