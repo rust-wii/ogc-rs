@@ -1636,8 +1636,12 @@ impl Gx {
 
     /// Sets the format of pixels in the Embedded Frame Buffer (EFB).
     /// See [GX_SetPixelFmt](https://libogc.devkitpro.org/gx_8h.html#a018d9b0359f9689ac41f44f0b2374ffb) for more.
-    pub fn set_pixel_fmt(pix_fmt: u8, z_fmt: ZCompress) {
-        unsafe { ffi::GX_SetPixelFmt(pix_fmt, z_fmt as u8) }
+    pub fn set_pixel_fmt(pix_fmt: PixelFormat, z_fmt: ZFormat) {
+        let pe_ctrl = PixelEngineControl::new()
+            .pixel_format(pix_fmt)
+            .z_format(z_fmt);
+
+        BPReg::PE_CTRL.load(pe_ctrl.to_u32());
     }
 
     /// Enables or disables culling of geometry based on its orientation to the viewer.
