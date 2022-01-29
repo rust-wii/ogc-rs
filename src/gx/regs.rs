@@ -230,9 +230,8 @@ impl BPReg {
         assert!(val <= 0xFFFFFF);
         GX_PIPE.write(GPCommand::LoadBPReg as u8);
         GX_PIPE.write(self.0);
-
         //We only want the bottom 24 bits so we only grab the bottom 3 bytes
-        for byte in &val.to_be_bytes()[0..2] {
+        for byte in &val.to_be_bytes()[1..=3] {
             GX_PIPE.write(*byte);
         }
     }
