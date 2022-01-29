@@ -6,6 +6,7 @@ use core::ffi::c_void;
 use core::marker::PhantomData;
 
 use alloc::vec::Vec;
+use bit_field::BitField;
 use ffi::GXTexObj;
 use libm::ceilf;
 use voladdress::{Safe, VolAddress};
@@ -1513,7 +1514,22 @@ impl Gx {
     /// Sets color and Z value to clear the EFB to during copy operations.
     /// See [GX_SetCopyClear](https://libogc.devkitpro.org/gx_8h.html#a17265aefd7e64820de53abd9113334bc) for more.
     pub fn set_copy_clear(background: Color, z_value: u32) {
-        unsafe { ffi::GX_SetCopyClear(background.0, z_value) }
+        BPReg::PE_CLEAR_AR.load(u32::from_be_bytes([
+            0u8,
+            0u8,
+            background.0.a,
+            background.0.r,
+        ]));
+
+        BPReg::PE_CLEAR_GB.load(u32::from_be_bytes([
+            0u8,
+            0u8,
+            background.0.b,
+            background.0.g,
+        ]));
+
+        BPReg::PE_CLEAR_Z.load(z_value);
+        //unsafe { ffi::GX_SetCopyClear(background.0, z_value) };
     }
 
     /// Sets the viewport rectangle in screen coordinates.
@@ -1547,14 +1563,28 @@ impl Gx {
         assert_eq!(0, top % 2);
         assert_eq!(0, wd % 2);
         assert_eq!(0, hd % 2);
-        unsafe { ffi::GX_SetDispCopySrc(left, top, wd, hd) }
+        //unsafe { ffi::GX_SetDispCopySrc(left, top, wd, hd) }
+
+        let mut top_left = 0u32;
+        top_left.set_bits(..10, left.into());
+        top_left.set_bits(10.., top.into());
+
+        let mut width_height = 0u32;
+        width_height.set_bits(..10, (wd - 1).into());
+        width_height.set_bits(10.., (hd - 1).into());
+
+        BPReg::EFB_ADDR_TOP_LEFT.load(top_left);
+        BPReg::EFB_ADDR_DIMENSIONS.load(width_height);
     }
 
     /// Sets the witth and height of the display buffer in pixels.
     /// See [GX_SetDispCopyDst](https://libogc.devkitpro.org/gx_8h.html#ab6f639059b750e57af4c593ba92982c5) for more.
-    pub fn set_disp_copy_dst(width: u16, height: u16) {
-        assert_eq!(0, width % 16);
-        unsafe { ffi::GX_SetDispCopyDst(width, height) }
+    pub fn set_disp_copy_dst(width: u16, _height: u16) {
+        assert!(width <= 0x3FF, "width isn't a valid value");
+
+        BPReg::MIPMAP_STRIDE.load(width.into());
+
+        //unsafe { ffi::GX_SetDispCopyDst(width, height) }
     }
 
     /// Sets the subpixel sample patterns and vertical filter coefficients used to filter subpixels into pixels.
