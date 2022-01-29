@@ -79,7 +79,8 @@ impl BPReg {
     pub const EFB_ADDR_TOP_LEFT: Self = Self(0x49);
     pub const EFB_ADDR_DIMENSIONS: Self = Self(0x4A);
     pub const XFB_ADDR: Self = Self(0x4B);
-    // 0x4C - 0x4D
+    // 0x4C
+    pub const MIPMAP_STRIDE: Self = Self(0x4D);
     pub const DISP_COPY_Y_SCALE: Self = Self(0x4E);
     pub const PE_CLEAR_AR: Self = Self(0x4F);
     pub const PE_CLEAR_GB: Self = Self(0x50);
