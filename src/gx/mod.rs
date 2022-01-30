@@ -1595,14 +1595,62 @@ impl Gx {
         vf: bool,
         v_filter: &mut [u8; 7],
     ) {
-        unsafe {
-            ffi::GX_SetCopyFilter(
-                aa as u8,
-                sample_pattern as *mut _,
-                vf as u8,
-                v_filter as *mut _,
-            )
+        let mut disp_copy_0 = 0x666666u32;
+        let mut disp_copy_1 = 0x666666u32;
+        let mut disp_copy_2 = 0x666666u32;
+        let mut disp_copy_3 = 0x666666u32;
+
+        let mut trgt_copy_0 = 0x595000u32;
+        let mut trgt_copy_1 = 0x000015u32;
+
+        if aa {
+            disp_copy_0.set_bits(0..4, sample_pattern[0][0].into());
+            disp_copy_0.set_bits(4..8, sample_pattern[0][1].into());
+            disp_copy_0.set_bits(8..12, sample_pattern[1][0].into());
+            disp_copy_0.set_bits(12..16, sample_pattern[1][1].into());
+            disp_copy_0.set_bits(16..20, sample_pattern[2][0].into());
+            disp_copy_0.set_bits(20..24, sample_pattern[2][1].into());
+
+            disp_copy_1.set_bits(0..4, sample_pattern[3][0].into());
+            disp_copy_1.set_bits(4..8, sample_pattern[3][1].into());
+            disp_copy_1.set_bits(8..12, sample_pattern[4][0].into());
+            disp_copy_1.set_bits(12..16, sample_pattern[4][1].into());
+            disp_copy_1.set_bits(16..20, sample_pattern[5][0].into());
+            disp_copy_1.set_bits(20..24, sample_pattern[5][1].into());
+
+            disp_copy_2.set_bits(0..4, sample_pattern[6][0].into());
+            disp_copy_2.set_bits(4..8, sample_pattern[6][1].into());
+            disp_copy_2.set_bits(8..12, sample_pattern[7][0].into());
+            disp_copy_2.set_bits(12..16, sample_pattern[7][1].into());
+            disp_copy_2.set_bits(16..20, sample_pattern[8][0].into());
+            disp_copy_2.set_bits(20..24, sample_pattern[8][1].into());
+
+            disp_copy_3.set_bits(0..4, sample_pattern[9][0].into());
+            disp_copy_3.set_bits(4..8, sample_pattern[9][1].into());
+            disp_copy_3.set_bits(8..12, sample_pattern[10][0].into());
+            disp_copy_3.set_bits(12..16, sample_pattern[10][1].into());
+            disp_copy_3.set_bits(16..20, sample_pattern[11][0].into());
+            disp_copy_3.set_bits(20..24, sample_pattern[11][1].into());
         }
+
+        if vf {
+            trgt_copy_0.set_bits(0..6, v_filter[0].into());
+            trgt_copy_0.set_bits(6..12, v_filter[1].into());
+            trgt_copy_0.set_bits(12..18, v_filter[2].into());
+            trgt_copy_0.set_bits(18..24, v_filter[3].into());
+
+            trgt_copy_1.set_bits(0..6, v_filter[4].into());
+            trgt_copy_1.set_bits(6..12, v_filter[5].into());
+            trgt_copy_1.set_bits(12..18, v_filter[6].into());
+        }
+
+        BPReg::DISP_COPY_FILT0.load(disp_copy_0);
+        BPReg::DISP_COPY_FILT1.load(disp_copy_1);
+        BPReg::DISP_COPY_FILT2.load(disp_copy_2);
+        BPReg::DISP_COPY_FILT3.load(disp_copy_3);
+
+        BPReg::TRGT_COPY_FILT0.load(trgt_copy_0);
+        BPReg::TRGT_COPY_FILT1.load(trgt_copy_1);
     }
 
     /// Sets the lighting controls for a particular color channel.
