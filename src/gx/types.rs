@@ -29,6 +29,23 @@ impl ZCompareLocation {
     pub const BEFORE_TEXTURE: Self = Self(true);
 }
 
+pub struct Gamma(pub(crate) u8);
+
+impl Gamma {
+    pub const ONE_ZERO: Self = Self(0);
+    pub const ONE_SEVEN: Self = Self(1);
+    pub const TWO_TWO: Self = Self(2);
+}
+
+pub struct VtxDest(pub(crate) u8);
+
+impl VtxDest {
+    pub const NONE: Self = Self(0);
+    pub const DIRECT: Self = Self(1);
+    pub const INDEX8: Self = Self(2);
+    pub const INDEX16: Self = Self(3);
+}
+
 pub struct PixelEngineControl {
     pixel_format: PixelFormat,
     z_format: ZFormat,
