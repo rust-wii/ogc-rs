@@ -102,3 +102,9 @@ impl From<u32> for PixelEngineControl {
         }
     }
 }
+
+impl Default for PixelEngineControl {
+    fn default() -> Self {
+        Self::new()
+    }
+}
