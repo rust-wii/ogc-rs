@@ -9,10 +9,10 @@ use embedded_graphics::{
 };
 use ogc_rs::{
     ffi::{
-        GX_CLR_RGBA, GX_COLOR0A0, GX_DIRECT, GX_F32, GX_GM_1_0, GX_MAX_Z24, GX_NONE,
-        GX_PASSCLR, GX_PF_RGB8_Z24, GX_PNMTX0, GX_POS_XYZ, GX_RGBA8, GX_TEVSTAGE0, GX_TEXCOORD0,
-        GX_TEXMAP0, GX_TEX_ST, GX_VTXFMT0,
+        GX_CLR_RGBA, GX_COLOR0A0, GX_F32, GX_PASSCLR, GX_PNMTX0, GX_POS_XYZ, GX_RGBA8,
+        GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_TEX_ST, GX_VTXFMT0,
     },
+    gx::types::{Gamma, PixelFormat, VtxDest, ZFormat},
     prelude::*,
 };
 
@@ -26,13 +26,15 @@ impl Display {
     pub fn flush(&self, framebuffer: *mut c_void) {
         Gx::draw_done();
         Gx::set_z_mode(true, CmpFn::LessEq, true);
-        unsafe { Gx::copy_disp(framebuffer, true); }
+        unsafe {
+            Gx::copy_disp(framebuffer, true);
+        }
     }
 
     pub fn setup(&self, rc: &mut RenderConfig) {
         let mut ident: Mat3x4 = Mat3x4::IDENTITY;
-        Gx::set_copy_clear(Color::with_alpha(0, 0, 0, 0), GX_MAX_Z24);
-        Gx::set_pixel_fmt(GX_PF_RGB8_Z24 as _, ZCompress::Linear);
+        Gx::set_copy_clear(Color::with_alpha(0, 0, 0, 0), 0x00ffffff);
+        Gx::set_pixel_fmt(PixelFormat::RGB8_Z24, ZFormat::LINEAR);
         Gx::set_viewport(
             0.0,
             0.0,
@@ -57,38 +59,20 @@ impl Display {
             &mut rc.v_filter,
         );
         Gx::set_field_mode(rc.field_rendering != 0, half_aspect_ratio);
-        Gx::set_disp_copy_gamma(GX_GM_1_0 as _);
+        Gx::set_disp_copy_gamma(Gamma::ONE_ZERO);
 
         //Clear VTX
         Gx::clear_vtx_desc();
         Gx::inv_vtx_cache();
         Gx::invalidate_tex_all();
 
-        Gx::set_vtx_desc(VtxAttr::Tex0, GX_NONE as _);
-        Gx::set_vtx_desc(VtxAttr::Pos, GX_DIRECT as _);
-        Gx::set_vtx_desc(VtxAttr::Color0, GX_DIRECT as _);
+        Gx::set_vtx_desc(VtxAttr::Tex0, VtxDest::NONE);
+        Gx::set_vtx_desc(VtxAttr::Pos, VtxDest::DIRECT);
+        Gx::set_vtx_desc(VtxAttr::Color0, VtxDest::DIRECT);
 
-        Gx::set_vtx_attr_fmt(
-            0,
-            VtxAttr::Pos,
-            GX_POS_XYZ as _,
-            GX_F32 as _,
-            0,
-        );
-        Gx::set_vtx_attr_fmt(
-            0,
-            VtxAttr::Tex0,
-            GX_TEX_ST as _,
-            GX_F32 as _,
-            0,
-        );
-        Gx::set_vtx_attr_fmt(
-            0,
-            VtxAttr::Color0,
-            GX_CLR_RGBA as _,
-            GX_RGBA8 as _,
-            0,
-        );
+        Gx::set_vtx_attr_fmt(0, VtxAttr::Pos, GX_POS_XYZ as _, GX_F32 as _, 0);
+        Gx::set_vtx_attr_fmt(0, VtxAttr::Tex0, GX_TEX_ST as _, GX_F32 as _, 0);
+        Gx::set_vtx_attr_fmt(0, VtxAttr::Color0, GX_CLR_RGBA as _, GX_RGBA8 as _, 0);
         Gx::set_z_mode(true, CmpFn::LessEq, true);
 
         Gx::set_num_chans(1);

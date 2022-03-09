@@ -79,7 +79,8 @@ impl BPReg {
     pub const EFB_ADDR_TOP_LEFT: Self = Self(0x49);
     pub const EFB_ADDR_DIMENSIONS: Self = Self(0x4A);
     pub const XFB_ADDR: Self = Self(0x4B);
-    // 0x4C - 0x4D
+    // 0x4C
+    pub const MIPMAP_STRIDE: Self = Self(0x4D);
     pub const DISP_COPY_Y_SCALE: Self = Self(0x4E);
     pub const PE_CLEAR_AR: Self = Self(0x4F);
     pub const PE_CLEAR_GB: Self = Self(0x50);
@@ -229,9 +230,8 @@ impl BPReg {
         assert!(val <= 0xFFFFFF);
         GX_PIPE.write(GPCommand::LoadBPReg as u8);
         GX_PIPE.write(self.0);
-
         //We only want the bottom 24 bits so we only grab the bottom 3 bytes
-        for byte in &val.to_be_bytes()[0..2] {
+        for byte in &val.to_be_bytes()[1..=3] {
             GX_PIPE.write(*byte);
         }
     }

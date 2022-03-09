@@ -12,9 +12,8 @@ use embedded_graphics::{
     primitives::{PrimitiveStyle, Rectangle},
     Drawable,
 };
+
 use ogc_rs::prelude::*;
-//use tinytga::Tga;
-//const IMG: &[u8] = include_bytes!("../img.tga");
 
 #[start]
 fn main(_argc: isize, _argv: *const *const u8) -> isize {
@@ -24,11 +23,15 @@ fn main(_argc: isize, _argv: *const *const u8) -> isize {
 
     let gcn_ctrl = Input::new(ControllerType::Gamecube, ControllerPort::One);
     let wii_ctrl = Input::new(ControllerType::Wii, ControllerPort::One);
-    wii_ctrl.as_wpad().set_data_format(WPadDataFormat::ButtonsAccelIR);
+    wii_ctrl
+        .as_wpad()
+        .set_data_format(WPadDataFormat::ButtonsAccelIR);
 
     Console::init(&video);
-    Video::configure(video.render_config);
-    unsafe { Video::set_next_framebuffer(video.framebuffer); }
+    Video::configure(&video.render_config);
+    unsafe {
+        Video::set_next_framebuffer(video.framebuffer);
+    }
     Video::set_black(true);
     Video::flush();
     Video::wait_vsync();
@@ -47,7 +50,7 @@ fn main(_argc: isize, _argv: *const *const u8) -> isize {
     const POINTER: Rectangle = Rectangle::new(Point::zero(), Size::new_equal(10));
     loop {
         Input::update(ControllerType::Gamecube);
-        Input::update(ControllerType::Wii); 
+        Input::update(ControllerType::Wii);
 
         if gcn_ctrl.is_button_down(Button::Start) {
             break 0;
@@ -65,7 +68,10 @@ fn main(_argc: isize, _argv: *const *const u8) -> isize {
             0.0,
         );
 
-        let ir = Point::new(wii_ctrl.as_wpad().ir().0 as i32, wii_ctrl.as_wpad().ir().1 as i32);
+        let ir = Point::new(
+            wii_ctrl.as_wpad().ir().0 as i32,
+            wii_ctrl.as_wpad().ir().1 as i32,
+        );
 
         BACKGROUND
             .into_styled(PrimitiveStyle::with_fill(Rgb888::WHITE))
@@ -95,7 +101,9 @@ fn main(_argc: isize, _argv: *const *const u8) -> isize {
 
         wii_display.flush(video.framebuffer);
 
-        unsafe { Video::set_next_framebuffer(video.framebuffer); }
+        unsafe {
+            Video::set_next_framebuffer(video.framebuffer);
+        }
         Video::flush();
         Video::wait_vsync();
     }

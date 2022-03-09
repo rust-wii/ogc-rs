@@ -6,6 +6,7 @@ use core::ffi::c_void;
 use core::marker::PhantomData;
 
 use alloc::vec::Vec;
+use bit_field::BitField;
 use ffi::GXTexObj;
 use libm::ceilf;
 use voladdress::{Safe, VolAddress};
@@ -15,10 +16,12 @@ use crate::gx::regs::BPReg;
 use crate::{lwp, mem_virtual_to_physical};
 
 use self::regs::XFReg;
+use self::types::{Gamma, PixelEngineControl, PixelFormat, VtxDest, ZFormat};
 
 pub const GX_PIPE: VolAddress<u8, (), Safe> = unsafe { VolAddress::new(0xCC00_8000) };
 
 mod regs;
+pub mod types;
 
 #[derive(Copy, Clone, Debug)]
 #[repr(transparent)]
@@ -1511,7 +1514,22 @@ impl Gx {
     /// Sets color and Z value to clear the EFB to during copy operations.
     /// See [GX_SetCopyClear](https://libogc.devkitpro.org/gx_8h.html#a17265aefd7e64820de53abd9113334bc) for more.
     pub fn set_copy_clear(background: Color, z_value: u32) {
-        unsafe { ffi::GX_SetCopyClear(background.0, z_value) }
+        BPReg::PE_CLEAR_AR.load(u32::from_be_bytes([
+            0u8,
+            0u8,
+            background.0.a,
+            background.0.r,
+        ]));
+
+        BPReg::PE_CLEAR_GB.load(u32::from_be_bytes([
+            0u8,
+            0u8,
+            background.0.b,
+            background.0.g,
+        ]));
+
+        BPReg::PE_CLEAR_Z.load(z_value);
+        //unsafe { ffi::GX_SetCopyClear(background.0, z_value) };
     }
 
     /// Sets the viewport rectangle in screen coordinates.
@@ -1545,14 +1563,28 @@ impl Gx {
         assert_eq!(0, top % 2);
         assert_eq!(0, wd % 2);
         assert_eq!(0, hd % 2);
-        unsafe { ffi::GX_SetDispCopySrc(left, top, wd, hd) }
+        //unsafe { ffi::GX_SetDispCopySrc(left, top, wd, hd) }
+
+        let mut top_left = 0u32;
+        top_left.set_bits(..10, left.into());
+        top_left.set_bits(10.., top.into());
+
+        let mut width_height = 0u32;
+        width_height.set_bits(..10, (wd - 1).into());
+        width_height.set_bits(10.., (hd - 1).into());
+
+        BPReg::EFB_ADDR_TOP_LEFT.load(top_left);
+        BPReg::EFB_ADDR_DIMENSIONS.load(width_height);
     }
 
     /// Sets the witth and height of the display buffer in pixels.
     /// See [GX_SetDispCopyDst](https://libogc.devkitpro.org/gx_8h.html#ab6f639059b750e57af4c593ba92982c5) for more.
-    pub fn set_disp_copy_dst(width: u16, height: u16) {
-        assert_eq!(0, width % 16);
-        unsafe { ffi::GX_SetDispCopyDst(width, height) }
+    pub fn set_disp_copy_dst(width: u16, _height: u16) {
+        assert!(width <= 0x3FF, "width isn't a valid value");
+
+        BPReg::MIPMAP_STRIDE.load(width.into());
+
+        //unsafe { ffi::GX_SetDispCopyDst(width, height) }
     }
 
     /// Sets the subpixel sample patterns and vertical filter coefficients used to filter subpixels into pixels.
@@ -1563,14 +1595,62 @@ impl Gx {
         vf: bool,
         v_filter: &mut [u8; 7],
     ) {
-        unsafe {
-            ffi::GX_SetCopyFilter(
-                aa as u8,
-                sample_pattern as *mut _,
-                vf as u8,
-                v_filter as *mut _,
-            )
+        let mut disp_copy_0 = 0x666666u32;
+        let mut disp_copy_1 = 0x666666u32;
+        let mut disp_copy_2 = 0x666666u32;
+        let mut disp_copy_3 = 0x666666u32;
+
+        let mut trgt_copy_0 = 0x595000u32;
+        let mut trgt_copy_1 = 0x000015u32;
+
+        if aa {
+            disp_copy_0.set_bits(0..4, sample_pattern[0][0].into());
+            disp_copy_0.set_bits(4..8, sample_pattern[0][1].into());
+            disp_copy_0.set_bits(8..12, sample_pattern[1][0].into());
+            disp_copy_0.set_bits(12..16, sample_pattern[1][1].into());
+            disp_copy_0.set_bits(16..20, sample_pattern[2][0].into());
+            disp_copy_0.set_bits(20..24, sample_pattern[2][1].into());
+
+            disp_copy_1.set_bits(0..4, sample_pattern[3][0].into());
+            disp_copy_1.set_bits(4..8, sample_pattern[3][1].into());
+            disp_copy_1.set_bits(8..12, sample_pattern[4][0].into());
+            disp_copy_1.set_bits(12..16, sample_pattern[4][1].into());
+            disp_copy_1.set_bits(16..20, sample_pattern[5][0].into());
+            disp_copy_1.set_bits(20..24, sample_pattern[5][1].into());
+
+            disp_copy_2.set_bits(0..4, sample_pattern[6][0].into());
+            disp_copy_2.set_bits(4..8, sample_pattern[6][1].into());
+            disp_copy_2.set_bits(8..12, sample_pattern[7][0].into());
+            disp_copy_2.set_bits(12..16, sample_pattern[7][1].into());
+            disp_copy_2.set_bits(16..20, sample_pattern[8][0].into());
+            disp_copy_2.set_bits(20..24, sample_pattern[8][1].into());
+
+            disp_copy_3.set_bits(0..4, sample_pattern[9][0].into());
+            disp_copy_3.set_bits(4..8, sample_pattern[9][1].into());
+            disp_copy_3.set_bits(8..12, sample_pattern[10][0].into());
+            disp_copy_3.set_bits(12..16, sample_pattern[10][1].into());
+            disp_copy_3.set_bits(16..20, sample_pattern[11][0].into());
+            disp_copy_3.set_bits(20..24, sample_pattern[11][1].into());
         }
+
+        if vf {
+            trgt_copy_0.set_bits(0..6, v_filter[0].into());
+            trgt_copy_0.set_bits(6..12, v_filter[1].into());
+            trgt_copy_0.set_bits(12..18, v_filter[2].into());
+            trgt_copy_0.set_bits(18..24, v_filter[3].into());
+
+            trgt_copy_1.set_bits(0..6, v_filter[4].into());
+            trgt_copy_1.set_bits(6..12, v_filter[5].into());
+            trgt_copy_1.set_bits(12..18, v_filter[6].into());
+        }
+
+        BPReg::DISP_COPY_FILT0.load(disp_copy_0);
+        BPReg::DISP_COPY_FILT1.load(disp_copy_1);
+        BPReg::DISP_COPY_FILT2.load(disp_copy_2);
+        BPReg::DISP_COPY_FILT3.load(disp_copy_3);
+
+        BPReg::TRGT_COPY_FILT0.load(trgt_copy_0);
+        BPReg::TRGT_COPY_FILT1.load(trgt_copy_1);
     }
 
     /// Sets the lighting controls for a particular color channel.
@@ -1604,8 +1684,12 @@ impl Gx {
 
     /// Sets the format of pixels in the Embedded Frame Buffer (EFB).
     /// See [GX_SetPixelFmt](https://libogc.devkitpro.org/gx_8h.html#a018d9b0359f9689ac41f44f0b2374ffb) for more.
-    pub fn set_pixel_fmt(pix_fmt: u8, z_fmt: ZCompress) {
-        unsafe { ffi::GX_SetPixelFmt(pix_fmt, z_fmt as u8) }
+    pub fn set_pixel_fmt(pix_fmt: PixelFormat, z_fmt: ZFormat) {
+        let pe_ctrl = PixelEngineControl::new()
+            .pixel_format(pix_fmt)
+            .z_format(z_fmt);
+
+        BPReg::PE_CTRL.load(pe_ctrl.to_u32());
     }
 
     /// Enables or disables culling of geometry based on its orientation to the viewer.
@@ -1654,8 +1738,8 @@ impl Gx {
 
     /// Sets the gamma correction applied to pixels during EFB to XFB copy operation.
     /// See [GX_SetDispCopyGamma](https://libogc.devkitpro.org/gx_8h.html#aa8e5bc962cc786b2049345fa698d4efa) for more.
-    pub fn set_disp_copy_gamma(gamma: u8) {
-        unsafe { ffi::GX_SetDispCopyGamma(gamma) }
+    pub fn set_disp_copy_gamma(gamma: Gamma) {
+        unsafe { ffi::GX_SetDispCopyGamma(gamma.0) }
     }
 
     /// Sets the attribute format (vtxattr) for a single attribute in the Vertex Attribute Table (VAT).
@@ -1812,8 +1896,8 @@ impl Gx {
 
     /// Sets the type of a single attribute (attr) in the current vertex descriptor.
     /// See [GX_SetVtxDesc](https://libogc.devkitpro.org/gx_8h.html#af41b45011ae731ae5697b26b2bf97e2f) for more.
-    pub fn set_vtx_desc(attr: VtxAttr, v_type: u8) {
-        unsafe { ffi::GX_SetVtxDesc(attr as u8, v_type) }
+    pub fn set_vtx_desc(attr: VtxAttr, v_type: VtxDest) {
+        unsafe { ffi::GX_SetVtxDesc(attr as u8, v_type.0) }
     }
 
     /// Used to load a 3x4 modelview matrix mt into matrix memory at location pnidx.
