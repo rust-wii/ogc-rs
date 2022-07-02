@@ -1,6 +1,6 @@
 [package]
 name = "ogc-sys"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["rust-wii"]
 edition = "2021"
 license = "MIT"
@@ -15,5 +15,5 @@ keywords = ["wii", "embedded", "no-std"]
 libc = "0.2"
 
 [build-dependencies]
-bindgen = "0.59"
+bindgen = "0.60"
 regex = "1.5"
