@@ -143,6 +143,7 @@ pub fn alloc_aligned_buffer(buffer: &[u8]) -> Vec<u8> {
 /// This buffer does not grow or reallocate. It's meant as a simple way to
 /// handle the alignment requirements everpresent throughout libogc functions
 /// that take buffers as parameters.
+#[derive(Eq)]
 pub struct Buf32(NonNull<[u8]>);
 
 impl Buf32 {
@@ -226,6 +227,24 @@ impl core::ops::DerefMut for Buf32 {
 impl fmt::Debug for Buf32 {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		self.as_slice().fmt(f)
+	}
+}
+
+impl core::cmp::Ord for Buf32 {
+	fn cmp(&self, other: &Self) -> core::cmp::Ordering {
+		self.as_slice().cmp(other.as_slice())
+	}
+}
+
+impl core::cmp::PartialOrd for Buf32 {
+	fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
+		Some(self.cmp(other))
+	}
+}
+
+impl core::cmp::PartialEq for Buf32 {
+	fn eq(&self, other: &Self) -> bool {
+		self.as_slice() == other.as_slice()
 	}
 }
 
