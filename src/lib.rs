@@ -75,6 +75,9 @@ pub mod input;
 // Light-Weight Process implementation
 pub mod lwp;
 
+// LWP Message Queue implementation
+pub mod message;
+
 // LWP Mutex implementation
 pub mod mutex;
 

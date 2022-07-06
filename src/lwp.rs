@@ -5,6 +5,9 @@
 use crate::ffi;
 use core::ffi::c_void;
 
+pub const ALREADY_SUSPENDED: i32 = ffi::LWP_ALREADY_SUSPENDED as i32;
+pub const SUCCESSFUL: i32 = ffi::LWP_SUCCESSFUL as i32;
+
 /// A thread context handle.
 #[derive(Clone, Debug)]
 #[repr(transparent)]
@@ -80,6 +83,8 @@ pub struct Builder {
 	priority: u8,
 }
 
+pub type EntryFn = Option<unsafe extern "C" fn(*mut c_void) -> *mut c_void>;
+
 impl Default for Builder {
 	fn default() -> Self {
 		Self::new()
@@ -122,13 +127,13 @@ impl Builder {
 
 	pub fn spawn(
 		self,
-		entry: unsafe extern "C" fn(*mut c_void) -> *mut c_void,
+		entry: EntryFn,
 	) -> Result<Thread, i32> {
 		let mut thread = core::mem::MaybeUninit::uninit();
 		unsafe {
 			let res = ffi::LWP_CreateThread(
 				thread.as_mut_ptr(),
-				Some(entry),
+				entry,
 				self.arg,
 				self.stack_base,
 				self.stack_size as u32,

@@ -3,10 +3,9 @@
 //! This module implements a safe wrapper around the debug functions.
 
 use crate::ffi;
-use num_enum::IntoPrimitive;
 
 /// Enum for gdb stub types.
-#[derive(IntoPrimitive, Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 #[repr(i32)]
 pub enum GDBStubDevice {
 	Usb = 0,
@@ -16,7 +15,7 @@ pub enum GDBStubDevice {
 /// Performs the initialization of the debug stub.
 pub fn debug_init(device_type: GDBStubDevice, channel_port: i32) {
 	unsafe {
-		ffi::DEBUG_Init(device_type.into(), channel_port);
+		ffi::DEBUG_Init(device_type as i32, channel_port);
 	}
 }
 
