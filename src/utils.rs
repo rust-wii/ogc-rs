@@ -197,6 +197,18 @@ impl Buf32 {
 	}
 }
 
+impl Clone for Buf32 {
+	fn clone(&self) -> Self {
+		let mut new_buf = Self::new(self.len());
+		new_buf.clone_from(self);
+		new_buf
+	}
+	
+	fn clone_from(&mut self, source: &Self) {
+		self.as_mut_slice().copy_from_slice(source.as_slice());
+	}
+}
+
 impl Drop for Buf32 {
 	fn drop(&mut self) {
 		// SAFETY:
