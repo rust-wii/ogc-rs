@@ -4,12 +4,12 @@ const CACHELINE_SIZE: usize = 32;
 
 /// Enable L1 data-cache.
 pub fn dc_enable() {
-    unsafe { ffi::DCEnable() }
+	unsafe { ffi::DCEnable() }
 }
 
 /// Disable L1 data-cache.
 pub fn dc_disable() {
-    unsafe { ffi::DCDisable() }
+	unsafe { ffi::DCDisable() }
 }
 
 /// Invalidate L1 data-cache.
@@ -19,7 +19,7 @@ pub fn dc_disable() {
 /// Bus accesses to the cache are signaled as a miss during invalidate-all
 /// operations.
 pub fn dc_flash_invalidate() {
-    unsafe { ffi::DCFlashInvalidate() }
+	unsafe { ffi::DCFlashInvalidate() }
 }
 
 /// Current contents of the L1 d-cache are locked down and will not be cast out.
@@ -32,7 +32,7 @@ pub fn dc_flash_invalidate() {
 /// "locking" the data cache. We use the word "freeze" to distinguish it from
 /// the locked cache and DMA features.
 pub fn dc_freeze() {
-    unsafe { ffi::DCFreeze() }
+	unsafe { ffi::DCFreeze() }
 }
 
 /// Undoes actions of `dc_freeze()`.
@@ -43,12 +43,12 @@ pub fn dc_freeze() {
 /// "locking" the data cache. We use the word "freeze" to distinguish it from
 /// the locked cache and DMA features.
 pub fn dc_unfreeze() {
-    unsafe { ffi::DCUnfreeze() }
+	unsafe { ffi::DCUnfreeze() }
 }
 
 /// Enable L1 i-cache.
 pub fn ic_enable() {
-    unsafe { ffi::ICEnable() }
+	unsafe { ffi::ICEnable() }
 }
 
 /// Invalidate the L1 i-cache.
@@ -59,7 +59,7 @@ pub fn ic_enable() {
 /// Cache access is blocked during this time. Bus accesses to the cache are
 /// signaled as a miss during invalidate-all operations.
 pub fn ic_flash_invalidate() {
-    unsafe { ffi::ICFlashInvalidate() }
+	unsafe { ffi::ICFlashInvalidate() }
 }
 
 /// Current contents of the L1 i-cache are locked down and will not be cast out.
@@ -70,7 +70,7 @@ pub fn ic_flash_invalidate() {
 /// "locking" the data cache. We use the word "freeze" to distinguish it from
 /// the locked cache and DMA features.
 pub fn ic_freeze() {
-    unsafe { ffi::ICFreeze() }
+	unsafe { ffi::ICFreeze() }
 }
 
 /// Undoes actions of `ic_freeze()`.
@@ -81,7 +81,7 @@ pub fn ic_freeze() {
 /// "locking" the data cache. We use the word "freeze" to distinguish it from
 /// the locked cache and DMA features.
 pub fn ic_unfreeze() {
-    unsafe { ffi::ICUnfreeze() }
+	unsafe { ffi::ICUnfreeze() }
 }
 
 /// Performs an instruction cache synchronization.
@@ -89,5 +89,5 @@ pub fn ic_unfreeze() {
 /// This ensures that all instructions preceding this instruction have completed
 /// before this instruction completes.
 pub fn ic_sync() {
-    unsafe { ffi::ICSync() }
+	unsafe { ffi::ICSync() }
 }
