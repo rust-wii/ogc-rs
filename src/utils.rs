@@ -1,6 +1,7 @@
 //! Utility Functions to convert between types.
 
 use core::alloc::{Allocator, Layout};
+use core::fmt;
 use core::ptr::NonNull;
 
 use alloc::vec::Vec;
@@ -145,7 +146,7 @@ pub fn alloc_aligned_buffer(buffer: &[u8]) -> Vec<u8> {
 /// This buffer does not grow or reallocate. It's meant as a simple way to
 /// handle the alignment requirements everpresent throughout libogc functions
 /// that take buffers as parameters.
-#[derive(Debug)]
+#[derive(Eq)]
 pub struct Buf32(NonNull<[u8]>);
 
 impl Buf32 {
@@ -197,6 +198,56 @@ impl Buf32 {
 		//         enforces aliasing rules by binding the reference's lifetime
 		//         to that of `&mut self`.
 		unsafe { self.0.as_mut() }
+	}
+}
+
+impl Clone for Buf32 {
+	fn clone(&self) -> Self {
+		let mut new_buf = Self::new(self.len());
+		new_buf.clone_from(self);
+		new_buf
+	}
+	
+	fn clone_from(&mut self, source: &Self) {
+		self.as_mut_slice().copy_from_slice(source.as_slice());
+	}
+}
+
+impl core::ops::Deref for Buf32 {
+	type Target = [u8];
+	
+	fn deref(&self) -> &Self::Target {
+		self.as_slice()
+	}
+}
+
+impl core::ops::DerefMut for Buf32 {
+	fn deref_mut(&mut self) -> &mut Self::Target {
+		self.as_mut_slice()
+	}
+}
+
+impl fmt::Debug for Buf32 {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		self.as_slice().fmt(f)
+	}
+}
+
+impl core::cmp::Ord for Buf32 {
+	fn cmp(&self, other: &Self) -> core::cmp::Ordering {
+		self.as_slice().cmp(other.as_slice())
+	}
+}
+
+impl core::cmp::PartialOrd for Buf32 {
+	fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
+		Some(self.cmp(other))
+	}
+}
+
+impl core::cmp::PartialEq for Buf32 {
+	fn eq(&self, other: &Self) -> bool {
+		self.as_slice() == other.as_slice()
 	}
 }
 
