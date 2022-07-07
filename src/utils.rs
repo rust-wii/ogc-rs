@@ -1,7 +1,7 @@
 //! Utility Functions to convert between types.
 
 use core::alloc::{Allocator, Layout};
-use core::fmt;
+use core::{fmt, ops};
 use core::ptr::NonNull;
 
 use alloc::vec::Vec;
@@ -222,6 +222,49 @@ impl core::ops::DerefMut for Buf32 {
 	fn deref_mut(&mut self) -> &mut Self::Target {
 		self.as_mut_slice()
 	}
+}
+
+impl ops::Index<usize> for Buf32 {
+	type Output = u8;
+	
+	fn index(&self, index: usize) -> &Self::Output {
+		&self.as_slice()[index]
+	}
+}
+
+impl ops::IndexMut<usize> for Buf32 {
+	fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+		&mut self.as_mut_slice()[index]
+	}
+}
+
+macro_rules! impl_index_for_buf32 {
+	($($idx:ty),*) => {
+		$(
+			impl ops::Index<$idx> for Buf32 {
+				type Output = [u8];
+				
+				fn index(&self, index: $idx) -> &Self::Output {
+					&self.as_slice()[index]
+				}
+			}
+			
+			impl ops::IndexMut<$idx> for Buf32 {
+				fn index_mut(&mut self, index: $idx) -> &mut Self::Output {
+					&mut self.as_mut_slice()[index]
+				}
+			}
+		)*
+	}
+}
+
+impl_index_for_buf32! {
+	ops::RangeFull,
+	ops::RangeFrom<usize>,
+	ops::RangeTo<usize>,
+	ops::Range<usize>,
+	ops::RangeInclusive<usize>,
+	ops::RangeToInclusive<usize>
 }
 
 impl fmt::Debug for Buf32 {
