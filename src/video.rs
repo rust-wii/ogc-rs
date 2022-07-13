@@ -107,11 +107,11 @@ impl Video {
 
             Self {
                 render_config: r_mode,
-                framebuffer: 
-					(System::allocate_framebuffer(
-						&Self::get_preferred_mode()
-					) as *mut u8)
-					.map_addr(cached_to_uncached) as *mut c_void,
+                framebuffer:
+                    (System::allocate_framebuffer(
+                        &Self::get_preferred_mode()
+                    ) as *mut u8)
+                    .map_addr(cached_to_uncached) as *mut c_void,
             }
         }
     }

@@ -404,8 +404,8 @@ impl Fifo {
         if size < Fifo::MIN_SIZE {
             size = Fifo::MIN_SIZE;
         }
-		
-		let mut buf = crate::utils::Buf32::new(size);
+
+        let mut buf = crate::utils::Buf32::new(size);
 
         // SAFETY:
         // + original libogc source suggests that available init functions don't
@@ -420,7 +420,7 @@ impl Fifo {
             );
             Fifo(fifo.assume_init())
         }
-	}
+    }
 
     /// Sets the high and low water mark for the fifo.
     ///

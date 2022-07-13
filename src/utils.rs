@@ -10,45 +10,45 @@ use alloc::vec::Vec;
 /// 
 /// For more information, refer to [Memory map](https://wiibrew.org/wiki/Memory_Map).
 pub mod mem {
-	use crate::ffi;
+    use crate::ffi;
 
-	pub const BASE_CACHED: usize = ffi::SYS_BASE_CACHED as _;
-	pub const BASE_UNCACHED: usize = ffi::SYS_BASE_UNCACHED as _;
+    pub const BASE_CACHED: usize = ffi::SYS_BASE_CACHED as _;
+    pub const BASE_UNCACHED: usize = ffi::SYS_BASE_UNCACHED as _;
 
-	/// Cast a cached address to an uncached address.
-	/// Example: 0x8xxxxxxx -> 0xCxxxxxxx
-	#[inline]
-	pub fn cached_to_uncached(x: usize) -> usize {
-		physical_to_uncached(virtual_to_physical(x))
-	}
+    /// Cast a cached address to an uncached address.
+    /// Example: 0x8xxxxxxx -> 0xCxxxxxxx
+    #[inline]
+    pub fn cached_to_uncached(x: usize) -> usize {
+        physical_to_uncached(virtual_to_physical(x))
+    }
 
-	/// Cast a uncached address to a cached address.
-	/// Example: 0xCxxxxxxx -> 0x8xxxxxxx
-	#[inline]
-	pub fn uncached_to_cached(x: usize) -> usize {
-		physical_to_cached(virtual_to_physical(x))
-	}
+    /// Cast a uncached address to a cached address.
+    /// Example: 0xCxxxxxxx -> 0x8xxxxxxx
+    #[inline]
+    pub fn uncached_to_cached(x: usize) -> usize {
+        physical_to_cached(virtual_to_physical(x))
+    }
 
-	/// Cast a physical address to a cached address.
-	/// Example: 0x0xxxxxxx -> 0x8xxxxxxx
-	#[inline]
-	pub fn physical_to_cached(x: usize) -> usize {
-		x + BASE_CACHED
-	}
+    /// Cast a physical address to a cached address.
+    /// Example: 0x0xxxxxxx -> 0x8xxxxxxx
+    #[inline]
+    pub fn physical_to_cached(x: usize) -> usize {
+        x + BASE_CACHED
+    }
 
-	/// Cast a physical address to a uncached address.
-	/// Example: 0x0xxxxxxx -> 0xCxxxxxxx
-	#[inline]
-	pub fn physical_to_uncached(x: usize) -> usize {
-		x + BASE_UNCACHED
-	}
+    /// Cast a physical address to a uncached address.
+    /// Example: 0x0xxxxxxx -> 0xCxxxxxxx
+    #[inline]
+    pub fn physical_to_uncached(x: usize) -> usize {
+        x + BASE_UNCACHED
+    }
 
-	/// Cast a virtual address (cached or uncached) to a physical address.  
-	/// Example: 0x8xxxxxxx -> 0x0xxxxxxx
-	#[inline]
-	pub fn virtual_to_physical(x: usize) -> usize {
-		x & !BASE_UNCACHED
-	}
+    /// Cast a virtual address (cached or uncached) to a physical address.
+    /// Example: 0x8xxxxxxx -> 0x0xxxxxxx
+    #[inline]
+    pub fn virtual_to_physical(x: usize) -> usize {
+        x & !BASE_UNCACHED
+    }
 }
 
 /// Console printing macros.
