@@ -87,62 +87,61 @@ impl Default for Builder {
 }
 
 impl Builder {
-<<<<<<< HEAD
-	pub fn new() -> Self {
-		Builder {
-			arg: core::ptr::null_mut(),
-			stack_base: core::ptr::null_mut(),
-			stack_size: 0,
-			priority: 0,
-		}
-	}
+    pub fn new() -> Self {
+        Builder {
+            arg: core::ptr::null_mut(),
+            stack_base: core::ptr::null_mut(),
+            stack_size: 0,
+            priority: 0,
+        }
+    }
 
-	#[must_use]
-	pub fn arg(mut self, arg: *mut c_void) -> Self {
-		self.arg = arg;
-		self
-	}
+    #[must_use]
+    pub fn arg(mut self, arg: *mut c_void) -> Self {
+        self.arg = arg;
+        self
+    }
 
-	#[must_use]
-	pub fn stack_base(mut self, base: *mut c_void) -> Self {
-		self.stack_base = base;
-		self
-	}
+    #[must_use]
+    pub fn stack_base(mut self, base: *mut c_void) -> Self {
+        self.stack_base = base;
+        self
+    }
 
-	#[must_use]
-	pub fn stack_size(mut self, size: usize) -> Self {
-		self.stack_size = size;
-		self
-	}
+    #[must_use]
+    pub fn stack_size(mut self, size: usize) -> Self {
+        self.stack_size = size;
+        self
+    }
 
-	#[must_use]
-	pub fn priority(mut self, prio: u8) -> Self {
-		self.priority = prio;
-		self
-	}
+    #[must_use]
+    pub fn priority(mut self, prio: u8) -> Self {
+        self.priority = prio;
+        self
+    }
 
-	pub fn spawn(
-		self,
-		entry: EntryFn,
-	) -> Result<Thread, i32> {
-		let mut thread = core::mem::MaybeUninit::uninit();
-		unsafe {
-			let res = ffi::LWP_CreateThread(
-				thread.as_mut_ptr(),
-				entry,
-				self.arg,
-				self.stack_base,
-				self.stack_size as u32,
-				self.priority,
-			);
+    pub fn spawn(
+        self,
+        entry: EntryFn,
+    ) -> Result<Thread, i32> {
+        let mut thread = core::mem::MaybeUninit::uninit();
+        unsafe {
+            let res = ffi::LWP_CreateThread(
+                thread.as_mut_ptr(),
+                entry,
+                self.arg,
+                self.stack_base,
+                self.stack_size as u32,
+                self.priority,
+            );
 
-			if res < 0 {
-				Err(res)
-			} else {
-				Ok(Thread::new(thread.assume_init()))
-			}
-		}
-	}
+            if res < 0 {
+                Err(res)
+            } else {
+                Ok(Thread::new(thread.assume_init()))
+            }
+        }
+    }
 }
 
 /// A thread queue's context handle.
