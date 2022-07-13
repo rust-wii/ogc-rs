@@ -2,7 +2,8 @@
 //!
 //! This module implements a safe wrapper around video functions.
 
-use crate::{ffi, mem_cached_to_uncached, system::System};
+use crate::{ffi, system::System};
+use crate::utils::mem::cached_to_uncached;
 use alloc::boxed::Box;
 use core::{convert::TryFrom, ffi::c_void, mem, ptr};
 use num_enum::{IntoPrimitive, TryFromPrimitive};
@@ -106,9 +107,11 @@ impl Video {
 
 			Self {
 				render_config: r_mode,
-				framebuffer: mem_cached_to_uncached!(
-					System::allocate_framebuffer(&Self::get_preferred_mode())
-				),
+				framebuffer:
+					(System::allocate_framebuffer(
+						&Self::get_preferred_mode()
+					) as *mut u8)
+					.map_addr(cached_to_uncached) as *mut c_void,
 			}
 		}
 	}

@@ -14,7 +14,8 @@ use voladdress::{Safe, VolAddress};
 
 use crate::ffi::{self, Mtx as Mtx34, Mtx44};
 use crate::gx::regs::BPReg;
-use crate::{lwp, mem_virtual_to_physical};
+use crate::lwp;
+use crate::utils::mem;
 
 use self::regs::XFReg;
 use self::types::{Gamma, PixelEngineControl, PixelFormat, VtxDest, ZFormat};
@@ -423,37 +424,19 @@ impl Fifo {
 		if size < Fifo::MIN_SIZE {
 			size = Fifo::MIN_SIZE;
 		}
+		
+		let mut buf = crate::utils::Buf32::new(size);
 
 		// SAFETY:
-		// + `size` is checked to be less than `isize::MAX` before being passed
-		// to   `alloc_zeroed()`.
-		// + `base` is checked to be non-null, otherwise libogc returns early
-		// without initializing.
-		assert!(
-			size <= isize::MAX.try_into().unwrap(),
-			"size must be isize::MAX bytes or less"
-		);
-		let base = unsafe {
-			crate::mem_cached_to_uncached!(alloc::alloc::alloc_zeroed(
-				core::alloc::Layout::from_size_align(size, 32).unwrap()
-			)) as *mut u8
-		};
-		assert!(!base.is_null(), "could not allocate memory for Fifo");
-
-		// SAFETY:
-		// + `fifo` is not null.
-		// + `base` is aligned to 32 bytes.
-		// + `size` is greater or equal to the minimum size.
-		// + `size` is a multiple of 32 bytes.
 		// + original libogc source suggests that available init functions don't
 		//   completely initialize the fifo, so it's been zeroed() above just in
 		//   case.
-		assert_eq!(0, size % 32);
+		// + all other safety ensured by Buf32.
 		unsafe {
 			ffi::GX_InitFifoBase(
 				fifo.as_mut_ptr(),
-				base as *mut _,
-				size as u32,
+				buf.as_mut_ptr().map_addr(mem::cached_to_uncached) as *mut _,
+				buf.len() as u32,
 			);
 			Fifo(fifo.assume_init())
 		}
@@ -1311,10 +1294,7 @@ impl Gx {
 	/// the Graphics Processor (GP). This function will initialize a FIFO and
 	/// attach it to both the CPU and GP. The CPU will write commands to the
 	/// FIFO and the GP will read the commands. This function returns a pointer
-	/// to the initialized FIFO. The application must allocate the memory for
-	/// the FIFO. The parameter `base` is a pointer to the allocated main memory
-	/// and must be aligned to 32B. `size` is the size of the FIFO in bytes and
-	/// must be a multiple of 32B. Refer to additional notes in [`Fifo`]
+	/// to the initialized FIFO. Refer to additional notes in [`Fifo`]
 	/// concerning the FIFO memory.
 	///
 	/// # Note
@@ -1332,32 +1312,15 @@ impl Gx {
 		if size < Fifo::MIN_SIZE {
 			size = Fifo::MIN_SIZE;
 		}
+		
+		let mut buf = crate::utils::Buf32::new(size);
 
-		// SAFETY:
-		// + `size` is less than or equal to `isize::MAX` before being passed to
-		// `alloc_zeroed()`.
-		assert!(
-			size <= isize::MAX.try_into().unwrap(),
-			"size must be isize::MAX bytes or less"
-		);
-		let base = unsafe {
-			crate::mem_cached_to_uncached!(alloc::alloc::alloc_zeroed(
-				core::alloc::Layout::from_size_align(size, 32).unwrap()
-			)) as *mut u8
-		};
-
-		// SAFETY:
-		// + `base` is non-null, else libogc won't initialize `fifo`.
-		// + `base` is aligned to 32 bytes (above).
-		// + `size` is greater than or equal to the minimum size.
-		// + `size` is a multiple of 32-bytes.
-		// + `Fifo` is transparent to `ffi::GXFifoObj`, so casting a pointer
-		//   from the first to the second is safe, and reborrowing a pointer
-		//   into a reference is safe.
-		assert!(!base.is_null(), "could not allocate memory for Fifo");
-		assert_eq!(0, size % 32);
+		// SAFETY: all safety is ensured by Buf32.
 		unsafe {
-			let fifo = ffi::GX_Init(base as *mut _, size as u32);
+			let fifo = ffi::GX_Init(
+				buf.as_mut_ptr().map_addr(mem::cached_to_uncached) as *mut _,
+				buf.len() as u32
+			);
 			&mut *(fifo as *mut Fifo)
 		}
 	}
@@ -2582,7 +2545,7 @@ impl Gx {
 // THIS IS PROBABLY NOT CORRECT IF SOMEONE COULD correct it for me that would be
 // amazing!
 fn call_display_list(display_list: &[u8]) {
-	let ptr = mem_virtual_to_physical!(display_list.as_ptr()) as u32;
+	let ptr = display_list.as_ptr().map_addr(mem::virtual_to_physical);
 
 	assert!(
 		display_list.as_ptr().align_offset(32) == 0,
@@ -2595,7 +2558,7 @@ fn call_display_list(display_list: &[u8]) {
 
 	GX_PIPE.write(GPCommand::CallDisplayList as u8);
 
-	for byte in ptr.to_be_bytes() {
+	for byte in ptr.addr().to_be_bytes() {
 		GX_PIPE.write(byte);
 	}
 

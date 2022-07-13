@@ -25,6 +25,7 @@
 #![feature(core_intrinsics)]
 #![feature(slice_ptr_get)]
 #![feature(allocator_api)]
+#![feature(strict_provenance)]
 
 extern crate alloc;
 
