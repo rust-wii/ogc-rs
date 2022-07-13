@@ -1,5 +1,7 @@
 # ogc-rs
 
+![Crates.io](https://img.shields.io/crates/v/ogc-rs)
+
 A Rust wrapper library for devkitPro's [libogc](https://github.com/devkitPro/libogc).
 
 See the [Wii testing project](https://github.com/rust-wii/testing-project) for instructions on how to use this library.
