@@ -5,9 +5,6 @@
 use crate::ffi;
 use core::ffi::c_void;
 
-pub const ALREADY_SUSPENDED: i32 = ffi::LWP_ALREADY_SUSPENDED as i32;
-pub const SUCCESSFUL: i32 = ffi::LWP_SUCCESSFUL as i32;
-
 /// A thread context handle.
 #[derive(Clone, Debug)]
 #[repr(transparent)]

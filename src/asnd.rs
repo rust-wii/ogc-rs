@@ -5,7 +5,6 @@
 use crate::{ffi, OgcError, Result};
 use alloc::format;
 use core::time::Duration;
-use core::sync::atomic::{AtomicBool, Ordering};
 
 macro_rules! if_not {
     ($valid:ident => $error_output:expr, $var:ident $(,)*) => {
@@ -140,9 +139,6 @@ impl VoiceFormat {
         }
     }
 }
-
-/// Tracks whether the ASND system has been initialized.
-static ASND_INIT: AtomicBool = AtomicBool::new(false);
 
 /// Represents the asnd service.
 /// This service can only be created once!
