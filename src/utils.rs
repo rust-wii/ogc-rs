@@ -15,38 +15,32 @@ pub mod mem {
     pub const BASE_CACHED: usize = ffi::SYS_BASE_CACHED as _;
     pub const BASE_UNCACHED: usize = ffi::SYS_BASE_UNCACHED as _;
 
-    /// Cast a cached address to an uncached address.
-    /// Example: 0x8xxxxxxx -> 0xCxxxxxxx
+    /// Cast an address into an uncached address.
+    /// Examples:
+    /// * `0x8xxx_xxxx` -> `0xCxxx_xxxx`
+    /// * `0x9xxx_xxxx` -> `0xDxxx_xxxx`
     #[inline]
-    pub fn cached_to_uncached(x: usize) -> usize {
-        physical_to_uncached(virtual_to_physical(x))
+    pub fn to_uncached(addr: usize) -> usize {
+        to_physical(addr) + BASE_UNCACHED
     }
 
-    /// Cast a uncached address to a cached address.
-    /// Example: 0xCxxxxxxx -> 0x8xxxxxxx
+    /// Cast an address into a cached address.
+    /// Examples:
+    /// * `0xCxxx_xxxx` -> `0x8xxx_xxxx`
+    /// * `0xDxxx_xxxx` -> `0x9xxx_xxxx`
     #[inline]
-    pub fn uncached_to_cached(x: usize) -> usize {
-        physical_to_cached(virtual_to_physical(x))
+    pub fn to_cached(addr: usize) -> usize {
+        to_physical(addr) + BASE_CACHED
     }
 
-    /// Cast a physical address to a cached address.
-    /// Example: 0x0xxxxxxx -> 0x8xxxxxxx
+    /// Cast a virtual address (cached or uncached) into a physical address.
+    /// Examples:
+    /// * `0x8xxx_xxxx` -> `0x0xxx_xxxx`
+    /// * `0x9xxx_xxxx` -> `0x1xxx_xxxx`
+    /// * `0xCxxx_xxxx` -> `0x0xxx_xxxx`
+    /// * `0xDxxx_xxxx` -> `0x1xxx_xxxx`
     #[inline]
-    pub fn physical_to_cached(x: usize) -> usize {
-        x + BASE_CACHED
-    }
-
-    /// Cast a physical address to a uncached address.
-    /// Example: 0x0xxxxxxx -> 0xCxxxxxxx
-    #[inline]
-    pub fn physical_to_uncached(x: usize) -> usize {
-        x + BASE_UNCACHED
-    }
-
-    /// Cast a virtual address (cached or uncached) to a physical address.
-    /// Example: 0x8xxxxxxx -> 0x0xxxxxxx
-    #[inline]
-    pub fn virtual_to_physical(x: usize) -> usize {
+    pub fn to_physical(addr: usize) -> usize {
         x & !BASE_UNCACHED
     }
 }

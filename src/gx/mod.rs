@@ -415,7 +415,7 @@ impl Fifo {
         unsafe {
             ffi::GX_InitFifoBase(
                 fifo.as_mut_ptr(),
-                buf.as_mut_ptr().map_addr(mem::cached_to_uncached) as *mut _,
+                buf.as_mut_ptr().map_addr(mem::to_uncached) as *mut _,
                 buf.len() as u32,
             );
             Fifo(fifo.assume_init())
@@ -1187,7 +1187,7 @@ impl Gx {
         // SAFETY: all safety is ensured by Buf32.
         unsafe {
             let fifo = ffi::GX_Init(
-                buf.as_mut_ptr().map_addr(mem::cached_to_uncached) as *mut _,
+                buf.as_mut_ptr().map_addr(mem::to_uncached) as *mut _,
                 buf.len() as u32
             );
             &mut *(fifo as *mut Fifo)
