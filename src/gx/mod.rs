@@ -2298,7 +2298,7 @@ impl Gx {
 
 //THIS IS PROBABLY NOT CORRECT IF SOMEONE COULD correct it for me that would be amazing!
 fn call_display_list(display_list: &[u8]) {
-    let ptr = display_list.as_ptr().map_addr(mem::virtual_to_physical);
+    let ptr = display_list.as_ptr().map_addr(mem::to_physical);
 
     assert!(
         display_list.as_ptr().align_offset(32) == 0,

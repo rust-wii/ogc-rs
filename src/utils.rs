@@ -41,7 +41,7 @@ pub mod mem {
     /// * `0xDxxx_xxxx` -> `0x1xxx_xxxx`
     #[inline]
     pub fn to_physical(addr: usize) -> usize {
-        x & !BASE_UNCACHED
+        addr & !BASE_UNCACHED
     }
 }
 
