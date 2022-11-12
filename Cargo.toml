@@ -28,5 +28,5 @@ libm = "0.2"
 libc = "0.2"
 ogc-sys = "0.1.1"
 glam = { version = "0.19.0", default-features = false, features = ["libm"], optional = true }
-voladdress = "0.4"
+voladdress = "1.2.2"
 bit_field = "0.10.1"
