@@ -462,9 +462,9 @@ checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 
 [[package]]
 name = "voladdress"
-version = "0.4.5"
+version = "1.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5e1c00b315fa5b67ca61aa4b7ac802c92a014813e5c4c8dc77e2aee6d30527ae"
+checksum = "576fbc7b03f545c62d59d1c27e64d924f1c6e533960fe4f2d6dc653aa1867784"
 
 [[package]]
 name = "which"
