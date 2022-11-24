@@ -2,11 +2,18 @@
 #![feature(start)]
 
 extern crate alloc;
-use ogc_rs::prelude::*;
+use core::mem::ManuallyDrop;
+
+use ogc_rs::{mp3player::MP3Player, prelude::*};
 
 #[start]
 fn main(_argc: isize, _argv: *const *const u8) -> isize {
+    let mp3 = include_bytes!("../mp3.mp3");
+
     let video = Video::init();
+    let mut asnd = Asnd::init();
+    let mut player = MP3Player::new(asnd);
+
     Input::init(ControllerType::Gamecube);
     Input::init(ControllerType::Wii);
 
@@ -23,6 +30,8 @@ fn main(_argc: isize, _argv: *const *const u8) -> isize {
     Video::wait_vsync();
 
     println!("Hello World!");
+
+    player.play_buffer(mp3);
 
     loop {
         Input::update(ControllerType::Gamecube);

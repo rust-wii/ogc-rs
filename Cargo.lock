@@ -321,8 +321,7 @@ dependencies = [
 [[package]]
 name = "ogc-sys"
 version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6535fc4a03cac02802247e7b1d232af096d6ad6676588e1788e2672c6c6e7755"
+source = "git+https://github.com/rust-wii/ogc-rs.git?branch=mp3#2dbdc1ad5f8026cadc37ab6071f74d3c550f917f"
 dependencies = [
  "bindgen",
  "libc",
