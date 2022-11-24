@@ -77,9 +77,9 @@ pub const true_: u32 = 1;
 pub const false_: u32 = 0;
 pub const __bool_true_false_are_defined: u32 = 1;
 pub const _NEWLIB_VERSION_H__: u32 = 1;
-pub const _NEWLIB_VERSION: &[u8; 6usize] = b"4.1.0\0";
+pub const _NEWLIB_VERSION: &[u8; 6usize] = b"4.2.0\0";
 pub const __NEWLIB__: u32 = 4;
-pub const __NEWLIB_MINOR__: u32 = 1;
+pub const __NEWLIB_MINOR__: u32 = 2;
 pub const __NEWLIB_PATCHLEVEL__: u32 = 0;
 pub const _DEFAULT_SOURCE: u32 = 1;
 pub const _POSIX_SOURCE: u32 = 1;
@@ -1130,6 +1130,7 @@ pub const _FVWRITE_IN_STREAMIO: u32 = 1;
 pub const _FSEEK_OPTIMIZATION: u32 = 1;
 pub const _WIDE_ORIENT: u32 = 1;
 pub const _UNBUF_STREAM_OPT: u32 = 1;
+pub const _WANT_USE_GDTOA: u32 = 1;
 pub const __OBSOLETE_MATH_DEFAULT: u32 = 1;
 pub const __OBSOLETE_MATH: u32 = 1;
 pub const __RAND_MAX: u32 = 2147483647;
@@ -1594,6 +1595,21 @@ pub const VOICE_MONO16_UNSIGNED: u32 = 6;
 pub const VOICE_STEREO16_UNSIGNED: u32 = 7;
 pub const VOICE_FREQ32KHZ: u32 = 32000;
 pub const VOICE_FREQ48KHZ: u32 = 48000;
+pub const SIZEOF_INT: u32 = 4;
+pub const SIZEOF_LONG: u32 = 4;
+pub const SIZEOF_LONG_LONG: u32 = 8;
+pub const MAD_VERSION_MAJOR: u32 = 0;
+pub const MAD_VERSION_MINOR: u32 = 15;
+pub const MAD_VERSION_PATCH: u32 = 0;
+pub const MAD_VERSION_EXTRA: &[u8; 8usize] = b" (beta)\0";
+pub const MAD_PUBLISHYEAR: &[u8; 10usize] = b"2000-2003\0";
+pub const MAD_AUTHOR: &[u8; 28usize] = b"Underbit Technologies, Inc.\0";
+pub const MAD_EMAIL: &[u8; 18usize] = b"info@underbit.com\0";
+pub const MAD_F_FRACBITS: u32 = 28;
+pub const MAD_F_SCALEBITS: u32 = 28;
+pub const MAD_TIMER_RESOLUTION: u32 = 352800000;
+pub const MAD_BUFFER_GUARD: u32 = 8;
+pub const MAD_BUFFER_MDLEN: u32 = 2567;
 pub const WIIMOTE_LED_NONE: u32 = 0;
 pub const WIIMOTE_LED_1: u32 = 16;
 pub const WIIMOTE_LED_2: u32 = 32;
@@ -9291,6 +9307,12 @@ extern "C" {
 extern "C" {
     pub fn sigqueue(arg1: pid_t, arg2: ::libc::c_int, arg3: sigval) -> ::libc::c_int;
 }
+extern "C" {
+    pub fn sig2str(arg1: ::libc::c_int, arg2: *mut ::libc::c_char) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn str2sig(arg1: *const ::libc::c_char, arg2: *mut ::libc::c_int) -> ::libc::c_int;
+}
 pub type sig_atomic_t = ::libc::c_int;
 pub type sig_t = _sig_func_ptr;
 extern "C" {
@@ -11524,7 +11546,7 @@ pub struct itimerval {
     pub it_value: timeval,
 }
 extern "C" {
-    pub fn utimes(__path: *const ::libc::c_char, __tvp: *const timeval) -> ::libc::c_int;
+    pub fn utimes(arg1: *const ::libc::c_char, arg2: *const timeval) -> ::libc::c_int;
 }
 extern "C" {
     pub fn adjtime(arg1: *const timeval, arg2: *mut timeval) -> ::libc::c_int;
@@ -12085,6 +12107,446 @@ extern "C" {
         pb: *mut AESNDPB,
         cb: AESNDVoiceCallback,
     ) -> AESNDVoiceCallback;
+}
+extern "C" {
+    pub static mut mad_version: [s8; 0usize];
+}
+extern "C" {
+    pub static mut mad_copyright: [s8; 0usize];
+}
+extern "C" {
+    pub static mut mad_author: [s8; 0usize];
+}
+extern "C" {
+    pub static mut mad_build: [s8; 0usize];
+}
+pub type mad_fixed_t = s32;
+pub type mad_fixed64hi_t = s32;
+pub type mad_fixed64lo_t = u32_;
+pub type mad_sample_t = mad_fixed_t;
+extern "C" {
+    pub fn mad_f_abs(arg1: mad_fixed_t) -> mad_fixed_t;
+}
+extern "C" {
+    pub fn mad_f_div(arg1: mad_fixed_t, arg2: mad_fixed_t) -> mad_fixed_t;
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct mad_bitptr {
+    pub byte: *const u8_,
+    pub cache: u16_,
+    pub left: u16_,
+}
+extern "C" {
+    pub fn mad_bit_init(arg1: *mut mad_bitptr, arg2: *const u8_);
+}
+extern "C" {
+    pub fn mad_bit_length(arg1: *const mad_bitptr, arg2: *const mad_bitptr) -> u32_;
+}
+extern "C" {
+    pub fn mad_bit_nextbyte(arg1: *const mad_bitptr) -> *const u8_;
+}
+extern "C" {
+    pub fn mad_bit_skip(arg1: *mut mad_bitptr, arg2: u32_);
+}
+extern "C" {
+    pub fn mad_bit_read(arg1: *mut mad_bitptr, arg2: u32_) -> u32_;
+}
+extern "C" {
+    pub fn mad_bit_write(arg1: *mut mad_bitptr, arg2: u32_, arg3: u32_);
+}
+extern "C" {
+    pub fn mad_bit_crc(arg1: mad_bitptr, arg2: u32_, arg3: u16_) -> u16_;
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct mad_timer_t {
+    pub seconds: ::libc::c_long,
+    pub fraction: u32_,
+}
+extern "C" {
+    pub static mad_timer_zero: mad_timer_t;
+}
+pub const MAD_UNITS_HOURS: mad_units = -2;
+pub const MAD_UNITS_MINUTES: mad_units = -1;
+pub const MAD_UNITS_SECONDS: mad_units = 0;
+pub const MAD_UNITS_DECISECONDS: mad_units = 10;
+pub const MAD_UNITS_CENTISECONDS: mad_units = 100;
+pub const MAD_UNITS_MILLISECONDS: mad_units = 1000;
+pub const MAD_UNITS_8000_HZ: mad_units = 8000;
+pub const MAD_UNITS_11025_HZ: mad_units = 11025;
+pub const MAD_UNITS_12000_HZ: mad_units = 12000;
+pub const MAD_UNITS_16000_HZ: mad_units = 16000;
+pub const MAD_UNITS_22050_HZ: mad_units = 22050;
+pub const MAD_UNITS_24000_HZ: mad_units = 24000;
+pub const MAD_UNITS_32000_HZ: mad_units = 32000;
+pub const MAD_UNITS_44100_HZ: mad_units = 44100;
+pub const MAD_UNITS_48000_HZ: mad_units = 48000;
+pub const MAD_UNITS_24_FPS: mad_units = 24;
+pub const MAD_UNITS_25_FPS: mad_units = 25;
+pub const MAD_UNITS_30_FPS: mad_units = 30;
+pub const MAD_UNITS_48_FPS: mad_units = 48;
+pub const MAD_UNITS_50_FPS: mad_units = 50;
+pub const MAD_UNITS_60_FPS: mad_units = 60;
+pub const MAD_UNITS_75_FPS: mad_units = 75;
+pub const MAD_UNITS_23_976_FPS: mad_units = -24;
+pub const MAD_UNITS_24_975_FPS: mad_units = -25;
+pub const MAD_UNITS_29_97_FPS: mad_units = -30;
+pub const MAD_UNITS_47_952_FPS: mad_units = -48;
+pub const MAD_UNITS_49_95_FPS: mad_units = -50;
+pub const MAD_UNITS_59_94_FPS: mad_units = -60;
+pub type mad_units = ::libc::c_int;
+extern "C" {
+    pub fn mad_timer_compare(arg1: mad_timer_t, arg2: mad_timer_t) -> s32;
+}
+extern "C" {
+    pub fn mad_timer_negate(arg1: *mut mad_timer_t);
+}
+extern "C" {
+    pub fn mad_timer_abs(arg1: mad_timer_t) -> mad_timer_t;
+}
+extern "C" {
+    pub fn mad_timer_set(arg1: *mut mad_timer_t, arg2: u32_, arg3: u32_, arg4: u32_);
+}
+extern "C" {
+    pub fn mad_timer_add(arg1: *mut mad_timer_t, arg2: mad_timer_t);
+}
+extern "C" {
+    pub fn mad_timer_multiply(arg1: *mut mad_timer_t, arg2: ::libc::c_long);
+}
+extern "C" {
+    pub fn mad_timer_count(arg1: mad_timer_t, arg2: mad_units) -> ::libc::c_long;
+}
+extern "C" {
+    pub fn mad_timer_fraction(arg1: mad_timer_t, arg2: u32_) -> u32_;
+}
+extern "C" {
+    pub fn mad_timer_string(
+        arg1: mad_timer_t,
+        arg2: *mut s8,
+        arg3: *const s8,
+        arg4: mad_units,
+        arg5: mad_units,
+        arg6: u32_,
+    );
+}
+pub const MAD_ERROR_NONE: mad_error = 0;
+pub const MAD_ERROR_BUFLEN: mad_error = 1;
+pub const MAD_ERROR_BUFPTR: mad_error = 2;
+pub const MAD_ERROR_NOMEM: mad_error = 49;
+pub const MAD_ERROR_LOSTSYNC: mad_error = 257;
+pub const MAD_ERROR_BADLAYER: mad_error = 258;
+pub const MAD_ERROR_BADBITRATE: mad_error = 259;
+pub const MAD_ERROR_BADSAMPLERATE: mad_error = 260;
+pub const MAD_ERROR_BADEMPHASIS: mad_error = 261;
+pub const MAD_ERROR_BADCRC: mad_error = 513;
+pub const MAD_ERROR_BADBITALLOC: mad_error = 529;
+pub const MAD_ERROR_BADSCALEFACTOR: mad_error = 545;
+pub const MAD_ERROR_BADFRAMELEN: mad_error = 561;
+pub const MAD_ERROR_BADBIGVALUES: mad_error = 562;
+pub const MAD_ERROR_BADBLOCKTYPE: mad_error = 563;
+pub const MAD_ERROR_BADSCFSI: mad_error = 564;
+pub const MAD_ERROR_BADDATAPTR: mad_error = 565;
+pub const MAD_ERROR_BADPART3LEN: mad_error = 566;
+pub const MAD_ERROR_BADHUFFTABLE: mad_error = 567;
+pub const MAD_ERROR_BADHUFFDATA: mad_error = 568;
+pub const MAD_ERROR_BADSTEREO: mad_error = 569;
+pub type mad_error = ::libc::c_uint;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct mad_stream {
+    pub buffer: *const u8_,
+    pub bufend: *const u8_,
+    pub skiplen: u32_,
+    pub sync: s32,
+    pub freerate: u32_,
+    pub this_frame: *const u8_,
+    pub next_frame: *const u8_,
+    pub ptr: mad_bitptr,
+    pub anc_ptr: mad_bitptr,
+    pub anc_bitlen: u32_,
+    pub main_data: *mut [u8_; 2567usize],
+    pub md_len: u32_,
+    pub options: s32,
+    pub error: mad_error,
+}
+pub const MAD_OPTION_IGNORECRC: _bindgen_ty_14 = 1;
+pub const MAD_OPTION_HALFSAMPLERATE: _bindgen_ty_14 = 2;
+pub type _bindgen_ty_14 = ::libc::c_uint;
+extern "C" {
+    pub fn mad_stream_init(arg1: *mut mad_stream);
+}
+extern "C" {
+    pub fn mad_stream_finish(arg1: *mut mad_stream);
+}
+extern "C" {
+    pub fn mad_stream_buffer(arg1: *mut mad_stream, arg2: *const u8_, arg3: u32_);
+}
+extern "C" {
+    pub fn mad_stream_skip(arg1: *mut mad_stream, arg2: u32_);
+}
+extern "C" {
+    pub fn mad_stream_sync(arg1: *mut mad_stream) -> s32;
+}
+extern "C" {
+    pub fn mad_stream_errorstr(arg1: *const mad_stream) -> *const s8;
+}
+pub const MAD_LAYER_I: mad_layer = 1;
+pub const MAD_LAYER_II: mad_layer = 2;
+pub const MAD_LAYER_III: mad_layer = 3;
+pub type mad_layer = ::libc::c_uint;
+pub const MAD_MODE_SINGLE_CHANNEL: mad_mode = 0;
+pub const MAD_MODE_DUAL_CHANNEL: mad_mode = 1;
+pub const MAD_MODE_JOINT_STEREO: mad_mode = 2;
+pub const MAD_MODE_STEREO: mad_mode = 3;
+pub type mad_mode = ::libc::c_uint;
+pub const MAD_EMPHASIS_NONE: mad_emphasis = 0;
+pub const MAD_EMPHASIS_50_15_US: mad_emphasis = 1;
+pub const MAD_EMPHASIS_CCITT_J_17: mad_emphasis = 3;
+pub const MAD_EMPHASIS_RESERVED: mad_emphasis = 2;
+pub type mad_emphasis = ::libc::c_uint;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct mad_header {
+    pub layer: mad_layer,
+    pub mode: mad_mode,
+    pub mode_extension: s32,
+    pub emphasis: mad_emphasis,
+    pub bitrate: u32_,
+    pub samplerate: u32_,
+    pub crc_check: u16_,
+    pub crc_target: u16_,
+    pub flags: s32,
+    pub private_bits: s32,
+    pub duration: mad_timer_t,
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct mad_frame {
+    pub header: mad_header,
+    pub options: s32,
+    pub sbsample: [[[mad_fixed_t; 32usize]; 36usize]; 2usize],
+    pub overlap: *mut [[[mad_fixed_t; 18usize]; 32usize]; 2usize],
+}
+pub const MAD_FLAG_NPRIVATE_III: _bindgen_ty_15 = 7;
+pub const MAD_FLAG_INCOMPLETE: _bindgen_ty_15 = 8;
+pub const MAD_FLAG_PROTECTION: _bindgen_ty_15 = 16;
+pub const MAD_FLAG_COPYRIGHT: _bindgen_ty_15 = 32;
+pub const MAD_FLAG_ORIGINAL: _bindgen_ty_15 = 64;
+pub const MAD_FLAG_PADDING: _bindgen_ty_15 = 128;
+pub const MAD_FLAG_I_STEREO: _bindgen_ty_15 = 256;
+pub const MAD_FLAG_MS_STEREO: _bindgen_ty_15 = 512;
+pub const MAD_FLAG_FREEFORMAT: _bindgen_ty_15 = 1024;
+pub const MAD_FLAG_LSF_EXT: _bindgen_ty_15 = 4096;
+pub const MAD_FLAG_MC_EXT: _bindgen_ty_15 = 8192;
+pub const MAD_FLAG_MPEG_2_5_EXT: _bindgen_ty_15 = 16384;
+pub type _bindgen_ty_15 = ::libc::c_uint;
+pub const MAD_PRIVATE_HEADER: _bindgen_ty_16 = 256;
+pub const MAD_PRIVATE_III: _bindgen_ty_16 = 31;
+pub type _bindgen_ty_16 = ::libc::c_uint;
+extern "C" {
+    pub fn mad_header_init(arg1: *mut mad_header);
+}
+extern "C" {
+    pub fn mad_header_decode(arg1: *mut mad_header, arg2: *mut mad_stream) -> s32;
+}
+extern "C" {
+    pub fn mad_frame_init(arg1: *mut mad_frame);
+}
+extern "C" {
+    pub fn mad_frame_finish(arg1: *mut mad_frame);
+}
+extern "C" {
+    pub fn mad_frame_decode(arg1: *mut mad_frame, arg2: *mut mad_stream) -> s32;
+}
+extern "C" {
+    pub fn mad_frame_mute(arg1: *mut mad_frame);
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct mad_pcm {
+    pub samplerate: u32_,
+    pub channels: u16_,
+    pub length: u16_,
+    pub samples: [[mad_fixed_t; 1152usize]; 2usize],
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct mad_synth {
+    pub filter: [[[[[mad_fixed_t; 8usize]; 16usize]; 2usize]; 2usize]; 2usize],
+    pub phase: u32_,
+    pub pcm: mad_pcm,
+}
+pub const MAD_PCM_CHANNEL_SINGLE: _bindgen_ty_17 = 0;
+pub type _bindgen_ty_17 = ::libc::c_uint;
+pub const MAD_PCM_CHANNEL_DUAL_1: _bindgen_ty_18 = 0;
+pub const MAD_PCM_CHANNEL_DUAL_2: _bindgen_ty_18 = 1;
+pub type _bindgen_ty_18 = ::libc::c_uint;
+pub const MAD_PCM_CHANNEL_STEREO_LEFT: _bindgen_ty_19 = 0;
+pub const MAD_PCM_CHANNEL_STEREO_RIGHT: _bindgen_ty_19 = 1;
+pub type _bindgen_ty_19 = ::libc::c_uint;
+extern "C" {
+    pub fn mad_synth_init(arg1: *mut mad_synth);
+}
+extern "C" {
+    pub fn mad_synth_mute(arg1: *mut mad_synth);
+}
+extern "C" {
+    pub fn mad_synth_frame(arg1: *mut mad_synth, arg2: *const mad_frame);
+}
+pub const MAD_DECODER_MODE_SYNC: mad_decoder_mode = 0;
+pub const MAD_DECODER_MODE_ASYNC: mad_decoder_mode = 1;
+pub type mad_decoder_mode = ::libc::c_uint;
+pub const MAD_FLOW_CONTINUE: mad_flow = 0;
+pub const MAD_FLOW_STOP: mad_flow = 16;
+pub const MAD_FLOW_BREAK: mad_flow = 17;
+pub const MAD_FLOW_IGNORE: mad_flow = 32;
+pub type mad_flow = ::libc::c_uint;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct mad_decoder {
+    pub mode: mad_decoder_mode,
+    pub options: s32,
+    pub async_: mad_decoder__bindgen_ty_1,
+    pub sync: *mut mad_decoder__bindgen_ty_2,
+    pub cb_data: *mut ::libc::c_void,
+    pub input_func: ::core::option::Option<
+        unsafe extern "C" fn(arg1: *mut ::libc::c_void, arg2: *mut mad_stream) -> mad_flow,
+    >,
+    pub header_func: ::core::option::Option<
+        unsafe extern "C" fn(arg1: *mut ::libc::c_void, arg2: *const mad_header) -> mad_flow,
+    >,
+    pub filter_func: ::core::option::Option<
+        unsafe extern "C" fn(
+            arg1: *mut ::libc::c_void,
+            arg2: *const mad_stream,
+            arg3: *mut mad_frame,
+        ) -> mad_flow,
+    >,
+    pub output_func: ::core::option::Option<
+        unsafe extern "C" fn(
+            arg1: *mut ::libc::c_void,
+            arg2: *const mad_header,
+            arg3: *mut mad_pcm,
+        ) -> mad_flow,
+    >,
+    pub error_func: ::core::option::Option<
+        unsafe extern "C" fn(
+            arg1: *mut ::libc::c_void,
+            arg2: *mut mad_stream,
+            arg3: *mut mad_frame,
+        ) -> mad_flow,
+    >,
+    pub message_func: ::core::option::Option<
+        unsafe extern "C" fn(
+            arg1: *mut ::libc::c_void,
+            arg2: *mut ::libc::c_void,
+            arg3: *mut u32_,
+        ) -> mad_flow,
+    >,
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct mad_decoder__bindgen_ty_1 {
+    pub pid: ::libc::c_long,
+    pub in_: s32,
+    pub out: s32,
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct mad_decoder__bindgen_ty_2 {
+    pub stream: mad_stream,
+    pub frame: mad_frame,
+    pub synth: mad_synth,
+}
+extern "C" {
+    pub fn mad_decoder_init(
+        arg1: *mut mad_decoder,
+        arg2: *mut ::libc::c_void,
+        arg3: ::core::option::Option<
+            unsafe extern "C" fn(arg1: *mut ::libc::c_void, arg2: *mut mad_stream) -> mad_flow,
+        >,
+        arg4: ::core::option::Option<
+            unsafe extern "C" fn(arg1: *mut ::libc::c_void, arg2: *const mad_header) -> mad_flow,
+        >,
+        arg5: ::core::option::Option<
+            unsafe extern "C" fn(
+                arg1: *mut ::libc::c_void,
+                arg2: *const mad_stream,
+                arg3: *mut mad_frame,
+            ) -> mad_flow,
+        >,
+        arg6: ::core::option::Option<
+            unsafe extern "C" fn(
+                arg1: *mut ::libc::c_void,
+                arg2: *const mad_header,
+                arg3: *mut mad_pcm,
+            ) -> mad_flow,
+        >,
+        arg7: ::core::option::Option<
+            unsafe extern "C" fn(
+                arg1: *mut ::libc::c_void,
+                arg2: *mut mad_stream,
+                arg3: *mut mad_frame,
+            ) -> mad_flow,
+        >,
+        arg8: ::core::option::Option<
+            unsafe extern "C" fn(
+                arg1: *mut ::libc::c_void,
+                arg2: *mut ::libc::c_void,
+                arg3: *mut u32_,
+            ) -> mad_flow,
+        >,
+    );
+}
+extern "C" {
+    pub fn mad_decoder_finish(arg1: *mut mad_decoder) -> s32;
+}
+extern "C" {
+    pub fn mad_decoder_run(arg1: *mut mad_decoder, arg2: mad_decoder_mode) -> s32;
+}
+extern "C" {
+    pub fn mad_decoder_message(
+        arg1: *mut mad_decoder,
+        arg2: *mut ::libc::c_void,
+        arg3: *mut u32_,
+    ) -> s32;
+}
+extern "C" {
+    pub fn MP3Player_Init();
+}
+extern "C" {
+    pub fn MP3Player_Stop();
+}
+extern "C" {
+    pub fn MP3Player_IsPlaying() -> bool;
+}
+extern "C" {
+    pub fn MP3Player_Volume(volume: u32_);
+}
+extern "C" {
+    pub fn MP3Player_PlayBuffer(
+        buffer: *const ::libc::c_void,
+        len: s32,
+        filterfunc: ::core::option::Option<
+            unsafe extern "C" fn(arg1: *mut mad_stream, arg2: *mut mad_frame),
+        >,
+    ) -> s32;
+}
+extern "C" {
+    pub fn MP3Player_PlayFile(
+        cb_data: *mut ::libc::c_void,
+        reader: ::core::option::Option<
+            unsafe extern "C" fn(
+                arg1: *mut ::libc::c_void,
+                arg2: *mut ::libc::c_void,
+                arg3: s32,
+            ) -> s32,
+        >,
+        filterfunc: ::core::option::Option<
+            unsafe extern "C" fn(arg1: *mut mad_stream, arg2: *mut mad_frame),
+        >,
+    ) -> s32;
 }
 pub const WIIUSE_IR_ABOVE: ir_position_t = 0;
 pub const WIIUSE_IR_BELOW: ir_position_t = 1;
@@ -12675,29 +13137,29 @@ extern "C" {
 extern "C" {
     pub fn wiiuse_set_speaker(wm: *mut wiimote_t, status: ::libc::c_int);
 }
-pub const WPAD_CHAN_ALL: _bindgen_ty_14 = -1;
-pub const WPAD_CHAN_0: _bindgen_ty_14 = 0;
-pub const WPAD_CHAN_1: _bindgen_ty_14 = 1;
-pub const WPAD_CHAN_2: _bindgen_ty_14 = 2;
-pub const WPAD_CHAN_3: _bindgen_ty_14 = 3;
-pub const WPAD_BALANCE_BOARD: _bindgen_ty_14 = 4;
-pub const WPAD_MAX_WIIMOTES: _bindgen_ty_14 = 5;
-pub type _bindgen_ty_14 = ::libc::c_int;
-pub const WPAD_EXP_NONE: _bindgen_ty_15 = 0;
-pub const WPAD_EXP_NUNCHUK: _bindgen_ty_15 = 1;
-pub const WPAD_EXP_CLASSIC: _bindgen_ty_15 = 2;
-pub const WPAD_EXP_GUITARHERO3: _bindgen_ty_15 = 3;
-pub const WPAD_EXP_WIIBOARD: _bindgen_ty_15 = 4;
-pub const WPAD_EXP_UNKNOWN: _bindgen_ty_15 = 255;
-pub type _bindgen_ty_15 = ::libc::c_uint;
-pub const WPAD_FMT_BTNS: _bindgen_ty_16 = 0;
-pub const WPAD_FMT_BTNS_ACC: _bindgen_ty_16 = 1;
-pub const WPAD_FMT_BTNS_ACC_IR: _bindgen_ty_16 = 2;
-pub type _bindgen_ty_16 = ::libc::c_uint;
-pub const WPAD_STATE_DISABLED: _bindgen_ty_17 = 0;
-pub const WPAD_STATE_ENABLING: _bindgen_ty_17 = 1;
-pub const WPAD_STATE_ENABLED: _bindgen_ty_17 = 2;
-pub type _bindgen_ty_17 = ::libc::c_uint;
+pub const WPAD_CHAN_ALL: _bindgen_ty_20 = -1;
+pub const WPAD_CHAN_0: _bindgen_ty_20 = 0;
+pub const WPAD_CHAN_1: _bindgen_ty_20 = 1;
+pub const WPAD_CHAN_2: _bindgen_ty_20 = 2;
+pub const WPAD_CHAN_3: _bindgen_ty_20 = 3;
+pub const WPAD_BALANCE_BOARD: _bindgen_ty_20 = 4;
+pub const WPAD_MAX_WIIMOTES: _bindgen_ty_20 = 5;
+pub type _bindgen_ty_20 = ::libc::c_int;
+pub const WPAD_EXP_NONE: _bindgen_ty_21 = 0;
+pub const WPAD_EXP_NUNCHUK: _bindgen_ty_21 = 1;
+pub const WPAD_EXP_CLASSIC: _bindgen_ty_21 = 2;
+pub const WPAD_EXP_GUITARHERO3: _bindgen_ty_21 = 3;
+pub const WPAD_EXP_WIIBOARD: _bindgen_ty_21 = 4;
+pub const WPAD_EXP_UNKNOWN: _bindgen_ty_21 = 255;
+pub type _bindgen_ty_21 = ::libc::c_uint;
+pub const WPAD_FMT_BTNS: _bindgen_ty_22 = 0;
+pub const WPAD_FMT_BTNS_ACC: _bindgen_ty_22 = 1;
+pub const WPAD_FMT_BTNS_ACC_IR: _bindgen_ty_22 = 2;
+pub type _bindgen_ty_22 = ::libc::c_uint;
+pub const WPAD_STATE_DISABLED: _bindgen_ty_23 = 0;
+pub const WPAD_STATE_ENABLING: _bindgen_ty_23 = 1;
+pub const WPAD_STATE_ENABLED: _bindgen_ty_23 = 2;
+pub type _bindgen_ty_23 = ::libc::c_uint;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct _wpad_data {
