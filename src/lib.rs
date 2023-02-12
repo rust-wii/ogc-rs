@@ -38,6 +38,9 @@ pub mod network;
 // Audio Implementation
 pub mod audio;
 
+//MP3Player impl
+pub mod mp3player;
+
 // Console Implementation
 pub mod console;
 

@@ -4,7 +4,7 @@ use regex::Regex;
 use std::env;
 use std::process::Command;
 
- fn get_clang_version() -> String {
+fn get_clang_version() -> String {
     // Check if the clang version env variable exists.
     if env::var("CLANG_VERSION").is_err() {
         // Attempt to retrieve clang version through the command line.
@@ -56,12 +56,14 @@ fn main() {
     println!("cargo:rustc-link-lib=static=m");
     println!("cargo:rustc-link-lib=static=ogc");
     println!("cargo:rustc-link-lib=static=asnd");
+    println!("cargo:rustc-link-lib=static=mad");
     println!("cargo:rustc-link-lib=static=aesnd");
+
+    //MP3Player
 
     //Wiipad
     println!("cargo:rustc-link-lib=static=bte");
     println!("cargo:rustc-link-lib=static=wiiuse");
-
 
     println!("cargo:rerun-if-changed=wrapper.h");
     let bindings = bindgen::Builder::default()
@@ -78,7 +80,10 @@ fn main() {
         .blocklist_type("f(32|64)")
         .clang_arg("--target=powerpc-none-eabi")
         .clang_arg(format!("--sysroot={}/devkitPPC/powerpc-eabi", dkp_path))
-        .clang_arg(format!("-isystem/{}/devkitPPC/powerpc-eabi/include", dkp_path))
+        .clang_arg(format!(
+            "-isystem/{}/devkitPPC/powerpc-eabi/include",
+            dkp_path
+        ))
         .clang_arg(format!(
             "-isystem/usr/lib/clang/{}/include",
             get_clang_version()
