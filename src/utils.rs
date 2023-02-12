@@ -6,85 +6,42 @@ use core::ptr::NonNull;
 
 use alloc::vec::Vec;
 
-/// OS memory casting macros.
-mod memory_casting {
-    /// Cast a cached address to a uncached address.
-    /// Example: 0x8xxxxxxx -> 0xCxxxxxxx
-    #[macro_export]
-    macro_rules! mem_cached_to_uncached {
-        ( $x:expr ) => {{
-            use core::ffi::c_void;
+/// OS memory pointer casting.
+/// 
+/// For more information, refer to [Memory map](https://wiibrew.org/wiki/Memory_Map).
+pub mod mem {
+    use crate::ffi;
 
-            (($x as u32) + ($crate::ffi::SYS_BASE_UNCACHED - $crate::ffi::SYS_BASE_CACHED))
-                as *mut c_void
-        }};
+    pub const BASE_CACHED: usize = ffi::SYS_BASE_CACHED as _;
+    pub const BASE_UNCACHED: usize = ffi::SYS_BASE_UNCACHED as _;
+
+    /// Cast an address into an uncached address.
+    /// Examples:
+    /// * `0x8xxx_xxxx` -> `0xCxxx_xxxx`
+    /// * `0x9xxx_xxxx` -> `0xDxxx_xxxx`
+    #[inline]
+    pub fn to_uncached(addr: usize) -> usize {
+        to_physical(addr) + BASE_UNCACHED
     }
 
-    /// Cast a cached address to a physical address.
-    /// Example: 0x8xxxxxxx -> 0x0xxxxxxx
-    #[macro_export]
-    macro_rules! mem_cached_to_physical {
-        ( $x:expr ) => {{
-            use core::ffi::c_void;
-
-            (($x as u32) - $crate::ffi::SYS_BASE_CACHED) as *mut c_void
-        }};
+    /// Cast an address into a cached address.
+    /// Examples:
+    /// * `0xCxxx_xxxx` -> `0x8xxx_xxxx`
+    /// * `0xDxxx_xxxx` -> `0x9xxx_xxxx`
+    #[inline]
+    pub fn to_cached(addr: usize) -> usize {
+        to_physical(addr) + BASE_CACHED
     }
 
-    /// Cast a uncached address to a cached address.
-    /// Example: 0xCxxxxxxx -> 0x8xxxxxxx
-    #[macro_export]
-    macro_rules! mem_uncached_to_cached {
-        ( $x:expr ) => {{
-            use core::ffi::c_void;
-
-            (($x as u32) - ($crate::ffi::SYS_BASE_UNCACHED - $crate::ffi::SYS_BASE_CACHED))
-                as *mut c_void
-        }};
-    }
-
-    /// Cast a uncached address to a physical address.
-    /// Example: 0x0xxxxxxx -> 0xCxxxxxxx
-    #[macro_export]
-    macro_rules! mem_uncached_to_physical {
-        ( $x:expr ) => {{
-            use core::ffi::c_void;
-
-            (($x as u32) - $crate::ffi::SYS_BASE_UNCACHED) as *mut c_void
-        }};
-    }
-
-    /// Cast a physical address to a cached address.
-    /// Example: 0x0xxxxxxx -> 0x8xxxxxxx
-    #[macro_export]
-    macro_rules! mem_physical_to_cached {
-        ( $x:expr ) => {{
-            use core::ffi::c_void;
-
-            (($x as u32) + $crate::ffi::SYS_BASE_CACHED) as *mut c_void
-        }};
-    }
-
-    /// Cast a physical address to a uncached address.
-    /// Example: 0x0xxxxxxx -> 0xCxxxxxxx
-    #[macro_export]
-    macro_rules! mem_physical_to_uncached {
-        ( $x:expr ) => {{
-            use core::ffi::c_void;
-
-            (($x as u32) + $crate::ffi::SYS_BASE_UNCACHED) as *mut c_void
-        }};
-    }
-
-    /// Cast a virtual address to a physical address.  
-    /// Example: 0x8xxxxxxx -> 0x0xxxxxxx
-    #[macro_export]
-    macro_rules! mem_virtual_to_physical {
-        ( $x:expr ) => {{
-            use core::ffi::c_void;
-
-            (($x as u32) & !$crate::ffi::SYS_BASE_UNCACHED) as *mut c_void
-        }};
+    /// Cast a virtual address (cached or uncached) into a physical address.
+    /// Examples:
+    /// * `0x8xxx_xxxx` -> `0x0xxx_xxxx`
+    /// * `0x9xxx_xxxx` -> `0x1xxx_xxxx`
+    /// * `0xCxxx_xxxx` -> `0x0xxx_xxxx`
+    /// * `0xDxxx_xxxx` -> `0x1xxx_xxxx`
+    #[inline]
+    pub fn to_physical(addr: usize) -> usize {
+        addr & !BASE_UNCACHED
     }
 }
 
@@ -156,12 +113,13 @@ impl Buf32 {
 	pub fn new(min_len: usize) -> Self {
 		// round len to lowest multiple of 32
 		let padding = (32 - min_len % 32) % 32;
-		let len = min_len.checked_add(padding).expect("length overflow");
+		min_len.checked_add(padding).expect("length overflow");
 
 		// SAFETY:
 		// * align is non-zero and a power of two.
-		// * `len` is checked above to not overflow `usize::MAX`.
-		let layout = unsafe { Layout::from_size_align_unchecked(len, 32) };
+		// * `min_len` is checked above to not overflow `usize::MAX` after rounding up
+		//   for alignment.
+		let layout = unsafe { Layout::from_size_align_unchecked(min_len, 32) };
 
 		let block = match alloc::alloc::Global.allocate_zeroed(layout) {
 			Ok(block) => block,
@@ -169,16 +127,6 @@ impl Buf32 {
 		};
 
 		Buf32(block)
-	}
-
-	/// Returns the number of bytes in the buffer.
-	pub fn len(&self) -> usize {
-		self.0.len()
-	}
-
-	/// Returns an unsafe mutable pointer to the buffer.
-	pub fn as_mut_ptr(&mut self) -> *mut u8 {
-		self.0.as_mut_ptr()
 	}
 
 	/// Extracts a slice of the entire buffer.

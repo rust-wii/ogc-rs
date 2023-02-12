@@ -78,6 +78,8 @@ pub struct Builder {
     priority: u8,
 }
 
+pub type EntryFn = Option<unsafe extern "C" fn(*mut c_void) -> *mut c_void>;
+
 impl Default for Builder {
     fn default() -> Self {
         Self::new()
@@ -120,13 +122,13 @@ impl Builder {
 
     pub fn spawn(
         self,
-        entry: unsafe extern "C" fn(*mut c_void) -> *mut c_void,
+        entry: EntryFn,
     ) -> Result<Thread, i32> {
         let mut thread = core::mem::MaybeUninit::uninit();
         unsafe {
             let res = ffi::LWP_CreateThread(
                 thread.as_mut_ptr(),
-                Some(entry),
+                entry,
                 self.arg,
                 self.stack_base,
                 self.stack_size as u32,
