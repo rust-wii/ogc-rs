@@ -59,7 +59,7 @@ impl Aesnd {
         unsafe { ffi::AESND_GetDSPProcessUsage() }
     }
 
-    pub fn register_audio_callback<F>(callback: Option<unsafe extern "C" fn(*mut c_void, u32)>) {
+    pub fn register_audio_callback<F>(callback: Option<unsafe extern "C" fn(*mut c_void, u32, *mut c_void)>) {
         unsafe {
            ffi::AESND_RegisterAudioCallbackWithArg(callback, core::ptr::null_mut());
         }
@@ -186,7 +186,7 @@ impl Aesnd {
 
     pub fn register_voice_callback(
         play_state: &mut AESNDPB,
-        callback: Option<unsafe extern "C" fn(*mut AESNDPB, u32)>,
+        callback: Option<unsafe extern "C" fn(*mut AESNDPB, u32, *mut c_void)>,
     ) {
         unsafe {
             ffi::AESND_RegisterVoiceCallbackWithArg(play_state, callback, core::ptr::null_mut());
