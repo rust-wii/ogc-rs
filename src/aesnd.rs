@@ -18,8 +18,8 @@ pub enum AudioFormat {
     VoiceStereo16U = ffi::VOICE_STEREO16_UNSIGNED,
 }
 
-pub type VoiceCallback = Option<Box<fn(*mut AESNDPB, u32)>>;
-pub type AudioCallback = Option<Box<fn(*mut c_void, u32)>>;
+pub type VoiceCallback = Option<Box<fn(*mut AESNDPB, u32, *mut c_void)>>;
+pub type AudioCallback = Option<Box<fn(*mut c_void, u32, *mut c_void)>>;
 
 pub struct Aesnd;
 
