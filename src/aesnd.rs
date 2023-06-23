@@ -194,6 +194,6 @@ impl Aesnd {
     }
 
     pub fn new_playstate() -> AESNDPB {
-        unsafe { *ffi::AESND_AllocateVoice(None) }
+        unsafe { *ffi::AESND_AllocateVoiceWithArg(None, core::ptr::null_mut()) }
     }
 }
