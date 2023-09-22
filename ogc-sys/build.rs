@@ -23,10 +23,10 @@ fn get_clang_version() -> String {
         };
 
         // Parse the version string using Regex.
-        let regex = Regex::new(r"(?m)\d+(\.\d+)+").unwrap();
-        let result = regex.captures(first_line).unwrap().get(0);
 
-        // Attempt to join together the version string.
+        let regex = Regex::new(r"(?m)\d+(?:\.\d+)+").unwrap();
+        let result = regex.captures(first_line).unwrap().get(0); // Attempt to join together the version string.
+
         let version = match result {
             Some(v) => v.as_str(),
             None => {

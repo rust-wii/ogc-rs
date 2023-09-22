@@ -77,9 +77,9 @@ pub const true_: u32 = 1;
 pub const false_: u32 = 0;
 pub const __bool_true_false_are_defined: u32 = 1;
 pub const _NEWLIB_VERSION_H__: u32 = 1;
-pub const _NEWLIB_VERSION: &[u8; 6usize] = b"4.2.0\0";
+pub const _NEWLIB_VERSION: &[u8; 6usize] = b"4.3.0\0";
 pub const __NEWLIB__: u32 = 4;
-pub const __NEWLIB_MINOR__: u32 = 2;
+pub const __NEWLIB_MINOR__: u32 = 3;
 pub const __NEWLIB_PATCHLEVEL__: u32 = 0;
 pub const _DEFAULT_SOURCE: u32 = 1;
 pub const _POSIX_SOURCE: u32 = 1;
@@ -222,26 +222,26 @@ pub const GQR_CAST_U8: u32 = 2;
 pub const GQR_CAST_U16: u32 = 3;
 pub const GQR_CAST_S8: u32 = 4;
 pub const GQR_CAST_S16: u32 = 5;
-pub const COLOR_BLACK: u32 = 8388736;
-pub const COLOR_MAROON: u32 = 644490944;
-pub const COLOR_GREEN: u32 = 1263881034;
-pub const COLOR_OLIVE: u32 = 1900048778;
-pub const COLOR_NAVY: u32 = 247467637;
-pub const COLOR_PURPLE: u32 = 883569845;
-pub const COLOR_TEAL: u32 = 1502959936;
-pub const COLOR_GRAY: u32 = 2155905152;
-pub const COLOR_SILVER: u32 = 3229663360;
-pub const COLOR_RED: u32 = 1280593151;
-pub const COLOR_LIME: u32 = 2502661397;
-pub const COLOR_YELLOW: u32 = 3774931348;
-pub const COLOR_BLUE: u32 = 503258475;
-pub const COLOR_FUCHSIA: u32 = 1775528426;
-pub const COLOR_AQUA: u32 = 2997596672;
-pub const COLOR_WHITE: u32 = 4286644096;
-pub const COLOR_MONEYGREEN: u32 = 3497447540;
-pub const COLOR_SKYBLUE: u32 = 3281634154;
-pub const COLOR_CREAM: u32 = 4202297986;
-pub const COLOR_MEDGRAY: u32 = 2692915327;
+pub const COLOR_BLACK: u32 = 276828288;
+pub const COLOR_MAROON: u32 = 829239736;
+pub const COLOR_GREEN: u32 = 1364939089;
+pub const COLOR_OLIVE: u32 = 1900573065;
+pub const COLOR_NAVY: u32 = 498605431;
+pub const COLOR_PURPLE: u32 = 1034239407;
+pub const COLOR_TEAL: u32 = 1569938760;
+pub const COLOR_GRAY: u32 = 2122350208;
+pub const COLOR_SILVER: u32 = 3045111168;
+pub const COLOR_RED: u32 = 1364873712;
+pub const COLOR_LIME: u32 = 2436272418;
+pub const COLOR_YELLOW: u32 = 3524317842;
+pub const COLOR_BLUE: u32 = 703605102;
+pub const COLOR_FUCHSIA: u32 = 1791650526;
+pub const COLOR_AQUA: u32 = 2863049232;
+pub const COLOR_WHITE: u32 = 3951094656;
+pub const COLOR_MONEYGREEN: u32 = 3279471478;
+pub const COLOR_SKYBLUE: u32 = 3096885357;
+pub const COLOR_CREAM: u32 = 3900434563;
+pub const COLOR_MEDGRAY: u32 = 2592250496;
 pub const FEATURE_MEDIUM_CANREAD: u32 = 1;
 pub const FEATURE_MEDIUM_CANWRITE: u32 = 2;
 pub const FEATURE_GAMECUBE_SLOTA: u32 = 16;
@@ -1116,27 +1116,26 @@ pub const PAD_CHAN1_BIT: u32 = 1073741824;
 pub const PAD_CHAN2_BIT: u32 = 536870912;
 pub const PAD_CHAN3_BIT: u32 = 268435456;
 pub const __NEWLIB_H__: u32 = 1;
-pub const _WANT_IO_C99_FORMATS: u32 = 1;
-pub const _WANT_IO_LONG_LONG: u32 = 1;
-pub const _REENT_CHECK_VERIFY: u32 = 1;
+pub const _ATEXIT_DYNAMIC_ALLOC: u32 = 1;
+pub const _FSEEK_OPTIMIZATION: u32 = 1;
+pub const _FVWRITE_IN_STREAMIO: u32 = 1;
+pub const _HAVE_CC_INHIBIT_LOOP_TO_LIBCALL: u32 = 1;
+pub const _HAVE_INITFINI_ARRAY: u32 = 1;
+pub const _HAVE_LONG_DOUBLE: u32 = 1;
+pub const _LDBL_EQ_DBL: u32 = 1;
 pub const _MB_CAPABLE: u32 = 1;
 pub const _MB_LEN_MAX: u32 = 8;
-pub const HAVE_INITFINI_ARRAY: u32 = 1;
-pub const _ATEXIT_DYNAMIC_ALLOC: u32 = 1;
-pub const _HAVE_LONG_DOUBLE: u32 = 1;
-pub const _HAVE_CC_INHIBIT_LOOP_TO_LIBCALL: u32 = 1;
-pub const _LDBL_EQ_DBL: u32 = 1;
-pub const _FVWRITE_IN_STREAMIO: u32 = 1;
-pub const _FSEEK_OPTIMIZATION: u32 = 1;
-pub const _WIDE_ORIENT: u32 = 1;
+pub const _REENT_CHECK_VERIFY: u32 = 1;
 pub const _UNBUF_STREAM_OPT: u32 = 1;
+pub const _WANT_IO_C99_FORMATS: u32 = 1;
+pub const _WANT_IO_LONG_LONG: u32 = 1;
 pub const _WANT_USE_GDTOA: u32 = 1;
+pub const _WIDE_ORIENT: u32 = 1;
 pub const __OBSOLETE_MATH_DEFAULT: u32 = 1;
 pub const __OBSOLETE_MATH: u32 = 1;
 pub const __RAND_MAX: u32 = 2147483647;
 pub const __GNUCLIKE_ASM: u32 = 3;
 pub const __GNUCLIKE___TYPEOF: u32 = 1;
-pub const __GNUCLIKE___OFFSETOF: u32 = 1;
 pub const __GNUCLIKE___SECTION: u32 = 1;
 pub const __GNUCLIKE_CTOR_SECTION_HANDLING: u32 = 1;
 pub const __GNUCLIKE_BUILTIN_CONSTANT_P: u32 = 1;
@@ -1165,7 +1164,6 @@ pub const _RAND48_ADD: u32 = 11;
 pub const _REENT_EMERGENCY_SIZE: u32 = 25;
 pub const _REENT_ASCTIME_SIZE: u32 = 26;
 pub const _REENT_SIGNAL_SIZE: u32 = 24;
-pub const _N_LISTS: u32 = 30;
 pub const _CLOCKS_PER_SEC_: u32 = 1000;
 pub const CLOCKS_PER_SEC: u32 = 1000;
 pub const CLK_TCK: u32 = 1000;
@@ -1309,6 +1307,8 @@ pub const IPC_ENOHEAP: i32 = -5;
 pub const IPC_ENOENT: i32 = -6;
 pub const IPC_EQUEUEFULL: i32 = -8;
 pub const IPC_ENOMEM: i32 = -22;
+pub const SHA_BLOCK_SIZE: u32 = 65536;
+pub const AES_BLOCK_SIZE: u32 = 65536;
 pub const ES_EINVAL: i32 = -4100;
 pub const ES_ENOMEM: i32 = -4108;
 pub const ES_ENOTINIT: i32 = -4352;
@@ -4225,9 +4225,9 @@ extern "C" {
     #[doc = " \\return none"]
     pub fn guLookAt(
         mt: *mut [f32_; 4usize],
-        camPos: *mut guVector,
-        camUp: *mut guVector,
-        target: *mut guVector,
+        camPos: *const guVector,
+        camUp: *const guVector,
+        target: *const guVector,
     );
 }
 extern "C" {
@@ -4247,46 +4247,46 @@ extern "C" {
     #[doc = " \\param[out] half Pointer to resultant half-angle unit vector; points from the surface to halfway between the light and the viewing direction."]
     #[doc = ""]
     #[doc = " \\return none"]
-    pub fn guVecHalfAngle(a: *mut guVector, b: *mut guVector, half: *mut guVector);
+    pub fn guVecHalfAngle(a: *const guVector, b: *const guVector, half: *mut guVector);
 }
 extern "C" {
-    pub fn c_guVecAdd(a: *mut guVector, b: *mut guVector, ab: *mut guVector);
+    pub fn c_guVecAdd(a: *const guVector, b: *const guVector, ab: *mut guVector);
 }
 extern "C" {
-    pub fn c_guVecSub(a: *mut guVector, b: *mut guVector, ab: *mut guVector);
+    pub fn c_guVecSub(a: *const guVector, b: *const guVector, ab: *mut guVector);
 }
 extern "C" {
-    pub fn c_guVecScale(src: *mut guVector, dst: *mut guVector, scale: f32_);
+    pub fn c_guVecScale(src: *const guVector, dst: *mut guVector, scale: f32_);
 }
 extern "C" {
     pub fn c_guVecNormalize(v: *mut guVector);
 }
 extern "C" {
-    pub fn c_guVecMultiply(mt: *mut [f32_; 4usize], src: *mut guVector, dst: *mut guVector);
+    pub fn c_guVecMultiply(mt: *mut [f32_; 4usize], src: *const guVector, dst: *mut guVector);
 }
 extern "C" {
-    pub fn c_guVecCross(a: *mut guVector, b: *mut guVector, axb: *mut guVector);
+    pub fn c_guVecCross(a: *const guVector, b: *const guVector, axb: *mut guVector);
 }
 extern "C" {
-    pub fn c_guVecMultiplySR(mt: *mut [f32_; 4usize], src: *mut guVector, dst: *mut guVector);
+    pub fn c_guVecMultiplySR(mt: *mut [f32_; 4usize], src: *const guVector, dst: *mut guVector);
 }
 extern "C" {
-    pub fn c_guVecDotProduct(a: *mut guVector, b: *mut guVector) -> f32_;
+    pub fn c_guVecDotProduct(a: *const guVector, b: *const guVector) -> f32_;
 }
 extern "C" {
-    pub fn c_guQuatAdd(a: *mut guQuaternion, b: *mut guQuaternion, ab: *mut guQuaternion);
+    pub fn c_guQuatAdd(a: *const guQuaternion, b: *const guQuaternion, ab: *mut guQuaternion);
 }
 extern "C" {
-    pub fn c_guQuatSub(a: *mut guQuaternion, b: *mut guQuaternion, ab: *mut guQuaternion);
+    pub fn c_guQuatSub(a: *const guQuaternion, b: *const guQuaternion, ab: *mut guQuaternion);
 }
 extern "C" {
-    pub fn c_guQuatMultiply(a: *mut guQuaternion, b: *mut guQuaternion, ab: *mut guQuaternion);
+    pub fn c_guQuatMultiply(a: *const guQuaternion, b: *const guQuaternion, ab: *mut guQuaternion);
 }
 extern "C" {
-    pub fn c_guQuatNormalize(a: *mut guQuaternion, d: *mut guQuaternion);
+    pub fn c_guQuatNormalize(a: *const guQuaternion, d: *mut guQuaternion);
 }
 extern "C" {
-    pub fn c_guQuatInverse(a: *mut guQuaternion, d: *mut guQuaternion);
+    pub fn c_guQuatInverse(a: *const guQuaternion, d: *mut guQuaternion);
 }
 extern "C" {
     pub fn c_guQuatMtx(a: *mut guQuaternion, m: *mut [f32_; 4usize]);
@@ -4361,10 +4361,10 @@ extern "C" {
     pub fn c_guMtxRotAxisRad(mt: *mut [f32_; 4usize], axis: *mut guVector, rad: f32_);
 }
 extern "C" {
-    pub fn c_guMtxReflect(m: *mut [f32_; 4usize], p: *mut guVector, n: *mut guVector);
+    pub fn c_guMtxReflect(m: *mut [f32_; 4usize], p: *const guVector, n: *const guVector);
 }
 extern "C" {
-    pub fn c_guMtxQuat(m: *mut [f32_; 4usize], a: *mut guQuaternion);
+    pub fn c_guMtxQuat(m: *mut [f32_; 4usize], a: *const guQuaternion);
 }
 extern "C" {
     pub fn guMtx44Identity(mt: *mut [f32_; 4usize]);
@@ -4861,7 +4861,7 @@ extern "C" {
     );
 }
 extern "C" {
-    #[doc = " \\fn void GX_GetFifoPtrs(GXFifoObj *fifo,void **rd_ptr,void **wt_ptr)"]
+    #[doc = " \\fn void GX_GetFifoPtrs(const GXFifoObj *fifo,void **rd_ptr,void **wt_ptr)"]
     #[doc = " \\brief Returns the current value of the Graphics FIFO read and write pointers."]
     #[doc = ""]
     #[doc = " \\note See GX_EnableBreakPt() for an example of why you would do this."]
@@ -4872,7 +4872,7 @@ extern "C" {
     #[doc = ""]
     #[doc = " \\return none"]
     pub fn GX_GetFifoPtrs(
-        fifo: *mut GXFifoObj,
+        fifo: *const GXFifoObj,
         rd_ptr: *mut *mut ::libc::c_void,
         wt_ptr: *mut *mut ::libc::c_void,
     );
@@ -4930,16 +4930,16 @@ extern "C" {
     pub fn GX_GetGPFifo(fifo: *mut GXFifoObj);
 }
 extern "C" {
-    #[doc = " \\fn void* GX_GetFifoBase(GXFifoObj *fifo)"]
+    #[doc = " \\fn void* GX_GetFifoBase(const GXFifoObj *fifo)"]
     #[doc = " \\brief Get the base address for a given \\a fifo."]
     #[doc = ""]
     #[doc = " \\param[in] fifo the object to get the address from"]
     #[doc = ""]
     #[doc = " \\return pointer to the base address of the FIFO in main memory."]
-    pub fn GX_GetFifoBase(fifo: *mut GXFifoObj) -> *mut ::libc::c_void;
+    pub fn GX_GetFifoBase(fifo: *const GXFifoObj) -> *mut ::libc::c_void;
 }
 extern "C" {
-    #[doc = " \\fn u32 GX_GetFifoCount(GXFifoObj *fifo)"]
+    #[doc = " \\fn u32 GX_GetFifoCount(const GXFifoObj *fifo)"]
     #[doc = " \\brief Returns number of cache lines in the FIFO."]
     #[doc = ""]
     #[doc = " \\note The count is incorrect if an overflow has occurred (i.e. you have written more data than the size of the fifo), as the"]
@@ -4948,19 +4948,19 @@ extern "C" {
     #[doc = " \\param[in] fifo the FIFO to get the count from"]
     #[doc = ""]
     #[doc = " \\return number of cache lines in the FIFO"]
-    pub fn GX_GetFifoCount(fifo: *mut GXFifoObj) -> u32_;
+    pub fn GX_GetFifoCount(fifo: *const GXFifoObj) -> u32_;
 }
 extern "C" {
-    #[doc = " \\fn u32 GX_GetFifoSize(GXFifoObj *fifo)"]
+    #[doc = " \\fn u32 GX_GetFifoSize(const GXFifoObj *fifo)"]
     #[doc = " \\brief Get the size of a given \\a fifo."]
     #[doc = ""]
     #[doc = " \\param[in] fifo the object to get the size from"]
     #[doc = ""]
     #[doc = " \\return size of the FIFO, in bytes"]
-    pub fn GX_GetFifoSize(fifo: *mut GXFifoObj) -> u32_;
+    pub fn GX_GetFifoSize(fifo: *const GXFifoObj) -> u32_;
 }
 extern "C" {
-    #[doc = " \\fn u8 GX_GetFifoWrap(GXFifoObj *fifo)"]
+    #[doc = " \\fn u8 GX_GetFifoWrap(const GXFifoObj *fifo)"]
     #[doc = " \\brief Returns a non-zero value if the write pointer has passed the TOP of the FIFO."]
     #[doc = ""]
     #[doc = " \\details Returns true only if the FIFO is attached to the CPU and the FIFO write pointer has passed the top of the FIFO. Use the"]
@@ -4972,7 +4972,7 @@ extern "C" {
     #[doc = " \\param[in] fifo the object to get the wrap status from"]
     #[doc = ""]
     #[doc = " \\return wrap value"]
-    pub fn GX_GetFifoWrap(fifo: *mut GXFifoObj) -> u8_;
+    pub fn GX_GetFifoWrap(fifo: *const GXFifoObj) -> u8_;
 }
 extern "C" {
     #[doc = " \\fn GXDrawDoneCallback GX_SetDrawDoneCallback(GXDrawDoneCallback cb)"]
@@ -6579,6 +6579,24 @@ extern "C" {
     );
 }
 extern "C" {
+    #[doc = " \\fn void GX_SetTevIndWarp(u8 tevstage, u8 indtexid, u8 bias_flag, u8 replace_tex, u8 mtxid)"]
+    #[doc = " \\brief Used to warp a normal texture lookup using an indirect texture map with 8-bit offsets."]
+    #[doc = ""]
+    #[doc = " \\param[in] tevstage \\ref tevstage that is being affected"]
+    #[doc = " \\param[in] indtexid \\ref indtexstage results to use with this TEV stage"]
+    #[doc = " \\param[in] bias_flag biases the indirect texture map offsets by -128 if the value is GX_TRUE"]
+    #[doc = " \\param[in] replace_tex GX_TRUE makes the indirect texture map offsets replace the input texture coordinates rather than offset them as with GX_FALSE"]
+    #[doc = " \\param[in] mtxid which \\ref indtexmtx to use for warping the texture"]
+    #[doc = " \\return none"]
+    pub fn GX_SetTevIndWarp(
+        tevstage: u8_,
+        indtexid: u8_,
+        bias_flag: u8_,
+        replace_tex: u8_,
+        mtxid: u8_,
+    );
+}
+extern "C" {
     #[doc = " \\fn void GX_SetTevIndRepeat(u8 tevstage)"]
     #[doc = " \\brief Set a given TEV stage to use the same texture coordinates as were computed in the previous stage."]
     #[doc = ""]
@@ -7116,7 +7134,7 @@ extern "C" {
     pub fn GX_PokeZMode(comp_enable: u8_, func: u8_, update_enable: u8_);
 }
 extern "C" {
-    #[doc = " \\fn u32 GX_GetTexObjFmt(GXTexObj *obj)"]
+    #[doc = " \\fn u32 GX_GetTexObjFmt(const GXTexObj *obj)"]
     #[doc = " \\brief Returns the texture format described by texture object \\a obj."]
     #[doc = ""]
     #[doc = " \\note Use GX_InitTexObj() or GX_InitTexObjCI() to initialize the texture format."]
@@ -7124,10 +7142,10 @@ extern "C" {
     #[doc = " \\param[in] obj ptr to a texture object"]
     #[doc = ""]
     #[doc = " \\return texture format of the given texture object"]
-    pub fn GX_GetTexObjFmt(obj: *mut GXTexObj) -> u32_;
+    pub fn GX_GetTexObjFmt(obj: *const GXTexObj) -> u32_;
 }
 extern "C" {
-    #[doc = " \\fn u32 GX_GetTexObjMipMap(GXTexObj *obj)"]
+    #[doc = " \\fn u32 GX_GetTexObjMipMap(const GXTexObj *obj)"]
     #[doc = " \\brief Returns the texture mipmap enable described by texture object \\a obj."]
     #[doc = ""]
     #[doc = " \\note Use GX_InitTexObj() or GX_InitTexObjCI() to initialize the texture mipmap enable."]
@@ -7135,10 +7153,10 @@ extern "C" {
     #[doc = " \\param[in] obj ptr to a texture object"]
     #[doc = ""]
     #[doc = " \\return mipmap enable flag"]
-    pub fn GX_GetTexObjMipMap(obj: *mut GXTexObj) -> u32_;
+    pub fn GX_GetTexObjMipMap(obj: *const GXTexObj) -> u32_;
 }
 extern "C" {
-    #[doc = " \\fn void* GX_GetTexObjUserData(GXTexObj *obj)"]
+    #[doc = " \\fn void* GX_GetTexObjUserData(const GXTexObj *obj)"]
     #[doc = " \\brief Used to get a pointer to user data from the \\ref GXTexObj structure."]
     #[doc = ""]
     #[doc = " \\details You can use this function to retrieve private data structures from the texture object. This pointer is set using GX_InitTexObjUserData()."]
@@ -7146,10 +7164,10 @@ extern "C" {
     #[doc = " \\param[in] obj ptr to object to read data from"]
     #[doc = ""]
     #[doc = " \\return Pointer to user data."]
-    pub fn GX_GetTexObjUserData(obj: *mut GXTexObj) -> *mut ::libc::c_void;
+    pub fn GX_GetTexObjUserData(obj: *const GXTexObj) -> *mut ::libc::c_void;
 }
 extern "C" {
-    #[doc = " \\fn void* GX_GetTexObjData(GXTexObj *obj)"]
+    #[doc = " \\fn void* GX_GetTexObjData(const GXTexObj *obj)"]
     #[doc = " \\brief Used to get a pointer to texture data from the \\ref GXTexObj structure."]
     #[doc = ""]
     #[doc = " \\note The returned pointer is a physical address."]
@@ -7157,10 +7175,10 @@ extern "C" {
     #[doc = " \\param[in] obj ptr to a texture object"]
     #[doc = ""]
     #[doc = " \\return Physical pointer to texture data."]
-    pub fn GX_GetTexObjData(obj: *mut GXTexObj) -> *mut ::libc::c_void;
+    pub fn GX_GetTexObjData(obj: *const GXTexObj) -> *mut ::libc::c_void;
 }
 extern "C" {
-    #[doc = " \\fn u8 GX_GetTexObjWrapS(GXTexObj* obj)"]
+    #[doc = " \\fn u8 GX_GetTexObjWrapS(const GXTexObj* obj)"]
     #[doc = " \\brief Returns the texture wrap s mode described by texture object \\a obj."]
     #[doc = ""]
     #[doc = " \\note Use GX_InitTexObj() or GX_InitTexObjCI() to initialize the texture wrap s mode."]
@@ -7168,10 +7186,10 @@ extern "C" {
     #[doc = " \\param[in] obj ptr to a texture object"]
     #[doc = ""]
     #[doc = " \\return wrap s mode"]
-    pub fn GX_GetTexObjWrapS(obj: *mut GXTexObj) -> u8_;
+    pub fn GX_GetTexObjWrapS(obj: *const GXTexObj) -> u8_;
 }
 extern "C" {
-    #[doc = " \\fn u8 GX_GetTexObjWrapT(GXTexObj* obj)"]
+    #[doc = " \\fn u8 GX_GetTexObjWrapT(const GXTexObj* obj)"]
     #[doc = " \\brief Returns the texture wrap t mode described by texture object \\a obj."]
     #[doc = ""]
     #[doc = " \\note Use GX_InitTexObj() or GX_InitTexObjCI() to initialize the texture wrap t mode."]
@@ -7179,10 +7197,10 @@ extern "C" {
     #[doc = " \\param[in] obj ptr to a texture object"]
     #[doc = ""]
     #[doc = " \\return wrap t mode"]
-    pub fn GX_GetTexObjWrapT(obj: *mut GXTexObj) -> u8_;
+    pub fn GX_GetTexObjWrapT(obj: *const GXTexObj) -> u8_;
 }
 extern "C" {
-    #[doc = " \\fn u16 GX_GetTexObjHeight(GXTexObj* obj)"]
+    #[doc = " \\fn u16 GX_GetTexObjHeight(const GXTexObj* obj)"]
     #[doc = " \\brief Returns the texture height described by texture object \\a obj."]
     #[doc = ""]
     #[doc = " \\note Use GX_InitTexObj() or GX_InitTexObjCI() to initialize the texture height."]
@@ -7190,10 +7208,10 @@ extern "C" {
     #[doc = " \\param[in] obj ptr to a texture object"]
     #[doc = ""]
     #[doc = " \\return texture height"]
-    pub fn GX_GetTexObjHeight(obj: *mut GXTexObj) -> u16_;
+    pub fn GX_GetTexObjHeight(obj: *const GXTexObj) -> u16_;
 }
 extern "C" {
-    #[doc = " \\fn u16 GX_GetTexObjWidth(GXTexObj* obj)"]
+    #[doc = " \\fn u16 GX_GetTexObjWidth(const GXTexObj* obj)"]
     #[doc = " \\brief Returns the texture width described by texture object \\a obj."]
     #[doc = ""]
     #[doc = " \\note Use GX_InitTexObj() or GX_InitTexObjCI() to initialize the texture width."]
@@ -7201,10 +7219,10 @@ extern "C" {
     #[doc = " \\param[in] obj ptr to a texture object"]
     #[doc = ""]
     #[doc = " \\return texture width"]
-    pub fn GX_GetTexObjWidth(obj: *mut GXTexObj) -> u16_;
+    pub fn GX_GetTexObjWidth(obj: *const GXTexObj) -> u16_;
 }
 extern "C" {
-    #[doc = " \\fn void GX_GetTexObjAll(GXTexObj* obj, void** image_ptr, u16* width, u16* height, u8* format, u8* wrap_s, u8* wrap_t, u8* mipmap);"]
+    #[doc = " \\fn void GX_GetTexObjAll(const GXTexObj* obj, void** image_ptr, u16* width, u16* height, u8* format, u8* wrap_s, u8* wrap_t, u8* mipmap);"]
     #[doc = " \\brief Returns the parameters described by a texture object. Texture objects are used to describe all the parameters associated with a texture, including size, format, wrap modes, filter modes, etc. Texture objects are initialized using either GX_InitTexObj() or, for color index format textures, GX_InitTexObjCI()."]
     #[doc = ""]
     #[doc = " \\param[in] obj ptr to a texture object"]
@@ -7216,7 +7234,7 @@ extern "C" {
     #[doc = ""]
     #[doc = " \\return none"]
     pub fn GX_GetTexObjAll(
-        obj: *mut GXTexObj,
+        obj: *const GXTexObj,
         image_ptr: *mut *mut ::libc::c_void,
         width: *mut u16_,
         height: *mut u16_,
@@ -7818,7 +7836,7 @@ extern "C" {
     pub fn GX_InitLightDir(lit_obj: *mut GXLightObj, nx: f32_, ny: f32_, nz: f32_);
 }
 extern "C" {
-    #[doc = " \\fn void GX_LoadLightObj(GXLightObj *lit_obj,u8 lit_id)"]
+    #[doc = " \\fn void GX_LoadLightObj(const GXLightObj *lit_obj,u8 lit_id)"]
     #[doc = " \\brief Loads a light object into a set of hardware registers associated with a \\ref lightid."]
     #[doc = ""]
     #[doc = " \\details This function copies the light object data into the graphics FIFO through the CPU write-gather buffer mechanism. This guarantees that"]
@@ -7832,7 +7850,7 @@ extern "C" {
     #[doc = " \\param[in] lit_id \\ref lightid to load this light into"]
     #[doc = ""]
     #[doc = " \\return none"]
-    pub fn GX_LoadLightObj(lit_obj: *mut GXLightObj, lit_id: u8_);
+    pub fn GX_LoadLightObj(lit_obj: *const GXLightObj, lit_id: u8_);
 }
 extern "C" {
     #[doc = " \\fn void GX_LoadLightObjIdx(u32 litobjidx,u8 litid)"]
@@ -8776,6 +8794,7 @@ pub type _iconv_t = *mut ::libc::c_void;
 pub type __clock_t = ::libc::c_ulong;
 pub type __time_t = __int_least64_t;
 pub type __clockid_t = ::libc::c_ulong;
+pub type __daddr_t = ::libc::c_long;
 pub type __timer_t = ::libc::c_ulong;
 pub type __sa_family_t = __uint8_t;
 pub type __socklen_t = __uint32_t;
@@ -8788,19 +8807,34 @@ pub type __ULong = ::libc::c_ulong;
 pub type _LOCK_T = ::libc::c_int;
 pub type _LOCK_RECURSIVE_T = ::libc::c_int;
 extern "C" {
-    pub fn __libc_lock_init(arg1: *mut ::libc::c_int, arg2: ::libc::c_int) -> ::libc::c_int;
+    pub fn __libc_lock_init(lock: *mut _LOCK_T);
 }
 extern "C" {
-    pub fn __libc_lock_close(arg1: *mut ::libc::c_int) -> ::libc::c_int;
+    pub fn __libc_lock_init_recursive(lock: *mut _LOCK_RECURSIVE_T);
 }
 extern "C" {
-    pub fn __libc_lock_acquire(arg1: *mut ::libc::c_int) -> ::libc::c_int;
+    pub fn __libc_lock_close(lock: *mut _LOCK_T);
 }
 extern "C" {
-    pub fn __libc_lock_try_acquire(arg1: *mut ::libc::c_int) -> ::libc::c_int;
+    pub fn __libc_lock_close_recursive(lock: *mut _LOCK_RECURSIVE_T);
 }
 extern "C" {
-    pub fn __libc_lock_release(arg1: *mut ::libc::c_int) -> ::libc::c_int;
+    pub fn __libc_lock_acquire(lock: *mut _LOCK_T);
+}
+extern "C" {
+    pub fn __libc_lock_acquire_recursive(lock: *mut _LOCK_RECURSIVE_T);
+}
+extern "C" {
+    pub fn __libc_lock_release(lock: *mut _LOCK_T);
+}
+extern "C" {
+    pub fn __libc_lock_release_recursive(lock: *mut _LOCK_RECURSIVE_T);
+}
+extern "C" {
+    pub fn __libc_lock_try_acquire(lock: *mut _LOCK_T) -> ::libc::c_int;
+}
+extern "C" {
+    pub fn __libc_lock_try_acquire_recursive(lock: *mut _LOCK_RECURSIVE_T) -> ::libc::c_int;
 }
 pub type _flock_t = _LOCK_RECURSIVE_T;
 #[repr(C)]
@@ -8905,12 +8939,18 @@ pub struct __sFILE {
     pub _flags2: ::libc::c_int,
 }
 pub type __FILE = __sFILE;
+extern "C" {
+    pub static mut __sf: [__FILE; 3usize];
+}
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct _glue {
     pub _next: *mut _glue,
     pub _niobs: ::libc::c_int,
     pub _iobs: *mut __FILE,
+}
+extern "C" {
+    pub static mut __sglue: _glue;
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -8928,9 +8968,7 @@ pub struct _reent {
     pub _stderr: *mut __FILE,
     pub _inc: ::libc::c_int,
     pub _emergency: [::libc::c_char; 25usize],
-    pub _unspecified_locale_info: ::libc::c_int,
     pub _locale: *mut __locale_t,
-    pub __sdidinit: ::libc::c_int,
     pub __cleanup: ::core::option::Option<unsafe extern "C" fn(arg1: *mut _reent)>,
     pub _result: *mut _Bigint,
     pub _result_k: ::libc::c_int,
@@ -8939,24 +8977,18 @@ pub struct _reent {
     pub _cvtlen: ::libc::c_int,
     pub _cvtbuf: *mut ::libc::c_char,
     pub _new: _reent__bindgen_ty_1,
-    pub _atexit: *mut _atexit,
-    pub _atexit0: _atexit,
     pub _sig_func: *mut ::core::option::Option<unsafe extern "C" fn(arg1: ::libc::c_int)>,
-    pub __sglue: _glue,
-    pub __sf: [__FILE; 3usize],
     pub deviceData: *mut ::libc::c_void,
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct _reent__bindgen_ty_1 {
     pub _reent: __BindgenUnionField<_reent__bindgen_ty_1__bindgen_ty_1>,
-    pub _unused: __BindgenUnionField<_reent__bindgen_ty_1__bindgen_ty_2>,
-    pub bindgen_union_field: [u64; 30usize],
+    pub bindgen_union_field: [u64; 25usize],
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct _reent__bindgen_ty_1__bindgen_ty_1 {
-    pub _unused_rand: ::libc::c_uint,
     pub _strtok_last: *mut ::libc::c_char,
     pub _asctime_buf: [::libc::c_char; 26usize],
     pub _localtime_buf: __tm,
@@ -8976,20 +9008,32 @@ pub struct _reent__bindgen_ty_1__bindgen_ty_1 {
     pub _wcsrtombs_state: _mbstate_t,
     pub _h_errno: ::libc::c_int,
 }
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct _reent__bindgen_ty_1__bindgen_ty_2 {
-    pub _nextf: [*mut ::libc::c_uchar; 30usize],
-    pub _nmalloc: [::libc::c_uint; 30usize],
-}
 extern "C" {
     pub static mut _impure_ptr: *mut _reent;
 }
 extern "C" {
-    pub static _global_impure_ptr: *mut _reent;
+    pub static mut _impure_data: _reent;
+}
+extern "C" {
+    pub static mut __atexit: *mut _atexit;
+}
+extern "C" {
+    pub static mut __atexit0: _atexit;
+}
+extern "C" {
+    pub static mut __stdio_exit_handler: ::core::option::Option<unsafe extern "C" fn()>;
 }
 extern "C" {
     pub fn _reclaim_reent(arg1: *mut _reent);
+}
+extern "C" {
+    pub fn _fwalk_sglue(
+        arg1: *mut _reent,
+        arg2: ::core::option::Option<
+            unsafe extern "C" fn(arg1: *mut _reent, arg2: *mut __FILE) -> ::libc::c_int,
+        >,
+        arg3: *mut _glue,
+    ) -> ::libc::c_int;
 }
 pub type u_int8_t = __uint8_t;
 pub type u_int16_t = __uint16_t;
@@ -9057,7 +9101,7 @@ pub type ulong = ::libc::c_ulong;
 pub type blkcnt_t = __blkcnt_t;
 pub type blksize_t = __blksize_t;
 pub type clock_t = ::libc::c_ulong;
-pub type daddr_t = ::libc::c_long;
+pub type daddr_t = __daddr_t;
 pub type caddr_t = *mut ::libc::c_char;
 pub type fsblkcnt_t = __fsblkcnt_t;
 pub type fsfilcnt_t = __fsfilcnt_t;
@@ -9953,6 +9997,13 @@ extern "C" {
     pub fn VIDEO_GetPreferredMode(mode: *mut GXRModeObj) -> *mut GXRModeObj;
 }
 extern "C" {
+    #[doc = " \\fn u32 VIDEO_GetVideoScanMode(void)"]
+    #[doc = " \\brief Get video scan mode. This function returns 0 when interlaced, 1 when non interlaced and 2 when progressive"]
+    #[doc = ""]
+    #[doc = " \\return 0 when interlaced, 1 when non interlaced and 2 when progressive"]
+    pub fn VIDEO_GetVideoScanMode() -> u32_;
+}
+extern "C" {
     pub fn usb_flush(chn: s32);
 }
 extern "C" {
@@ -10205,6 +10256,65 @@ extern "C" {
         argv: *mut ioctlv,
     ) -> s32;
 }
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct sha_context {
+    pub states: [u32_; 5usize],
+    pub upper_length: u32_,
+    pub lower_length: u32_,
+}
+extern "C" {
+    pub fn SHA_Init() -> s32;
+}
+extern "C" {
+    pub fn SHA_Close() -> s32;
+}
+extern "C" {
+    pub fn SHA_InitializeContext(context: *mut sha_context) -> s32;
+}
+extern "C" {
+    pub fn SHA_Calculate(
+        context: *mut sha_context,
+        data: *const ::libc::c_void,
+        data_size: u32_,
+        message_digest: *mut ::libc::c_void,
+    ) -> s32;
+}
+extern "C" {
+    pub fn SHA_Input(
+        context: *mut sha_context,
+        data: *const ::libc::c_void,
+        data_size: u32_,
+    ) -> s32;
+}
+extern "C" {
+    pub fn AES_Init() -> s32;
+}
+extern "C" {
+    pub fn AES_Close() -> s32;
+}
+extern "C" {
+    pub fn AES_Decrypt(
+        key: *const ::libc::c_void,
+        key_size: u32_,
+        iv: *const ::libc::c_void,
+        iv_size: u32_,
+        in_data: *const ::libc::c_void,
+        out_data: *mut ::libc::c_void,
+        data_size: u32_,
+    ) -> s32;
+}
+extern "C" {
+    pub fn AES_Encrypt(
+        key: *const ::libc::c_void,
+        key_size: u32_,
+        iv: *const ::libc::c_void,
+        iv_size: u32_,
+        in_data: *const ::libc::c_void,
+        out_data: *mut ::libc::c_void,
+        data_size: u32_,
+    ) -> s32;
+}
 pub type sigtype = u32_;
 pub type sig_header = sigtype;
 pub type signed_blob = sig_header;
@@ -10304,7 +10414,7 @@ pub struct _tmd {
     pub title_version: u16_,
     pub num_contents: u16_,
     pub boot_index: u16_,
-    pub fill2: u16_,
+    pub fill3: u16_,
     pub contents: __IncompleteArrayField<tmd_content>,
 }
 pub type tmd = _tmd;
@@ -11726,6 +11836,15 @@ extern "C" {
     ) -> s32;
 }
 extern "C" {
+    pub fn net_getsockopt(
+        s: s32,
+        level: u32_,
+        optname: u32_,
+        optval: *const ::libc::c_void,
+        optlen: u32_,
+    ) -> s32;
+}
+extern "C" {
     pub fn net_setsockopt(
         s: s32,
         level: u32_,
@@ -12036,8 +12155,14 @@ pub struct aesndpb_t {
     _unused: [u8; 0],
 }
 pub type AESNDPB = aesndpb_t;
+pub type AESNDVoiceCallbackArg = ::core::option::Option<
+    unsafe extern "C" fn(pb: *mut AESNDPB, state: u32_, cbArg: *mut ::libc::c_void),
+>;
 pub type AESNDVoiceCallback =
     ::core::option::Option<unsafe extern "C" fn(pb: *mut AESNDPB, state: u32_)>;
+pub type AESNDAudioCallbackArg = ::core::option::Option<
+    unsafe extern "C" fn(audio_buffer: *mut ::libc::c_void, len: u32_, cbArg: *mut ::libc::c_void),
+>;
 pub type AESNDAudioCallback =
     ::core::option::Option<unsafe extern "C" fn(audio_buffer: *mut ::libc::c_void, len: u32_)>;
 extern "C" {
@@ -12056,10 +12181,16 @@ extern "C" {
     pub fn AESND_GetDSPProcessUsage() -> f32_;
 }
 extern "C" {
-    pub fn AESND_RegisterAudioCallback(cb: AESNDAudioCallback) -> AESNDAudioCallback;
+    pub fn AESND_RegisterAudioCallbackWithArg(
+        cb: AESNDAudioCallbackArg,
+        cbArg: *mut ::libc::c_void,
+    ) -> AESNDAudioCallbackArg;
 }
 extern "C" {
-    pub fn AESND_AllocateVoice(cb: AESNDVoiceCallback) -> *mut AESNDPB;
+    pub fn AESND_AllocateVoiceWithArg(
+        cb: AESNDVoiceCallbackArg,
+        cbArg: *mut ::libc::c_void,
+    ) -> *mut AESNDPB;
 }
 extern "C" {
     pub fn AESND_FreeVoice(pb: *mut AESNDPB);
@@ -12103,10 +12234,11 @@ extern "C" {
     );
 }
 extern "C" {
-    pub fn AESND_RegisterVoiceCallback(
+    pub fn AESND_RegisterVoiceCallbackWithArg(
         pb: *mut AESNDPB,
-        cb: AESNDVoiceCallback,
-    ) -> AESNDVoiceCallback;
+        cb: AESNDVoiceCallbackArg,
+        cbArg: *mut ::libc::c_void,
+    ) -> AESNDVoiceCallbackArg;
 }
 extern "C" {
     pub static mut mad_version: [s8; 0usize];
