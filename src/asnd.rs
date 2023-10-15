@@ -26,7 +26,7 @@ pub type VoiceOptionsCallback = Option<unsafe extern "C" fn(i32)>;
 /// Create `VoiceOptions` with voice slot 2 and format Mono16Bit:
 ///
 /// ```rust
-/// let options = VoiceOptions::new().voice(2).format(VoiceFormat::Mono16Bit);
+/// let options = VoiceOptions::new().voice(2).format(VoiceFormat::Mono16BitBe);
 /// ```
 pub struct VoiceOptions {
     voice: u32,
@@ -49,7 +49,7 @@ impl VoiceOptions {
     pub fn new() -> Self {
         Self {
             voice: 0,
-            format: VoiceFormat::Stereo16Bit,
+            format: VoiceFormat::Stereo16BitBe,
             pitch: 48000,
             delay: 0,
             volume_left: 255,
@@ -110,34 +110,16 @@ impl VoiceOptions {
 }
 
 /// Source voice format.
+#[repr(i32)]
 pub enum VoiceFormat {
-    Mono8Bit,
-    Mono16Bit,
-    Mono16BitBe,
-    Stereo8Bit,
-    Stereo16Bit,
-    Stereo16BitBe,
-    Mono8BitU,
-    Mono16BitLE,
-    Stereo8BitU,
-    Stereo16BitLe,
-}
-
-impl VoiceFormat {
-    fn as_i32(&self) -> i32 {
-        match self {
-            VoiceFormat::Mono8Bit => 0,
-            VoiceFormat::Mono16Bit => 1,
-            VoiceFormat::Mono16BitBe => 1,
-            VoiceFormat::Stereo8Bit => 2,
-            VoiceFormat::Stereo16Bit => 3,
-            VoiceFormat::Stereo16BitBe => 3,
-            VoiceFormat::Mono8BitU => 4,
-            VoiceFormat::Mono16BitLE => 5,
-            VoiceFormat::Stereo8BitU => 6,
-            VoiceFormat::Stereo16BitLe => 7,
-        }
-    }
+    Mono8Bit = ffi::VOICE_MONO_8BIT as _,
+    Mono8BitU = ffi::VOICE_MONO_8BIT_U as _,
+    Mono16BitLe = ffi::VOICE_MONO_16BIT_LE as _,
+    Mono16BitBe = ffi::VOICE_MONO_16BIT_BE as _,
+    Stereo8Bit = ffi::VOICE_STEREO_8BIT as _,
+    Stereo8BitU = ffi::VOICE_STEREO_8BIT_U as _,
+    Stereo16BitBe = ffi::VOICE_STEREO_16BIT_BE as _,
+    Stereo16BitLe = ffi::VOICE_STEREO_16BIT_LE as _,
 }
 
 /// Represents the asnd service.
@@ -219,7 +201,7 @@ impl Asnd {
         let err = unsafe {
             ffi::ASND_SetVoice(
                 options.voice as i32,
-                options.format.as_i32(),
+                options.format as i32,
                 options.pitch as i32,
                 options.delay as i32,
                 sound_buffer.as_mut_ptr() as *mut _,
@@ -241,7 +223,7 @@ impl Asnd {
         let err = unsafe {
             ffi::ASND_SetInfiniteVoice(
                 options.voice as i32,
-                options.format.as_i32(),
+                options.format as i32,
                 options.pitch as i32,
                 options.delay as i32,
                 sound_buffer.as_mut_ptr() as *mut _,
