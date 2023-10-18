@@ -48,19 +48,19 @@ impl From<&RenderConfig> for *mut ffi::GXRModeObj {
 impl From<&ffi::GXRModeObj> for RenderConfig {
     fn from(obj: &ffi::GXRModeObj) -> Self {
         RenderConfig {
-            tv_type: (*obj).viTVMode,
-            framebuffer_width: (*obj).fbWidth,
-            embed_framebuffer_height: (*obj).efbHeight,
-            extern_framebuffer_height: (*obj).xfbHeight,
-            vi_x_origin: (*obj).viXOrigin,
-            vi_y_origin: (*obj).viYOrigin,
-            vi_width: (*obj).viWidth,
-            vi_height: (*obj).viHeight,
-            extern_framebuffer_mode: (*obj).xfbMode,
-            field_rendering: (*obj).field_rendering,
-            anti_aliasing: (*obj).aa,
-            sample_pattern: (*obj).sample_pattern,
-            v_filter: (*obj).vfilter,
+            tv_type: obj.viTVMode,
+            framebuffer_width: obj.fbWidth,
+            embed_framebuffer_height: obj.efbHeight,
+            extern_framebuffer_height: obj.xfbHeight,
+            vi_x_origin: obj.viXOrigin,
+            vi_y_origin: obj.viYOrigin,
+            vi_width: obj.viWidth,
+            vi_height: obj.viHeight,
+            extern_framebuffer_mode: obj.xfbMode,
+            field_rendering: obj.field_rendering,
+            anti_aliasing: obj.aa,
+            sample_pattern: obj.sample_pattern,
+            v_filter: obj.vfilter,
         }
     }
 }

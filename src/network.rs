@@ -2,6 +2,8 @@
 //!
 //! This module implements a safe wrapper around the networking functions found in ``network.h``.
 
+#![allow(clippy::bad_bit_mask)]
+
 use crate::{ffi, OgcError, Result};
 use alloc::{
     boxed::Box,

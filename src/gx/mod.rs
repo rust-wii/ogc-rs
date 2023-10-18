@@ -254,7 +254,7 @@ pub enum Perf0 {
 }
 
 /// Performance counter 1 is used for measuring texturing and caching performance as well as FIFO
-//// performance.
+/// performance.
 ///
 /// `Perf1::Tc*` can be used to compute the texture cache (TC) miss rate. The `TcCheck*` parameters
 /// count how many texture cache lines are accessed for each pixel. In the worst case, for a
