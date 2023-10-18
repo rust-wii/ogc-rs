@@ -1486,6 +1486,7 @@ impl TexRegion {
         self.inner
     }
 }
+*/
 
 #[repr(u32)]
 pub enum TlutFormat {
