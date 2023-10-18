@@ -7,7 +7,7 @@ A Rust wrapper library for devkitPro's [libogc](https://github.com/devkitPro/lib
 To get started, you'll first need to install the following dependencies on your system:
 * [Rust, along with rustup and cargo](https://www.rust-lang.org/tools/install)
 * the Clang compiler
-  * from your local package manager: `sudo apt install clang`
+  * from your local package manager,
   * or from [LLVM themselves](https://clang.llvm.org/get_started.html)
 * [devkitPro toolchain](https://devkitpro.org/wiki/Getting_Started)
 
