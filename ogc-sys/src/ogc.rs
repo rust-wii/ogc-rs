@@ -1129,6 +1129,7 @@ pub const _REENT_CHECK_VERIFY: u32 = 1;
 pub const _UNBUF_STREAM_OPT: u32 = 1;
 pub const _WANT_IO_C99_FORMATS: u32 = 1;
 pub const _WANT_IO_LONG_LONG: u32 = 1;
+pub const _WANT_REGISTER_FINI: u32 = 1;
 pub const _WANT_USE_GDTOA: u32 = 1;
 pub const _WIDE_ORIENT: u32 = 1;
 pub const __OBSOLETE_MATH_DEFAULT: u32 = 1;
