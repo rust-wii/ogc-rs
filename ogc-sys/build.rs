@@ -81,12 +81,16 @@ fn main() {
         .clang_arg("--target=powerpc-none-eabi")
         .clang_arg(format!("--sysroot={}/devkitPPC/powerpc-eabi", dkp_path))
         .clang_arg(format!(
-            "-isystem/{}/devkitPPC/powerpc-eabi/include",
+            "-isystem{}/devkitPPC/powerpc-eabi/include",
             dkp_path
         ))
         .clang_arg(format!(
             "-isystem/usr/lib/clang/{}/include",
             get_clang_version()
+        ))
+        .clang_arg(format!(
+            "-isystem{}/devkitPPC/lib/gcc/powerpc-eabi/13.2.0/include",
+            dkp_path
         ))
         .clang_arg(format!("-I{}/libogc/include", dkp_path))
         .clang_arg("-mfloat-abi=hard")
@@ -94,7 +98,7 @@ fn main() {
         .clang_arg("-Wno-macro-redefined")
         .clang_arg("-Wno-incompatible-library-redeclaration")
         .clang_arg("-DHW_RVL")
-        .parse_callbacks(Box::new(bindgen::CargoCallbacks))
+        .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
         .generate()
         .expect("Unable to generate bindings");
 
