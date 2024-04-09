@@ -1,7 +1,7 @@
 {
     "arch": "powerpc",
     "cpu": "750",
-    "data-layout": "E-m:e-p:32:32-i64:64-n32",
+    "data-layout": "E-m:e-p:32:32-Fn32-i64:64-n32",
     "dynamic-linking": false,
     "env": "newlib",
     "exe-suffix": ".elf",
