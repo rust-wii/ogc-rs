@@ -14,6 +14,15 @@ keywords = ["wii", "embedded", "no-std"]
 [lib]
 crate-type = ["rlib"]
 
+[profile.dev]
+# Add linker flag for development builds
+rustc-link-arg = ["-C", "link-args=-Wl,-Map=my_application.map"]
+
+[profile.release]
+# Add linker flag for release builds
+rustc-link-arg = ["-C", "link-args=-Wl,-Map=my_application.map"]
+
+
 [features]
 ffi = []
 mmio = []

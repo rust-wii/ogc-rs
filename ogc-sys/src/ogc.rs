@@ -1482,13 +1482,11 @@ pub const SBT_MAX: u64 = 9223372036854775807;
 pub const ITIMER_REAL: u32 = 0;
 pub const ITIMER_VIRTUAL: u32 = 1;
 pub const ITIMER_PROF: u32 = 2;
+pub const INVALID_SOCKET: i32 = -1;
+pub const SOCKET_ERROR: i32 = -1;
 pub const SOCK_STREAM: u32 = 1;
 pub const SOCK_DGRAM: u32 = 2;
 pub const SOCK_RAW: u32 = 3;
-pub const SOCK_RDM: u32 = 4;
-pub const SOCK_SEQPACKET: u32 = 5;
-pub const SOCK_CLOEXEC: u32 = 268435456;
-pub const SOCK_NONBLOCK: u32 = 536870912;
 pub const SO_DEBUG: u32 = 1;
 pub const SO_ACCEPTCONN: u32 = 2;
 pub const SO_REUSEADDR: u32 = 4;
@@ -1499,12 +1497,6 @@ pub const SO_USELOOPBACK: u32 = 64;
 pub const SO_LINGER: u32 = 128;
 pub const SO_OOBINLINE: u32 = 256;
 pub const SO_REUSEPORT: u32 = 512;
-pub const SO_TIMESTAMP: u32 = 1024;
-pub const SO_NOSIGPIPE: u32 = 2048;
-pub const SO_ACCEPTFILTER: u32 = 4096;
-pub const SO_BINTIME: u32 = 8192;
-pub const SO_NO_OFFLOAD: u32 = 16384;
-pub const SO_NO_DDP: u32 = 32768;
 pub const SO_SNDBUF: u32 = 4097;
 pub const SO_RCVBUF: u32 = 4098;
 pub const SO_SNDLOWAT: u32 = 4099;
@@ -1513,505 +1505,19 @@ pub const SO_SNDTIMEO: u32 = 4101;
 pub const SO_RCVTIMEO: u32 = 4102;
 pub const SO_ERROR: u32 = 4103;
 pub const SO_TYPE: u32 = 4104;
-pub const SO_LABEL: u32 = 4105;
-pub const SO_PEERLABEL: u32 = 4112;
-pub const SO_LISTENQLIMIT: u32 = 4113;
-pub const SO_LISTENQLEN: u32 = 4114;
-pub const SO_LISTENINCQLEN: u32 = 4115;
-pub const SO_SETFIB: u32 = 4116;
-pub const SO_USER_COOKIE: u32 = 4117;
-pub const SO_PROTOCOL: u32 = 4118;
-pub const SO_PROTOTYPE: u32 = 4118;
-pub const SO_TS_CLOCK: u32 = 4119;
-pub const SO_MAX_PACING_RATE: u32 = 4120;
-pub const SO_TS_REALTIME_MICRO: u32 = 0;
-pub const SO_TS_BINTIME: u32 = 1;
-pub const SO_TS_REALTIME: u32 = 2;
-pub const SO_TS_MONOTONIC: u32 = 3;
-pub const SO_TS_DEFAULT: u32 = 0;
-pub const SO_TS_CLOCK_MAX: u32 = 3;
-pub const SO_VENDOR: u32 = 2147483648;
 pub const SOL_SOCKET: u32 = 65535;
 pub const AF_UNSPEC: u32 = 0;
-pub const AF_UNIX: u32 = 1;
 pub const AF_INET: u32 = 2;
-pub const AF_IMPLINK: u32 = 3;
-pub const AF_PUP: u32 = 4;
-pub const AF_CHAOS: u32 = 5;
-pub const AF_NETBIOS: u32 = 6;
-pub const AF_ISO: u32 = 7;
-pub const AF_OSI: u32 = 7;
-pub const AF_ECMA: u32 = 8;
-pub const AF_DATAKIT: u32 = 9;
-pub const AF_CCITT: u32 = 10;
-pub const AF_SNA: u32 = 11;
-pub const AF_DECnet: u32 = 12;
-pub const AF_DLI: u32 = 13;
-pub const AF_LAT: u32 = 14;
-pub const AF_HYLINK: u32 = 15;
-pub const AF_APPLETALK: u32 = 16;
-pub const AF_ROUTE: u32 = 17;
-pub const AF_LINK: u32 = 18;
-pub const pseudo_AF_XTP: u32 = 19;
-pub const AF_COIP: u32 = 20;
-pub const AF_CNT: u32 = 21;
-pub const pseudo_AF_RTIP: u32 = 22;
-pub const AF_IPX: u32 = 23;
-pub const AF_SIP: u32 = 24;
-pub const pseudo_AF_PIP: u32 = 25;
-pub const AF_ISDN: u32 = 26;
-pub const AF_E164: u32 = 26;
-pub const pseudo_AF_KEY: u32 = 27;
-pub const AF_INET6: u32 = 28;
-pub const AF_NATM: u32 = 29;
-pub const AF_ATM: u32 = 30;
-pub const pseudo_AF_HDRCMPLT: u32 = 31;
-pub const AF_NETGRAPH: u32 = 32;
-pub const AF_SLOW: u32 = 33;
-pub const AF_SCLUSTER: u32 = 34;
-pub const AF_ARP: u32 = 35;
-pub const AF_BLUETOOTH: u32 = 36;
-pub const AF_IEEE80211: u32 = 37;
-pub const AF_INET_SDP: u32 = 40;
-pub const AF_INET6_SDP: u32 = 42;
-pub const AF_MAX: u32 = 42;
-pub const AF_VENDOR00: u32 = 39;
-pub const AF_VENDOR01: u32 = 41;
-pub const AF_VENDOR02: u32 = 43;
-pub const AF_VENDOR03: u32 = 45;
-pub const AF_VENDOR04: u32 = 47;
-pub const AF_VENDOR05: u32 = 49;
-pub const AF_VENDOR06: u32 = 51;
-pub const AF_VENDOR07: u32 = 53;
-pub const AF_VENDOR08: u32 = 55;
-pub const AF_VENDOR09: u32 = 57;
-pub const AF_VENDOR10: u32 = 59;
-pub const AF_VENDOR11: u32 = 61;
-pub const AF_VENDOR12: u32 = 63;
-pub const AF_VENDOR13: u32 = 65;
-pub const AF_VENDOR14: u32 = 67;
-pub const AF_VENDOR15: u32 = 69;
-pub const AF_VENDOR16: u32 = 71;
-pub const AF_VENDOR17: u32 = 73;
-pub const AF_VENDOR18: u32 = 75;
-pub const AF_VENDOR19: u32 = 77;
-pub const AF_VENDOR20: u32 = 79;
-pub const AF_VENDOR21: u32 = 81;
-pub const AF_VENDOR22: u32 = 83;
-pub const AF_VENDOR23: u32 = 85;
-pub const AF_VENDOR24: u32 = 87;
-pub const AF_VENDOR25: u32 = 89;
-pub const AF_VENDOR26: u32 = 91;
-pub const AF_VENDOR27: u32 = 93;
-pub const AF_VENDOR28: u32 = 95;
-pub const AF_VENDOR29: u32 = 97;
-pub const AF_VENDOR30: u32 = 99;
-pub const AF_VENDOR31: u32 = 101;
-pub const AF_VENDOR32: u32 = 103;
-pub const AF_VENDOR33: u32 = 105;
-pub const AF_VENDOR34: u32 = 107;
-pub const AF_VENDOR35: u32 = 109;
-pub const AF_VENDOR36: u32 = 111;
-pub const AF_VENDOR37: u32 = 113;
-pub const AF_VENDOR38: u32 = 115;
-pub const AF_VENDOR39: u32 = 117;
-pub const AF_VENDOR40: u32 = 119;
-pub const AF_VENDOR41: u32 = 121;
-pub const AF_VENDOR42: u32 = 123;
-pub const AF_VENDOR43: u32 = 125;
-pub const AF_VENDOR44: u32 = 127;
-pub const AF_VENDOR45: u32 = 129;
-pub const AF_VENDOR46: u32 = 131;
-pub const AF_VENDOR47: u32 = 133;
-pub const SOCK_MAXADDRLEN: u32 = 255;
-pub const _SS_MAXSIZE: u32 = 128;
-pub const PF_UNSPEC: u32 = 0;
 pub const PF_INET: u32 = 2;
-pub const PF_IMPLINK: u32 = 3;
-pub const PF_PUP: u32 = 4;
-pub const PF_CHAOS: u32 = 5;
-pub const PF_NETBIOS: u32 = 6;
-pub const PF_ISO: u32 = 7;
-pub const PF_OSI: u32 = 7;
-pub const PF_ECMA: u32 = 8;
-pub const PF_DATAKIT: u32 = 9;
-pub const PF_CCITT: u32 = 10;
-pub const PF_SNA: u32 = 11;
-pub const PF_DECnet: u32 = 12;
-pub const PF_DLI: u32 = 13;
-pub const PF_LAT: u32 = 14;
-pub const PF_HYLINK: u32 = 15;
-pub const PF_APPLETALK: u32 = 16;
-pub const PF_ROUTE: u32 = 17;
-pub const PF_LINK: u32 = 18;
-pub const PF_XTP: u32 = 19;
-pub const PF_COIP: u32 = 20;
-pub const PF_CNT: u32 = 21;
-pub const PF_SIP: u32 = 24;
-pub const PF_IPX: u32 = 23;
-pub const PF_RTIP: u32 = 22;
-pub const PF_PIP: u32 = 25;
-pub const PF_ISDN: u32 = 26;
-pub const PF_KEY: u32 = 27;
-pub const PF_INET6: u32 = 28;
-pub const PF_NATM: u32 = 29;
-pub const PF_ATM: u32 = 30;
-pub const PF_NETGRAPH: u32 = 32;
-pub const PF_SLOW: u32 = 33;
-pub const PF_SCLUSTER: u32 = 34;
-pub const PF_ARP: u32 = 35;
-pub const PF_BLUETOOTH: u32 = 36;
-pub const PF_IEEE80211: u32 = 37;
-pub const PF_INET_SDP: u32 = 40;
-pub const PF_INET6_SDP: u32 = 42;
-pub const PF_MAX: u32 = 42;
-pub const NET_RT_DUMP: u32 = 1;
-pub const NET_RT_FLAGS: u32 = 2;
-pub const NET_RT_IFLIST: u32 = 3;
-pub const NET_RT_IFMALIST: u32 = 4;
-pub const NET_RT_IFLISTL: u32 = 5;
-pub const SOMAXCONN: u32 = 128;
-pub const MSG_OOB: u32 = 1;
-pub const MSG_PEEK: u32 = 2;
-pub const MSG_DONTROUTE: u32 = 4;
-pub const MSG_EOR: u32 = 8;
-pub const MSG_TRUNC: u32 = 16;
-pub const MSG_CTRUNC: u32 = 32;
-pub const MSG_WAITALL: u32 = 64;
-pub const MSG_DONTWAIT: u32 = 64;
-pub const MSG_EOF: u32 = 256;
-pub const MSG_NOTIFICATION: u32 = 8192;
-pub const MSG_NBIO: u32 = 16384;
-pub const MSG_COMPAT: u32 = 32768;
-pub const MSG_NOSIGNAL: u32 = 131072;
-pub const MSG_CMSG_CLOEXEC: u32 = 262144;
-pub const MSG_WAITFORONE: u32 = 524288;
-pub const SCM_RIGHTS: u32 = 1;
-pub const SCM_TIMESTAMP: u32 = 2;
-pub const SCM_CREDS: u32 = 3;
-pub const SCM_BINTIME: u32 = 4;
-pub const SCM_REALTIME: u32 = 5;
-pub const SCM_MONOTONIC: u32 = 6;
-pub const SCM_TIME_INFO: u32 = 7;
-pub const ST_INFO_HW: u32 = 1;
-pub const ST_INFO_HW_HPREC: u32 = 2;
-pub const SHUT_RD: u32 = 0;
-pub const SHUT_WR: u32 = 1;
-pub const SHUT_RDWR: u32 = 2;
-pub const PRU_FLUSH_RD: u32 = 0;
-pub const PRU_FLUSH_WR: u32 = 1;
-pub const PRU_FLUSH_RDWR: u32 = 2;
-pub const SF_NODISKIO: u32 = 1;
-pub const SF_MNOWAIT: u32 = 2;
-pub const SF_SYNC: u32 = 4;
-pub const SF_USER_READAHEAD: u32 = 8;
-pub const SF_NOCACHE: u32 = 16;
-pub const IOCPARM_SHIFT: u32 = 7;
-pub const IOCPARM_MASK: u32 = 127;
-pub const IOCPARM_MAX: u32 = 128;
-pub const IOC_VOID: u32 = 536870912;
-pub const IOC_OUT: u32 = 1073741824;
-pub const IOC_IN: u32 = 2147483648;
-pub const IOC_INOUT: u32 = 3221225472;
-pub const IOC_DIRMASK: u32 = 3758096384;
+pub const PF_UNSPEC: u32 = 0;
 pub const IPPROTO_IP: u32 = 0;
-pub const IPPROTO_ICMP: u32 = 1;
 pub const IPPROTO_TCP: u32 = 6;
 pub const IPPROTO_UDP: u32 = 17;
-pub const IPPROTO_IPV6: u32 = 41;
-pub const IPPROTO_RAW: u32 = 255;
-pub const INET_ADDRSTRLEN: u32 = 16;
-pub const IPPROTO_HOPOPTS: u32 = 0;
-pub const IPPROTO_IGMP: u32 = 2;
-pub const IPPROTO_GGP: u32 = 3;
-pub const IPPROTO_IPV4: u32 = 4;
-pub const IPPROTO_IPIP: u32 = 4;
-pub const IPPROTO_ST: u32 = 7;
-pub const IPPROTO_EGP: u32 = 8;
-pub const IPPROTO_PIGP: u32 = 9;
-pub const IPPROTO_RCCMON: u32 = 10;
-pub const IPPROTO_NVPII: u32 = 11;
-pub const IPPROTO_PUP: u32 = 12;
-pub const IPPROTO_ARGUS: u32 = 13;
-pub const IPPROTO_EMCON: u32 = 14;
-pub const IPPROTO_XNET: u32 = 15;
-pub const IPPROTO_CHAOS: u32 = 16;
-pub const IPPROTO_MUX: u32 = 18;
-pub const IPPROTO_MEAS: u32 = 19;
-pub const IPPROTO_HMP: u32 = 20;
-pub const IPPROTO_PRM: u32 = 21;
-pub const IPPROTO_IDP: u32 = 22;
-pub const IPPROTO_TRUNK1: u32 = 23;
-pub const IPPROTO_TRUNK2: u32 = 24;
-pub const IPPROTO_LEAF1: u32 = 25;
-pub const IPPROTO_LEAF2: u32 = 26;
-pub const IPPROTO_RDP: u32 = 27;
-pub const IPPROTO_IRTP: u32 = 28;
-pub const IPPROTO_TP: u32 = 29;
-pub const IPPROTO_BLT: u32 = 30;
-pub const IPPROTO_NSP: u32 = 31;
-pub const IPPROTO_INP: u32 = 32;
-pub const IPPROTO_SEP: u32 = 33;
-pub const IPPROTO_3PC: u32 = 34;
-pub const IPPROTO_IDPR: u32 = 35;
-pub const IPPROTO_XTP: u32 = 36;
-pub const IPPROTO_DDP: u32 = 37;
-pub const IPPROTO_CMTP: u32 = 38;
-pub const IPPROTO_TPXX: u32 = 39;
-pub const IPPROTO_IL: u32 = 40;
-pub const IPPROTO_SDRP: u32 = 42;
-pub const IPPROTO_ROUTING: u32 = 43;
-pub const IPPROTO_FRAGMENT: u32 = 44;
-pub const IPPROTO_IDRP: u32 = 45;
-pub const IPPROTO_RSVP: u32 = 46;
-pub const IPPROTO_GRE: u32 = 47;
-pub const IPPROTO_MHRP: u32 = 48;
-pub const IPPROTO_BHA: u32 = 49;
-pub const IPPROTO_ESP: u32 = 50;
-pub const IPPROTO_AH: u32 = 51;
-pub const IPPROTO_INLSP: u32 = 52;
-pub const IPPROTO_SWIPE: u32 = 53;
-pub const IPPROTO_NHRP: u32 = 54;
-pub const IPPROTO_MOBILE: u32 = 55;
-pub const IPPROTO_TLSP: u32 = 56;
-pub const IPPROTO_SKIP: u32 = 57;
-pub const IPPROTO_ICMPV6: u32 = 58;
-pub const IPPROTO_NONE: u32 = 59;
-pub const IPPROTO_DSTOPTS: u32 = 60;
-pub const IPPROTO_AHIP: u32 = 61;
-pub const IPPROTO_CFTP: u32 = 62;
-pub const IPPROTO_HELLO: u32 = 63;
-pub const IPPROTO_SATEXPAK: u32 = 64;
-pub const IPPROTO_KRYPTOLAN: u32 = 65;
-pub const IPPROTO_RVD: u32 = 66;
-pub const IPPROTO_IPPC: u32 = 67;
-pub const IPPROTO_ADFS: u32 = 68;
-pub const IPPROTO_SATMON: u32 = 69;
-pub const IPPROTO_VISA: u32 = 70;
-pub const IPPROTO_IPCV: u32 = 71;
-pub const IPPROTO_CPNX: u32 = 72;
-pub const IPPROTO_CPHB: u32 = 73;
-pub const IPPROTO_WSN: u32 = 74;
-pub const IPPROTO_PVP: u32 = 75;
-pub const IPPROTO_BRSATMON: u32 = 76;
-pub const IPPROTO_ND: u32 = 77;
-pub const IPPROTO_WBMON: u32 = 78;
-pub const IPPROTO_WBEXPAK: u32 = 79;
-pub const IPPROTO_EON: u32 = 80;
-pub const IPPROTO_VMTP: u32 = 81;
-pub const IPPROTO_SVMTP: u32 = 82;
-pub const IPPROTO_VINES: u32 = 83;
-pub const IPPROTO_TTP: u32 = 84;
-pub const IPPROTO_IGP: u32 = 85;
-pub const IPPROTO_DGP: u32 = 86;
-pub const IPPROTO_TCF: u32 = 87;
-pub const IPPROTO_IGRP: u32 = 88;
-pub const IPPROTO_OSPFIGP: u32 = 89;
-pub const IPPROTO_SRPC: u32 = 90;
-pub const IPPROTO_LARP: u32 = 91;
-pub const IPPROTO_MTP: u32 = 92;
-pub const IPPROTO_AX25: u32 = 93;
-pub const IPPROTO_IPEIP: u32 = 94;
-pub const IPPROTO_MICP: u32 = 95;
-pub const IPPROTO_SCCSP: u32 = 96;
-pub const IPPROTO_ETHERIP: u32 = 97;
-pub const IPPROTO_ENCAP: u32 = 98;
-pub const IPPROTO_APES: u32 = 99;
-pub const IPPROTO_GMTP: u32 = 100;
-pub const IPPROTO_IPCOMP: u32 = 108;
-pub const IPPROTO_SCTP: u32 = 132;
-pub const IPPROTO_MH: u32 = 135;
-pub const IPPROTO_UDPLITE: u32 = 136;
-pub const IPPROTO_HIP: u32 = 139;
-pub const IPPROTO_SHIM6: u32 = 140;
-pub const IPPROTO_PIM: u32 = 103;
-pub const IPPROTO_CARP: u32 = 112;
-pub const IPPROTO_PGM: u32 = 113;
-pub const IPPROTO_MPLS: u32 = 137;
-pub const IPPROTO_PFSYNC: u32 = 240;
-pub const IPPROTO_RESERVED_253: u32 = 253;
-pub const IPPROTO_RESERVED_254: u32 = 254;
-pub const IPPROTO_OLD_DIVERT: u32 = 254;
-pub const IPPROTO_MAX: u32 = 256;
-pub const IPPROTO_DONE: u32 = 257;
-pub const IPPROTO_DIVERT: u32 = 258;
-pub const IPPROTO_SEND: u32 = 259;
-pub const IPPROTO_SPACER: u32 = 32767;
-pub const IPPORT_RESERVED: u32 = 1024;
-pub const IPPORT_EPHEMERALFIRST: u32 = 10000;
-pub const IPPORT_EPHEMERALLAST: u32 = 65535;
-pub const IPPORT_HIFIRSTAUTO: u32 = 49152;
-pub const IPPORT_HILASTAUTO: u32 = 65535;
-pub const IPPORT_RESERVEDSTART: u32 = 600;
-pub const IPPORT_MAX: u32 = 65535;
-pub const IN_CLASSA_NET: u32 = 4278190080;
-pub const IN_CLASSA_NSHIFT: u32 = 24;
-pub const IN_CLASSA_HOST: u32 = 16777215;
-pub const IN_CLASSA_MAX: u32 = 128;
-pub const IN_CLASSB_NET: u32 = 4294901760;
-pub const IN_CLASSB_NSHIFT: u32 = 16;
-pub const IN_CLASSB_HOST: u32 = 65535;
-pub const IN_CLASSB_MAX: u32 = 65536;
-pub const IN_CLASSC_NET: u32 = 4294967040;
-pub const IN_CLASSC_NSHIFT: u32 = 8;
-pub const IN_CLASSC_HOST: u32 = 255;
-pub const IN_CLASSD_NET: u32 = 4026531840;
-pub const IN_CLASSD_NSHIFT: u32 = 28;
-pub const IN_CLASSD_HOST: u32 = 268435455;
-pub const IN_LOOPBACKNET: u32 = 127;
-pub const IP_OPTIONS: u32 = 1;
-pub const IP_HDRINCL: u32 = 2;
-pub const IP_TOS: u32 = 3;
-pub const IP_TTL: u32 = 4;
-pub const IP_RECVOPTS: u32 = 5;
-pub const IP_RECVRETOPTS: u32 = 6;
-pub const IP_RECVDSTADDR: u32 = 7;
-pub const IP_SENDSRCADDR: u32 = 7;
-pub const IP_RETOPTS: u32 = 8;
-pub const IP_MULTICAST_IF: u32 = 9;
-pub const IP_MULTICAST_TTL: u32 = 10;
-pub const IP_MULTICAST_LOOP: u32 = 11;
-pub const IP_ADD_MEMBERSHIP: u32 = 12;
-pub const IP_DROP_MEMBERSHIP: u32 = 13;
-pub const IP_MULTICAST_VIF: u32 = 14;
-pub const IP_RSVP_ON: u32 = 15;
-pub const IP_RSVP_OFF: u32 = 16;
-pub const IP_RSVP_VIF_ON: u32 = 17;
-pub const IP_RSVP_VIF_OFF: u32 = 18;
-pub const IP_PORTRANGE: u32 = 19;
-pub const IP_RECVIF: u32 = 20;
-pub const IP_IPSEC_POLICY: u32 = 21;
-pub const IP_ONESBCAST: u32 = 23;
-pub const IP_BINDANY: u32 = 24;
-pub const IP_BINDMULTI: u32 = 25;
-pub const IP_RSS_LISTEN_BUCKET: u32 = 26;
-pub const IP_ORIGDSTADDR: u32 = 27;
-pub const IP_RECVORIGDSTADDR: u32 = 27;
-pub const IP_FW_TABLE_ADD: u32 = 40;
-pub const IP_FW_TABLE_DEL: u32 = 41;
-pub const IP_FW_TABLE_FLUSH: u32 = 42;
-pub const IP_FW_TABLE_GETSIZE: u32 = 43;
-pub const IP_FW_TABLE_LIST: u32 = 44;
-pub const IP_FW3: u32 = 48;
-pub const IP_DUMMYNET3: u32 = 49;
-pub const IP_FW_ADD: u32 = 50;
-pub const IP_FW_DEL: u32 = 51;
-pub const IP_FW_FLUSH: u32 = 52;
-pub const IP_FW_ZERO: u32 = 53;
-pub const IP_FW_GET: u32 = 54;
-pub const IP_FW_RESETLOG: u32 = 55;
-pub const IP_FW_NAT_CFG: u32 = 56;
-pub const IP_FW_NAT_DEL: u32 = 57;
-pub const IP_FW_NAT_GET_CONFIG: u32 = 58;
-pub const IP_FW_NAT_GET_LOG: u32 = 59;
-pub const IP_DUMMYNET_CONFIGURE: u32 = 60;
-pub const IP_DUMMYNET_DEL: u32 = 61;
-pub const IP_DUMMYNET_FLUSH: u32 = 62;
-pub const IP_DUMMYNET_GET: u32 = 64;
-pub const IP_RECVTTL: u32 = 65;
-pub const IP_MINTTL: u32 = 66;
-pub const IP_DONTFRAG: u32 = 67;
-pub const IP_RECVTOS: u32 = 68;
-pub const IP_ADD_SOURCE_MEMBERSHIP: u32 = 70;
-pub const IP_DROP_SOURCE_MEMBERSHIP: u32 = 71;
-pub const IP_BLOCK_SOURCE: u32 = 72;
-pub const IP_UNBLOCK_SOURCE: u32 = 73;
-pub const IP_MSFILTER: u32 = 74;
-pub const MCAST_JOIN_GROUP: u32 = 80;
-pub const MCAST_LEAVE_GROUP: u32 = 81;
-pub const MCAST_JOIN_SOURCE_GROUP: u32 = 82;
-pub const MCAST_LEAVE_SOURCE_GROUP: u32 = 83;
-pub const MCAST_BLOCK_SOURCE: u32 = 84;
-pub const MCAST_UNBLOCK_SOURCE: u32 = 85;
-pub const IP_FLOWID: u32 = 90;
-pub const IP_FLOWTYPE: u32 = 91;
-pub const IP_RSSBUCKETID: u32 = 92;
-pub const IP_RECVFLOWID: u32 = 93;
-pub const IP_RECVRSSBUCKETID: u32 = 94;
-pub const IP_DEFAULT_MULTICAST_TTL: u32 = 1;
-pub const IP_DEFAULT_MULTICAST_LOOP: u32 = 1;
-pub const IP_MIN_MEMBERSHIPS: u32 = 31;
-pub const IP_MAX_MEMBERSHIPS: u32 = 4095;
-pub const IP_MAX_SOURCE_FILTER: u32 = 1024;
-pub const IP_MAX_GROUP_SRC_FILTER: u32 = 512;
-pub const IP_MAX_SOCK_SRC_FILTER: u32 = 128;
-pub const IP_MAX_SOCK_MUTE_FILTER: u32 = 128;
-pub const MCAST_UNDEFINED: u32 = 0;
-pub const MCAST_INCLUDE: u32 = 1;
-pub const MCAST_EXCLUDE: u32 = 2;
-pub const IP_PORTRANGE_DEFAULT: u32 = 0;
-pub const IP_PORTRANGE_HIGH: u32 = 1;
-pub const IP_PORTRANGE_LOW: u32 = 2;
-pub const IPCTL_FORWARDING: u32 = 1;
-pub const IPCTL_SENDREDIRECTS: u32 = 2;
-pub const IPCTL_DEFTTL: u32 = 3;
-pub const IPCTL_SOURCEROUTE: u32 = 8;
-pub const IPCTL_DIRECTEDBROADCAST: u32 = 9;
-pub const IPCTL_INTRQMAXLEN: u32 = 10;
-pub const IPCTL_INTRQDROPS: u32 = 11;
-pub const IPCTL_STATS: u32 = 12;
-pub const IPCTL_ACCEPTSOURCEROUTE: u32 = 13;
-pub const IPCTL_FASTFORWARDING: u32 = 14;
-pub const IPCTL_GIF_TTL: u32 = 16;
-pub const IPCTL_INTRDQMAXLEN: u32 = 17;
-pub const IPCTL_INTRDQDROPS: u32 = 18;
-pub const INET6_ADDRSTRLEN: u32 = 46;
-pub const IPV6_UNICAST_HOPS: u32 = 4;
-pub const IPV6_MULTICAST_IF: u32 = 9;
-pub const IPV6_MULTICAST_HOPS: u32 = 10;
-pub const IPV6_MULTICAST_LOOP: u32 = 11;
-pub const IPV6_JOIN_GROUP: u32 = 12;
-pub const IPV6_LEAVE_GROUP: u32 = 13;
-pub const IPV6_PORTRANGE: u32 = 14;
-pub const IPV6_V6ONLY: u32 = 27;
-pub const __IPV6_ADDR_SCOPE_NODELOCAL: u32 = 1;
-pub const __IPV6_ADDR_SCOPE_INTFACELOCAL: u32 = 1;
-pub const __IPV6_ADDR_SCOPE_LINKLOCAL: u32 = 2;
-pub const __IPV6_ADDR_SCOPE_SITELOCAL: u32 = 5;
-pub const __IPV6_ADDR_SCOPE_ORGLOCAL: u32 = 8;
-pub const __IPV6_ADDR_SCOPE_GLOBAL: u32 = 14;
-pub const NETDB_INTERNAL: i32 = -1;
-pub const NETDB_SUCCESS: u32 = 0;
-pub const HOST_NOT_FOUND: u32 = 1;
-pub const TRY_AGAIN: u32 = 2;
-pub const NO_RECOVERY: u32 = 3;
-pub const NO_DATA: u32 = 4;
-pub const NO_ADDRESS: u32 = 4;
-pub const EAI_ADDRFAMILY: u32 = 1;
-pub const EAI_AGAIN: u32 = 2;
-pub const EAI_BADFLAGS: u32 = 3;
-pub const EAI_FAIL: u32 = 4;
-pub const EAI_FAMILY: u32 = 5;
-pub const EAI_MEMORY: u32 = 6;
-pub const EAI_NODATA: u32 = 7;
-pub const EAI_NONAME: u32 = 8;
-pub const EAI_SERVICE: u32 = 9;
-pub const EAI_SOCKTYPE: u32 = 10;
-pub const EAI_SYSTEM: u32 = 11;
-pub const EAI_BADHINTS: u32 = 12;
-pub const EAI_PROTOCOL: u32 = 13;
-pub const EAI_OVERFLOW: u32 = 14;
-pub const EAI_MAX: u32 = 15;
-pub const AI_PASSIVE: u32 = 1;
-pub const AI_CANONNAME: u32 = 2;
-pub const AI_NUMERICHOST: u32 = 4;
-pub const AI_NUMERICSERV: u32 = 8;
-pub const AI_ALL: u32 = 256;
-pub const AI_V4MAPPED_CFG: u32 = 512;
-pub const AI_ADDRCONFIG: u32 = 1024;
-pub const AI_V4MAPPED: u32 = 2048;
-pub const AI_DEFAULT: u32 = 1536;
-pub const NI_MAXHOST: u32 = 1025;
-pub const NI_MAXSERV: u32 = 32;
-pub const NI_NOFQDN: u32 = 1;
-pub const NI_NUMERICHOST: u32 = 2;
-pub const NI_NAMEREQD: u32 = 4;
-pub const NI_NUMERICSERV: u32 = 8;
-pub const NI_DGRAM: u32 = 16;
-pub const NI_NUMERICSCOPE: u32 = 32;
-pub const SCOPE_DELIMITER: u8 = 37u8;
-pub const INVALID_SOCKET: i32 = -1;
-pub const SOCKET_ERROR: i32 = -1;
+pub const INADDR_ANY: u32 = 0;
+pub const INADDR_BROADCAST: u32 = 4294967295;
+pub const MSG_DONTWAIT: u32 = 64;
+pub const IP_TOS: u32 = 1;
+pub const IP_TTL: u32 = 2;
 pub const IPTOS_TOS_MASK: u32 = 30;
 pub const IPTOS_LOWDELAY: u32 = 16;
 pub const IPTOS_THROUGHPUT: u32 = 8;
@@ -2027,6 +1533,11 @@ pub const IPTOS_PREC_FLASH: u32 = 96;
 pub const IPTOS_PREC_IMMEDIATE: u32 = 64;
 pub const IPTOS_PREC_PRIORITY: u32 = 32;
 pub const IPTOS_PREC_ROUTINE: u32 = 0;
+pub const IOCPARM_MASK: u32 = 127;
+pub const IOC_VOID: u32 = 536870912;
+pub const IOC_OUT: u32 = 1073741824;
+pub const IOC_IN: u32 = 2147483648;
+pub const IOC_INOUT: u32 = 3221225472;
 pub const O_NONBLOCK: u32 = 2048;
 pub const TCP_NODELAY: u32 = 1;
 pub const TCP_KEEPALIVE: u32 = 2;
@@ -6596,7 +6107,7 @@ extern "C" {
     pub fn AES_Decrypt(
         key: *const ::libc::c_void,
         key_size: u32_,
-        iv: *const ::libc::c_void,
+        iv: *mut ::libc::c_void,
         iv_size: u32_,
         in_data: *const ::libc::c_void,
         out_data: *mut ::libc::c_void,
@@ -6607,7 +6118,7 @@ extern "C" {
     pub fn AES_Encrypt(
         key: *const ::libc::c_void,
         key_size: u32_,
-        iv: *const ::libc::c_void,
+        iv: *mut ::libc::c_void,
         iv_size: u32_,
         in_data: *const ::libc::c_void,
         out_data: *mut ::libc::c_void,
@@ -7963,485 +7474,55 @@ extern "C" {
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
-pub struct iovec {
-    pub iov_base: *mut ::libc::c_void,
-    pub iov_len: usize,
-}
-pub type sa_family_t = __sa_family_t;
-pub type socklen_t = __socklen_t;
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
 pub struct linger {
     pub l_onoff: ::libc::c_int,
     pub l_linger: ::libc::c_int,
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
-pub struct accept_filter_arg {
-    pub af_name: [::libc::c_char; 16usize],
-    pub af_arg: [::libc::c_char; 240usize],
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct sockaddr {
-    pub sa_len: ::libc::c_uchar,
-    pub sa_family: sa_family_t,
-    pub sa_data: [::libc::c_char; 14usize],
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct sockproto {
-    pub sp_family: ::libc::c_ushort,
-    pub sp_protocol: ::libc::c_ushort,
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct sockaddr_storage {
-    pub ss_len: ::libc::c_uchar,
-    pub ss_family: sa_family_t,
-    pub __ss_pad1: [::libc::c_char; 6usize],
-    pub __ss_align: i64,
-    pub __ss_pad2: [::libc::c_char; 112usize],
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct msghdr {
-    pub msg_name: *mut ::libc::c_void,
-    pub msg_namelen: socklen_t,
-    pub msg_iov: *mut iovec,
-    pub msg_iovlen: ::libc::c_int,
-    pub msg_control: *mut ::libc::c_void,
-    pub msg_controllen: socklen_t,
-    pub msg_flags: ::libc::c_int,
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct cmsghdr {
-    pub cmsg_len: socklen_t,
-    pub cmsg_level: ::libc::c_int,
-    pub cmsg_type: ::libc::c_int,
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct sock_timestamp_info {
-    pub st_info_flags: u32,
-    pub st_info_pad0: u32,
-    pub st_info_rsv: [u64; 7usize],
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct osockaddr {
-    pub sa_family: ::libc::c_ushort,
-    pub sa_data: [::libc::c_char; 14usize],
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct omsghdr {
-    pub msg_name: *mut ::libc::c_char,
-    pub msg_namelen: ::libc::c_int,
-    pub msg_iov: *mut iovec,
-    pub msg_iovlen: ::libc::c_int,
-    pub msg_accrights: *mut ::libc::c_char,
-    pub msg_accrightslen: ::libc::c_int,
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct sf_hdtr {
-    pub headers: *mut iovec,
-    pub hdr_cnt: ::libc::c_int,
-    pub trailers: *mut iovec,
-    pub trl_cnt: ::libc::c_int,
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct mmsghdr {
-    pub msg_hdr: msghdr,
-    pub msg_len: isize,
-}
-extern "C" {
-    pub fn socket(
-        domain: ::libc::c_int,
-        type_: ::libc::c_int,
-        protocol: ::libc::c_int,
-    ) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn recv(
-        sockfd: ::libc::c_int,
-        buf: *mut ::libc::c_void,
-        len: usize,
-        flags: ::libc::c_int,
-    ) -> isize;
-}
-extern "C" {
-    pub fn recvfrom(
-        sockfd: ::libc::c_int,
-        buf: *mut ::libc::c_void,
-        len: usize,
-        flags: ::libc::c_int,
-        src_addr: *mut sockaddr,
-        addrlen: *mut socklen_t,
-    ) -> isize;
-}
-extern "C" {
-    pub fn send(
-        sockfd: ::libc::c_int,
-        buf: *const ::libc::c_void,
-        len: usize,
-        flags: ::libc::c_int,
-    ) -> isize;
-}
-extern "C" {
-    pub fn sendto(
-        sockfd: ::libc::c_int,
-        buf: *const ::libc::c_void,
-        len: usize,
-        flags: ::libc::c_int,
-        dest_addr: *const sockaddr,
-        addrlen: socklen_t,
-    ) -> isize;
-}
-extern "C" {
-    pub fn accept(
-        sockfd: ::libc::c_int,
-        addr: *mut sockaddr,
-        addrlen: *mut socklen_t,
-    ) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn bind(sockfd: ::libc::c_int, addr: *const sockaddr, addrlen: socklen_t) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn connect(
-        sockfd: ::libc::c_int,
-        addr: *const sockaddr,
-        addrlen: socklen_t,
-    ) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn getpeername(
-        sockfd: ::libc::c_int,
-        addr: *mut sockaddr,
-        addrlen: *mut socklen_t,
-    ) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn getsockname(
-        sockfd: ::libc::c_int,
-        addr: *mut sockaddr,
-        addrlen: *mut socklen_t,
-    ) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn getsockopt(
-        sockfd: ::libc::c_int,
-        level: ::libc::c_int,
-        optname: ::libc::c_int,
-        optval: *mut ::libc::c_void,
-        optlen: *mut socklen_t,
-    ) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn listen(sockfd: ::libc::c_int, backlog: ::libc::c_int) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn setsockopt(
-        sockfd: ::libc::c_int,
-        level: ::libc::c_int,
-        optname: ::libc::c_int,
-        optval: *const ::libc::c_void,
-        optlen: socklen_t,
-    ) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn shutdown(sockfd: ::libc::c_int, how: ::libc::c_int) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn sockatmark(sockfd: ::libc::c_int) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn socketpair(
-        domain: ::libc::c_int,
-        type_: ::libc::c_int,
-        protocol: ::libc::c_int,
-        sv: *mut ::libc::c_int,
-    ) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn recvmsg(sockfd: ::libc::c_int, msg: *mut msghdr, flags: ::libc::c_int) -> isize;
-}
-extern "C" {
-    pub fn sendmsg(sockfd: ::libc::c_int, msg: *const msghdr, flags: ::libc::c_int) -> isize;
-}
-extern "C" {
-    pub fn sendmmsg(
-        sockfd: ::libc::c_int,
-        msgvec: *mut mmsghdr,
-        vlen: ::libc::c_uint,
-        flags: ::libc::c_int,
-    ) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn recvmmsg(
-        sockfd: ::libc::c_int,
-        msgvec: *mut mmsghdr,
-        vlen: ::libc::c_uint,
-        flags: ::libc::c_int,
-        timeout: *mut timespec,
-    ) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn ioctl(fd: ::libc::c_int, request: ::libc::c_int, ...) -> ::libc::c_int;
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct fiodgname_arg {
-    pub len: ::libc::c_int,
-    pub buf: *mut ::libc::c_void,
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
 pub struct in_addr {
-    pub s_addr: in_addr_t,
+    pub s_addr: u32_,
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct sockaddr_in {
-    pub sin_len: u8,
-    pub sin_family: sa_family_t,
-    pub sin_port: in_port_t,
+    pub sin_len: u8_,
+    pub sin_family: u8_,
+    pub sin_port: u16_,
     pub sin_addr: in_addr,
-    pub sin_zero: [::libc::c_char; 8usize],
+    pub sin_zero: [s8; 8usize],
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
-pub struct ip_mreq {
-    pub imr_multiaddr: in_addr,
-    pub imr_interface: in_addr,
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct ip_mreqn {
-    pub imr_multiaddr: in_addr,
-    pub imr_address: in_addr,
-    pub imr_ifindex: ::libc::c_int,
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct ip_mreq_source {
-    pub imr_multiaddr: in_addr,
-    pub imr_sourceaddr: in_addr,
-    pub imr_interface: in_addr,
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct group_req {
-    pub gr_interface: u32,
-    pub gr_group: sockaddr_storage,
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct group_source_req {
-    pub gsr_interface: u32,
-    pub gsr_group: sockaddr_storage,
-    pub gsr_source: sockaddr_storage,
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct in6_addr {
-    pub __bindgen_anon_1: in6_addr__bindgen_ty_1,
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct in6_addr__bindgen_ty_1 {
-    pub __u6_addr16: __BindgenUnionField<[u16; 8usize]>,
-    pub __u6_addr32: __BindgenUnionField<[u32; 4usize]>,
-    pub s6_addr: __BindgenUnionField<[::libc::c_uchar; 16usize]>,
-    pub bindgen_union_field: [u32; 4usize],
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct sockaddr_in6 {
-    pub sin6_family: sa_family_t,
-    pub sin6_port: in_port_t,
-    pub sin6_flowinfo: u32,
-    pub sin6_addr: in6_addr,
-    pub sin6_scope_id: u32,
-}
-extern "C" {
-    pub static in6addr_any: in6_addr;
-}
-extern "C" {
-    pub static in6addr_loopback: in6_addr;
-}
-extern "C" {
-    pub fn inet_addr(cp: *const ::libc::c_char) -> in_addr_t;
-}
-extern "C" {
-    pub fn inet_aton(cp: *const ::libc::c_char, inp: *mut in_addr) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn inet_ntoa(in_: in_addr) -> *mut ::libc::c_char;
-}
-extern "C" {
-    pub fn inet_ntop(
-        af: ::libc::c_int,
-        src: *const ::libc::c_void,
-        dst: *mut ::libc::c_char,
-        size: socklen_t,
-    ) -> *const ::libc::c_char;
-}
-extern "C" {
-    pub fn inet_pton(
-        af: ::libc::c_int,
-        src: *const ::libc::c_char,
-        dst: *mut ::libc::c_void,
-    ) -> ::libc::c_int;
-}
-extern "C" {
-    pub static mut h_errno: ::libc::c_int;
+pub struct sockaddr {
+    pub sa_len: u8_,
+    pub sa_family: u8_,
+    pub sa_data: [s8; 14usize],
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct hostent {
     pub h_name: *mut ::libc::c_char,
     pub h_aliases: *mut *mut ::libc::c_char,
-    pub h_addrtype: ::libc::c_int,
-    pub h_length: ::libc::c_int,
+    pub h_addrtype: u16_,
+    pub h_length: u16_,
     pub h_addr_list: *mut *mut ::libc::c_char,
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
-pub struct netent {
-    pub n_name: *mut ::libc::c_char,
-    pub n_aliases: *mut *mut ::libc::c_char,
-    pub n_addrtype: ::libc::c_int,
-    pub n_net: u32,
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct servent {
-    pub s_name: *mut ::libc::c_char,
-    pub s_aliases: *mut *mut ::libc::c_char,
-    pub s_port: ::libc::c_int,
-    pub s_proto: *mut ::libc::c_char,
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct protoent {
-    pub p_name: *mut ::libc::c_char,
-    pub p_aliases: *mut *mut ::libc::c_char,
-    pub p_proto: ::libc::c_int,
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct addrinfo {
-    pub ai_flags: ::libc::c_int,
-    pub ai_family: ::libc::c_int,
-    pub ai_socktype: ::libc::c_int,
-    pub ai_protocol: ::libc::c_int,
-    pub ai_addrlen: socklen_t,
-    pub ai_canonname: *mut ::libc::c_char,
-    pub ai_addr: *mut sockaddr,
-    pub ai_next: *mut addrinfo,
+pub struct pollsd {
+    pub socket: s32,
+    pub events: u32_,
+    pub revents: u32_,
 }
 extern "C" {
-    pub fn endhostent();
+    pub fn inet_addr(cp: *const ::libc::c_char) -> u32_;
 }
 extern "C" {
-    pub fn endnetent();
+    pub fn inet_aton(cp: *const ::libc::c_char, addr: *mut in_addr) -> s8;
 }
 extern "C" {
-    pub fn endprotoent();
-}
-extern "C" {
-    pub fn endservent();
-}
-extern "C" {
-    pub fn gethostbyname(name: *const ::libc::c_char) -> *mut hostent;
-}
-extern "C" {
-    pub fn gethostbyaddr(
-        addr: *const ::libc::c_void,
-        len: socklen_t,
-        type_: ::libc::c_int,
-    ) -> *mut hostent;
-}
-extern "C" {
-    pub fn gethostent() -> *mut hostent;
-}
-extern "C" {
-    pub fn getnetbyaddr(arg1: u32, arg2: ::libc::c_int) -> *mut netent;
-}
-extern "C" {
-    pub fn getnetbyname(arg1: *const ::libc::c_char) -> *mut netent;
-}
-extern "C" {
-    pub fn getnetent() -> *mut netent;
-}
-extern "C" {
-    pub fn getprotobyname(arg1: *const ::libc::c_char) -> *mut protoent;
-}
-extern "C" {
-    pub fn getprotobynumber(arg1: ::libc::c_int) -> *mut protoent;
-}
-extern "C" {
-    pub fn getprotoent() -> *mut protoent;
-}
-extern "C" {
-    pub fn getservbyname(arg1: *const ::libc::c_char, arg2: *const ::libc::c_char) -> *mut servent;
-}
-extern "C" {
-    pub fn getservbyport(arg1: ::libc::c_int, arg2: *const ::libc::c_char) -> *mut servent;
-}
-extern "C" {
-    pub fn getservent() -> *mut servent;
-}
-extern "C" {
-    pub fn sethostent(arg1: ::libc::c_int);
-}
-extern "C" {
-    pub fn setnetent(arg1: ::libc::c_int);
-}
-extern "C" {
-    pub fn setprotoent(arg1: ::libc::c_int);
-}
-extern "C" {
-    pub fn getnameinfo(
-        sa: *const sockaddr,
-        salen: socklen_t,
-        host: *mut ::libc::c_char,
-        hostlen: socklen_t,
-        serv: *mut ::libc::c_char,
-        servlen: socklen_t,
-        flags: ::libc::c_int,
-    ) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn getaddrinfo(
-        node: *const ::libc::c_char,
-        service: *const ::libc::c_char,
-        hints: *const addrinfo,
-        res: *mut *mut addrinfo,
-    ) -> ::libc::c_int;
-}
-extern "C" {
-    pub fn freeaddrinfo(ai: *mut addrinfo);
-}
-extern "C" {
-    pub fn gai_strerror(err: ::libc::c_int) -> *const ::libc::c_char;
-}
-extern "C" {
-    pub fn setservent(arg1: ::libc::c_int);
-}
-extern "C" {
-    pub fn freehostent(he: *mut hostent);
-}
-extern "C" {
-    pub fn herror(s: *const ::libc::c_char);
-}
-extern "C" {
-    pub fn hstrerror(err: ::libc::c_int) -> *const ::libc::c_char;
+    pub fn inet_ntoa(addr: in_addr) -> *mut ::libc::c_char;
 }
 extern "C" {
     pub fn if_config(
@@ -8460,16 +7541,6 @@ extern "C" {
         use_dhcp: bool,
         max_retries: ::libc::c_int,
     ) -> s32;
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct pollsd {
-    pub socket: s32,
-    pub events: u32_,
-    pub revents: u32_,
-}
-extern "C" {
-    pub fn _net_convert_error(ios_retval: s32) -> s32;
 }
 extern "C" {
     pub fn net_init() -> s32;
@@ -8559,7 +7630,7 @@ extern "C" {
         level: u32_,
         optname: u32_,
         optval: *const ::libc::c_void,
-        optlen: *mut u32_,
+        optlen: u32_,
     ) -> s32;
 }
 extern "C" {
@@ -8570,6 +7641,9 @@ extern "C" {
         optval: *const ::libc::c_void,
         optlen: u32_,
     ) -> s32;
+}
+extern "C" {
+    pub fn net_getsockname(s: s32, addr: *mut sockaddr, addrlen: *mut u32_) -> s32;
 }
 extern "C" {
     pub fn net_ioctl(s: s32, cmd: u32_, argp: *mut ::libc::c_void) -> s32;
