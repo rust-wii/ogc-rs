@@ -89,7 +89,7 @@ fn main() {
             get_clang_version()
         ))
         .clang_arg(format!(
-            "-isystem{}/devkitPPC/lib/gcc/powerpc-eabi/13.2.0/include",
+            "-isystem{}/devkitPPC/lib/gcc/powerpc-eabi/13.1.0/include",
             dkp_path
         ))
         .clang_arg(format!("-I{}/libogc/include", dkp_path))
