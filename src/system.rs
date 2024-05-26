@@ -373,26 +373,18 @@ impl System {
     }
 
     /// Set Reset Callback
-    pub fn set_reset_callback<F>(callback: Box<F>) {
-        // TODO: Check if this implementation can be changed.
-        let ptr = Box::into_raw(callback);
-
+    pub fn set_reset_callback(callback: extern "C" fn(irq: u32, ctx: *mut c_void)) {
         unsafe {
-            let code: extern "C" fn(irq: u32, ctx: *mut c_void) = mem::transmute(ptr);
             // TODO: Do something with the returned callback.
-            let _ = ffi::SYS_SetResetCallback(Some(code));
+            let _ = ffi::SYS_SetResetCallback(Some(callback));
         }
     }
 
     /// Set Power Callback
-    pub fn set_power_callback<F>(callback: Box<F>) {
-        // TODO: Check if this implementation can be changed.
-        let ptr = Box::into_raw(callback);
-
+    pub fn set_power_callback(callback: extern "C" fn()) {
         unsafe {
-            let code: extern "C" fn() = mem::transmute(ptr);
             // TODO: Do something with the returned callback.
-            let _ = ffi::SYS_SetPowerCallback(Some(code));
+            let _ = ffi::SYS_SetPowerCallback(Some(callback));
         }
     }
 
