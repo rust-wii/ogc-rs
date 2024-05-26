@@ -1297,6 +1297,11 @@ pub const VI_MAX_WIDTH_MPAL: u32 = 720;
 pub const VI_MAX_HEIGHT_MPAL: u32 = 480;
 pub const VI_MAX_WIDTH_EURGB60: u32 = 720;
 pub const VI_MAX_HEIGHT_EURGB60: u32 = 480;
+pub const HW_IPC_PPCBASE: u32 = 3439329280;
+pub const HW_IPC_PPC_SEND: u32 = 1;
+pub const HW_IPC_PPC_MSG_ACK: u32 = 2;
+pub const HW_IPC_PPC_CTRL_ACK: u32 = 4;
+pub const HW_IPC_PPC_CTRL_REGS: u32 = 6;
 pub const IPC_HEAP: i32 = -1;
 pub const IPC_OPEN_NONE: u32 = 0;
 pub const IPC_OPEN_READ: u32 = 1;
@@ -3149,6 +3154,9 @@ extern "C" {
     pub fn c_guMtxQuat(m: *mut [f32_; 4usize], a: *const guQuaternion);
 }
 extern "C" {
+    pub fn c_guMtx44Concat(a: *mut [f32_; 4usize], b: *mut [f32_; 4usize], ab: *mut [f32_; 4usize]);
+}
+extern "C" {
     pub fn guMtx44Identity(mt: *mut [f32_; 4usize]);
 }
 extern "C" {
@@ -4030,6 +4038,10 @@ extern "C" {
 extern "C" {
     #[doc = " \\fn u16 GX_GetTexObjWidth(const GXTexObj* obj)\n \\brief Returns the texture width described by texture object \\a obj.\n\n \\note Use GX_InitTexObj() or GX_InitTexObjCI() to initialize the texture width.\n\n \\param[in] obj ptr to a texture object\n\n \\return texture width"]
     pub fn GX_GetTexObjWidth(obj: *const GXTexObj) -> u16_;
+}
+extern "C" {
+    #[doc = " \\fn void GX_GetTexObjLOD(const GXTexObj* obj, f32 *minlod, f32 *maxlod)\n \\brief Returns the min and max LOD values for the texture object \\a obj.\n\n \\note Use GX_InitTexObjLOD(), GX_InitTexObjMinLOD() or GX_InitTexObjMaxLOD()\n to initialize the texture minimum and maximum LOD.\n\n \\param[in] obj ptr to a texture object\n \\param[out] minlod minimum LOD value from 0.0 - 10.0 inclusive\n \\param[out] maxlod maximum LOD value from 0.0 - 10.0 inclusive\n\n \\return none"]
+    pub fn GX_GetTexObjLOD(obj: *const GXTexObj, minlod: *mut f32_, maxlod: *mut f32_);
 }
 extern "C" {
     #[doc = " \\fn void GX_GetTexObjAll(const GXTexObj* obj, void** image_ptr, u16* width, u16* height, u8* format, u8* wrap_s, u8* wrap_t, u8* mipmap);\n \\brief Returns the parameters described by a texture object. Texture objects are used to describe all the parameters associated with a texture, including size, format, wrap modes, filter modes, etc. Texture objects are initialized using either GX_InitTexObj() or, for color index format textures, GX_InitTexObjCI().\n\n \\param[in] obj ptr to a texture object\n \\param[out] image_ptr Returns a physical pointer to the image data for a texture.\n \\param[out] width Returns the width of the texture or LOD 0 for mipmaps\n \\param[out] height Returns the height of the texture or LOD 0 for mipmaps\n \\param[out] format Returns the texel format\n \\param[out] mipmap Returns the mipmap enable flag.\n\n \\return none"]

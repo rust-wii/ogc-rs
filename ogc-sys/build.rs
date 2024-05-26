@@ -64,6 +64,9 @@ fn get_clang_version() -> String {
 }
 
 fn main() {
+	if std::env::var("DOCS_RS").is_ok() {
+		return;
+	}
 	let dkp_path = env::var("DEVKITPRO").expect("devkitPro is needed to use this crate");
 	println!(
 		"cargo:rustc-link-search=native={}/devkitPPC/powerpc-eabi/lib",
