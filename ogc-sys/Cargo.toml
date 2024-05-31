@@ -16,4 +16,5 @@ libc = "0.2"
 
 [build-dependencies]
 bindgen = "0.69.4"
+doxygen-rs = "0.4"
 regex = "1.5"
