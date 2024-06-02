@@ -140,7 +140,7 @@ impl System {
     }
 
     /// Set the alarm parameters for a one-shot alarm, add to the list of alarms and start.
-    pub fn set_alarm<F>(context: u32, fire_time: Duration, callback: Box<F>) -> Result<()>
+    pub fn set_alarm<F>(context: u32, fire_time: Duration, callback: extern "C" fn(alarm: u32, cb_arg: *mut c_void)) -> Result<()>
     where
         F: Fn(u32, *mut c_void),
     {
@@ -152,9 +152,7 @@ impl System {
             };
 
             // TODO: Check if this implementation can be changed.
-            let ptr = Box::into_raw(callback);
-            let code: extern "C" fn(alarm: u32, cb_arg: *mut c_void) = mem::transmute(ptr);
-            let r = ffi::SYS_SetAlarm(context, timespec, Some(code), ptr::null_mut());
+            let r = ffi::SYS_SetAlarm(context, timespec, Some(callback), ptr::null_mut());
 
             if r < 0 {
                 Err(OgcError::System("system failed to set alarm".into()))
