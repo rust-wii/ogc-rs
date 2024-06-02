@@ -25,6 +25,9 @@
 #![feature(slice_ptr_get)]
 #![feature(allocator_api)]
 #![feature(strict_provenance)]
+#![feature(generic_const_exprs)]
+
+pub mod ios;
 
 extern crate alloc;
 
