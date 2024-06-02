@@ -66,7 +66,7 @@ pub fn close(fd: FileDescriptor) -> Result<(), Error> {
             Err(Error::try_from(val).expect("Error does not contain a known error code"))
         }
         val if { val >= 0 } => Ok(()),
-        _ => panic!("{val:?} : Unknown error code reached"),
+        val => panic!("{val:?} : Unknown error code reached"),
     }
 }
 
@@ -83,7 +83,7 @@ pub fn read(fd: FileDescriptor, buf: &mut [u8]) -> Result<usize, Error> {
             Err(Error::try_from(val).expect("Error does not contain a known error code"))
         }
         val if { val >= 0 } => Ok(usize::try_from(val).expect("val did not fit in a `usize`")),
-        _ => panic!("{val:?} : Unknown error code reached"),
+        val => panic!("{val:?} : Unknown error code reached"),
     }
 }
 
@@ -100,7 +100,7 @@ pub fn write(fd: FileDescriptor, buf: &[u8]) -> Result<usize, Error> {
             Err(Error::try_from(val).expect("Error does not contain a known error code"))
         }
         val if { val >= 0 } => Ok(usize::try_from(val).expect("val did not fit in a `usize`")),
-        _ => panic!("{val:?} : Unknown error code reached"),
+        val => panic!("{val:?} : Unknown error code reached"),
     }
 }
 
@@ -126,7 +126,8 @@ pub fn seek(fd: FileDescriptor, offset: i32, mode: SeekMode) -> Result<(), Error
         val if { val == -4 || val == -5 || val == -6 || val == -8 || val == -22 } => {
             Err(Error::try_from(val).expect("Error does not contain a known error code"))
         }
-        _ => Ok(()),
+        val if { val >= 0 } => Ok(()),
+        val => panic!("{val:?} : Unknown error code reached"),
     }
 }
 
@@ -157,7 +158,8 @@ pub fn ioctl<IOCTL: Into<i32>>(
         val if { val == -4 || val == -5 || val == -6 || val == -8 || val == -22 } => {
             Err(Error::try_from(val).expect("Error does not contain a known error code"))
         }
-        _ => Ok(()),
+        val if { val >= 0 } => Ok(()),
+        val => panic!("{val:?} : Unknown error code reached"),
     }
 }
 
@@ -211,6 +213,7 @@ where
         val if { val == -4 || val == -5 || val == -6 || val == -8 || val == -22 } => {
             Err(Error::try_from(val).expect("Error does not contain a known error code"))
         }
-        _ => Ok(()),
+        val if { val >= 0 } => Ok(()),
+        val => panic!("{val:?} : Unknown error code reached"),
     }
 }
