@@ -54,7 +54,8 @@ pub fn open(file_path: &CStr, file_mode: Mode) -> Result<FileDescriptor, Error> 
         val if { val == -4 || val == -5 || val == -6 || val == -8 || val == -22 } => {
             Err(Error::try_from(val).expect("Error does not contain a known error code"))
         }
-        val => Ok(FileDescriptor(val)),
+        val if { val >= 0 } => Ok(FileDescriptor(val)),
+        _ => panic!("Unknown error code reached"),
     }
 }
 
@@ -63,7 +64,8 @@ pub fn close(fd: FileDescriptor) -> Result<(), Error> {
         val if { val == -4 || val == -5 || val == -6 || val == -8 || val == -22 } => {
             Err(Error::try_from(val).expect("Error does not contain a known error code"))
         }
-        _ => Ok(()),
+        val if { val >= 0 } => Ok(()),
+        _ => panic!("Unknown error code reached"),
     }
 }
 
@@ -79,7 +81,8 @@ pub fn read(fd: FileDescriptor, buf: &mut [u8]) -> Result<usize, Error> {
         val if { val == -4 || val == -5 || val == -6 || val == -8 || val == -22 } => {
             Err(Error::try_from(val).expect("Error does not contain a known error code"))
         }
-        val => Ok(usize::try_from(val).expect("val did not fit in a `usize`")),
+        val if { val >= 0 } => Ok(usize::try_from(val).expect("val did not fit in a `usize`")),
+        _ => panic!("Unknown error code reached"),
     }
 }
 
@@ -95,7 +98,8 @@ pub fn write(fd: FileDescriptor, buf: &[u8]) -> Result<usize, Error> {
         val if { val == -4 || val == -5 || val == -6 || val == -8 || val == -22 } => {
             Err(Error::try_from(val).expect("Error does not contain a known error code"))
         }
-        val => Ok(usize::try_from(val).expect("val did not fit in a `usize`")),
+        val if { val >= 0 } => Ok(usize::try_from(val).expect("val did not fit in a `usize`")),
+        _ => panic!("Unknown error code reached"),
     }
 }
 
