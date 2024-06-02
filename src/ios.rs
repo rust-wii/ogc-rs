@@ -34,6 +34,8 @@ impl TryFrom<i32> for Error {
     fn try_from(value: i32) -> Result<Self, Self::Error> {
         match value {
             -4 => Ok(Self::Invalid),
+            -5 => Ok(Self::NoHeap),
+            -6 => Ok(Self::NoEntry),
             -8 => Ok(Self::QueueFull),
             -22 => Ok(Self::NoMemory),
             _ => Err(()),
