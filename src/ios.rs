@@ -20,6 +20,7 @@ impl From<Mode> for u32 {
 }
 
 #[repr(i32)]
+#[derive(Copy, Clone, Debug)]
 pub enum Error {
     Invalid = -4,
     NoHeap = -5,
@@ -55,7 +56,7 @@ pub fn open(file_path: &CStr, file_mode: Mode) -> Result<FileDescriptor, Error> 
             Err(Error::try_from(val).expect("Error does not contain a known error code"))
         }
         val if { val >= 0 } => Ok(FileDescriptor(val)),
-        _ => panic!("Unknown error code reached"),
+        val => panic!("{val:?} : {val:?} : Unknown error code reached"),
     }
 }
 
@@ -65,7 +66,7 @@ pub fn close(fd: FileDescriptor) -> Result<(), Error> {
             Err(Error::try_from(val).expect("Error does not contain a known error code"))
         }
         val if { val >= 0 } => Ok(()),
-        _ => panic!("Unknown error code reached"),
+        _ => panic!("{val:?} : Unknown error code reached"),
     }
 }
 
@@ -82,7 +83,7 @@ pub fn read(fd: FileDescriptor, buf: &mut [u8]) -> Result<usize, Error> {
             Err(Error::try_from(val).expect("Error does not contain a known error code"))
         }
         val if { val >= 0 } => Ok(usize::try_from(val).expect("val did not fit in a `usize`")),
-        _ => panic!("Unknown error code reached"),
+        _ => panic!("{val:?} : Unknown error code reached"),
     }
 }
 
@@ -99,7 +100,7 @@ pub fn write(fd: FileDescriptor, buf: &[u8]) -> Result<usize, Error> {
             Err(Error::try_from(val).expect("Error does not contain a known error code"))
         }
         val if { val >= 0 } => Ok(usize::try_from(val).expect("val did not fit in a `usize`")),
-        _ => panic!("Unknown error code reached"),
+        _ => panic!("{val:?} : Unknown error code reached"),
     }
 }
 
