@@ -371,6 +371,9 @@ impl System {
     }
 
     /// Set Reset Callback
+    ///
+    /// Note: `ctx` is always null in the current version of libogc,
+    /// but is still a required parameter.
     pub fn set_reset_callback(callback: extern "C" fn(irq: u32, ctx: *mut c_void)) {
         unsafe {
             // TODO: Do something with the returned callback.
