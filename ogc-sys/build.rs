@@ -65,7 +65,8 @@ fn get_clang_version() -> String {
 }
 
 fn main() {
-	if std::env::var("DOCS_RS").is_ok() {
+	// docs.rs and CI don't require linking or updating ogc.rs (and will always fail if we try to)
+	if std::env::var("DOCS_RS").is_ok() || std::env::var("CI").is_ok() {
 		return;
 	}
 	let dkp_path = env::var("DEVKITPRO").expect("devkitPro is needed to use this crate");
