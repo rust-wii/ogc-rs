@@ -1,5 +1,6 @@
 extern crate bindgen;
 
+use bindgen::callbacks::ParseCallbacks;
 use regex::Regex;
 use std::env;
 use std::process::Command;
@@ -64,6 +65,10 @@ fn get_clang_version() -> String {
 }
 
 fn main() {
+	// docs.rs and CI don't require linking or updating ogc.rs (and will always fail if we try to)
+	if std::env::var("DOCS_RS").is_ok() || std::env::var("CI").is_ok() {
+		return;
+	}
 	let dkp_path = env::var("DEVKITPRO").expect("devkitPro is needed to use this crate");
 	println!(
 		"cargo:rustc-link-search=native={}/devkitPPC/powerpc-eabi/lib",
@@ -86,6 +91,24 @@ fn main() {
 	println!("cargo:rustc-link-lib=static=wiiuse");
 
 	println!("cargo:rerun-if-changed=wrapper.h");
+	#[derive(Debug)]
+	struct CBParser;
+	impl ParseCallbacks for CBParser {
+		fn process_comment(&self, comment: &str) -> Option<String> {
+			Some(doxygen_rs::transform(comment))
+	  }
+	  fn header_file(&self, filename: &str) {
+			println!("cargo:rerun-if-changed={}", filename);
+	  }
+ 
+	  fn include_file(&self, filename: &str) {
+			println!("cargo:rerun-if-changed={}", filename);
+	  }
+ 
+	  fn read_env_var(&self, key: &str) {
+			println!("cargo:rerun-if-env-changed={}", key);
+	  }
+	}
 	let mut bindings = bindgen::Builder::default()
 		.header("wrapper.h")
 		.rust_target(bindgen::RustTarget::Nightly)
@@ -121,7 +144,7 @@ fn main() {
 		.clang_arg("-Wno-macro-redefined")
 		.clang_arg("-Wno-incompatible-library-redeclaration")
 		.clang_arg("-DHW_RVL")
-		.parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
+		.parse_callbacks(Box::new(CBParser))
 		.generate()
 		.expect("Unable to generate bindings");
 
