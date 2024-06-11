@@ -28,6 +28,12 @@
 
 extern crate alloc;
 
+/// Interprocess Control / IOS Implementation
+///
+/// This module provides various low level functions to help with opening and using the underlying
+/// `IOS` subsystems
+pub mod ios;
+
 // Custom Error Implementation
 pub mod error;
 pub use error::{OgcError, Result};
@@ -117,7 +123,7 @@ pub mod prelude {
     pub use crate::gx::*;
     pub use crate::input::*;
     pub use crate::system::*;
-    pub use crate::tpl::*;
+
     pub use crate::video::*;
     pub use crate::{print, println};
 
