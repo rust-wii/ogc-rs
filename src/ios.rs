@@ -231,7 +231,7 @@ pub fn ioctl<IOCTL: Into<i32>>(
     }
 }
 
-/// Attempts to call ioctl using a file descriptro with multiple input and output buffers
+/// Attempts to call ioctl using a file descriptor with multiple input and output buffers
 ///
 /// Attempts to call `ioctl` using `fd` with `bufs_in` and `bufs_out`
 ///
