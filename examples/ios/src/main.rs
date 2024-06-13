@@ -42,5 +42,7 @@ fn main(_argc: isize, _argv: *const *const u8) -> isize {
         let _ = ios::close(fd);
     }
 
-    loop {}
+    loop {
+        core::hint::spin_loop();
+    }
 }
