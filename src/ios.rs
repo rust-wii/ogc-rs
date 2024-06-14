@@ -69,7 +69,7 @@ pub struct FileDescriptor(i32);
 /// Panics if an unknown error code is encountered.
 ///
 pub fn open(file_path: &CStr, file_mode: Mode) -> Result<FileDescriptor, Error> {
-    if file_path.to_bytes_with_nul().len() > 64 {
+    if file_path.count_bytes() + 1 > 64 {
         return Err(Error::FilePathLengthTooLong);
     }
 
