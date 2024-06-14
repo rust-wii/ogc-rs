@@ -140,40 +140,51 @@ impl System {
     }
 
     /// Set the alarm parameters for a one-shot alarm, add to the list of alarms and start.
-    pub fn set_alarm<F>(context: u32, fire_time: Duration, callback: extern "C" fn(alarm: u32, cb_arg: *mut c_void)) -> Result<()>
-    where
-        F: Fn(u32, *mut c_void),
-    {
-        unsafe {
-            // Convert Duration to timespec
-            let timespec: *const ffi::timespec = &ffi::timespec {
-                tv_sec: fire_time.as_secs() as i64,
-                tv_nsec: fire_time.as_nanos() as i32,
-            };
+    pub fn set_alarm<T>(
+        context: u32, 
+        fire_time: Duration, 
+        callback: extern "C" fn(alarm: u32, cb_arg: *const c_void), 
+        cb_arg: Option<&'static T>
+    ) -> Result<()>{
+        // Convert Duration to timespec
+        let timespec: *const ffi::timespec = &ffi::timespec {
+            tv_sec: fire_time.as_secs() as i64,
+            tv_nsec: fire_time.as_nanos() as i32,
+        };
 
-            // TODO: Check if this implementation can be changed.
-            let r = ffi::SYS_SetAlarm(context, timespec, Some(callback), ptr::null_mut());
+        let callback = unsafe { 
+            mem::transmute::<
+                extern "C" fn(alarm: u32, cb_arg: *const c_void),
+                extern "C" fn(alarm: u32, cb_arg: *mut c_void)
+            >(callback)
+        };
+        let r = unsafe { ffi::SYS_SetAlarm(
+            context, 
+            timespec, 
+            Some(callback), 
+            cb_arg.map_or(ptr::null(), ptr::from_ref)
+                .cast_mut()
+                .cast()
+        ) };
 
-            if r < 0 {
-                Err(OgcError::System("system failed to set alarm".into()))
-            } else {
-                Ok(())
-            }
+        if r < 0 {
+            Err(OgcError::System("system failed to set alarm".into()))
+        } else {
+            Ok(())
         }
     }
 
     /// Set the alarm parameters for a periodic alarm, add to the list of alarms and start.
     /// The alarm and interval persists as long as SYS_CancelAlarm() isn't called.
-    pub fn set_periodic_alarm<F>(
+    pub fn set_periodic_alarm<T>(
         context: u32,
         time_start: Duration,
         time_period: Duration,
-        callback: Box<F>,
+        callback: extern "C" fn(alarm: u32, cb_arg: *const c_void),
+        // TODO: should we assert
+        callback_data: Option<&'static T>,
     ) -> Result<()>
-    where
-        F: Fn(u32, *mut c_void),
     {
-        unsafe {
             // Convert Duration to timespec
             let timespec_start: *const ffi::timespec = &ffi::timespec {
                 tv_sec: time_start.as_secs() as i64,
@@ -184,17 +195,28 @@ impl System {
                 tv_sec: time_period.as_secs() as i64,
                 tv_nsec: time_period.as_nanos() as i32,
             };
-
-            // TODO: Check if this implementation can be changed.
-            let ptr = Box::into_raw(callback);
-            let code: extern "C" fn(alarm: u32, cb_arg: *mut c_void) = mem::transmute(ptr);
-            let r = ffi::SYS_SetPeriodicAlarm(
-                context,
-                timespec_start,
-                timespec_period,
-                Some(code),
-                ptr::null_mut(),
-            );
+            // `callback` takes an *const c_void, to make it clear to the user
+            // we do not promise exclusive access to the stored data.
+            // However, SYS_* callback registrations expect *mut.
+            // *const and *mut are ABI compatible, but fn pointers
+            // using them have to be transmuted unsafely.
+            let callback = unsafe { 
+                mem::transmute::<
+                    extern "C" fn(alarm: u32, cb_arg: *const c_void),
+                    extern "C" fn(alarm: u32, cb_arg: *mut c_void)
+                >(callback)
+            };
+            let r = unsafe {
+                ffi::SYS_SetPeriodicAlarm(
+                    context,
+                    timespec_start,
+                    timespec_period,
+                    Some(callback),
+                    callback_data.map_or(ptr::null(), ptr::from_ref)
+                        .cast_mut()
+                        .cast(),
+                )
+            };
 
             if r < 0 {
                 Err(OgcError::System(
@@ -203,7 +225,6 @@ impl System {
             } else {
                 Ok(())
             }
-        }
     }
 
     /// Init Font
