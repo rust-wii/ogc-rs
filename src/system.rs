@@ -143,7 +143,7 @@ impl System {
     pub fn set_alarm<T>(
         context: u32, 
         fire_time: Duration, 
-        callback: extern "C" fn(alarm: u32, cb_arg: *const c_void), 
+        callback: extern "C" fn(alarm: u32, cb_arg: Option<&'static T>), 
         cb_arg: Option<&'static T>
     ) -> Result<()>{
         // Convert Duration to timespec
@@ -152,9 +152,13 @@ impl System {
             tv_nsec: fire_time.as_nanos() as i32,
         };
 
+        // Option<&T> is ABI compatible with *mut T.
+        // *mut T is ABI compatible with *mut U
+        // if <T as Pointee>::Metadata == <U as Pointee>::Metadata.
+        // For all Sized types, <T as Pointee>::Metadata = ().
         let callback = unsafe { 
             mem::transmute::<
-                extern "C" fn(alarm: u32, cb_arg: *const c_void),
+                extern "C" fn(alarm: u32, cb_arg: Option<&'static T>),
                 extern "C" fn(alarm: u32, cb_arg: *mut c_void)
             >(callback)
         };
@@ -180,8 +184,7 @@ impl System {
         context: u32,
         time_start: Duration,
         time_period: Duration,
-        callback: extern "C" fn(alarm: u32, cb_arg: *const c_void),
-        // TODO: should we assert
+        callback: extern "C" fn(alarm: u32, cb_arg: Option<&'static T>),
         callback_data: Option<&'static T>,
     ) -> Result<()>
     {
@@ -195,14 +198,10 @@ impl System {
                 tv_sec: time_period.as_secs() as i64,
                 tv_nsec: time_period.as_nanos() as i32,
             };
-            // `callback` takes an *const c_void, to make it clear to the user
-            // we do not promise exclusive access to the stored data.
-            // However, SYS_* callback registrations expect *mut.
-            // *const and *mut are ABI compatible, but fn pointers
-            // using them have to be transmuted unsafely.
+            // See set_alarm for safety explanation.
             let callback = unsafe { 
                 mem::transmute::<
-                    extern "C" fn(alarm: u32, cb_arg: *const c_void),
+                    extern "C" fn(alarm: u32, cb_arg: Option<&'static T>),
                     extern "C" fn(alarm: u32, cb_arg: *mut c_void)
                 >(callback)
             };
