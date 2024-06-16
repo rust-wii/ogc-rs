@@ -4,8 +4,8 @@
     "data-layout": "E-m:e-p:32:32-Fn32-i64:64-n32",
     "dynamic-linking": false,
     "env": "newlib",
-    "exe-suffix": ".elf",
     "executables": true,
+    "has-elf-tls": false,
     "has-rpath": true,
     "llvm-target": "powerpc-unknown-eabi",
     "linker": "powerpc-eabi-gcc",
@@ -15,9 +15,7 @@
     "pre-link-args": {
         "gcc": [
             "-mrvl",
-            "-mcpu=750",
             "-meabi",
-            "-msdata=eabi",
             "-mhard-float"
         ]
     },
