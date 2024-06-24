@@ -36,6 +36,14 @@ pub enum Error {
     NoMemory = -22,
     /// The provided file path was too long.
     FilePathLengthTooLong,
+    /// An Unknown error code was returned.
+    UnknownErrorCode(i32),
+    /// The provided buffer is too long
+    BufferTooLong(usize),
+    /// The provided amount of inputs to [`ioctlv`] are too many
+    TooManyInputs(usize),
+    /// The provided amount of outputs to [`ioctlv`] are too many
+    TooManyOutputs(usize),
 }
 
 impl TryFrom<i32> for Error {
@@ -65,9 +73,6 @@ pub struct FileDescriptor(i32);
 /// # Errors
 /// See [`Error`]
 ///
-/// # Panics
-/// Panics if an unknown error code is encountered.
-///
 pub fn open(file_path: &CStr, file_mode: Mode) -> Result<FileDescriptor, Error> {
     if file_path.count_bytes() + 1 > 64 {
         return Err(Error::FilePathLengthTooLong);
@@ -75,10 +80,10 @@ pub fn open(file_path: &CStr, file_mode: Mode) -> Result<FileDescriptor, Error> 
 
     match unsafe { ogc_sys::IOS_Open(file_path.as_ptr().cast(), file_mode.into()) } {
         val if { val == -4 || val == -5 || val == -6 || val == -8 || val == -22 } => {
-            Err(Error::try_from(val).expect("Error does not contain a known error code"))
+            Err(Error::try_from(val).map_err(|_| Error::UnknownErrorCode(val))?)
         }
         val if { val >= 0 } => Ok(FileDescriptor(val)),
-        val => panic!("{val:?}: Unknown error code reached"),
+        val => Err(Error::UnknownErrorCode(val)),
     }
 }
 /// Attempts to close an open file descriptor
@@ -86,16 +91,13 @@ pub fn open(file_path: &CStr, file_mode: Mode) -> Result<FileDescriptor, Error> 
 /// # Errors
 /// See [`Error`]
 ///
-/// # Panics
-/// Panics if an unknown error code is encountered.
-///
 pub fn close(fd: FileDescriptor) -> Result<(), Error> {
     match unsafe { ogc_sys::IOS_Close(fd.0) } {
         val if { val == -4 || val == -5 || val == -6 || val == -8 || val == -22 } => {
-            Err(Error::try_from(val).expect("Error does not contain a known error code"))
+            Err(Error::try_from(val).map_err(|_| Error::UnknownErrorCode(val))?)
         }
         val if { val >= 0 } => Ok(()),
-        val => panic!("{val:?} : Unknown error code reached"),
+        val => Err(Error::UnknownErrorCode(val)),
     }
 }
 
@@ -106,22 +108,20 @@ pub fn close(fd: FileDescriptor) -> Result<(), Error> {
 /// # Errors
 /// See [`Error`]
 ///
-/// # Panics
-/// Panics if an unknown error code is encountered.
-pub fn read(fd: FileDescriptor, buf: &mut [u8]) -> Result<usize, Error> {
+pub fn read(fd: FileDescriptor, buf: &mut [u8]) -> Result<i32, Error> {
     let (ptr, len) = (buf.as_mut_ptr(), buf.len());
     match unsafe {
         ogc_sys::IOS_Read(
             fd.0,
             ptr.cast(),
-            len.try_into().expect("buffer length exceeds i32::MAX"),
+            len.try_into().map_err(|_| Error::BufferTooLong(len))?,
         )
     } {
         val if { val == -4 || val == -5 || val == -6 || val == -8 || val == -22 } => {
-            Err(Error::try_from(val).expect("Error does not contain a known error code"))
+            Err(Error::try_from(val).map_err(|_| Error::UnknownErrorCode(val))?)
         }
-        val if { val >= 0 } => Ok(usize::try_from(val).expect("val did not fit in a `usize`")),
-        val => panic!("{val:?} : Unknown error code reached"),
+        val if { val >= 0 } => Ok(val),
+        val => Err(Error::UnknownErrorCode(val)),
     }
 }
 
@@ -132,22 +132,20 @@ pub fn read(fd: FileDescriptor, buf: &mut [u8]) -> Result<usize, Error> {
 /// # Errors
 /// See [`Error`]
 ///
-/// # Panics
-/// Panics if an unknown error code is encountered.
-pub fn write(fd: FileDescriptor, buf: &[u8]) -> Result<usize, Error> {
+pub fn write(fd: FileDescriptor, buf: &[u8]) -> Result<i32, Error> {
     let (ptr, len) = (buf.as_ptr(), buf.len());
     match unsafe {
         ogc_sys::IOS_Write(
             fd.0,
             ptr.cast(),
-            len.try_into().expect("buffer length exceeds i32::MAX"),
+            len.try_into().map_err(|_| Error::BufferTooLong(len))?,
         )
     } {
         val if { val == -4 || val == -5 || val == -6 || val == -8 || val == -22 } => {
-            Err(Error::try_from(val).expect("Error does not contain a known error code"))
+            Err(Error::try_from(val).map_err(|_| Error::UnknownErrorCode(val))?)
         }
-        val if { val >= 0 } => Ok(usize::try_from(val).expect("val did not fit in a `usize`")),
-        val => panic!("{val:?} : Unknown error code reached"),
+        val if { val >= 0 } => Ok(val),
+        val => Err(Error::UnknownErrorCode(val)),
     }
 }
 
@@ -178,15 +176,13 @@ impl From<SeekMode> for i32 {
 /// # Errors
 /// See [`Error`]
 ///
-/// # Panics
-/// Panics if an unknown error code is encountered.
 pub fn seek(fd: FileDescriptor, offset: i32, mode: SeekMode) -> Result<(), Error> {
     match unsafe { ogc_sys::IOS_Seek(fd.0, offset, mode.into()) } {
         val if { val == -4 || val == -5 || val == -6 || val == -8 || val == -22 } => {
-            Err(Error::try_from(val).expect("Error does not contain a known error code"))
+            Err(Error::try_from(val).map_err(|_| Error::UnknownErrorCode(val))?)
         }
         val if { val >= 0 } => Ok(()),
-        val => panic!("{val:?} : Unknown error code reached"),
+        val => Err(Error::UnknownErrorCode(val)),
     }
 }
 
@@ -197,8 +193,6 @@ pub fn seek(fd: FileDescriptor, offset: i32, mode: SeekMode) -> Result<(), Error
 /// # Errors
 /// See [`Error`]
 ///
-/// # Panics
-/// Panics if an unknown error code is encountered.
 pub fn ioctl<IOCTL: Into<i32>>(
     fd: FileDescriptor,
     ioctl: IOCTL,
@@ -216,18 +210,18 @@ pub fn ioctl<IOCTL: Into<i32>>(
             in_ptr.cast_mut().cast(),
             in_len
                 .try_into()
-                .expect("In buffer's length exceeds i32::MAX"),
+                .map_err(|_| Error::BufferTooLong(in_len))?,
             out_ptr.cast(),
             out_len
                 .try_into()
-                .expect("Out buffer length exceeds i32::MAX"),
+                .map_err(|_| Error::BufferTooLong(out_len))?,
         )
     } {
         val if { val == -4 || val == -5 || val == -6 || val == -8 || val == -22 } => {
-            Err(Error::try_from(val).expect("Error does not contain a known error code"))
+            Err(Error::try_from(val).map_err(|_| Error::UnknownErrorCode(val))?)
         }
         val if { val >= 0 } => Ok(()),
-        val => panic!("{val:?} : Unknown error code reached"),
+        val => Err(Error::UnknownErrorCode(val)),
     }
 }
 
@@ -238,8 +232,6 @@ pub fn ioctl<IOCTL: Into<i32>>(
 /// # Errors
 /// See [`Error`]
 ///
-/// # Panics
-/// Panics if an unknown error code is reached.
 pub fn ioctlv<
     const COUNT_IN: usize,
     const COUNT_OUT: usize,
@@ -269,7 +261,7 @@ pub fn ioctlv<
             len: buf_in
                 .len()
                 .try_into()
-                .expect("In buffer length exceeds u32::MAX"),
+                .map_err(|_| Error::BufferTooLong(buf_in.len()))?,
         }
     }
 
@@ -279,7 +271,7 @@ pub fn ioctlv<
             len: buf_out
                 .len()
                 .try_into()
-                .expect("Out buffer length excceds u32::MAX"),
+                .map_err(|_| Error::BufferTooLong(buf_out.len()))?,
         }
     }
 
@@ -287,15 +279,19 @@ pub fn ioctlv<
         ogc_sys::IOS_Ioctlv(
             fd.0,
             ioctl.into(),
-            COUNT_IN.try_into().expect("count in exceeds i32::MAX"),
-            COUNT_OUT.try_into().expect("count out exceeds i32::MAX"),
+            COUNT_IN
+                .try_into()
+                .map_err(|_| Error::TooManyInputs(COUNT_IN))?,
+            COUNT_OUT
+                .try_into()
+                .map_err(|_| Error::TooManyOutputs(COUNT_OUT))?,
             ioctls.as_ptr().cast_mut(),
         )
     } {
         val if { val == -4 || val == -5 || val == -6 || val == -8 || val == -22 } => {
-            Err(Error::try_from(val).expect("Error does not contain a known error code"))
+            Err(Error::try_from(val).map_err(|_| Error::UnknownErrorCode(val))?)
         }
         val if { val >= 0 } => Ok(()),
-        val => panic!("{val:?} : Unknown error code reached"),
+        val => Err(Error::UnknownErrorCode(val)),
     }
 }
