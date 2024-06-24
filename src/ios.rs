@@ -1,4 +1,4 @@
-use core::ffi::CStr;
+use core::{ffi::CStr, fmt::Display};
 
 #[repr(u32)]
 /// Interprocess Control / IOS File Mode
@@ -56,6 +56,33 @@ impl TryFrom<i32> for Error {
             -8 => Ok(Self::QueueFull),
             -22 => Ok(Self::NoMemory),
             _ => Err(()),
+        }
+    }
+}
+
+impl Display for Error {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::Invalid => write!(f, "An Invalid argument was provided"),
+            Self::NoHeap => write!(f, "No IPC/IOS heap was available"),
+            Self::NoEntry => write!(f, "The file asked for did not exist"),
+            Self::QueueFull => write!(f, "The IPC / IOS queue was full"),
+            Self::NoMemory => write!(f, "There was no memory left to allocate the IPC/IOS queue"),
+            Self::FilePathLengthTooLong => write!(f, "The file path provided was too long"),
+            Self::UnknownErrorCode(val) => {
+                write!(f, "The error code encountered was unknown {val}")
+            }
+            Self::BufferTooLong(val) => {
+                write!(f, "The buffer provided was too long. length: {val}")
+            }
+            Self::TooManyInputs(val) => write!(
+                f,
+                "The provided amount of inputs was too many for `ioctlv`. input count: {val}"
+            ),
+            Self::TooManyOutputs(val) => write!(
+                f,
+                "The provided amount of outputs was too many for `ioctlv`. output count: {val}"
+            ),
         }
     }
 }
