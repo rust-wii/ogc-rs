@@ -34,7 +34,7 @@ fn main(_argc: isize, _argv: *const *const u8) -> isize {
         let mut bytes = vec![0; size];
         if let Ok(bytes_read) = ios::read(fd, &mut bytes) {
             // SAFETY:  I read this much bytes
-            unsafe { bytes.set_len(bytes_read) };
+            unsafe { bytes.set_len(bytes_read.try_into().unwrap()) };
         };
 
         println!("{:?}", bytes);
