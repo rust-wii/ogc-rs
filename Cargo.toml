@@ -16,9 +16,12 @@ crate-type = ["rlib"]
 
 
 [features]
+default = ["default_alloc_handler", "default_panic_handler"]
 ffi = []
 mmio = []
 glam_compat = ["glam"]
+default_alloc_handler = []
+default_panic_handler = []
 
 [dependencies]
 bitflags = "1.3"
