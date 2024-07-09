@@ -40,19 +40,24 @@ unsafe impl GlobalAlloc for OGCAllocator {
 ///
 /// **Note**: The panic handler uses the ``println`` macro for output.
 /// In order for this to work ``Console`` and a minimal ``Video`` setup is required!
+#[cfg(feature = "default_panic_handler")]
 #[panic_handler]
 fn panic_handler(panic_info: &PanicInfo) -> ! {
     println!("#######################################");
     println!("# <[ PANIC ]> {} ", panic_info);
     println!("#######################################");
 
-    core::intrinsics::abort()
+    loop {
+        core::hint::spin_loop();
+    }
 }
 
 /// Allocation Error Handler for the Wii.
 ///
 /// **Note**: The allocation error handler uses the ``println`` macro for output.
 /// In order for this to work ``Console`` and a minimal ``Video`` setup is required!
+
+#[cfg(feature = "default_alloc_handler")]
 #[alloc_error_handler]
 fn alloc_error(layout: Layout) -> ! {
     println!("#######################################");
@@ -64,5 +69,7 @@ fn alloc_error(layout: Layout) -> ! {
     );
     println!("#######################################");
 
-    core::intrinsics::abort()
+    loop {
+        core::hint::spin_loop()
+    }
 }
