@@ -1,0 +1,14 @@
+
+[package]
+name = "template"
+version = "0.1.0"
+edition = "2021"
+
+[profile]
+dev = { panic = "abort" }
+release = { panic = "abort", lto = true, codegen-units = 1, strip = "symbols", opt-level = "s" }
+
+[dependencies]
+gctex = {path = "./vendor/gctex", default-features = false }
+minipng = { version = "0.1.1", default-features = false }
+ogc-rs = { path = "../../", features = ["ffi", "default_alloc_handler", "default_panic_handler"] } 
