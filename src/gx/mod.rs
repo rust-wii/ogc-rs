@@ -9,6 +9,12 @@ use alloc::vec::Vec;
 use bit_field::BitField;
 use ffi::GXTexObj;
 use libm::ceilf;
+use regs::CPReg;
+use types::{
+    AlphaCombinerInput, ColorCombinerInput, ColorReg, ColorSlot, ComponentSize, ComponentType,
+    Operation, TevOp, TexCoordSlot, TexMapSlot, TextureEnviroment, TextureEnviromentBias,
+    TextureEnviromentClamp, TextureEnviromentScale, TextureFormat,
+};
 use voladdress::{Safe, VolAddress};
 
 use crate::ffi::{self, Mtx as Mtx34, Mtx44};
@@ -132,7 +138,6 @@ pub enum BlendMode {
     /// Input subtracts from existing pixel
     Subtract = ffi::GX_BM_SUBTRACT as _,
 }
-
 /// Destination (`dst`) acquires the value of one of these operations, given in Rust syntax.
 #[derive(Copy, Clone, Debug)]
 #[repr(u8)]
@@ -853,11 +858,21 @@ pub enum TexFilter {
 
 /// Texture wrap modes
 #[derive(Copy, Clone, Debug)]
-#[repr(u8)]
+#[repr(u32)]
 pub enum WrapMode {
-    Clamp = ffi::GX_CLAMP as _,
-    Repeat = ffi::GX_REPEAT as _,
-    Mirror = ffi::GX_MIRROR as _,
+    Clamp = ffi::GX_CLAMP,
+    Repeat = ffi::GX_REPEAT,
+    Mirror = ffi::GX_MIRROR,
+}
+
+impl WrapMode {
+    pub const fn into_u8(self) -> u8 {
+        match self {
+            WrapMode::Clamp => 0,
+            WrapMode::Repeat => 1,
+            WrapMode::Mirror => 2,
+        }
+    }
 }
 
 #[repr(transparent)]
@@ -869,25 +884,26 @@ impl Texture<'_> {
         img: &[u8],
         width: u16,
         height: u16,
-        format: u8,
+        format: TextureFormat,
         wrap_s: WrapMode,
         wrap_t: WrapMode,
         mipmap: bool,
     ) -> Texture {
-        let texture = core::mem::MaybeUninit::zeroed();
+        let mut texture = core::mem::MaybeUninit::zeroed();
         assert_eq!(0, img.as_ptr().align_offset(32));
         assert!(width <= 1024, "max width for texture is 1024");
         assert!(height <= 1024, "max height for texture is 1024");
         unsafe {
             ffi::GX_InitTexObj(
-                texture.as_ptr() as *mut _,
-                img.as_ptr() as *mut _,
+                texture.as_mut_ptr(),
+                // SAFETY: I pinky promise I don't actually modify the img bytes
+                img.as_ptr().cast::<c_void>().cast_mut(),
                 width,
                 height,
-                format,
-                wrap_s as u8,
-                wrap_t as u8,
-                mipmap as u8,
+                format.into_u8(),
+                wrap_s.into_u8(),
+                wrap_t.into_u8(),
+                u8::from(mipmap),
             );
             Texture(texture.assume_init(), PhantomData)
         }
@@ -1187,8 +1203,8 @@ impl Gx {
         // SAFETY: all safety is ensured by Buf32.
         unsafe {
             let fifo = ffi::GX_Init(
-                buf.as_mut_ptr().map_addr(mem::to_uncached) as *mut _,
-                buf.len() as u32
+                buf.as_mut_ptr().map_addr(mem::to_uncached).cast::<c_void>(),
+                u32::try_from(buf.len()).unwrap(),
             );
             &mut *(fifo as *mut Fifo)
         }
@@ -1509,7 +1525,30 @@ impl Gx {
     /// Sets the viewport rectangle in screen coordinates.
     /// See [GX_SetViewport](https://libogc.devkitpro.org/gx_8h.html#aaccd37675da5a22596fad756c73badc2) for more.
     pub fn set_viewport(x_orig: f32, y_orig: f32, wd: f32, hd: f32, near_z: f32, far_z: f32) {
-        unsafe { ffi::GX_SetViewport(x_orig, y_orig, wd, hd, near_z, far_z) }
+        const X_FACTOR: f32 = 0.5;
+        const Y_FACTOR: f32 = 342.;
+        const Z_FACTOR: f32 = 16777215.;
+
+        let x0 = wd * X_FACTOR;
+        let y0 = -(hd) * X_FACTOR;
+        let x1 = (x_orig + (wd * X_FACTOR)) + Y_FACTOR;
+        let y1 = (y_orig + (hd * X_FACTOR)) + Y_FACTOR;
+        let n = Z_FACTOR * near_z;
+        let f = Z_FACTOR * far_z;
+        let z = n - f;
+
+        XFReg::VIEW_SCALE_X.load_multi(
+            6,
+            &[
+                x0.to_be_bytes(),
+                y0.to_be_bytes(),
+                z.to_be_bytes(),
+                x1.to_be_bytes(),
+                y1.to_be_bytes(),
+                f.to_be_bytes(),
+            ],
+        );
+        //unsafe { ffi::GX_SetViewport(x_orig, y_orig, wd, hd, near_z, far_z) }
     }
 
     /// Calculates an appropriate Y scale factor value for GX_SetDispCopyYScale() based on the height of the EFB and the height of the XFB.
@@ -1527,7 +1566,26 @@ impl Gx {
     /// Sets the scissor rectangle.
     /// See [GX_SetScissor](https://libogc.devkitpro.org/gx_8h.html#a689bdd17fc74bf86a4c4f00418a2c596) for more.
     pub fn set_scissor(x_origin: u32, y_origin: u32, wd: u32, hd: u32) {
-        unsafe { ffi::GX_SetScissor(x_origin, y_origin, wd, hd) }
+        const OFFSET: u32 = 342;
+        let xo = x_origin + OFFSET;
+        let yo = y_origin + OFFSET;
+
+        let nwd = xo + (wd - 1);
+        let nht = yo + (hd - 1);
+
+        let mut scisor_tl = 0;
+
+        scisor_tl = bitfrob::u32_with_value(0, 10, scisor_tl, yo);
+        scisor_tl = bitfrob::u32_with_value(12, 22, scisor_tl, xo);
+
+        let mut scisor_hw = 0;
+
+        scisor_hw = bitfrob::u32_with_value(0, 10, scisor_hw, nht);
+        scisor_hw = bitfrob::u32_with_value(12, 22, scisor_hw, nwd);
+
+        BPReg::SU_SCIS0.load(scisor_tl);
+        BPReg::SU_SCIS1.load(scisor_hw);
+        //unsafe { ffi::GX_SetScissor(x_origin, y_origin, wd, hd) }
     }
 
     /// Sets the source parameters for the EFB to XFB copy operation.
@@ -1672,6 +1730,8 @@ impl Gx {
     ///
     /// See [GX_SetCullMode](https://libogc.devkitpro.org/gx_8h.html#adb4b17c39b24073c3e961458ecf02e87) for more.
     pub fn set_cull_mode(mode: CullMode) {
+        // Modify `GEN_MODE` register I need to make a stateful thingy :((
+
         unsafe { ffi::GX_SetCullMode(mode as u8) }
     }
 
@@ -1718,7 +1778,13 @@ impl Gx {
 
     /// Sets the attribute format (vtxattr) for a single attribute in the Vertex Attribute Table (VAT).
     /// See [GX_SetVtxAttrFmt](https://libogc.devkitpro.org/gx_8h.html#a87437061debcc0457b6b6dc2eb021f23) for more.
-    pub fn set_vtx_attr_fmt(vtxfmt: u8, vtxattr: VtxAttr, comptype: u32, compsize: u32, frac: u32) {
+    pub fn set_vtx_attr_fmt(
+        vtxfmt: u8,
+        vtxattr: VtxAttr,
+        comptype: ComponentType,
+        compsize: ComponentSize,
+        frac: u32,
+    ) {
         // this is debug_assert because libogc just uses the lowest 3 bits
         debug_assert!(
             vtxfmt < ffi::GX_MAXVTXFMT as u8,
@@ -1726,7 +1792,15 @@ impl Gx {
             ffi::GX_MAXVTXFMT,
             vtxfmt,
         );
-        unsafe { ffi::GX_SetVtxAttrFmt(vtxfmt, vtxattr as u32, comptype, compsize, frac) }
+        unsafe {
+            ffi::GX_SetVtxAttrFmt(
+                vtxfmt,
+                vtxattr as u32,
+                comptype.into_u32(),
+                compsize.into_u32(),
+                frac,
+            )
+        }
     }
 
     /// Sets the number of color channels that are output to the TEV stages.
@@ -1743,14 +1817,183 @@ impl Gx {
 
     /// Simplified function to set various TEV parameters for this tevstage based on a predefined combiner mode.
     /// See [GX_SetTevOp](https://libogc.devkitpro.org/gx_8h.html#a68554713cdde7b45ae4d5ce156239cf8) for more.
-    pub fn set_tev_op(tevstage: u8, mode: u8) {
-        unsafe { ffi::GX_SetTevOp(tevstage, mode) }
+    pub fn set_tev_op(tevstage: u8, mode: TevOp) {
+        assert!(tevstage <= 16, "There are only 16 tev stages");
+        //unsafe { ffi::GX_SetTevOp(tevstage, mode) }
+
+        let tev_template = TextureEnviroment::new()
+            .with_op(Operation::Add)
+            .with_bias(TextureEnviromentBias::Zero)
+            .with_scale(TextureEnviromentScale::One)
+            .with_clamp(TextureEnviromentClamp::GreaterEqual)
+            .with_output_register(ColorReg::Previous);
+
+        match mode {
+            TevOp::Modulate => {
+                let val = TextureEnviroment::new()
+                    .with_a(ColorCombinerInput::Zero)
+                    .with_b(ColorCombinerInput::TextureColor)
+                    .with_c(if tevstage != 0 {
+                        ColorCombinerInput::PreviousColor
+                    } else {
+                        ColorCombinerInput::RasterColor
+                    })
+                    .with_d(ColorCombinerInput::Zero)
+                    .with_bias(TextureEnviromentBias::Zero)
+                    .with_scale(TextureEnviromentScale::One)
+                    .with_clamp(TextureEnviromentClamp::GreaterEqual)
+                    .with_output_register(ColorReg::Previous)
+                    .with_op(Operation::Add)
+                    .into_u32();
+                let reg = unsafe { BPReg::from_u8(0xC0 + (tevstage * 2)) };
+                reg.load(val);
+
+                let alpha_val = TextureEnviroment::new()
+                    .with_alpha_a(AlphaCombinerInput::Zero)
+                    .with_alpha_b(AlphaCombinerInput::TextureAlpha)
+                    .with_alpha_c(if tevstage != 0 {
+                        AlphaCombinerInput::Previous
+                    } else {
+                        AlphaCombinerInput::RasterAlpha
+                    })
+                    .with_alpha_d(AlphaCombinerInput::Zero)
+                    .with_bias(TextureEnviromentBias::Zero)
+                    .with_scale(TextureEnviromentScale::One)
+                    .with_clamp(TextureEnviromentClamp::GreaterEqual)
+                    .with_output_register(ColorReg::Previous)
+                    .with_op(Operation::Add)
+                    .into_u32();
+
+                let alpha_reg = unsafe { BPReg::from_u8(0xC1 + (tevstage * 2)) };
+                alpha_reg.load(alpha_val);
+            }
+            TevOp::Decal => {
+                let color_val = tev_template
+                    .with_a(if tevstage != 0 {
+                        ColorCombinerInput::PreviousColor
+                    } else {
+                        ColorCombinerInput::RasterColor
+                    })
+                    .with_b(ColorCombinerInput::TextureColor)
+                    .with_c(ColorCombinerInput::TextureAlpha)
+                    .with_d(ColorCombinerInput::Zero)
+                    .into_u32();
+
+                let alpha_val = tev_template
+                    .with_alpha_a(AlphaCombinerInput::Zero)
+                    .with_alpha_b(AlphaCombinerInput::Zero)
+                    .with_alpha_c(AlphaCombinerInput::Zero)
+                    .with_alpha_b(if tevstage != 0 {
+                        AlphaCombinerInput::Previous
+                    } else {
+                        AlphaCombinerInput::RasterAlpha
+                    })
+                    .into_u32();
+
+                let reg = unsafe { BPReg::from_u8(0xC0 + (tevstage * 2)) };
+                reg.load(color_val);
+
+                let alpha_reg = unsafe { BPReg::from_u8(0xC1 + (tevstage * 2)) };
+                alpha_reg.load(alpha_val);
+            }
+            TevOp::Replace => {
+                let color_val = tev_template
+                    .with_a(ColorCombinerInput::Zero)
+                    .with_b(ColorCombinerInput::Zero)
+                    .with_c(ColorCombinerInput::Zero)
+                    .with_d(ColorCombinerInput::TextureColor)
+                    .into_u32();
+
+                let alpha_val = tev_template
+                    .with_alpha_a(AlphaCombinerInput::Zero)
+                    .with_alpha_b(AlphaCombinerInput::Zero)
+                    .with_alpha_c(AlphaCombinerInput::Zero)
+                    .with_alpha_d(AlphaCombinerInput::TextureAlpha)
+                    .into_u32();
+
+                let reg = unsafe { BPReg::from_u8(0xC0 + (tevstage * 2)) };
+                reg.load(color_val);
+
+                let alpha_reg = unsafe { BPReg::from_u8(0xC1 + (tevstage * 2)) };
+                alpha_reg.load(alpha_val);
+            }
+            TevOp::PassColor => {
+                let color_val = tev_template
+                    .with_a(ColorCombinerInput::Zero)
+                    .with_b(ColorCombinerInput::Zero)
+                    .with_c(ColorCombinerInput::Zero)
+                    .with_d(if tevstage != 0 {
+                        ColorCombinerInput::PreviousColor
+                    } else {
+                        ColorCombinerInput::RasterColor
+                    })
+                    .into_u32();
+
+                let alpha_val = tev_template
+                    .with_alpha_a(AlphaCombinerInput::Zero)
+                    .with_alpha_b(AlphaCombinerInput::Zero)
+                    .with_alpha_c(AlphaCombinerInput::Zero)
+                    .with_alpha_d(if tevstage != 0 {
+                        AlphaCombinerInput::Previous
+                    } else {
+                        AlphaCombinerInput::RasterAlpha
+                    })
+                    .into_u32();
+
+                let reg = unsafe { BPReg::from_u8(0xC0 + (tevstage * 2)) };
+                reg.load(color_val);
+
+                let alpha_reg = unsafe { BPReg::from_u8(0xC1 + (tevstage * 2)) };
+                alpha_reg.load(alpha_val);
+            }
+            TevOp::Blend => {
+                let color_val = tev_template
+                    .with_a(if tevstage != 0 {
+                        ColorCombinerInput::PreviousColor
+                    } else {
+                        ColorCombinerInput::RasterColor
+                    })
+                    .with_b(ColorCombinerInput::One)
+                    .with_c(ColorCombinerInput::TextureColor)
+                    .with_d(ColorCombinerInput::Zero)
+                    .into_u32();
+
+                let alpha_val = tev_template
+                    .with_alpha_a(AlphaCombinerInput::Zero)
+                    .with_alpha_b(AlphaCombinerInput::TextureAlpha)
+                    .with_alpha_c(if tevstage != 0 {
+                        AlphaCombinerInput::Previous
+                    } else {
+                        AlphaCombinerInput::RasterAlpha
+                    })
+                    .with_alpha_d(AlphaCombinerInput::RasterAlpha)
+                    .into_u32();
+
+                let reg = unsafe { BPReg::from_u8(0xC0 + (tevstage * 2)) };
+                reg.load(color_val);
+
+                let alpha_reg = unsafe { BPReg::from_u8(0xC1 + (tevstage * 2)) };
+                alpha_reg.load(alpha_val);
+            }
+        }
     }
 
     /// Specifies the texture and rasterized color that will be available as inputs to this TEV tevstage.
     /// See [GX_SetTevOrder](https://libogc.devkitpro.org/gx_8h.html#ae64799e52298de39efc74bf989fc57f5) for more.
-    pub fn set_tev_order(tevstage: u8, texcoord: u8, texmap: u32, color: u8) {
-        unsafe { ffi::GX_SetTevOrder(tevstage, texcoord, texmap, color) }
+    pub fn set_tev_order(
+        tevstage: u8,
+        texcoord: TexCoordSlot,
+        texmap: TexMapSlot,
+        color: ColorSlot,
+    ) {
+        unsafe {
+            ffi::GX_SetTevOrder(
+                tevstage,
+                texcoord.into_u8(),
+                u32::from(texmap.into_u8()),
+                color.into_u8(),
+            )
+        }
     }
 
     /// Specifies how texture coordinates are generated.
@@ -1877,7 +2120,24 @@ impl Gx {
     /// Used to load a 3x4 modelview matrix mt into matrix memory at location pnidx.
     /// See [GX_LoadPosMtxImm](https://libogc.devkitpro.org/gx_8h.html#a90349e713128a1fa4fd6048dcab7b5e7) for more.
     pub fn load_pos_mtx_imm(mt: &mut Mtx34, pnidx: u32) {
-        unsafe { ffi::GX_LoadPosMtxImm(mt as *mut _, pnidx) }
+        let reg = unsafe { XFReg::from_u16(0x0000 + (u16::try_from(pnidx).unwrap() << 2)) };
+        reg.load_multi(
+            12,
+            &[
+                mt[0][0].to_be_bytes(),
+                mt[0][1].to_be_bytes(),
+                mt[0][2].to_be_bytes(),
+                mt[0][3].to_be_bytes(),
+                mt[1][0].to_be_bytes(),
+                mt[1][1].to_be_bytes(),
+                mt[1][2].to_be_bytes(),
+                mt[1][3].to_be_bytes(),
+                mt[2][0].to_be_bytes(),
+                mt[2][1].to_be_bytes(),
+                mt[2][2].to_be_bytes(),
+                mt[2][3].to_be_bytes(),
+            ],
+        )
     }
 
     pub fn load_nrm_mtx_imm(mt: &mut Mtx34, pnidx: u32) {
@@ -1951,8 +2211,58 @@ impl Gx {
 
     /// Sets the array base pointer and stride for a single attribute.
     /// See [GX_SetArray](https://libogc.devkitpro.org/gx_8h.html#a5164fc6aa2a678d792af80d94bfa1ec2) for more.
-    pub fn set_array<T>(attr: u32, array: &[T], stride: u8) {
-        unsafe { ffi::GX_SetArray(attr, array.as_ptr() as *mut c_void, stride) }
+    pub fn set_array<T>(attr: VtxAttr, array: &[T], stride: u8) {
+        // Pinky promise I don't actually modify the data at array with this call
+        unsafe {
+            ffi::GX_SetArray(
+                u32::from(attr as u8),
+                array.as_ptr().cast::<c_void>().cast_mut(),
+                stride,
+            )
+        }
+
+        match attr {
+            VtxAttr::Color0 => {
+                CPReg::COL0_PTR.load(
+                    array
+                        .as_ptr()
+                        .map_addr(mem::to_physical)
+                        .addr()
+                        .try_into()
+                        .unwrap(),
+                );
+                CPReg::COL0_SIZE.load(stride.into())
+            }
+            VtxAttr::Pos => {
+                CPReg::VERT_PTR.load(
+                    array
+                        .as_ptr()
+                        .map_addr(mem::to_physical)
+                        .addr()
+                        .try_into()
+                        .unwrap(),
+                );
+                CPReg::VERT_SIZE.load(stride.into())
+            }
+            VtxAttr::Tex0 => {
+                CPReg::TEX0_PTR.load(
+                    array
+                        .as_ptr()
+                        .map_addr(mem::to_physical)
+                        .addr()
+                        .try_into()
+                        .unwrap(),
+                );
+                CPReg::TEX0_SIZE.load(stride.into())
+            }
+            _ => unsafe {
+                ffi::GX_SetArray(
+                    u32::from(attr as u8),
+                    array.as_ptr().cast::<c_void>().cast_mut(),
+                    stride,
+                )
+            },
+        }
     }
 
     /// Begins drawing of a graphics primitive.
