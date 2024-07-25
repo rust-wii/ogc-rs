@@ -1,5 +1,6 @@
 use bit_field::BitField;
 
+use super::CmpFn;
 pub struct PixelFormat(u8);
 
 impl PixelFormat {
@@ -106,5 +107,967 @@ impl From<u32> for PixelEngineControl {
 impl Default for PixelEngineControl {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+pub enum TextureFormat {
+    Intensity4 = 0,
+    Intensity8 = 1,
+    IntensityAlpha4 = 2,
+    IntensityAlpha8 = 3,
+    Rgb565 = 4,
+    Rgb5a3 = 5,
+    Rgba8 = 6,
+    ColorIndexed4 = 8,
+    ColorIndexed8 = 9,
+    ColorIndexed14 = 10,
+    Compressed = 14,
+}
+
+impl TextureFormat {
+    pub const fn into_u8(self) -> u8 {
+        match self {
+            TextureFormat::Intensity4 => 0,
+            TextureFormat::Intensity8 => 1,
+            TextureFormat::IntensityAlpha4 => 2,
+            TextureFormat::IntensityAlpha8 => 3,
+            TextureFormat::Rgb565 => 4,
+            TextureFormat::Rgb5a3 => 5,
+            TextureFormat::Rgba8 => 6,
+            TextureFormat::ColorIndexed4 => 8,
+            TextureFormat::ColorIndexed8 => 9,
+            TextureFormat::ColorIndexed14 => 10,
+            TextureFormat::Compressed => 14,
+        }
+    }
+}
+
+pub struct ComponentType(u32);
+
+impl ComponentType {
+    pub const POSITION_XY: ComponentType = ComponentType(0);
+    pub const POSITION_XYZ: ComponentType = ComponentType(1);
+    pub const NORMAL_XYZ: ComponentType = ComponentType(0);
+    pub const NORMAL_NBT: ComponentType = ComponentType(1);
+    pub const NORMAL_NBT3: ComponentType = ComponentType(2);
+    pub const COLOR_RGB8: ComponentType = ComponentType(0);
+    pub const COLOR_RGBA: ComponentType = ComponentType(1);
+    pub const TEXTURE_S: ComponentType = ComponentType(0);
+    pub const TEXTURE_ST: ComponentType = ComponentType(1);
+
+    pub const fn into_u32(self) -> u32 {
+        self.0
+    }
+}
+
+pub struct ComponentSize(u32);
+
+impl ComponentSize {
+    pub const U8: ComponentSize = ComponentSize(0);
+    pub const I8: ComponentSize = ComponentSize(1);
+    pub const U16: ComponentSize = ComponentSize(2);
+    pub const I16: ComponentSize = ComponentSize(3);
+    pub const F32: ComponentSize = ComponentSize(4);
+
+    pub const COLOR_RGB565: ComponentSize = ComponentSize(0);
+    pub const COLOR_RGB8: ComponentSize = ComponentSize(1);
+    pub const COLOR_RGBX8: ComponentSize = ComponentSize(2);
+    pub const COLOR_RGBA4: ComponentSize = ComponentSize(3);
+    pub const COLOR_RGBA6: ComponentSize = ComponentSize(4);
+    pub const COLOR_RGBA8: ComponentSize = ComponentSize(5);
+
+    pub const fn into_u32(self) -> u32 {
+        self.0
+    }
+}
+
+pub type TexCoordSlot = Slot;
+pub type TexMapSlot = Slot;
+
+pub enum Slot {
+    Zero = 0,
+    One = 1,
+    Two = 2,
+    Three = 3,
+    Four = 4,
+    Five = 5,
+    Six = 6,
+    Seven = 7,
+    None = 0xFF,
+}
+
+impl Slot {
+    pub fn into_u8(self) -> u8 {
+        match self {
+            Self::Zero => 0,
+            Self::One => 1,
+            Self::Two => 2,
+            Self::Three => 3,
+            Self::Four => 4,
+            Self::Five => 5,
+            Self::Six => 6,
+            Self::Seven => 7,
+            Self::None => 0xFF,
+        }
+    }
+}
+
+pub enum ColorSlot {
+    Color0 = 0,
+    Color1 = 1,
+    Alpha0 = 2,
+    Alpha1 = 3,
+    Color0Alpha0 = 4,
+    Color1Alpha1 = 5,
+    Zero = 6,
+    BumpAlpha = 7,
+    BumpNormalAlpha = 8,
+    None = 0xFF,
+}
+
+impl ColorSlot {
+    pub fn into_u8(self) -> u8 {
+        match self {
+            Self::Color0 => 0,
+            Self::Color1 => 1,
+            Self::Alpha0 => 2,
+            Self::Alpha1 => 3,
+            Self::Color0Alpha0 => 4,
+            Self::Color1Alpha1 => 5,
+            Self::Zero => 6,
+            Self::BumpAlpha => 7,
+            Self::BumpNormalAlpha => 8,
+            Self::None => 0xFF,
+        }
+    }
+}
+
+#[derive(Copy, Clone)]
+pub struct TextureEnviroment(u32);
+
+pub enum ColorCombinerInput {
+    PreviousColor = 0,
+    PreviousAlpha = 1,
+    Color0 = 2,
+    Alpha0 = 3,
+    Color1 = 4,
+    Alpha1 = 5,
+    Color2 = 6,
+    Alpha2 = 7,
+    TextureColor = 8,
+    TextureAlpha = 9,
+    RasterColor = 10,
+    RasterAlpha = 11,
+    One = 12,
+    Half = 13,
+    Konst = 14,
+    Zero = 15,
+}
+
+pub enum AlphaCombinerInput {
+    Previous = 0,
+    Alpha0 = 1,
+    Alpha1 = 2,
+    Alpha2 = 3,
+    TextureAlpha = 4,
+    RasterAlpha = 5,
+    Konst = 6,
+    Zero = 7,
+}
+impl AlphaCombinerInput {
+    pub const fn into_u8(self) -> u8 {
+        match self {
+            AlphaCombinerInput::Previous => 0,
+            AlphaCombinerInput::Alpha0 => 1,
+            AlphaCombinerInput::Alpha1 => 2,
+            AlphaCombinerInput::Alpha2 => 3,
+            AlphaCombinerInput::TextureAlpha => 4,
+            AlphaCombinerInput::RasterAlpha => 5,
+            AlphaCombinerInput::Konst => 6,
+            AlphaCombinerInput::Zero => 7,
+        }
+    }
+}
+
+impl ColorCombinerInput {
+    pub const fn into_u8(self) -> u8 {
+        match self {
+            ColorCombinerInput::PreviousColor => 0,
+            ColorCombinerInput::PreviousAlpha => 1,
+            ColorCombinerInput::Color0 => 2,
+            ColorCombinerInput::Alpha0 => 3,
+            ColorCombinerInput::Color1 => 4,
+            ColorCombinerInput::Alpha1 => 5,
+            ColorCombinerInput::Color2 => 6,
+            ColorCombinerInput::Alpha2 => 7,
+            ColorCombinerInput::TextureColor => 8,
+            ColorCombinerInput::TextureAlpha => 9,
+            ColorCombinerInput::RasterColor => 10,
+            ColorCombinerInput::RasterAlpha => 11,
+            ColorCombinerInput::One => 12,
+            ColorCombinerInput::Half => 13,
+            ColorCombinerInput::Konst => 14,
+            ColorCombinerInput::Zero => 15,
+        }
+    }
+}
+
+pub enum TextureEnviromentBias {
+    Zero = 0,
+    AddHalf = 1,
+    SubHalf = 2,
+}
+
+impl TextureEnviromentBias {
+    pub const fn into_u8(self) -> u8 {
+        match self {
+            Self::Zero => 0,
+            Self::AddHalf => 1,
+            Self::SubHalf => 2,
+        }
+    }
+}
+
+pub enum TextureEnviromentScale {
+    One = 0,
+    Two = 1,
+    Four = 2,
+    Half = 3,
+}
+
+impl TextureEnviromentScale {
+    pub const fn into_u8(self) -> u8 {
+        match self {
+            TextureEnviromentScale::One => 0,
+            TextureEnviromentScale::Two => 1,
+            TextureEnviromentScale::Four => 2,
+            TextureEnviromentScale::Half => 3,
+        }
+    }
+}
+
+pub enum TextureEnviromentClamp {
+    Linear = 0,
+    GreaterEqual = 1,
+    Equal = 2,
+    LessEqual = 3,
+}
+
+impl TextureEnviromentClamp {
+    pub const fn into_u8(self) -> u8 {
+        match self {
+            TextureEnviromentClamp::Linear => 0,
+            TextureEnviromentClamp::GreaterEqual => 1,
+            TextureEnviromentClamp::Equal => 2,
+            TextureEnviromentClamp::LessEqual => 3,
+        }
+    }
+}
+
+pub enum ColorReg {
+    Previous = 0,
+    Zero = 1,
+    One = 2,
+    Two = 3,
+}
+
+impl ColorReg {
+    pub fn into_u8(self) -> u8 {
+        match self {
+            ColorReg::Previous => 0,
+            ColorReg::Zero => 1,
+            ColorReg::One => 2,
+            ColorReg::Two => 3,
+        }
+    }
+}
+
+pub enum Operation {
+    Add = 0,
+    Sub = 1,
+    CompareRed8GreaterThan = 8,
+    CompareRed8Equal = 9,
+    CompareRedGreen16GreaterThan = 10,
+    CompareRedGreen16Equal = 11,
+    CompareBlueGreenRed24GreaterThan = 12,
+    CompareBlueGreenRed24Equal = 13,
+    CompareRGB8GreaterThan = 14,
+    CompareRGB8Equal = 15,
+}
+
+impl Operation {
+    pub fn into_u8(self) -> u8 {
+        match self {
+            Operation::Add => 0,
+            Operation::Sub => 1,
+            Operation::CompareRed8GreaterThan => 8,
+            Operation::CompareRed8Equal => 9,
+            Operation::CompareRedGreen16GreaterThan => 10,
+            Operation::CompareRedGreen16Equal => 11,
+            Operation::CompareBlueGreenRed24GreaterThan => 12,
+            Operation::CompareBlueGreenRed24Equal => 13,
+            Operation::CompareRGB8GreaterThan => 14,
+            Operation::CompareRGB8Equal => 15,
+        }
+    }
+}
+
+impl TextureEnviroment {
+    pub fn new() -> Self {
+        Self(0)
+    }
+
+    pub fn with_op(mut self, op: Operation) -> Self {
+        self.0 = bitfrob::u32_with_value(18, 18, self.0, op.into_u8().into());
+        self
+    }
+
+    pub fn with_output_register(mut self, output: ColorReg) -> Self {
+        self.0 = bitfrob::u32_with_value(22, 23, self.0, output.into_u8().into());
+        self
+    }
+
+    pub fn with_scale(mut self, scale: TextureEnviromentScale) -> Self {
+        self.0 = bitfrob::u32_with_value(20, 21, self.0, scale.into_u8().into());
+        self
+    }
+
+    pub fn with_clamp(mut self, clamp: TextureEnviromentClamp) -> Self {
+        self.0 = bitfrob::u32_with_value(19, 19, self.0, clamp.into_u8().into());
+        self
+    }
+
+    pub fn with_bias(mut self, bias: TextureEnviromentBias) -> Self {
+        self.0 = bitfrob::u32_with_value(16, 17, self.0, bias.into_u8().into());
+        self
+    }
+
+    pub fn with_a(mut self, a: ColorCombinerInput) -> Self {
+        self.0 = bitfrob::u32_with_value(12, 15, self.0, a.into_u8().into());
+        self
+    }
+
+    pub fn with_b(mut self, b: ColorCombinerInput) -> Self {
+        self.0 = bitfrob::u32_with_value(8, 11, self.0, b.into_u8().into());
+        self
+    }
+
+    pub fn with_c(mut self, c: ColorCombinerInput) -> Self {
+        self.0 = bitfrob::u32_with_value(4, 7, self.0, c.into_u8().into());
+        self
+    }
+
+    pub fn with_d(mut self, d: ColorCombinerInput) -> Self {
+        self.0 = bitfrob::u32_with_value(0, 3, self.0, d.into_u8().into());
+        self
+    }
+
+    pub fn with_alpha_d(mut self, d: AlphaCombinerInput) -> Self {
+        self.0 = bitfrob::u32_with_value(4, 6, self.0, d.into_u8().into());
+        self
+    }
+
+    pub fn with_alpha_c(mut self, c: AlphaCombinerInput) -> Self {
+        self.0 = bitfrob::u32_with_value(7, 9, self.0, c.into_u8().into());
+        self
+    }
+
+    pub fn with_alpha_b(mut self, b: AlphaCombinerInput) -> Self {
+        self.0 = bitfrob::u32_with_value(10, 12, self.0, b.into_u8().into());
+        self
+    }
+
+    pub fn with_alpha_a(mut self, a: AlphaCombinerInput) -> Self {
+        self.0 = bitfrob::u32_with_value(13, 15, self.0, a.into_u8().into());
+        self
+    }
+
+    pub const fn into_u32(self) -> u32 {
+        self.0
+    }
+}
+
+pub enum TevOp {
+    PassColor,
+    Replace,
+    Blend,
+    Modulate,
+    Decal,
+}
+
+pub struct ZMode(u32);
+
+impl ZMode {
+    pub const fn new() -> Self {
+        Self(0)
+    }
+
+    pub fn with_func(mut self, func: CmpFn) -> Self {
+        self.0 = bitfrob::u32_with_value(1, 3, self.0, func.into_u8().into());
+        self
+    }
+
+    pub fn with_enable(mut self, enable: bool) -> Self {
+        self.0 = bitfrob::u32_with_value(0, 0, self.0, u8::from(enable).into());
+        self
+    }
+
+    pub fn with_update(mut self, update_enable: bool) -> Self {
+        self.0 = bitfrob::u32_with_value(4, 4, self.0, u8::from(update_enable).into());
+        self
+    }
+
+    pub fn into_u32(self) -> u32 {
+        self.0
+    }
+}
+
+pub enum LogicOp {
+    Clear = 0,
+    And = 1,
+    ReverseAnd = 2,
+    Copy = 3,
+    InverseAnd = 4,
+    NoOperation = 5,
+    ExclusiveOr = 6,
+    Or = 7,
+    NotOr = 8,
+    Equivalent = 9,
+    Inverse = 10,
+    ReverseOr = 11,
+    InverseCopy = 12,
+    InverseOr = 13,
+    NotAnd = 14,
+    Set = 15,
+}
+
+impl LogicOp {
+    pub fn into_u8(self) -> u8 {
+        match self {
+            LogicOp::Clear => 0,
+            LogicOp::And => 1,
+            LogicOp::ReverseAnd => 2,
+            LogicOp::Copy => 3,
+            LogicOp::InverseAnd => 4,
+            LogicOp::NoOperation => 5,
+            LogicOp::ExclusiveOr => 6,
+            LogicOp::Or => 7,
+            LogicOp::NotOr => 8,
+            LogicOp::Equivalent => 9,
+            LogicOp::Inverse => 10,
+            LogicOp::ReverseOr => 11,
+            LogicOp::InverseCopy => 12,
+            LogicOp::InverseOr => 13,
+            LogicOp::NotAnd => 14,
+            LogicOp::Set => 15,
+        }
+    }
+}
+
+pub enum BlendFactor {
+    Zero = 0,
+    One = 1,
+    SourceColor = 2,
+    InverseSourceColor = 3,
+    SourceAlpha = 4,
+    InverseSourceAlpha = 5,
+    DestinationAlpha = 6,
+    InverseDestinationAlpha = 7,
+}
+
+impl BlendFactor {
+    pub fn into_u8(self) -> u8 {
+        match self {
+            BlendFactor::Zero => 0,
+            BlendFactor::One => 1,
+            BlendFactor::SourceColor => 2,
+            BlendFactor::InverseSourceColor => 3,
+            BlendFactor::SourceAlpha => 4,
+            BlendFactor::InverseSourceAlpha => 5,
+            BlendFactor::DestinationAlpha => 6,
+            BlendFactor::InverseDestinationAlpha => 7,
+        }
+    }
+}
+
+pub struct CMode0(u32);
+
+impl CMode0 {
+    pub const fn new() -> Self {
+        Self(0)
+    }
+
+    pub fn with_blend_enable(mut self, blend_enable: bool) -> Self {
+        self.0 = bitfrob::u32_with_bit(0, self.0, blend_enable);
+        self
+    }
+
+    pub fn with_logic_enable(mut self, logic_enable: bool) -> Self {
+        self.0 = bitfrob::u32_with_bit(1, self.0, logic_enable);
+        self
+    }
+
+    pub fn with_dither_enable(mut self, dither_enable: bool) -> Self {
+        self.0 = bitfrob::u32_with_bit(2, self.0, dither_enable);
+        self
+    }
+
+    pub fn with_color_update(mut self, color_enable: bool) -> Self {
+        self.0 = bitfrob::u32_with_bit(3, self.0, color_enable);
+        self
+    }
+
+    pub fn with_alpha_update(mut self, alpha_enable: bool) -> Self {
+        self.0 = bitfrob::u32_with_bit(4, self.0, alpha_enable);
+        self
+    }
+
+    pub fn with_source_factor(mut self, factor: BlendFactor) -> Self {
+        self.0 = bitfrob::u32_with_value(5, 7, self.0, factor.into_u8().into());
+        self
+    }
+
+    pub fn with_destination_factor(mut self, factor: BlendFactor) -> Self {
+        self.0 = bitfrob::u32_with_value(8, 10, self.0, factor.into_u8().into());
+        self
+    }
+
+    pub fn should_blend(mut self, enable: bool) -> Self {
+        self.0 = bitfrob::u32_with_bit(11, self.0, enable);
+        self
+    }
+
+    pub fn with_logic_op(mut self, logic_op: LogicOp) -> Self {
+        self.0 = bitfrob::u32_with_value(12, 23, self.0, logic_op.into_u8().into());
+        self
+    }
+
+    pub const fn into_u32(self) -> u32 {
+        self.0
+    }
+}
+
+pub enum TextureOffset {
+    Zero = 0,
+    Sixteenth = 1,
+    Eighth = 2,
+    Fourth = 3,
+    Half = 4,
+    One = 5,
+}
+
+impl TextureOffset {
+    pub const fn into_u8(self) -> u8 {
+        match self {
+            Self::Zero => 0,
+            Self::Sixteenth => 1,
+            Self::Eighth => 2,
+            Self::Fourth => 3,
+            Self::Half => 4,
+            Self::One => 5,
+        }
+    }
+}
+
+#[derive(Copy, Clone)]
+#[repr(transparent)]
+pub struct LinePointSize(u32);
+
+impl LinePointSize {
+    pub const fn new() -> Self {
+        Self(0)
+    }
+
+    pub fn with_line_size(mut self, line_size: u8) -> Self {
+        self.0 = bitfrob::u32_with_value(0, 7, self.0, line_size.into());
+        self
+    }
+
+    pub fn with_point_size(mut self, point_size: u8) -> Self {
+        self.0 = bitfrob::u32_with_value(8, 15, self.0, point_size.into());
+        self
+    }
+
+    pub fn with_line_offset(mut self, offset: TextureOffset) -> Self {
+        self.0 = bitfrob::u32_with_value(16, 18, self.0, offset.into_u8().into());
+        self
+    }
+
+    pub fn with_point_offset(mut self, offset: TextureOffset) -> Self {
+        self.0 = bitfrob::u32_with_value(19, 21, self.0, offset.into_u8().into());
+        self
+    }
+
+    pub fn with_half_aspect_ratio(mut self, has_half_aspect_ratio: bool) -> Self {
+        self.0 = bitfrob::u32_with_bit(22, self.0, has_half_aspect_ratio);
+        self
+    }
+
+    pub const fn into_u32(self) -> u32 {
+        self.0
+    }
+}
+
+pub struct MatrixIndexLow(u32);
+
+impl MatrixIndexLow {
+    pub const fn new() -> Self {
+        Self(0)
+    }
+
+    pub fn with_geometry_matrix_index(mut self, matrix_index: u8) -> Self {
+        debug_assert!(matrix_index <= 63);
+        self.0 = bitfrob::u32_with_value(0, 5, self.0, matrix_index.into());
+        self
+    }
+
+    pub fn with_texture_0_matrix_index(mut self, matrix_index: u8) -> Self {
+        debug_assert!(matrix_index <= 63);
+        self.0 = bitfrob::u32_with_value(6, 11, self.0, matrix_index.into());
+        self
+    }
+
+    pub fn with_texture_1_matrix_index(mut self, matrix_index: u8) -> Self {
+        debug_assert!(matrix_index <= 63);
+        self.0 = bitfrob::u32_with_value(12, 17, self.0, matrix_index.into());
+        self
+    }
+
+    pub fn with_texture_2_matrix_index(mut self, matrix_index: u8) -> Self {
+        debug_assert!(matrix_index <= 63);
+        self.0 = bitfrob::u32_with_value(18, 23, self.0, matrix_index.into());
+        self
+    }
+
+    pub fn with_texture_3_matrix_index(mut self, matrix_index: u8) -> Self {
+        debug_assert!(matrix_index <= 63);
+        self.0 = bitfrob::u32_with_value(24, 29, self.0, matrix_index.into());
+        self
+    }
+
+    pub const fn as_u32(&self) -> u32 {
+        self.0
+    }
+
+    pub const fn into_u32(self) -> u32 {
+        self.0
+    }
+}
+
+pub struct MatrixIndexHigh(u32);
+
+impl MatrixIndexHigh {
+    pub const fn new() -> Self {
+        Self(0)
+    }
+
+    pub fn with_texture_4_matrix_index(mut self, matrix_index: u8) -> Self {
+        debug_assert!(matrix_index <= 63);
+        self.0 = bitfrob::u32_with_value(0, 5, self.0, matrix_index.into());
+        self
+    }
+
+    pub fn with_texture_5_matrix_index(mut self, matrix_index: u8) -> Self {
+        debug_assert!(matrix_index <= 63);
+        self.0 = bitfrob::u32_with_value(6, 11, self.0, matrix_index.into());
+        self
+    }
+
+    pub fn with_texture_6_matrix_index(mut self, matrix_index: u8) -> Self {
+        debug_assert!(matrix_index <= 63);
+        self.0 = bitfrob::u32_with_value(12, 17, self.0, matrix_index.into());
+        self
+    }
+
+    pub fn with_texture_7_matrix_index(mut self, matrix_index: u8) -> Self {
+        debug_assert!(matrix_index <= 63);
+        self.0 = bitfrob::u32_with_value(18, 23, self.0, matrix_index.into());
+        self
+    }
+
+    pub const fn as_u32(&self) -> u32 {
+        self.0
+    }
+
+    pub const fn into_u32(self) -> u32 {
+        self.0
+    }
+}
+
+pub struct ClipMode(u32);
+
+impl ClipMode {
+    pub const fn new() -> Self {
+        Self(0)
+    }
+
+    pub fn with_disable(mut self, disable: bool) -> Self {
+        self.0 = bitfrob::u32_with_bit(0, self.0, disable);
+        self
+    }
+
+    pub fn with_trivial_rejection_disable(mut self, disable: bool) -> Self {
+        self.0 = bitfrob::u32_with_bit(1, self.0, disable);
+        self
+    }
+
+    pub fn with_clipping_acceleration_disable(mut self, disable: bool) -> Self {
+        self.0 = bitfrob::u32_with_bit(1, self.0, disable);
+        self
+    }
+
+    pub fn as_u32(&self) -> u32 {
+        self.0
+    }
+
+    pub fn into_u32(self) -> u32 {
+        self.0
+    }
+}
+
+pub struct ScissorTopLeft(u32);
+
+impl ScissorTopLeft {
+    pub const fn new() -> Self {
+        Self(0)
+    }
+
+    pub fn with_y_origin(mut self, y_origin: u32) -> Self {
+        self.0 = bitfrob::u32_with_value(0, 10, self.0, y_origin);
+        self
+    }
+
+    pub fn with_x_origin(mut self, x_origin: u32) -> Self {
+        self.0 = bitfrob::u32_with_value(12, 22, self.0, x_origin);
+        self
+    }
+
+    pub const fn into_u32(self) -> u32 {
+        self.0
+    }
+
+    pub const fn as_u32(&self) -> u32 {
+        self.0
+    }
+}
+
+pub struct ScissorHeightWidth(u32);
+impl ScissorHeightWidth {
+    pub const fn new() -> Self {
+        Self(0)
+    }
+    pub fn with_height(mut self, height: u32) -> Self {
+        self.0 = bitfrob::u32_with_value(0, 10, self.0, height);
+        self
+    }
+    pub fn with_width(mut self, width: u32) -> Self {
+        self.0 = bitfrob::u32_with_value(12, 22, self.0, width);
+        self
+    }
+    pub const fn into_u32(self) -> u32 {
+        self.0
+    }
+    pub const fn as_u32(&self) -> u32 {
+        self.0
+    }
+}
+
+pub struct ScissorBoxOffset(u32);
+
+impl ScissorBoxOffset {
+    pub const fn new() -> Self {
+        Self(0)
+    }
+
+    pub fn with_x_offset(mut self, x_off: u32) -> Self {
+        self.0 = bitfrob::u32_with_value(0, 9, self.0, x_off);
+        self
+    }
+    pub fn with_y_offset(mut self, y_off: u32) -> Self {
+        self.0 = bitfrob::u32_with_value(10, 19, self.0, y_off);
+        self
+    }
+
+    pub const fn into_u32(self) -> u32 {
+        self.0
+    }
+    pub const fn as_u32(&self) -> u32 {
+        self.0
+    }
+}
+
+pub struct DisplayTopLeft(u32);
+
+impl DisplayTopLeft {
+    pub const fn new() -> Self {
+        Self(0)
+    }
+    pub fn with_x_origin(mut self, x_origin: u16) -> Self {
+        self.0 = bitfrob::u32_with_value(0, 9, self.0, x_origin.into());
+        self
+    }
+    pub fn with_y_origin(mut self, y_origin: u16) -> Self {
+        self.0 = bitfrob::u32_with_value(10, 19, self.0, y_origin.into());
+        self
+    }
+
+    pub const fn into_u32(self) -> u32 {
+        self.0
+    }
+
+    pub const fn as_u32(&self) -> u32 {
+        self.0
+    }
+}
+
+pub struct DisplayWidthHeight(u32);
+
+impl DisplayWidthHeight {
+    pub const fn new() -> Self {
+        Self(0)
+    }
+
+    pub fn with_width(mut self, width: u16) -> Self {
+        self.0 = bitfrob::u32_with_value(0, 9, self.0, width.into());
+        self
+    }
+    pub fn with_height(mut self, height: u16) -> Self {
+        self.0 = bitfrob::u32_with_value(10, 19, self.0, height.into());
+        self
+    }
+
+    pub const fn into_u32(self) -> u32 {
+        self.0
+    }
+    pub const fn as_u32(&self) -> u32 {
+        self.0
+    }
+}
+
+pub struct DisplayStride(u32);
+
+impl DisplayStride {
+    pub const fn new() -> Self {
+        Self(0)
+    }
+
+    pub fn with_stride(mut self, stride: u16) -> Self {
+        self.0 = bitfrob::u32_with_value(0, 9, self.0, stride.into());
+        self
+    }
+
+    pub const fn as_u32(&self) -> u32 {
+        self.0
+    }
+    pub const fn into_u32(self) -> u32 {
+        self.0
+    }
+}
+
+pub struct DisplayYScale(u32);
+
+impl DisplayYScale {
+    pub const fn new() -> Self {
+        Self(0)
+    }
+
+    pub fn with_scale(mut self, y_scale: f32) -> Self {
+        let y_scale_u32 = u32::from_be_bytes(y_scale.to_be_bytes());
+
+        self.0 = bitfrob::u32_with_value(0, 8, self.0, y_scale_u32);
+        self
+    }
+
+    pub const fn into_u32(self) -> u32 {
+        self.0
+    }
+    pub const fn as_u32(&self) -> u32 {
+        self.0
+    }
+}
+
+#[derive(Copy, Clone)]
+pub struct DisplayFilter(u32);
+impl DisplayFilter {
+    pub const fn new() -> Self {
+        Self(0)
+    }
+    pub const unsafe fn from_u32(val: u32) -> Self {
+        Self(val)
+    }
+
+    pub fn with_pattern_0(mut self, pattern: u8) -> Self {
+        self.0 = bitfrob::u32_with_value(0, 3, self.0, pattern.into());
+        self
+    }
+
+    pub fn with_pattern_1(mut self, pattern: u8) -> Self {
+        self.0 = bitfrob::u32_with_value(4, 7, self.0, pattern.into());
+        self
+    }
+
+    pub fn with_pattern_2(mut self, pattern: u8) -> Self {
+        self.0 = bitfrob::u32_with_value(8, 11, self.0, pattern.into());
+        self
+    }
+
+    pub fn with_pattern_3(mut self, pattern: u8) -> Self {
+        self.0 = bitfrob::u32_with_value(12, 15, self.0, pattern.into());
+        self
+    }
+
+    pub fn with_pattern_4(mut self, pattern: u8) -> Self {
+        self.0 = bitfrob::u32_with_value(16, 19, self.0, pattern.into());
+        self
+    }
+
+    pub fn with_pattern_5(mut self, pattern: u8) -> Self {
+        self.0 = bitfrob::u32_with_value(20, 23, self.0, pattern.into());
+        self
+    }
+
+    pub const fn as_u32(&self) -> u32 {
+        self.0
+    }
+    pub const fn into_u32(self) -> u32 {
+        self.0
+    }
+}
+
+#[derive(Copy, Clone)]
+pub struct CopyFilter(u32);
+impl CopyFilter {
+    pub const fn new() -> Self {
+        Self(0)
+    }
+    pub const unsafe fn from_u32(val: u32) -> Self {
+        Self(val)
+    }
+
+    pub fn with_pattern_0(mut self, pattern: u8) -> Self {
+        self.0 = bitfrob::u32_with_value(0, 5, self.0, pattern.into());
+        self
+    }
+
+    pub fn with_pattern_1(mut self, pattern: u8) -> Self {
+        self.0 = bitfrob::u32_with_value(6, 11, self.0, pattern.into());
+        self
+    }
+
+    pub fn with_pattern_2(mut self, pattern: u8) -> Self {
+        self.0 = bitfrob::u32_with_value(12, 17, self.0, pattern.into());
+        self
+    }
+
+    pub fn with_pattern_3(mut self, pattern: u8) -> Self {
+        self.0 = bitfrob::u32_with_value(18, 23, self.0, pattern.into());
+        self
+    }
+
+    pub const fn as_u32(&self) -> u32 {
+        self.0
+    }
+    pub const fn into_u32(self) -> u32 {
+        self.0
     }
 }

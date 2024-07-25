@@ -235,6 +235,11 @@ impl BPReg {
             GX_PIPE.write(*byte);
         }
     }
+
+    //
+    pub unsafe fn from_u8(byte: u8) -> Self {
+        Self(byte)
+    }
 }
 
 #[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Ord, PartialOrd, Hash)]
@@ -421,5 +426,9 @@ impl XFReg {
                 GX_PIPE.write(*byte);
             }
         }
+    }
+
+    pub unsafe fn from_u16(byte: u16) -> Self {
+        Self(byte)
     }
 }
