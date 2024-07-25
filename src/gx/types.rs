@@ -1,4 +1,6 @@
 use bit_field::BitField;
+
+use super::CmpFn;
 pub struct PixelFormat(u8);
 
 impl PixelFormat {
@@ -491,4 +493,581 @@ pub enum TevOp {
     Blend,
     Modulate,
     Decal,
+}
+
+pub struct ZMode(u32);
+
+impl ZMode {
+    pub const fn new() -> Self {
+        Self(0)
+    }
+
+    pub fn with_func(mut self, func: CmpFn) -> Self {
+        self.0 = bitfrob::u32_with_value(1, 3, self.0, func.into_u8().into());
+        self
+    }
+
+    pub fn with_enable(mut self, enable: bool) -> Self {
+        self.0 = bitfrob::u32_with_value(0, 0, self.0, u8::from(enable).into());
+        self
+    }
+
+    pub fn with_update(mut self, update_enable: bool) -> Self {
+        self.0 = bitfrob::u32_with_value(4, 4, self.0, u8::from(update_enable).into());
+        self
+    }
+
+    pub fn into_u32(self) -> u32 {
+        self.0
+    }
+}
+
+pub enum LogicOp {
+    Clear = 0,
+    And = 1,
+    ReverseAnd = 2,
+    Copy = 3,
+    InverseAnd = 4,
+    NoOperation = 5,
+    ExclusiveOr = 6,
+    Or = 7,
+    NotOr = 8,
+    Equivalent = 9,
+    Inverse = 10,
+    ReverseOr = 11,
+    InverseCopy = 12,
+    InverseOr = 13,
+    NotAnd = 14,
+    Set = 15,
+}
+
+impl LogicOp {
+    pub fn into_u8(self) -> u8 {
+        match self {
+            LogicOp::Clear => 0,
+            LogicOp::And => 1,
+            LogicOp::ReverseAnd => 2,
+            LogicOp::Copy => 3,
+            LogicOp::InverseAnd => 4,
+            LogicOp::NoOperation => 5,
+            LogicOp::ExclusiveOr => 6,
+            LogicOp::Or => 7,
+            LogicOp::NotOr => 8,
+            LogicOp::Equivalent => 9,
+            LogicOp::Inverse => 10,
+            LogicOp::ReverseOr => 11,
+            LogicOp::InverseCopy => 12,
+            LogicOp::InverseOr => 13,
+            LogicOp::NotAnd => 14,
+            LogicOp::Set => 15,
+        }
+    }
+}
+
+pub enum BlendFactor {
+    Zero = 0,
+    One = 1,
+    SourceColor = 2,
+    InverseSourceColor = 3,
+    SourceAlpha = 4,
+    InverseSourceAlpha = 5,
+    DestinationAlpha = 6,
+    InverseDestinationAlpha = 7,
+}
+
+impl BlendFactor {
+    pub fn into_u8(self) -> u8 {
+        match self {
+            BlendFactor::Zero => 0,
+            BlendFactor::One => 1,
+            BlendFactor::SourceColor => 2,
+            BlendFactor::InverseSourceColor => 3,
+            BlendFactor::SourceAlpha => 4,
+            BlendFactor::InverseSourceAlpha => 5,
+            BlendFactor::DestinationAlpha => 6,
+            BlendFactor::InverseDestinationAlpha => 7,
+        }
+    }
+}
+
+pub struct CMode0(u32);
+
+impl CMode0 {
+    pub const fn new() -> Self {
+        Self(0)
+    }
+
+    pub fn with_blend_enable(mut self, blend_enable: bool) -> Self {
+        self.0 = bitfrob::u32_with_bit(0, self.0, blend_enable);
+        self
+    }
+
+    pub fn with_logic_enable(mut self, logic_enable: bool) -> Self {
+        self.0 = bitfrob::u32_with_bit(1, self.0, logic_enable);
+        self
+    }
+
+    pub fn with_dither_enable(mut self, dither_enable: bool) -> Self {
+        self.0 = bitfrob::u32_with_bit(2, self.0, dither_enable);
+        self
+    }
+
+    pub fn with_color_update(mut self, color_enable: bool) -> Self {
+        self.0 = bitfrob::u32_with_bit(3, self.0, color_enable);
+        self
+    }
+
+    pub fn with_alpha_update(mut self, alpha_enable: bool) -> Self {
+        self.0 = bitfrob::u32_with_bit(4, self.0, alpha_enable);
+        self
+    }
+
+    pub fn with_source_factor(mut self, factor: BlendFactor) -> Self {
+        self.0 = bitfrob::u32_with_value(5, 7, self.0, factor.into_u8().into());
+        self
+    }
+
+    pub fn with_destination_factor(mut self, factor: BlendFactor) -> Self {
+        self.0 = bitfrob::u32_with_value(8, 10, self.0, factor.into_u8().into());
+        self
+    }
+
+    pub fn should_blend(mut self, enable: bool) -> Self {
+        self.0 = bitfrob::u32_with_bit(11, self.0, enable);
+        self
+    }
+
+    pub fn with_logic_op(mut self, logic_op: LogicOp) -> Self {
+        self.0 = bitfrob::u32_with_value(12, 23, self.0, logic_op.into_u8().into());
+        self
+    }
+
+    pub const fn into_u32(self) -> u32 {
+        self.0
+    }
+}
+
+pub enum TextureOffset {
+    Zero = 0,
+    Sixteenth = 1,
+    Eighth = 2,
+    Fourth = 3,
+    Half = 4,
+    One = 5,
+}
+
+impl TextureOffset {
+    pub const fn into_u8(self) -> u8 {
+        match self {
+            Self::Zero => 0,
+            Self::Sixteenth => 1,
+            Self::Eighth => 2,
+            Self::Fourth => 3,
+            Self::Half => 4,
+            Self::One => 5,
+        }
+    }
+}
+
+#[derive(Copy, Clone)]
+#[repr(transparent)]
+pub struct LinePointSize(u32);
+
+impl LinePointSize {
+    pub const fn new() -> Self {
+        Self(0)
+    }
+
+    pub fn with_line_size(mut self, line_size: u8) -> Self {
+        self.0 = bitfrob::u32_with_value(0, 7, self.0, line_size.into());
+        self
+    }
+
+    pub fn with_point_size(mut self, point_size: u8) -> Self {
+        self.0 = bitfrob::u32_with_value(8, 15, self.0, point_size.into());
+        self
+    }
+
+    pub fn with_line_offset(mut self, offset: TextureOffset) -> Self {
+        self.0 = bitfrob::u32_with_value(16, 18, self.0, offset.into_u8().into());
+        self
+    }
+
+    pub fn with_point_offset(mut self, offset: TextureOffset) -> Self {
+        self.0 = bitfrob::u32_with_value(19, 21, self.0, offset.into_u8().into());
+        self
+    }
+
+    pub fn with_half_aspect_ratio(mut self, has_half_aspect_ratio: bool) -> Self {
+        self.0 = bitfrob::u32_with_bit(22, self.0, has_half_aspect_ratio);
+        self
+    }
+
+    pub const fn into_u32(self) -> u32 {
+        self.0
+    }
+}
+
+pub struct MatrixIndexLow(u32);
+
+impl MatrixIndexLow {
+    pub const fn new() -> Self {
+        Self(0)
+    }
+
+    pub fn with_geometry_matrix_index(mut self, matrix_index: u8) -> Self {
+        debug_assert!(matrix_index <= 63);
+        self.0 = bitfrob::u32_with_value(0, 5, self.0, matrix_index.into());
+        self
+    }
+
+    pub fn with_texture_0_matrix_index(mut self, matrix_index: u8) -> Self {
+        debug_assert!(matrix_index <= 63);
+        self.0 = bitfrob::u32_with_value(6, 11, self.0, matrix_index.into());
+        self
+    }
+
+    pub fn with_texture_1_matrix_index(mut self, matrix_index: u8) -> Self {
+        debug_assert!(matrix_index <= 63);
+        self.0 = bitfrob::u32_with_value(12, 17, self.0, matrix_index.into());
+        self
+    }
+
+    pub fn with_texture_2_matrix_index(mut self, matrix_index: u8) -> Self {
+        debug_assert!(matrix_index <= 63);
+        self.0 = bitfrob::u32_with_value(18, 23, self.0, matrix_index.into());
+        self
+    }
+
+    pub fn with_texture_3_matrix_index(mut self, matrix_index: u8) -> Self {
+        debug_assert!(matrix_index <= 63);
+        self.0 = bitfrob::u32_with_value(24, 29, self.0, matrix_index.into());
+        self
+    }
+
+    pub const fn as_u32(&self) -> u32 {
+        self.0
+    }
+
+    pub const fn into_u32(self) -> u32 {
+        self.0
+    }
+}
+
+pub struct MatrixIndexHigh(u32);
+
+impl MatrixIndexHigh {
+    pub const fn new() -> Self {
+        Self(0)
+    }
+
+    pub fn with_texture_4_matrix_index(mut self, matrix_index: u8) -> Self {
+        debug_assert!(matrix_index <= 63);
+        self.0 = bitfrob::u32_with_value(0, 5, self.0, matrix_index.into());
+        self
+    }
+
+    pub fn with_texture_5_matrix_index(mut self, matrix_index: u8) -> Self {
+        debug_assert!(matrix_index <= 63);
+        self.0 = bitfrob::u32_with_value(6, 11, self.0, matrix_index.into());
+        self
+    }
+
+    pub fn with_texture_6_matrix_index(mut self, matrix_index: u8) -> Self {
+        debug_assert!(matrix_index <= 63);
+        self.0 = bitfrob::u32_with_value(12, 17, self.0, matrix_index.into());
+        self
+    }
+
+    pub fn with_texture_7_matrix_index(mut self, matrix_index: u8) -> Self {
+        debug_assert!(matrix_index <= 63);
+        self.0 = bitfrob::u32_with_value(18, 23, self.0, matrix_index.into());
+        self
+    }
+
+    pub const fn as_u32(&self) -> u32 {
+        self.0
+    }
+
+    pub const fn into_u32(self) -> u32 {
+        self.0
+    }
+}
+
+pub struct ClipMode(u32);
+
+impl ClipMode {
+    pub const fn new() -> Self {
+        Self(0)
+    }
+
+    pub fn with_disable(mut self, disable: bool) -> Self {
+        self.0 = bitfrob::u32_with_bit(0, self.0, disable);
+        self
+    }
+
+    pub fn with_trivial_rejection_disable(mut self, disable: bool) -> Self {
+        self.0 = bitfrob::u32_with_bit(1, self.0, disable);
+        self
+    }
+
+    pub fn with_clipping_acceleration_disable(mut self, disable: bool) -> Self {
+        self.0 = bitfrob::u32_with_bit(1, self.0, disable);
+        self
+    }
+
+    pub fn as_u32(&self) -> u32 {
+        self.0
+    }
+
+    pub fn into_u32(self) -> u32 {
+        self.0
+    }
+}
+
+pub struct ScissorTopLeft(u32);
+
+impl ScissorTopLeft {
+    pub const fn new() -> Self {
+        Self(0)
+    }
+
+    pub fn with_y_origin(mut self, y_origin: u32) -> Self {
+        self.0 = bitfrob::u32_with_value(0, 10, self.0, y_origin);
+        self
+    }
+
+    pub fn with_x_origin(mut self, x_origin: u32) -> Self {
+        self.0 = bitfrob::u32_with_value(12, 22, self.0, x_origin);
+        self
+    }
+
+    pub const fn into_u32(self) -> u32 {
+        self.0
+    }
+
+    pub const fn as_u32(&self) -> u32 {
+        self.0
+    }
+}
+
+pub struct ScissorHeightWidth(u32);
+impl ScissorHeightWidth {
+    pub const fn new() -> Self {
+        Self(0)
+    }
+    pub fn with_height(mut self, height: u32) -> Self {
+        self.0 = bitfrob::u32_with_value(0, 10, self.0, height);
+        self
+    }
+    pub fn with_width(mut self, width: u32) -> Self {
+        self.0 = bitfrob::u32_with_value(12, 22, self.0, width);
+        self
+    }
+    pub const fn into_u32(self) -> u32 {
+        self.0
+    }
+    pub const fn as_u32(&self) -> u32 {
+        self.0
+    }
+}
+
+pub struct ScissorBoxOffset(u32);
+
+impl ScissorBoxOffset {
+    pub const fn new() -> Self {
+        Self(0)
+    }
+
+    pub fn with_x_offset(mut self, x_off: u32) -> Self {
+        self.0 = bitfrob::u32_with_value(0, 9, self.0, x_off);
+        self
+    }
+    pub fn with_y_offset(mut self, y_off: u32) -> Self {
+        self.0 = bitfrob::u32_with_value(10, 19, self.0, y_off);
+        self
+    }
+
+    pub const fn into_u32(self) -> u32 {
+        self.0
+    }
+    pub const fn as_u32(&self) -> u32 {
+        self.0
+    }
+}
+
+pub struct DisplayTopLeft(u32);
+
+impl DisplayTopLeft {
+    pub const fn new() -> Self {
+        Self(0)
+    }
+    pub fn with_x_origin(mut self, x_origin: u16) -> Self {
+        self.0 = bitfrob::u32_with_value(0, 9, self.0, x_origin.into());
+        self
+    }
+    pub fn with_y_origin(mut self, y_origin: u16) -> Self {
+        self.0 = bitfrob::u32_with_value(10, 19, self.0, y_origin.into());
+        self
+    }
+
+    pub const fn into_u32(self) -> u32 {
+        self.0
+    }
+
+    pub const fn as_u32(&self) -> u32 {
+        self.0
+    }
+}
+
+pub struct DisplayWidthHeight(u32);
+
+impl DisplayWidthHeight {
+    pub const fn new() -> Self {
+        Self(0)
+    }
+
+    pub fn with_width(mut self, width: u16) -> Self {
+        self.0 = bitfrob::u32_with_value(0, 9, self.0, width.into());
+        self
+    }
+    pub fn with_height(mut self, height: u16) -> Self {
+        self.0 = bitfrob::u32_with_value(10, 19, self.0, height.into());
+        self
+    }
+
+    pub const fn into_u32(self) -> u32 {
+        self.0
+    }
+    pub const fn as_u32(&self) -> u32 {
+        self.0
+    }
+}
+
+pub struct DisplayStride(u32);
+
+impl DisplayStride {
+    pub const fn new() -> Self {
+        Self(0)
+    }
+
+    pub fn with_stride(mut self, stride: u16) -> Self {
+        self.0 = bitfrob::u32_with_value(0, 9, self.0, stride.into());
+        self
+    }
+
+    pub const fn as_u32(&self) -> u32 {
+        self.0
+    }
+    pub const fn into_u32(self) -> u32 {
+        self.0
+    }
+}
+
+pub struct DisplayYScale(u32);
+
+impl DisplayYScale {
+    pub const fn new() -> Self {
+        Self(0)
+    }
+
+    pub fn with_scale(mut self, y_scale: f32) -> Self {
+        let y_scale_u32 = u32::from_be_bytes(y_scale.to_be_bytes());
+
+        self.0 = bitfrob::u32_with_value(0, 8, self.0, y_scale_u32);
+        self
+    }
+
+    pub const fn into_u32(self) -> u32 {
+        self.0
+    }
+    pub const fn as_u32(&self) -> u32 {
+        self.0
+    }
+}
+
+#[derive(Copy, Clone)]
+pub struct DisplayFilter(u32);
+impl DisplayFilter {
+    pub const fn new() -> Self {
+        Self(0)
+    }
+    pub const unsafe fn from_u32(val: u32) -> Self {
+        Self(val)
+    }
+
+    pub fn with_pattern_0(mut self, pattern: u8) -> Self {
+        self.0 = bitfrob::u32_with_value(0, 3, self.0, pattern.into());
+        self
+    }
+
+    pub fn with_pattern_1(mut self, pattern: u8) -> Self {
+        self.0 = bitfrob::u32_with_value(4, 7, self.0, pattern.into());
+        self
+    }
+
+    pub fn with_pattern_2(mut self, pattern: u8) -> Self {
+        self.0 = bitfrob::u32_with_value(8, 11, self.0, pattern.into());
+        self
+    }
+
+    pub fn with_pattern_3(mut self, pattern: u8) -> Self {
+        self.0 = bitfrob::u32_with_value(12, 15, self.0, pattern.into());
+        self
+    }
+
+    pub fn with_pattern_4(mut self, pattern: u8) -> Self {
+        self.0 = bitfrob::u32_with_value(16, 19, self.0, pattern.into());
+        self
+    }
+
+    pub fn with_pattern_5(mut self, pattern: u8) -> Self {
+        self.0 = bitfrob::u32_with_value(20, 23, self.0, pattern.into());
+        self
+    }
+
+    pub const fn as_u32(&self) -> u32 {
+        self.0
+    }
+    pub const fn into_u32(self) -> u32 {
+        self.0
+    }
+}
+
+#[derive(Copy, Clone)]
+pub struct CopyFilter(u32);
+impl CopyFilter {
+    pub const fn new() -> Self {
+        Self(0)
+    }
+    pub const unsafe fn from_u32(val: u32) -> Self {
+        Self(val)
+    }
+
+    pub fn with_pattern_0(mut self, pattern: u8) -> Self {
+        self.0 = bitfrob::u32_with_value(0, 5, self.0, pattern.into());
+        self
+    }
+
+    pub fn with_pattern_1(mut self, pattern: u8) -> Self {
+        self.0 = bitfrob::u32_with_value(6, 11, self.0, pattern.into());
+        self
+    }
+
+    pub fn with_pattern_2(mut self, pattern: u8) -> Self {
+        self.0 = bitfrob::u32_with_value(12, 17, self.0, pattern.into());
+        self
+    }
+
+    pub fn with_pattern_3(mut self, pattern: u8) -> Self {
+        self.0 = bitfrob::u32_with_value(18, 23, self.0, pattern.into());
+        self
+    }
+
+    pub const fn as_u32(&self) -> u32 {
+        self.0
+    }
+    pub const fn into_u32(self) -> u32 {
+        self.0
+    }
 }

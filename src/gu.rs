@@ -596,7 +596,13 @@ impl Mat3x4 {
         Gx::load_pos_mtx_imm(self.as_array_mut(), pnidx);
     }
     pub fn load_as_nrm_mtx(&mut self, pnidx: u32) {
-        Gx::load_nrm_mtx_imm(self.as_array_mut(), pnidx);
+        let actual_array: &[[f32; 3]; 3] = &[
+            self.as_array_mut()[0][..3].try_into().unwrap(),
+            self.as_array_mut()[1][..3].try_into().unwrap(),
+            self.as_array_mut()[2][..3].try_into().unwrap(),
+        ];
+
+        Gx::load_nrm_mtx_imm(actual_array, pnidx);
     }
     pub fn load_as_tex_mtx(&mut self, pnidx: u32) {
         Gx::load_tex_mtx_imm(self.as_array_mut(), pnidx);
