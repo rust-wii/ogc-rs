@@ -412,6 +412,11 @@ impl Operation {
     }
 }
 
+impl Default for TextureEnviroment {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 impl TextureEnviroment {
     pub fn new() -> Self {
         Self(0)
@@ -497,6 +502,11 @@ pub enum TevOp {
 
 pub struct ZMode(u32);
 
+impl Default for ZMode {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 impl ZMode {
     pub const fn new() -> Self {
         Self(0)
@@ -592,6 +602,12 @@ impl BlendFactor {
 
 pub struct CMode0(u32);
 
+impl Default for CMode0 {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CMode0 {
     pub const fn new() -> Self {
         Self(0)
@@ -673,6 +689,11 @@ impl TextureOffset {
 #[repr(transparent)]
 pub struct LinePointSize(u32);
 
+impl Default for LinePointSize {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 impl LinePointSize {
     pub const fn new() -> Self {
         Self(0)
@@ -710,6 +731,11 @@ impl LinePointSize {
 
 pub struct MatrixIndexLow(u32);
 
+impl Default for MatrixIndexLow {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 impl MatrixIndexLow {
     pub const fn new() -> Self {
         Self(0)
@@ -756,6 +782,11 @@ impl MatrixIndexLow {
 
 pub struct MatrixIndexHigh(u32);
 
+impl Default for MatrixIndexHigh {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 impl MatrixIndexHigh {
     pub const fn new() -> Self {
         Self(0)
@@ -796,6 +827,11 @@ impl MatrixIndexHigh {
 
 pub struct ClipMode(u32);
 
+impl Default for ClipMode {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 impl ClipMode {
     pub const fn new() -> Self {
         Self(0)
@@ -827,6 +863,11 @@ impl ClipMode {
 
 pub struct ScissorTopLeft(u32);
 
+impl Default for ScissorTopLeft {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 impl ScissorTopLeft {
     pub const fn new() -> Self {
         Self(0)
@@ -852,6 +893,13 @@ impl ScissorTopLeft {
 }
 
 pub struct ScissorHeightWidth(u32);
+
+impl Default for ScissorHeightWidth {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ScissorHeightWidth {
     pub const fn new() -> Self {
         Self(0)
@@ -873,6 +921,12 @@ impl ScissorHeightWidth {
 }
 
 pub struct ScissorBoxOffset(u32);
+
+impl Default for ScissorBoxOffset {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl ScissorBoxOffset {
     pub const fn new() -> Self {
@@ -898,6 +952,12 @@ impl ScissorBoxOffset {
 
 pub struct DisplayTopLeft(u32);
 
+impl Default for DisplayTopLeft {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DisplayTopLeft {
     pub const fn new() -> Self {
         Self(0)
@@ -921,6 +981,12 @@ impl DisplayTopLeft {
 }
 
 pub struct DisplayWidthHeight(u32);
+
+impl Default for DisplayWidthHeight {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl DisplayWidthHeight {
     pub const fn new() -> Self {
@@ -946,6 +1012,11 @@ impl DisplayWidthHeight {
 
 pub struct DisplayStride(u32);
 
+impl Default for DisplayStride {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 impl DisplayStride {
     pub const fn new() -> Self {
         Self(0)
@@ -965,6 +1036,12 @@ impl DisplayStride {
 }
 
 pub struct DisplayYScale(u32);
+
+impl Default for DisplayYScale {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl DisplayYScale {
     pub const fn new() -> Self {
@@ -988,6 +1065,13 @@ impl DisplayYScale {
 
 #[derive(Copy, Clone)]
 pub struct DisplayFilter(u32);
+
+impl Default for DisplayFilter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DisplayFilter {
     pub const fn new() -> Self {
         Self(0)
@@ -1036,6 +1120,13 @@ impl DisplayFilter {
 
 #[derive(Copy, Clone)]
 pub struct CopyFilter(u32);
+
+impl Default for CopyFilter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CopyFilter {
     pub const fn new() -> Self {
         Self(0)

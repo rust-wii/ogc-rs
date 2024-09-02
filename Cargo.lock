@@ -274,6 +274,7 @@ dependencies = [
  "glam",
  "libc",
  "libm",
+ "num-traits",
  "num_enum",
  "ogc-sys",
  "voladdress",
