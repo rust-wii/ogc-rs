@@ -51,6 +51,10 @@ impl Color {
     }
 }
 
+pub fn def_tex_region_callback(obj: &Texture, mapid: u8) -> GXTexRegion {
+    todo!()
+}
+
 /// Backface culling mode.
 ///
 /// Primitives in which the vertex order is clockwise to the viewer are considered front-facing.
@@ -1762,6 +1766,12 @@ impl Gx {
                 u32::try_from(buf.len()).unwrap(),
             );
 
+            #[cfg(feature = "experimental")]
+            {
+                let _ = GX_TEX_REGION_CALLBACK
+                    .get_mut()
+                    .replace(&def_tex_region_callback);
+            }
             fifo.cast::<Fifo>().as_mut().unwrap()
         }
     }
@@ -3412,9 +3422,15 @@ impl Gx {
 fn load_texture_preloaded(obj: &Texture, mapid: u8) {
     let mut region: MaybeUninit<GXTexRegion> = MaybeUninit::uninit();
 
-    if let Some(func) = unsafe { GX_TEX_REGION_CALLBACK.get_mut() } {
-        region.write(func(obj, mapid));
-    }
+    let _region: Option<GXTexRegion> =
+        if let Some(func) = unsafe { GX_TEX_REGION_CALLBACK.get_mut() } {
+            unsafe {
+                region.as_mut_ptr().write(func(obj, mapid));
+                Some(region.assume_init())
+            }
+        } else {
+            None
+        };
     let mut val = 0;
     let wrap_s = obj.wrap_s();
     let wrap_t = obj.wrap_t();
@@ -3464,16 +3480,97 @@ fn load_texture_preloaded(obj: &Texture, mapid: u8) {
     odd = bitfrob::u32_with_value(18, 20, odd, 3);
     odd = bitfrob::u32_with_bit(21, odd, false);
 
-    //TODO: Map to mapid 0..=7
-    BPReg::TX_SETMODE0_I0.load(val);
-    BPReg::TX_SETMODE1_I0.load(0x0);
-    BPReg::TX_SETIMAGE0_I0.load(img_val);
+    match mapid {
+        0 => {
+            BPReg::TX_SETMODE0_I0.load(val);
+            BPReg::TX_SETMODE1_I0.load(0x0);
+            BPReg::TX_SETIMAGE0_I0.load(img_val);
 
-    BPReg::TX_SETIMAGE1_I0.load(even);
-    BPReg::TX_SETIMAGE2_I0.load(odd);
+            BPReg::TX_SETIMAGE1_I0.load(even);
+            BPReg::TX_SETIMAGE2_I0.load(odd);
 
-    BPReg::TX_SETIMAGE3_I0.load(u32::try_from(mem::to_physical(obj.address()) >> 5).unwrap());
+            BPReg::TX_SETIMAGE3_I0
+                .load(u32::try_from(mem::to_physical(obj.address()) >> 5).unwrap());
+        }
+        1 => {
+            BPReg::TX_SETMODE0_I1.load(val);
+            BPReg::TX_SETMODE1_I1.load(0x0);
 
+            BPReg::TX_SETIMAGE0_I1.load(img_val);
+            BPReg::TX_SETIMAGE1_I1.load(even);
+            BPReg::TX_SETIMAGE2_I1.load(odd);
+
+            BPReg::TX_SETIMAGE3_I1
+                .load(u32::try_from(mem::to_physical(obj.address()) >> 5).unwrap());
+        }
+        2 => {
+            BPReg::TX_SETMODE0_I2.load(val);
+            BPReg::TX_SETMODE1_I2.load(0x0);
+
+            BPReg::TX_SETIMAGE0_I2.load(img_val);
+            BPReg::TX_SETIMAGE1_I2.load(even);
+            BPReg::TX_SETIMAGE2_I2.load(odd);
+
+            BPReg::TX_SETIMAGE3_I2
+                .load(u32::try_from(mem::to_physical(obj.address()) >> 5).unwrap());
+        }
+        3 => {
+            BPReg::TX_SETMODE0_I3.load(val);
+            BPReg::TX_SETMODE1_I3.load(0x0);
+
+            BPReg::TX_SETIMAGE0_I3.load(img_val);
+            BPReg::TX_SETIMAGE1_I3.load(even);
+            BPReg::TX_SETIMAGE2_I3.load(odd);
+
+            BPReg::TX_SETIMAGE3_I3
+                .load(u32::try_from(mem::to_physical(obj.address()) >> 5).unwrap());
+        }
+        4 => {
+            BPReg::TX_SETMODE0_I4.load(val);
+            BPReg::TX_SETMODE1_I4.load(0x0);
+
+            BPReg::TX_SETIMAGE0_I4.load(img_val);
+            BPReg::TX_SETIMAGE1_I4.load(even);
+            BPReg::TX_SETIMAGE2_I4.load(odd);
+
+            BPReg::TX_SETIMAGE3_I4
+                .load(u32::try_from(mem::to_physical(obj.address()) >> 5).unwrap());
+        }
+        5 => {
+            BPReg::TX_SETMODE0_I5.load(val);
+            BPReg::TX_SETMODE1_I5.load(0x0);
+
+            BPReg::TX_SETIMAGE0_I5.load(img_val);
+            BPReg::TX_SETIMAGE1_I5.load(even);
+            BPReg::TX_SETIMAGE2_I5.load(odd);
+
+            BPReg::TX_SETIMAGE3_I5
+                .load(u32::try_from(mem::to_physical(obj.address()) >> 5).unwrap());
+        }
+        6 => {
+            BPReg::TX_SETMODE0_I6.load(val);
+            BPReg::TX_SETMODE1_I6.load(0x0);
+
+            BPReg::TX_SETIMAGE0_I6.load(img_val);
+            BPReg::TX_SETIMAGE1_I6.load(even);
+            BPReg::TX_SETIMAGE2_I6.load(odd);
+
+            BPReg::TX_SETIMAGE3_I6
+                .load(u32::try_from(mem::to_physical(obj.address()) >> 5).unwrap());
+        }
+        7 => {
+            BPReg::TX_SETMODE0_I7.load(val);
+            BPReg::TX_SETMODE1_I7.load(0x0);
+
+            BPReg::TX_SETIMAGE0_I7.load(img_val);
+            BPReg::TX_SETIMAGE1_I7.load(even);
+            BPReg::TX_SETIMAGE2_I7.load(odd);
+
+            BPReg::TX_SETIMAGE3_I7
+                .load(u32::try_from(mem::to_physical(obj.address()) >> 5).unwrap());
+        }
+        _ => todo!(),
+    }
     Gx::flush();
 }
 
