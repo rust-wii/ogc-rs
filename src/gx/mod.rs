@@ -532,6 +532,230 @@ impl Default for Fifo {
     }
 }
 
+#[cfg(feature = "experimental")]
+pub mod experimental2 {
+    use crate::mem;
+    use core::sync::Exclusive;
+
+    static mut CPU_FIFO: Exclusive<Option<FifoInner>> = Exclusive::new(None);
+    static mut GRAPHIC_PROCESSOR_FIFO: Exclusive<Option<FifoInner>> = Exclusive::new(None);
+
+    pub fn is_link_ready() -> bool {
+        if let Some(cpu_fifo) = unsafe { CPU_FIFO.get_mut() } {
+            if let Some(gpu_fifo) = unsafe { GRAPHIC_PROCESSOR_FIFO.get_mut() } {
+                cpu_fifo.buffer_start == gpu_fifo.buffer_start
+                    && cpu_fifo.buffer_end == gpu_fifo.buffer_end
+            } else {
+                false
+            }
+        } else {
+            false
+        }
+    }
+
+    #[derive(Clone)]
+    pub struct FifoInner {
+        buffer_start: u32,
+        buffer_end: u32,
+        size: u32,
+        high_mark: u32,
+        low_mark: u32,
+        read_ptr: *const (),
+        write_ptr: *mut (),
+        read_write_distance: u32,
+        fifo_wrap: bool,
+        cpu_fifo_ready: bool,
+        graphics_processor_fifo_ready: bool,
+    }
+
+    impl FifoInner {
+        pub fn new(size: usize) -> Self {
+            let mut buf = crate::utils::Buf32::new(size);
+
+            const HIGH_WATER_MARK: usize = 16 * 1024;
+            const LOW_WATER_MARK_MASK: usize = 0x7fffffe0;
+
+            FifoInner {
+                buffer_start: u32::try_from(buf.as_mut_ptr().addr()).unwrap(),
+                buffer_end: u32::try_from(unsafe {
+                    buf.as_mut_ptr()
+                        .offset(isize::try_from(buf.len()).unwrap() - 4)
+                        .addr()
+                })
+                .unwrap(),
+                size: u32::try_from(buf.len()).unwrap(),
+                read_write_distance: 0,
+                high_mark: u32::try_from(buf.len() - HIGH_WATER_MARK).unwrap(),
+                low_mark: u32::try_from((buf.len() >> 1) & LOW_WATER_MARK_MASK).unwrap(),
+                read_ptr: buf.as_ptr().cast(),
+                write_ptr: buf.as_mut_ptr().cast(),
+                fifo_wrap: false,
+                cpu_fifo_ready: false,
+                graphics_processor_fifo_ready: false,
+            }
+        }
+
+        pub fn link(&mut self) {
+            if is_link_ready() {
+                //Clear any interrupts that may of happened
+                unsafe {
+                    (0xCC00_0004 as *mut u16).write_volatile(0b00_00_00_00_00_00_00_11);
+
+                    //Enable fifo overflow interrupt
+                    let ptr = 0xCC00_0002 as *mut u16;
+                    let val = {
+                        let mut val = ptr.read_volatile();
+                        val = bitfrob::u16_with_bit(2, val, true);
+                        val = bitfrob::u16_with_bit(3, val, false);
+                        val
+                    };
+                    ptr.write_volatile(val);
+
+                    //Link them
+                    let val = {
+                        let mut val = ptr.read_volatile();
+                        val = bitfrob::u16_with_bit(4, val, true);
+                        val
+                    };
+                    ptr.write_volatile(val);
+
+                    //Enable reading
+                    let val = {
+                        let mut val = ptr.read_volatile();
+                        val = bitfrob::u16_with_bit(0, val, true);
+                        val
+                    };
+                    ptr.write_volatile(val);
+                }
+            }
+        }
+
+        pub fn set_as_cpu_fifo(&mut self) {
+            let mut cpu = self.clone();
+            cpu.cpu_fifo_ready = true;
+
+            unsafe { *CPU_FIFO.get_mut() = Some(cpu) };
+
+            if let Some(cpu_fifo) = unsafe { CPU_FIFO.get_mut() } {
+                unsafe {
+                    (0xCC00_300C as *mut usize).write_volatile(mem::to_physical(
+                        usize::try_from(cpu_fifo.buffer_start).unwrap(),
+                    ));
+                    (0xCC00_3010 as *mut usize).write_volatile(mem::to_physical(
+                        usize::try_from(cpu_fifo.buffer_end).unwrap(),
+                    ));
+                    (0xCC00_3014 as *mut usize)
+                        .write_volatile(mem::to_physical(cpu_fifo.write_ptr.addr()));
+
+                    core::arch::asm!("sc");
+                }
+            }
+        }
+
+        pub fn set_as_graphics_processor_fifo(&mut self) {
+            let mut graphics_processor_fifo = self.clone();
+            graphics_processor_fifo.graphics_processor_fifo_ready = true;
+
+            unsafe {
+                *GRAPHIC_PROCESSOR_FIFO.get_mut() = Some(graphics_processor_fifo);
+            };
+
+            if let Some(gpu_fifo) = unsafe { GRAPHIC_PROCESSOR_FIFO.get_mut() } {
+                unsafe {
+                    (0xCC00_0020 as *mut u16).write_volatile(
+                        bitfrob::u32_get_value(0, 15, gpu_fifo.buffer_start)
+                            .try_into()
+                            .unwrap(),
+                    );
+
+                    (0xCC00_0022 as *mut u16).write_volatile(
+                        bitfrob::u32_get_value(16, 31, gpu_fifo.buffer_start)
+                            .try_into()
+                            .unwrap(),
+                    );
+
+                    (0xCC00_0024 as *mut u16).write_volatile(
+                        bitfrob::u32_get_value(0, 15, gpu_fifo.buffer_end)
+                            .try_into()
+                            .unwrap(),
+                    );
+                    (0xCC00_0026 as *mut u16).write_volatile(
+                        bitfrob::u32_get_value(16, 31, gpu_fifo.buffer_end)
+                            .try_into()
+                            .unwrap(),
+                    );
+
+                    (0xCC00_0028 as *mut u16).write_volatile(
+                        bitfrob::u32_get_value(0, 15, gpu_fifo.high_mark)
+                            .try_into()
+                            .unwrap(),
+                    );
+                    (0xCC00_002a as *mut u16).write_volatile(
+                        bitfrob::u32_get_value(16, 31, gpu_fifo.high_mark)
+                            .try_into()
+                            .unwrap(),
+                    );
+                    (0xCC00_002c as *mut u16).write_volatile(
+                        bitfrob::u32_get_value(0, 15, gpu_fifo.low_mark)
+                            .try_into()
+                            .unwrap(),
+                    );
+                    (0xCC00_002e as *mut u16).write_volatile(
+                        bitfrob::u32_get_value(16, 31, gpu_fifo.low_mark)
+                            .try_into()
+                            .unwrap(),
+                    );
+                    (0xCC00_0030 as *mut u16).write_volatile(
+                        bitfrob::u32_get_value(0, 15, gpu_fifo.read_write_distance)
+                            .try_into()
+                            .unwrap(),
+                    );
+                    (0xCC00_0032 as *mut u16).write_volatile(
+                        bitfrob::u32_get_value(16, 31, gpu_fifo.read_write_distance)
+                            .try_into()
+                            .unwrap(),
+                    );
+
+                    (0xCC00_0034 as *mut u16).write_volatile(
+                        bitfrob::u32_get_value(
+                            0,
+                            15,
+                            gpu_fifo.write_ptr.addr().try_into().unwrap(),
+                        )
+                        .try_into()
+                        .unwrap(),
+                    );
+                    (0xCC00_0036 as *mut u16).write_volatile(
+                        bitfrob::u32_get_value(
+                            16,
+                            31,
+                            gpu_fifo.write_ptr.addr().try_into().unwrap(),
+                        )
+                        .try_into()
+                        .unwrap(),
+                    );
+
+                    (0xCC00_0038 as *mut u16).write_volatile(
+                        bitfrob::u32_get_value(0, 15, gpu_fifo.read_ptr.addr().try_into().unwrap())
+                            .try_into()
+                            .unwrap(),
+                    );
+                    (0xCC00_003a as *mut u16).write_volatile(
+                        bitfrob::u32_get_value(
+                            16,
+                            31,
+                            gpu_fifo.read_ptr.addr().try_into().unwrap(),
+                        )
+                        .try_into()
+                        .unwrap(),
+                    );
+
+                    core::arch::asm!("sc");
+                }
+            }
+        }
+    }
+}
 impl Fifo {
     /// The minimum allowed size for a FIFO.
     pub const MIN_SIZE: usize = 65536;
@@ -553,6 +777,30 @@ impl Fifo {
 
         let mut buf = crate::utils::Buf32::new(size);
 
+        const HIGH_WATER_MARK: usize = 16 * 1024;
+        const LOW_WATER_MARK_MASK: usize = 0x7fffffe0;
+
+        #[cfg(feature = "experimental")]
+        {
+            let fifo_inner = FifoInner {
+                buffer_start: u32::try_from(buf.as_mut_ptr().addr()).unwrap(),
+                buffer_end: u32::try_from(unsafe {
+                    buf.as_mut_ptr()
+                        .offset(isize::try_from(buf.len()).unwrap() - 4)
+                        .addr()
+                })
+                .unwrap(),
+                size: u32::try_from(buf.len()).unwrap(),
+                read_write_distance: 0,
+                high_mark: u32::try_from(buf.len() - HIGH_WATER_MARK).unwrap(),
+                low_mark: u32::try_from((buf.len() >> 1) & LOW_WATER_MARK_MASK).unwrap(),
+                read_ptr: buf.as_ptr().cast(),
+                write_ptr: buf.as_mut_ptr().cast(),
+                fifo_wrap: false,
+                cpu_fifo_ready: false,
+                graphics_processor_fifo_ready: false,
+            };
+        }
         // SAFETY:
         // + original libogc source suggests that available init functions don't
         //   completely initialize the fifo, so it's been zeroed() above just in
@@ -2557,14 +2805,6 @@ impl Gx {
     /// See [GX_SetArray](https://libogc.devkitpro.org/gx_8h.html#a5164fc6aa2a678d792af80d94bfa1ec2) for more.
     pub fn set_array<T>(attr: VtxAttr, array: &[T], stride: u8) {
         // Pinky promise I don't actually modify the data at array with this call
-        unsafe {
-            ffi::GX_SetArray(
-                u32::from(attr.into_u8()),
-                array.as_ptr().cast::<c_void>().cast_mut(),
-                stride,
-            )
-        }
-
         match attr {
             VtxAttr::Color0 => {
                 CPReg::COL0_PTR.load(
@@ -2576,6 +2816,17 @@ impl Gx {
                         .unwrap(),
                 );
                 CPReg::COL0_SIZE.load(stride.into())
+            }
+            VtxAttr::Color1 => {
+                CPReg::COL1_PTR.load(
+                    array
+                        .as_ptr()
+                        .map_addr(mem::to_physical)
+                        .addr()
+                        .try_into()
+                        .unwrap(),
+                );
+                CPReg::COL1_SIZE.load(stride.into());
             }
             VtxAttr::Pos => {
                 CPReg::VERT_PTR.load(
@@ -2599,13 +2850,144 @@ impl Gx {
                 );
                 CPReg::TEX0_SIZE.load(stride.into())
             }
-            _ => unsafe {
-                ffi::GX_SetArray(
-                    u32::from(attr.into_u8()),
-                    array.as_ptr().cast::<c_void>().cast_mut(),
-                    stride,
-                )
-            },
+            VtxAttr::Tex1 => {
+                CPReg::TEX1_PTR.load(
+                    array
+                        .as_ptr()
+                        .map_addr(mem::to_physical)
+                        .addr()
+                        .try_into()
+                        .unwrap(),
+                );
+                CPReg::TEX1_SIZE.load(stride.into())
+            }
+            VtxAttr::Tex2 => {
+                CPReg::TEX2_PTR.load(
+                    array
+                        .as_ptr()
+                        .map_addr(mem::to_physical)
+                        .addr()
+                        .try_into()
+                        .unwrap(),
+                );
+                CPReg::TEX2_SIZE.load(stride.into())
+            }
+            VtxAttr::Tex3 => {
+                CPReg::TEX3_PTR.load(
+                    array
+                        .as_ptr()
+                        .map_addr(mem::to_physical)
+                        .addr()
+                        .try_into()
+                        .unwrap(),
+                );
+                CPReg::TEX3_SIZE.load(stride.into())
+            }
+
+            VtxAttr::Tex4 => {
+                CPReg::TEX4_PTR.load(
+                    array
+                        .as_ptr()
+                        .map_addr(mem::to_physical)
+                        .addr()
+                        .try_into()
+                        .unwrap(),
+                );
+                CPReg::TEX4_SIZE.load(stride.into())
+            }
+
+            VtxAttr::Tex5 => {
+                CPReg::TEX5_PTR.load(
+                    array
+                        .as_ptr()
+                        .map_addr(mem::to_physical)
+                        .addr()
+                        .try_into()
+                        .unwrap(),
+                );
+                CPReg::TEX5_SIZE.load(stride.into())
+            }
+
+            VtxAttr::Tex6 => {
+                CPReg::TEX6_PTR.load(
+                    array
+                        .as_ptr()
+                        .map_addr(mem::to_physical)
+                        .addr()
+                        .try_into()
+                        .unwrap(),
+                );
+                CPReg::TEX6_SIZE.load(stride.into())
+            }
+            VtxAttr::Tex7 => {
+                CPReg::TEX7_PTR.load(
+                    array
+                        .as_ptr()
+                        .map_addr(mem::to_physical)
+                        .addr()
+                        .try_into()
+                        .unwrap(),
+                );
+                CPReg::TEX7_SIZE.load(stride.into())
+            }
+            VtxAttr::Nrm | VtxAttr::Nbt => {
+                CPReg::NORM_PTR.load(
+                    array
+                        .as_ptr()
+                        .map_addr(mem::to_physical)
+                        .addr()
+                        .try_into()
+                        .unwrap(),
+                );
+                CPReg::NORM_SIZE.load(stride.into());
+            }
+            VtxAttr::PosMtxArray => {
+                CPReg::IDXA_PTR.load(
+                    array
+                        .as_ptr()
+                        .map_addr(mem::to_physical)
+                        .addr()
+                        .try_into()
+                        .unwrap(),
+                );
+                CPReg::IDXA_SIZE.load(stride.into());
+            }
+            VtxAttr::NrmMtxArray => {
+                CPReg::IDXB_PTR.load(
+                    array
+                        .as_ptr()
+                        .map_addr(mem::to_physical)
+                        .addr()
+                        .try_into()
+                        .unwrap(),
+                );
+                CPReg::IDXB_SIZE.load(stride.into());
+            }
+            VtxAttr::TexMtxArray => {
+                CPReg::IDXC_PTR.load(
+                    array
+                        .as_ptr()
+                        .map_addr(mem::to_physical)
+                        .addr()
+                        .try_into()
+                        .unwrap(),
+                );
+                CPReg::IDXC_SIZE.load(stride.into());
+            }
+            VtxAttr::LightArray => {
+                CPReg::IDXD_PTR.load(
+                    array
+                        .as_ptr()
+                        .map_addr(mem::to_physical)
+                        .addr()
+                        .try_into()
+                        .unwrap(),
+                );
+                CPReg::IDXD_SIZE.load(stride.into());
+            }
+            // IDX based arrays are already setup in matrix mem so don't need to do anything with
+            // thoses
+            _ => {}
         }
     }
 

@@ -22,6 +22,7 @@ mmio = []
 glam_compat = ["glam"]
 default_alloc_handler = []
 default_panic_handler = []
+experimental = []
 
 [dependencies]
 bitflags = "1.3"
