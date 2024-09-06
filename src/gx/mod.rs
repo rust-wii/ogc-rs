@@ -7,6 +7,7 @@ use num_traits::Float;
 use core::ffi::c_void;
 use core::marker::PhantomData;
 use core::mem::MaybeUninit;
+use core::sync::Exclusive;
 
 use crate::ffi::{self, Mtx as Mtx34, Mtx44};
 use crate::gx::regs::BPReg;
@@ -14,8 +15,8 @@ use crate::lwp;
 use crate::utils::mem;
 use alloc::vec::Vec;
 use ffi::GXTexObj;
-use ogc_sys::_gx_texobj;
-use regs::CPReg;
+use ogc_sys::{GXTexRegion, _gx_texobj};
+use regs::{CPReg, DiagonalLoad, MaxAnisotrophy};
 use types::{
     AlphaCombinerInput, ColorCombinerInput, ColorReg, ColorSlot, ComponentSize, ComponentType,
     CopyFilter, DisplayFilter, DisplayStride, DisplayTopLeft, DisplayWidthHeight, DisplayYScale,
@@ -32,6 +33,9 @@ pub const GX_PIPE: VolAddress<u8, (), Safe> = unsafe { VolAddress::new(0xCC00_80
 
 mod regs;
 pub mod types;
+
+static mut GX_TEX_REGION_CALLBACK: Exclusive<Option<&dyn Fn(&Texture, u8) -> GXTexRegion>> =
+    Exclusive::new(None);
 
 #[derive(Copy, Clone, Debug)]
 #[repr(transparent)]
@@ -58,7 +62,6 @@ pub enum CullMode {
 
     /// Cull front-facing primitives.
     Front = ffi::GX_CULL_FRONT,
-
     /// Cull back-facing primitives.
     Back = ffi::GX_CULL_BACK,
 
@@ -1347,6 +1350,45 @@ impl Texture<'_> {
         }
     }
 
+    pub fn wrap_s(&self) -> WrapMode {
+        unsafe {
+            match ffi::GX_GetTexObjWrapS(&self.0) {
+                0 => WrapMode::Clamp,
+                1 => WrapMode::Repeat,
+                2 => WrapMode::Mirror,
+                _ => panic!(),
+            }
+        }
+    }
+
+    pub fn wrap_t(&self) -> WrapMode {
+        unsafe {
+            match ffi::GX_GetTexObjWrapT(&self.0) {
+                0 => WrapMode::Clamp,
+                1 => WrapMode::Repeat,
+                2 => WrapMode::Mirror,
+                _ => panic!(),
+            }
+        }
+    }
+
+    pub fn format(&self) -> TextureFormat {
+        match unsafe { ffi::GX_GetTexObjFmt(&self.0) } {
+            0 => TextureFormat::Intensity4,
+            1 => TextureFormat::Intensity8,
+            2 => TextureFormat::IntensityAlpha4,
+            3 => TextureFormat::IntensityAlpha8,
+            4 => TextureFormat::Rgb565,
+            5 => TextureFormat::Rgb5a3,
+            6 => TextureFormat::Rgba8,
+            8 => TextureFormat::ColorIndexed4,
+            9 => TextureFormat::ColorIndexed8,
+            10 => TextureFormat::ColorIndexed14,
+            14 => TextureFormat::Compressed,
+            _ => panic!(),
+        }
+    }
+
     /// Used to initialize or change a texture object when the texture is color index format.
     pub fn with_color_idx(
         img: &[u8],
@@ -1532,6 +1574,37 @@ impl Texture<'_> {
 
     pub fn gxtexobj(&mut self) -> &mut GXTexObj {
         &mut self.0
+    }
+
+    fn filter_mode(&self) -> (TexFilter, TexFilter) {
+        let mut min_filter = 0;
+        let mut max_filter = 0;
+
+        unsafe {
+            ffi::GX_GetTexObjFilterMode(&self.0, &mut min_filter, &mut max_filter);
+        }
+
+        let min = match min_filter {
+            0 => TexFilter::Near,
+            1 => TexFilter::Linear,
+            _ => panic!(),
+        };
+
+        let max = match max_filter {
+            0 => TexFilter::Near,
+            1 => TexFilter::Linear,
+            2 => TexFilter::NearMipNear,
+            3 => TexFilter::LinMipNear,
+            4 => TexFilter::NearMipLin,
+            5 => TexFilter::LinMipLin,
+            _ => panic!(),
+        };
+
+        (min, max)
+    }
+
+    fn address(&self) -> usize {
+        unsafe { ffi::GX_GetTexObjData(&self.0).addr() }
     }
 }
 
@@ -2594,7 +2667,12 @@ impl Gx {
     /// If the texture is a color-index texture, you **must** load the associated TLUT (using
     /// [`Gx::load_tlut()`]) before calling this function.
     pub fn load_texture(obj: &Texture, mapid: u8) {
-        unsafe { ffi::GX_LoadTexObj(core::ptr::from_ref::<_gx_texobj>(&obj.0).cast_mut(), mapid) }
+        if mapid == 0 {
+            load_texture_preloaded(obj, mapid);
+            return;
+        }
+
+        unsafe { ffi::GX_LoadTexObj(core::ptr::from_ref::<_gx_texobj>(&obj.0).cast_mut(), mapid) };
     }
 
     /// Sets the projection matrix.
@@ -3331,6 +3409,74 @@ impl Gx {
     }
 }
 
+fn load_texture_preloaded(obj: &Texture, mapid: u8) {
+    let mut region: MaybeUninit<GXTexRegion> = MaybeUninit::uninit();
+
+    if let Some(func) = unsafe { GX_TEX_REGION_CALLBACK.get_mut() } {
+        region.write(func(obj, mapid));
+    }
+    let mut val = 0;
+    let wrap_s = obj.wrap_s();
+    let wrap_t = obj.wrap_t();
+    let (min_filter, max_filter) = obj.filter_mode();
+    let diagonal_load = DiagonalLoad::Diagonal;
+    let aniso = MaxAnisotrophy::One;
+    let lod_clamp = false;
+
+    val = bitfrob::u32_with_value(0, 1, val, wrap_s.into_u8().into());
+    val = bitfrob::u32_with_value(2, 3, val, wrap_t.into_u8().into());
+    val = bitfrob::u32_with_bit(4, val, min_filter.into_u8() != 0);
+    val = bitfrob::u32_with_value(5, 7, val, max_filter.into_u8().into());
+    val = bitfrob::u32_with_bit(
+        8,
+        val,
+        match diagonal_load {
+            DiagonalLoad::Edge => false,
+            DiagonalLoad::Diagonal => true,
+        },
+    );
+    val = bitfrob::u32_with_value(
+        19,
+        20,
+        val,
+        match aniso {
+            MaxAnisotrophy::One => 0,
+            MaxAnisotrophy::Two => 1,
+            MaxAnisotrophy::Four => 2,
+        },
+    );
+    val = bitfrob::u32_with_bit(21, val, lod_clamp);
+
+    let mut img_val = 0;
+    img_val = bitfrob::u32_with_value(0, 9, img_val, (obj.height() - 1).into());
+    img_val = bitfrob::u32_with_value(10, 19, img_val, (obj.width() - 1).into());
+    img_val = bitfrob::u32_with_value(20, 23, img_val, obj.format().into_u8().into());
+
+    let mut even: u32 = 0;
+    even = bitfrob::u32_with_value(0, 14, even, 0x0000_0000 + (u32::from(mapid) * 1_0000));
+    even = bitfrob::u32_with_value(15, 17, even, 3);
+    even = bitfrob::u32_with_value(18, 20, even, 3);
+    even = bitfrob::u32_with_bit(21, even, false);
+
+    let mut odd = 0;
+    odd = bitfrob::u32_with_value(0, 14, odd, 0x0000_8000 + (u32::from(mapid) * 1_0000));
+    odd = bitfrob::u32_with_value(15, 17, odd, 3);
+    odd = bitfrob::u32_with_value(18, 20, odd, 3);
+    odd = bitfrob::u32_with_bit(21, odd, false);
+
+    //TODO: Map to mapid 0..=7
+    BPReg::TX_SETMODE0_I0.load(val);
+    BPReg::TX_SETMODE1_I0.load(0x0);
+    BPReg::TX_SETIMAGE0_I0.load(img_val);
+
+    BPReg::TX_SETIMAGE1_I0.load(even);
+    BPReg::TX_SETIMAGE2_I0.load(odd);
+
+    BPReg::TX_SETIMAGE3_I0.load(u32::try_from(mem::to_physical(obj.address()) >> 5).unwrap());
+
+    Gx::flush();
+}
+
 //All the following data is found from
 // http://hitmen.c02.at/files/yagcd/yagcd/chap5.html#sec5.3
 
@@ -3429,8 +3575,8 @@ impl GPDrawCommand {
 
 #[repr(u32)]
 pub enum ColorChannel {
-    Color0 = ffi::GX_COLOR0,
-    Color1 = ffi::GX_COLOR1,
+    Color0 = 0,
+    Color1 = 1,
 }
 
 //#[cfg(feature = "experimental")]

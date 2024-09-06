@@ -1,4 +1,4 @@
-use super::{GPCommand, GX_PIPE};
+use super::{GPCommand, TexFilter, WrapMode, GX_PIPE};
 
 #[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[repr(transparent)]
@@ -430,5 +430,40 @@ impl XFReg {
 
     pub unsafe fn from_u16(byte: u16) -> Self {
         Self(byte)
+    }
+}
+
+pub struct TextureMode0 {
+    wrap_s: WrapMode,
+    wrap_t: WrapMode,
+    mag_filter: TexFilter,
+    min_filter: TexFilter,
+    diag_load: DiagonalLoad,
+    max_aniso: MaxAnisotrophy,
+    lod_clamp: bool,
+}
+
+pub enum DiagonalLoad {
+    Edge,
+    Diagonal,
+}
+
+pub enum MaxAnisotrophy {
+    One,
+    Two,
+    Four,
+}
+
+impl TextureMode0 {
+    pub fn new() -> Self {
+        Self {
+            wrap_s: WrapMode::Clamp,
+            wrap_t: WrapMode::Clamp,
+            mag_filter: TexFilter::Linear,
+            min_filter: TexFilter::Linear,
+            diag_load: DiagonalLoad::Edge,
+            max_aniso: MaxAnisotrophy::One,
+            lod_clamp: false,
+        }
     }
 }
