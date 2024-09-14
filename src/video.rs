@@ -244,7 +244,7 @@ pub fn get_video_format() -> Option<VideoFormat> {
         let mut key: u32 = 0x73B5DBFA;
         for byte in &mut bytes {
             *byte ^= u8::try_from(key & 0xff).unwrap();
-            key = (key << 1) | (key >> 31);
+            key = key.rotate_left(1);
         }
 
         let text = if let Err(vld) = core::str::from_utf8(&bytes) {
