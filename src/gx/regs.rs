@@ -1,4 +1,4 @@
-use super::{GPCommand, GX_PIPE};
+use super::{GPCommand, TexFilter, WrapMode, GX_PIPE};
 
 #[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[repr(transparent)]
@@ -227,13 +227,19 @@ impl BPReg {
 
     //Loads and write a specific value `val` to self,
     pub fn load(&self, val: u32) {
-        assert!(val <= 0xFFFFFF);
-        GX_PIPE.write(GPCommand::LoadBPReg as u8);
+        debug_assert!(val <= 0xFFFFFF);
+        GX_PIPE.write(GPCommand::LoadBPReg.into_u8());
         GX_PIPE.write(self.0);
         //We only want the bottom 24 bits so we only grab the bottom 3 bytes
         for byte in &val.to_be_bytes()[1..=3] {
             GX_PIPE.write(*byte);
         }
+    }
+
+    /// # Safety
+    /// Provide a value in the proper range of the BP memory space
+    pub unsafe fn from_u8(byte: u8) -> Self {
+        Self(byte)
     }
 }
 
@@ -319,7 +325,7 @@ impl CPReg {
 
     //Loads and write a specific value `val` to self,
     pub fn load(&self, val: u32) {
-        GX_PIPE.write(GPCommand::LoadCPReg as u8);
+        GX_PIPE.write(GPCommand::LoadCPReg.into_u8());
         GX_PIPE.write(self.0);
 
         for byte in val.to_be_bytes() {
@@ -387,11 +393,7 @@ impl XFReg {
 
     //Loads and write a specific value `val` to self
     pub fn load(&self, val: u32) {
-        GX_PIPE.write(GPCommand::LoadXFReg as u8);
-
-        for byte in 0u16.to_be_bytes() {
-            GX_PIPE.write(byte);
-        }
+        GX_PIPE.write(GPCommand::LoadXFReg.into_u8());
 
         for byte in self.0.to_be_bytes() {
             GX_PIPE.write(byte);
@@ -405,9 +407,9 @@ impl XFReg {
     // Using self as the base load multiple registers and write `vals` to them
     // vals need to have the same legth as the `length`
     pub fn load_multi(&self, length: u16, vals: &[[u8; 4]]) {
-        assert!(vals.len() == length.try_into().unwrap());
+        debug_assert!(vals.len() == length.into());
 
-        GX_PIPE.write(GPCommand::LoadXFReg as u8);
+        GX_PIPE.write(GPCommand::LoadXFReg.into_u8());
         for byte in (length - 1).to_be_bytes() {
             GX_PIPE.write(byte);
         }
@@ -421,5 +423,52 @@ impl XFReg {
                 GX_PIPE.write(*byte);
             }
         }
+    }
+
+    /// # Safety
+    /// Provide a value in the proper range of the XF memory space
+    pub unsafe fn from_u16(byte: u16) -> Self {
+        Self(byte)
+    }
+}
+
+pub struct TextureMode0 {
+    wrap_s: WrapMode,
+    wrap_t: WrapMode,
+    mag_filter: TexFilter,
+    min_filter: TexFilter,
+    diag_load: DiagonalLoad,
+    max_aniso: MaxAnisotrophy,
+    lod_clamp: bool,
+}
+
+pub enum DiagonalLoad {
+    Edge,
+    Diagonal,
+}
+
+pub enum MaxAnisotrophy {
+    One,
+    Two,
+    Four,
+}
+
+impl TextureMode0 {
+    pub fn new() -> Self {
+        Self {
+            wrap_s: WrapMode::Clamp,
+            wrap_t: WrapMode::Clamp,
+            mag_filter: TexFilter::Linear,
+            min_filter: TexFilter::Linear,
+            diag_load: DiagonalLoad::Edge,
+            max_aniso: MaxAnisotrophy::One,
+            lod_clamp: false,
+        }
+    }
+}
+
+impl Default for TextureMode0 {
+    fn default() -> Self {
+        Self::new()
     }
 }

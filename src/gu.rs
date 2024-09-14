@@ -19,6 +19,15 @@ pub enum RotationAxis {
     Z = 0x5A,
 }
 
+impl RotationAxis {
+    pub const fn into_u8(self) -> u8 {
+        match self {
+            RotationAxis::X => 0x58,
+            RotationAxis::Y => 0x59,
+            RotationAxis::Z => 0x5A,
+        }
+    }
+}
 /// Represents the gu service.
 pub struct Gu;
 
@@ -109,7 +118,7 @@ impl Gu {
     /// Sets a 4x4 perspective projection matrix from field of view and aspect ratio parameters.
     /// See [guPerspective](https://libogc.devkitpro.org/gu_8h.html#af22f5e7e20c24dc11f2d58dfb64cdc95) for more.
     pub fn perspective(mt: &mut Mtx44, fovy: f32, aspect: f32, near: f32, far: f32) {
-        unsafe { ffi::guPerspective(mt as *mut _, fovy, aspect, near, far) }
+        unsafe { ffi::guPerspective(core::ptr::from_mut(mt).cast(), fovy, aspect, near, far) }
     }
 
     /// Sets a 4x4 matrix for orthographic projection.
@@ -123,7 +132,17 @@ impl Gu {
         near: f32,
         far: f32,
     ) {
-        unsafe { ffi::guOrtho(mt as *mut _, top, bottom, left, right, near, far) }
+        unsafe {
+            ffi::guOrtho(
+                core::ptr::from_mut(mt).cast(),
+                top,
+                bottom,
+                left,
+                right,
+                near,
+                far,
+            )
+        }
     }
 
     pub fn mtx44_identity(mt: &mut Mtx44) {
@@ -217,10 +236,10 @@ impl Gu {
     ) {
         unsafe {
             ffi::guLookAt(
-                mt as *mut _,
-                cam_pos as *mut _,
-                cam_up as *mut _,
-                target as *mut _,
+                core::ptr::from_mut(mt).cast(),
+                core::ptr::from_mut(cam_pos).cast(),
+                core::ptr::from_mut(cam_up).cast(),
+                core::ptr::from_mut(target).cast(),
             )
         }
     }
@@ -229,7 +248,13 @@ impl Gu {
     }
 
     pub fn mtx_concat(a: &mut Mtx34, b: &mut Mtx34, ab: &mut Mtx34) {
-        unsafe { ffi::c_guMtxConcat(a as *mut _, b as *mut _, ab as *mut _) }
+        unsafe {
+            ffi::c_guMtxConcat(
+                core::ptr::from_mut(a).cast(),
+                core::ptr::from_mut(b).cast(),
+                core::ptr::from_mut(ab).cast(),
+            )
+        }
     }
 
     pub fn mtx_scale(mt: &mut Mtx34, scale: (f32, f32, f32)) {
@@ -314,11 +339,11 @@ impl Gu {
     }
 
     pub fn mtx_rotation_radians(mt: &mut Mtx34, axis: RotationAxis, rot_radians: f32) {
-        unsafe { ffi::c_guMtxRotRad(mt.as_mut_ptr().cast(), axis as u8, rot_radians) }
+        unsafe { ffi::c_guMtxRotRad(mt.as_mut_ptr().cast(), axis.into_u8(), rot_radians) }
     }
 
     pub fn mtx_rotation_trig(mt: &mut Mtx34, axis: RotationAxis, sin: f32, cos: f32) {
-        unsafe { ffi::c_guMtxRotTrig(mt.as_mut_ptr().cast(), axis as u8, sin, cos) }
+        unsafe { ffi::c_guMtxRotTrig(mt.as_mut_ptr().cast(), axis.into_u8(), sin, cos) }
     }
 
     pub fn mtx_rotation_axis_radians(mt: &mut Mtx34, axis: &mut guVector, rot_radians: f32) {
@@ -596,7 +621,13 @@ impl Mat3x4 {
         Gx::load_pos_mtx_imm(self.as_array_mut(), pnidx);
     }
     pub fn load_as_nrm_mtx(&mut self, pnidx: u32) {
-        Gx::load_nrm_mtx_imm(self.as_array_mut(), pnidx);
+        let actual_array: &[[f32; 3]; 3] = &[
+            self.as_array_mut()[0][..3].try_into().unwrap(),
+            self.as_array_mut()[1][..3].try_into().unwrap(),
+            self.as_array_mut()[2][..3].try_into().unwrap(),
+        ];
+
+        Gx::load_nrm_mtx_imm(actual_array, pnidx);
     }
     pub fn load_as_tex_mtx(&mut self, pnidx: u32) {
         Gx::load_tex_mtx_imm(self.as_array_mut(), pnidx);

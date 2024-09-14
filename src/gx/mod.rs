@@ -2,26 +2,37 @@
 //!
 //! This module implements a safe wrapper around the graphics functions found in ``gx.h``.
 
-use core::ffi::c_void;
-use core::marker::PhantomData;
+use num_traits::Float;
 
-use alloc::vec::Vec;
-use bit_field::BitField;
-use ffi::GXTexObj;
-use libm::ceilf;
-use voladdress::{Safe, VolAddress};
+use core::ffi::c_void;
+use core::iter;
+use core::marker::PhantomData;
+use core::mem::MaybeUninit;
 
 use crate::ffi::{self, Mtx as Mtx34, Mtx44};
 use crate::gx::regs::BPReg;
 use crate::lwp;
+use crate::print;
 use crate::utils::mem;
+use alloc::vec::Vec;
+use ffi::GXTexObj;
+use ogc_sys::{GXTexRegion, _gx_texobj};
+use regs::{CPReg, DiagonalLoad, MaxAnisotrophy};
+use types::{
+    AlphaCombinerInput, ColorCombinerInput, ColorReg, ColorSlot, ComponentSize, ComponentType,
+    CopyFilter, DisplayFilter, DisplayStride, DisplayTopLeft, DisplayWidthHeight, DisplayYScale,
+    Operation, ScissorBoxOffset, ScissorHeightWidth, ScissorTopLeft, TevOp, TexCoordSlot,
+    TexMapSlot, TextureEnviroment, TextureEnviromentBias, TextureEnviromentClamp,
+    TextureEnviromentScale, TextureFormat, ZMode,
+};
+use voladdress::{Safe, VolAddress};
 
 use self::regs::XFReg;
 use self::types::{Gamma, PixelEngineControl, PixelFormat, VtxDest, ZFormat};
 
 pub const GX_PIPE: VolAddress<u8, (), Safe> = unsafe { VolAddress::new(0xCC00_8000) };
 
-mod regs;
+pub mod regs;
 pub mod types;
 
 #[derive(Copy, Clone, Debug)]
@@ -38,47 +49,86 @@ impl Color {
     }
 }
 
+pub fn def_tex_region_callback(_obj: &Texture, _mapid: u8) -> GXTexRegion {
+    todo!()
+}
+
 /// Backface culling mode.
 ///
 /// Primitives in which the vertex order is clockwise to the viewer are considered front-facing.
 #[derive(Copy, Clone, Debug)]
-#[repr(u8)]
+#[repr(u32)]
 pub enum CullMode {
     /// Do not cull any primitives.
-    None = ffi::GX_CULL_NONE as _,
+    None = ffi::GX_CULL_NONE,
 
     /// Cull front-facing primitives.
-    Front = ffi::GX_CULL_FRONT as _,
-
+    Front = ffi::GX_CULL_FRONT,
     /// Cull back-facing primitives.
-    Back = ffi::GX_CULL_BACK as _,
+    Back = ffi::GX_CULL_BACK,
 
     /// Cull all primitives.
-    All = ffi::GX_CULL_ALL as _,
+    All = ffi::GX_CULL_ALL,
+}
+
+impl CullMode {
+    pub const fn into_u8(self) -> u8 {
+        match self {
+            CullMode::None => 0,
+            CullMode::Front => 1,
+            CullMode::Back => 2,
+            CullMode::All => 3,
+        }
+    }
 }
 
 /// Comparison functions.
 #[derive(Copy, Clone, Debug)]
-#[repr(u8)]
 pub enum CmpFn {
-    Never = ffi::GX_NEVER as _,
-    Less = ffi::GX_LESS as _,
-    Equal = ffi::GX_EQUAL as _,
-    LessEq = ffi::GX_LEQUAL as _,
-    Greater = ffi::GX_GREATER as _,
-    NotEq = ffi::GX_NEQUAL as _,
-    GreaterEq = ffi::GX_GEQUAL as _,
-    Always = ffi::GX_ALWAYS as _,
+    Never = 0,
+    Less = 1,
+    Equal = 2,
+    LessEq = 3,
+    Greater = 4,
+    NotEq = 5,
+    GreaterEq = 6,
+    Always = 7,
+}
+
+impl CmpFn {
+    pub const fn into_u8(self) -> u8 {
+        match self {
+            Self::Never => 0,
+            Self::Less => 1,
+            Self::Equal => 2,
+            Self::LessEq => 3,
+            Self::Greater => 4,
+            Self::NotEq => 5,
+            Self::GreaterEq => 6,
+            Self::Always => 7,
+        }
+    }
 }
 
 #[derive(Copy, Clone, Debug)]
-#[repr(u8)]
-/// Alpha combining operations.
+#[repr(u32)]
+/// Alpha combining operations
 pub enum AlphaOp {
-    And = ffi::GX_AOP_AND as _,
-    Or = ffi::GX_AOP_OR as _,
-    Xnor = ffi::GX_AOP_XNOR as _,
-    Xor = ffi::GX_AOP_XOR as _,
+    And = ffi::GX_AOP_AND,
+    Or = ffi::GX_AOP_OR,
+    Xnor = ffi::GX_AOP_XNOR,
+    Xor = ffi::GX_AOP_XOR,
+}
+
+impl AlphaOp {
+    pub const fn into_u8(self) -> u8 {
+        match self {
+            AlphaOp::And => 0,
+            AlphaOp::Or => 1,
+            AlphaOp::Xnor => 3,
+            AlphaOp::Xor => 2,
+        }
+    }
 }
 
 /// Collection of primitive types that can be drawn by the GP.
@@ -86,89 +136,135 @@ pub enum AlphaOp {
 /// Which type you use depends on your needs; however, performance can increase by using triangle
 /// strips or fans instead of discrete triangles.
 #[derive(Copy, Clone, Debug)]
-#[repr(u8)]
+#[repr(u32)]
 pub enum Primitive {
     /// Draws a series of unconnected quads. Every four vertices completes a quad. Internally, each
     /// quad is translated into a pair of triangles.
-    Quads = ffi::GX_QUADS as _,
-
+    Quads = ffi::GX_QUADS,
     /// Draws a series of unconnected triangles. Three vertices make a single triangle.
-    Triangles = ffi::GX_TRIANGLES as _,
+    Triangles = ffi::GX_TRIANGLES,
 
     /// Draws a series of triangles. Each triangle (besides the first) shares a side with the
     /// previous triangle. Each vertex (besides the first two) completes a triangle.
-    TriangleStrip = ffi::GX_TRIANGLESTRIP as _,
+    TriangleStrip = ffi::GX_TRIANGLESTRIP,
 
     /// Draws a single triangle fan. The first vertex is the "centerpoint". The second and third
     /// vertex complete the first triangle. Each subsequent vertex completes another triangle which
     /// shares a side with the previous triangle (except the first triangle) and has the
     // centerpoint vertex as one of the vertices.
-    TriangleFan = ffi::GX_TRIANGLEFAN as _,
+    TriangleFan = ffi::GX_TRIANGLEFAN,
 
     /// Draws a series of unconnected line segments. Each pair of vertices makes a line.
-    Lines = ffi::GX_LINES as _,
+    Lines = ffi::GX_LINES,
 
     /// Draws a series of lines. Each vertex (besides the first) makes a line between it and the
     /// previous.
-    LineStrip = ffi::GX_LINESTRIP as _,
+    LineStrip = ffi::GX_LINESTRIP,
 
     /// Draws a series of points. Each vertex is a single point.
-    Points = ffi::GX_POINTS as _,
+    Points = ffi::GX_POINTS,
+}
+
+impl Primitive {
+    pub fn into_u8(&self) -> u8 {
+        match self {
+            Primitive::Quads => 128,
+            Primitive::Triangles => 144,
+            Primitive::TriangleStrip => 152,
+            Primitive::TriangleFan => 160,
+            Primitive::Lines => 168,
+            Primitive::LineStrip => 176,
+            Primitive::Points => 184,
+        }
+    }
 }
 
 /// Specifies which blending operation to use.
 #[derive(Copy, Clone, Debug)]
-#[repr(u8)]
+#[repr(u32)]
 pub enum BlendMode {
     /// Write input directly to EFB
-    None = ffi::GX_BM_NONE as _,
+    None = ffi::GX_BM_NONE,
 
     /// Blend using blending equation
-    Blend = ffi::GX_BM_BLEND as _,
+    Blend = ffi::GX_BM_BLEND,
 
     /// Blend using bitwise operation
-    Logic = ffi::GX_BM_LOGIC as _,
-
+    Logic = ffi::GX_BM_LOGIC,
     /// Input subtracts from existing pixel
-    Subtract = ffi::GX_BM_SUBTRACT as _,
+    Subtract = ffi::GX_BM_SUBTRACT,
+}
+
+impl BlendMode {
+    pub const fn into_u8(self) -> u8 {
+        match self {
+            BlendMode::None => 0,
+            BlendMode::Blend => 1,
+            BlendMode::Logic => 2,
+            BlendMode::Subtract => 3,
+        }
+    }
 }
 
 /// Destination (`dst`) acquires the value of one of these operations, given in Rust syntax.
 #[derive(Copy, Clone, Debug)]
-#[repr(u8)]
+#[repr(u32)]
 pub enum LogicOp {
     /// `src & dst`
-    And = ffi::GX_LO_AND as _,
+    And = ffi::GX_LO_AND,
     /// `0`
-    Clear = ffi::GX_LO_CLEAR as _,
+    Clear = ffi::GX_LO_CLEAR,
     /// `src`
-    Copy = ffi::GX_LO_COPY as _,
+    Copy = ffi::GX_LO_COPY,
     /// `!(src ^ dst)`
-    Equiv = ffi::GX_LO_EQUIV as _,
+    Equiv = ffi::GX_LO_EQUIV,
     /// `!dst`
-    Inv = ffi::GX_LO_INV as _,
+    Inv = ffi::GX_LO_INV,
     /// `!src & dst`
-    InvAnd = ffi::GX_LO_INVAND as _,
+    InvAnd = ffi::GX_LO_INVAND,
     /// `!src`
-    InvCopy = ffi::GX_LO_INVCOPY as _,
+    InvCopy = ffi::GX_LO_INVCOPY,
     /// `!src | dst`
-    InvOr = ffi::GX_LO_INVOR as _,
+    InvOr = ffi::GX_LO_INVOR,
     /// `!(src & dst)`
-    Nand = ffi::GX_LO_NAND as _,
+    Nand = ffi::GX_LO_NAND,
     /// `dst`
-    Nop = ffi::GX_LO_NOOP as _,
+    Nop = ffi::GX_LO_NOOP,
     /// `!(src | dst)`
-    Nor = ffi::GX_LO_NOR as _,
+    Nor = ffi::GX_LO_NOR,
     /// `src | dst`
-    Or = ffi::GX_LO_OR as _,
+    Or = ffi::GX_LO_OR,
     /// `src & !dst`
-    RevAnd = ffi::GX_LO_REVAND as _,
+    RevAnd = ffi::GX_LO_REVAND,
     /// `src | !dst`
-    RevOr = ffi::GX_LO_REVOR as _,
+    RevOr = ffi::GX_LO_REVOR,
     /// `1`
-    Set = ffi::GX_LO_SET as _,
+    Set = ffi::GX_LO_SET,
     /// `src ^ dst`
-    Xor = ffi::GX_LO_XOR as _,
+    Xor = ffi::GX_LO_XOR,
+}
+
+impl LogicOp {
+    pub const fn into_u8(self) -> u8 {
+        match self {
+            LogicOp::And => 1,
+            LogicOp::Clear => 0,
+            LogicOp::Copy => 3,
+            LogicOp::Equiv => 9,
+            LogicOp::Inv => 10,
+            LogicOp::InvAnd => 4,
+            LogicOp::InvCopy => 12,
+            LogicOp::InvOr => 13,
+            LogicOp::Nand => 14,
+            LogicOp::Nop => 5,
+            LogicOp::Nor => 8,
+            LogicOp::Or => 7,
+            LogicOp::RevAnd => 12,
+            LogicOp::RevOr => 11,
+            LogicOp::Set => 15,
+            LogicOp::Xor => 6,
+        }
+    }
 }
 
 /// Performance counter 0 is used to measure attributes dealing with geometry and primitives, such
@@ -306,63 +402,118 @@ pub enum Perf1 {
 
 /// Each pixel (source or destination) is multiplied by any of these controls.
 #[derive(Copy, Clone, Debug)]
-#[repr(u8)]
+#[repr(u32)]
 pub enum BlendCtrl {
     /// framebuffer alpha
-    DstAlpha = ffi::GX_BL_DSTALPHA as _,
+    DstAlpha = ffi::GX_BL_DSTALPHA,
     /// 1.0 - (framebuffer alpha)
-    InvDstAlpha = ffi::GX_BL_INVDSTALPHA as _,
+    InvDstAlpha = ffi::GX_BL_INVDSTALPHA,
     /// 1.0 - (source alpha)
-    InvSrcAlpha = ffi::GX_BL_INVSRCALPHA as _,
+    InvSrcAlpha = ffi::GX_BL_INVSRCALPHA,
     /// 1.0 - (source color)
-    InvSrcColor = ffi::GX_BL_INVSRCCLR as _,
+    InvSrcColor = ffi::GX_BL_INVSRCCLR,
     /// 1.0
-    One = ffi::GX_BL_ONE as _,
+    One = ffi::GX_BL_ONE,
     /// source alpha
-    SrcAlpha = ffi::GX_BL_SRCALPHA as _,
+    SrcAlpha = ffi::GX_BL_SRCALPHA,
     /// source color
-    SrcColor = ffi::GX_BL_SRCCLR as _,
+    SrcColor = ffi::GX_BL_SRCCLR,
     /// 0.0
-    Zero = ffi::GX_BL_ZERO as _,
+    Zero = ffi::GX_BL_ZERO,
+}
+
+impl BlendCtrl {
+    pub const fn into_u8(self) -> u8 {
+        match self {
+            BlendCtrl::DstAlpha => 6,
+            BlendCtrl::InvDstAlpha => 7,
+            BlendCtrl::InvSrcAlpha => 5,
+            BlendCtrl::InvSrcColor => 3,
+            BlendCtrl::One => 1,
+            BlendCtrl::SrcAlpha => 4,
+            BlendCtrl::SrcColor => 2,
+            BlendCtrl::Zero => 0,
+        }
+    }
 }
 
 /// Compressed Z format.
 ///
 /// See [`Gx::set_pixel_fmt()`] for details.
 #[derive(Copy, Clone, Debug)]
-#[repr(u8)]
+#[repr(u32)]
 pub enum ZCompress {
-    Linear = ffi::GX_ZC_LINEAR as _,
-    Near = ffi::GX_ZC_NEAR as _,
-    Mid = ffi::GX_ZC_MID as _,
-    Far = ffi::GX_ZC_FAR as _,
+    Linear = ffi::GX_ZC_LINEAR,
+    Near = ffi::GX_ZC_NEAR,
+    Mid = ffi::GX_ZC_MID,
+    Far = ffi::GX_ZC_FAR,
+}
+
+impl ZCompress {
+    pub const fn into_u8(self) -> u8 {
+        match self {
+            ZCompress::Linear => 0,
+            ZCompress::Near => 1,
+            ZCompress::Mid => 2,
+            ZCompress::Far => 3,
+        }
+    }
 }
 
 /// Specifies whether the input source color for a color channel comes from a register or a vertex.
 #[derive(Copy, Clone, Debug)]
-#[repr(u8)]
+#[repr(u32)]
 pub enum Source {
-    Register = ffi::GX_SRC_REG as _,
-    Vertex = ffi::GX_SRC_VTX as _,
+    Register = ffi::GX_SRC_REG,
+    Vertex = ffi::GX_SRC_VTX,
+}
+
+impl Source {
+    pub const fn into_u8(self) -> u8 {
+        match self {
+            Source::Register => 0,
+            Source::Vertex => 1,
+        }
+    }
 }
 
 #[derive(Copy, Clone, Debug)]
-#[repr(u8)]
+#[repr(u32)]
 pub enum DiffFn {
-    None = ffi::GX_DF_NONE as _,
-    Signed = ffi::GX_DF_SIGNED as _,
-    Clamp = ffi::GX_DF_CLAMP as _,
+    None = ffi::GX_DF_NONE,
+    Signed = ffi::GX_DF_SIGNED,
+    Clamp = ffi::GX_DF_CLAMP,
+}
+
+impl DiffFn {
+    pub const fn into_u8(self) -> u8 {
+        match self {
+            DiffFn::None => 0,
+            DiffFn::Signed => 1,
+            DiffFn::Clamp => 2,
+        }
+    }
 }
 
 #[derive(Copy, Clone, Debug)]
-#[repr(u8)]
+#[repr(u32)]
 pub enum AttnFn {
     /// No attenuation
-    None = ffi::GX_AF_NONE as _,
+    None = ffi::GX_AF_NONE,
     /// Specular computation
-    Spec = ffi::GX_AF_SPEC as _,
+    Spec = ffi::GX_AF_SPEC,
     /// Spot light attenuation
-    Spot = ffi::GX_AF_SPOT as _,
+    Spot = ffi::GX_AF_SPOT,
+}
+
+impl AttnFn {
+    pub const fn into_u8(self) -> u8 {
+        match self {
+            AttnFn::None => 2,
+            AttnFn::Spec => 0,
+            AttnFn::Spot => 1,
+        }
+    }
 }
 
 /// Object describing a graphics FIFO.
@@ -386,9 +537,233 @@ impl Default for Fifo {
     }
 }
 
+#[cfg(feature = "experimental")]
+pub mod experimental2 {
+    use crate::mem;
+    use core::sync::Exclusive;
+
+    static mut CPU_FIFO: Exclusive<Option<FifoInner>> = Exclusive::new(None);
+    static mut GRAPHIC_PROCESSOR_FIFO: Exclusive<Option<FifoInner>> = Exclusive::new(None);
+
+    pub fn is_link_ready() -> bool {
+        if let Some(cpu_fifo) = unsafe { CPU_FIFO.get_mut() } {
+            if let Some(gpu_fifo) = unsafe { GRAPHIC_PROCESSOR_FIFO.get_mut() } {
+                cpu_fifo.buffer_start == gpu_fifo.buffer_start
+                    && cpu_fifo.buffer_end == gpu_fifo.buffer_end
+            } else {
+                false
+            }
+        } else {
+            false
+        }
+    }
+
+    #[derive(Clone)]
+    pub struct FifoInner {
+        buffer_start: u32,
+        buffer_end: u32,
+        size: u32,
+        high_mark: u32,
+        low_mark: u32,
+        read_ptr: *const (),
+        write_ptr: *mut (),
+        read_write_distance: u32,
+        fifo_wrap: bool,
+        cpu_fifo_ready: bool,
+        graphics_processor_fifo_ready: bool,
+    }
+
+    impl FifoInner {
+        pub fn new(size: usize) -> Self {
+            let mut buf = crate::utils::Buf32::new(size);
+
+            const HIGH_WATER_MARK: usize = 16 * 1024;
+            const LOW_WATER_MARK_MASK: usize = 0x7fffffe0;
+
+            FifoInner {
+                buffer_start: u32::try_from(buf.as_mut_ptr().addr()).unwrap(),
+                buffer_end: u32::try_from(unsafe {
+                    buf.as_mut_ptr()
+                        .offset(isize::try_from(buf.len()).unwrap() - 4)
+                        .addr()
+                })
+                .unwrap(),
+                size: u32::try_from(buf.len()).unwrap(),
+                read_write_distance: 0,
+                high_mark: u32::try_from(buf.len() - HIGH_WATER_MARK).unwrap(),
+                low_mark: u32::try_from((buf.len() >> 1) & LOW_WATER_MARK_MASK).unwrap(),
+                read_ptr: buf.as_ptr().cast(),
+                write_ptr: buf.as_mut_ptr().cast(),
+                fifo_wrap: false,
+                cpu_fifo_ready: false,
+                graphics_processor_fifo_ready: false,
+            }
+        }
+
+        pub fn link(&mut self) {
+            if is_link_ready() {
+                //Clear any interrupts that may of happened
+                unsafe {
+                    (0xCC00_0004 as *mut u16).write_volatile(0b00_00_00_00_00_00_00_11);
+
+                    //Enable fifo overflow interrupt
+                    let ptr = 0xCC00_0002 as *mut u16;
+                    let val = {
+                        let mut val = ptr.read_volatile();
+                        val = bitfrob::u16_with_bit(2, val, true);
+                        val = bitfrob::u16_with_bit(3, val, false);
+                        val
+                    };
+                    ptr.write_volatile(val);
+
+                    //Link them
+                    let val = {
+                        let mut val = ptr.read_volatile();
+                        val = bitfrob::u16_with_bit(4, val, true);
+                        val
+                    };
+                    ptr.write_volatile(val);
+
+                    //Enable reading
+                    let val = {
+                        let mut val = ptr.read_volatile();
+                        val = bitfrob::u16_with_bit(0, val, true);
+                        val
+                    };
+                    ptr.write_volatile(val);
+                }
+            }
+        }
+
+        pub fn set_as_cpu_fifo(&mut self) {
+            let mut cpu = self.clone();
+            cpu.cpu_fifo_ready = true;
+
+            unsafe { *CPU_FIFO.get_mut() = Some(cpu) };
+
+            if let Some(cpu_fifo) = unsafe { CPU_FIFO.get_mut() } {
+                unsafe {
+                    (0xCC00_300C as *mut usize).write_volatile(mem::to_physical(
+                        usize::try_from(cpu_fifo.buffer_start).unwrap(),
+                    ));
+                    (0xCC00_3010 as *mut usize).write_volatile(mem::to_physical(
+                        usize::try_from(cpu_fifo.buffer_end).unwrap(),
+                    ));
+                    (0xCC00_3014 as *mut usize)
+                        .write_volatile(mem::to_physical(cpu_fifo.write_ptr.addr()));
+
+                    core::arch::asm!("sc");
+                }
+            }
+        }
+
+        pub fn set_as_graphics_processor_fifo(&mut self) {
+            let mut graphics_processor_fifo = self.clone();
+            graphics_processor_fifo.graphics_processor_fifo_ready = true;
+
+            unsafe {
+                *GRAPHIC_PROCESSOR_FIFO.get_mut() = Some(graphics_processor_fifo);
+            };
+
+            if let Some(gpu_fifo) = unsafe { GRAPHIC_PROCESSOR_FIFO.get_mut() } {
+                unsafe {
+                    (0xCC00_0020 as *mut u16).write_volatile(
+                        bitfrob::u32_get_value(0, 15, gpu_fifo.buffer_start)
+                            .try_into()
+                            .unwrap(),
+                    );
+
+                    (0xCC00_0022 as *mut u16).write_volatile(
+                        bitfrob::u32_get_value(16, 31, gpu_fifo.buffer_start)
+                            .try_into()
+                            .unwrap(),
+                    );
+
+                    (0xCC00_0024 as *mut u16).write_volatile(
+                        bitfrob::u32_get_value(0, 15, gpu_fifo.buffer_end)
+                            .try_into()
+                            .unwrap(),
+                    );
+                    (0xCC00_0026 as *mut u16).write_volatile(
+                        bitfrob::u32_get_value(16, 31, gpu_fifo.buffer_end)
+                            .try_into()
+                            .unwrap(),
+                    );
+
+                    (0xCC00_0028 as *mut u16).write_volatile(
+                        bitfrob::u32_get_value(0, 15, gpu_fifo.high_mark)
+                            .try_into()
+                            .unwrap(),
+                    );
+                    (0xCC00_002a as *mut u16).write_volatile(
+                        bitfrob::u32_get_value(16, 31, gpu_fifo.high_mark)
+                            .try_into()
+                            .unwrap(),
+                    );
+                    (0xCC00_002c as *mut u16).write_volatile(
+                        bitfrob::u32_get_value(0, 15, gpu_fifo.low_mark)
+                            .try_into()
+                            .unwrap(),
+                    );
+                    (0xCC00_002e as *mut u16).write_volatile(
+                        bitfrob::u32_get_value(16, 31, gpu_fifo.low_mark)
+                            .try_into()
+                            .unwrap(),
+                    );
+                    (0xCC00_0030 as *mut u16).write_volatile(
+                        bitfrob::u32_get_value(0, 15, gpu_fifo.read_write_distance)
+                            .try_into()
+                            .unwrap(),
+                    );
+                    (0xCC00_0032 as *mut u16).write_volatile(
+                        bitfrob::u32_get_value(16, 31, gpu_fifo.read_write_distance)
+                            .try_into()
+                            .unwrap(),
+                    );
+
+                    (0xCC00_0034 as *mut u16).write_volatile(
+                        bitfrob::u32_get_value(
+                            0,
+                            15,
+                            gpu_fifo.write_ptr.addr().try_into().unwrap(),
+                        )
+                        .try_into()
+                        .unwrap(),
+                    );
+                    (0xCC00_0036 as *mut u16).write_volatile(
+                        bitfrob::u32_get_value(
+                            16,
+                            31,
+                            gpu_fifo.write_ptr.addr().try_into().unwrap(),
+                        )
+                        .try_into()
+                        .unwrap(),
+                    );
+
+                    (0xCC00_0038 as *mut u16).write_volatile(
+                        bitfrob::u32_get_value(0, 15, gpu_fifo.read_ptr.addr().try_into().unwrap())
+                            .try_into()
+                            .unwrap(),
+                    );
+                    (0xCC00_003a as *mut u16).write_volatile(
+                        bitfrob::u32_get_value(
+                            16,
+                            31,
+                            gpu_fifo.read_ptr.addr().try_into().unwrap(),
+                        )
+                        .try_into()
+                        .unwrap(),
+                    );
+
+                    core::arch::asm!("sc");
+                }
+            }
+        }
+    }
+}
 impl Fifo {
     /// The minimum allowed size for a FIFO.
-    pub const MIN_SIZE: usize = ffi::GX_FIFO_MINSIZE as usize;
+    pub const MIN_SIZE: usize = 65536;
 
     /// Constructs a new `Fifo` with the minimum size.
     pub fn new() -> Self {
@@ -407,6 +782,30 @@ impl Fifo {
 
         let mut buf = crate::utils::Buf32::new(size);
 
+        const HIGH_WATER_MARK: usize = 16 * 1024;
+        const LOW_WATER_MARK_MASK: usize = 0x7fffffe0;
+
+        #[cfg(feature = "experimental")]
+        {
+            let fifo_inner = FifoInner {
+                buffer_start: u32::try_from(buf.as_mut_ptr().addr()).unwrap(),
+                buffer_end: u32::try_from(unsafe {
+                    buf.as_mut_ptr()
+                        .offset(isize::try_from(buf.len()).unwrap() - 4)
+                        .addr()
+                })
+                .unwrap(),
+                size: u32::try_from(buf.len()).unwrap(),
+                read_write_distance: 0,
+                high_mark: u32::try_from(buf.len() - HIGH_WATER_MARK).unwrap(),
+                low_mark: u32::try_from((buf.len() >> 1) & LOW_WATER_MARK_MASK).unwrap(),
+                read_ptr: buf.as_ptr().cast(),
+                write_ptr: buf.as_mut_ptr().cast(),
+                fifo_wrap: false,
+                cpu_fifo_ready: false,
+                graphics_processor_fifo_ready: false,
+            };
+        }
         // SAFETY:
         // + original libogc source suggests that available init functions don't
         //   completely initialize the fifo, so it's been zeroed() above just in
@@ -415,8 +814,8 @@ impl Fifo {
         unsafe {
             ffi::GX_InitFifoBase(
                 fifo.as_mut_ptr(),
-                buf.as_mut_ptr().map_addr(mem::to_uncached) as *mut _,
-                buf.len() as u32,
+                buf.as_mut_ptr().map_addr(mem::to_uncached).cast(),
+                u32::try_from(buf.len()).unwrap(),
             );
             Fifo(fifo.assume_init())
         }
@@ -441,8 +840,8 @@ impl Fifo {
     /// When the FIFO is only attached to the CPU or only attached to the GP, the high and low
     /// watermark interrupts are disabled.
     pub fn set_limits(&mut self, hiwatermark: u32, lowatermark: u32) {
-        assert_eq!(0, hiwatermark % 32);
-        assert_eq!(0, lowatermark % 32);
+        debug_assert_eq!(0, hiwatermark % 32);
+        debug_assert_eq!(0, lowatermark % 32);
         // assert!(hiwatermark < self.len());
         // assert!(lowatermark < self.len());
         unsafe { ffi::GX_InitFifoLimits(&mut self.0, hiwatermark, lowatermark) }
@@ -450,7 +849,7 @@ impl Fifo {
 
     /// Get the base address for a given *fifo*.
     pub fn base(&self) -> *mut u8 {
-        unsafe { ffi::GX_GetFifoBase(self as *const _ as *mut _) as *mut _ }
+        unsafe { ffi::GX_GetFifoBase(core::ptr::from_ref(&self.0).cast_mut()).cast() }
     }
 
     /// Returns number of cache lines in the FIFO.
@@ -460,13 +859,20 @@ impl Fifo {
     /// the size of the fifo), as the hardware cannot detect an overflow in general.
     pub fn cache_lines(&self) -> usize {
         // TODO: remove conversions when upstream changes pass.
-        unsafe { ffi::GX_GetFifoCount(self as *const _ as *mut _) as usize }
+        unsafe {
+            usize::try_from(ffi::GX_GetFifoCount(
+                core::ptr::from_ref(&self.0).cast_mut(),
+            ))
+            .unwrap()
+        }
     }
 
     /// Get the size of a given FIFO.
     pub fn len(&self) -> usize {
         // TODO: remove conversions when upstream changes pass.
-        unsafe { ffi::GX_GetFifoSize(self as *const _ as *mut _) as usize }
+        unsafe {
+            usize::try_from(ffi::GX_GetFifoSize(core::ptr::from_ref(&self.0).cast_mut())).unwrap()
+        }
     }
 
     pub fn is_empty(&self) -> bool {
@@ -484,7 +890,7 @@ impl Fifo {
     /// If the FIFO write pointer is not explicitly set to the base of the FIFO, you cannot rely on
     /// this function to detect overflows.
     pub fn get_wrap(&self) -> u8 {
-        unsafe { ffi::GX_GetFifoWrap(self as *const _ as *mut _) }
+        unsafe { ffi::GX_GetFifoWrap(core::ptr::from_ref(&self.0).cast_mut()) }
     }
 
     /// Returns the current value of the Graphics FIFO read and write pointers.
@@ -495,9 +901,13 @@ impl Fifo {
         let mut rd_ptr = core::ptr::null_mut();
         let mut wt_ptr = core::ptr::null_mut();
         unsafe {
-            ffi::GX_GetFifoPtrs(self as *const _ as *mut _, &mut rd_ptr, &mut wt_ptr);
+            ffi::GX_GetFifoPtrs(
+                core::ptr::from_ref(&self.0).cast_mut(),
+                &mut rd_ptr,
+                &mut wt_ptr,
+            );
         }
-        (rd_ptr as *const _, wt_ptr as *mut _)
+        (rd_ptr.cast_const().cast(), wt_ptr.cast())
     }
 
     /// Sets the *fifo* read and write pointers.
@@ -506,7 +916,7 @@ impl Fifo {
     /// This is normally done only during initialization of the FIFO. After that, the graphics
     /// hardware manages the FIFO pointers.
     pub fn set_pointers(&mut self, rd_ptr: *const u8, wt_ptr: *mut u8) {
-        unsafe { ffi::GX_InitFifoPtrs(&mut self.0, rd_ptr as *mut _, wt_ptr as *mut _) }
+        unsafe { ffi::GX_InitFifoPtrs(&mut self.0, rd_ptr.cast_mut().cast(), wt_ptr.cast()) }
     }
 }
 
@@ -517,25 +927,50 @@ pub struct Light(ffi::GXLightObj);
 
 /// Type of the brightness decreasing function by distance.
 #[derive(Copy, Clone, Debug)]
-#[repr(u8)]
+#[repr(u32)]
 pub enum DistFn {
-    Off = ffi::GX_DA_OFF as _,
-    Gentle = ffi::GX_DA_GENTLE as _,
-    Medium = ffi::GX_DA_MEDIUM as _,
-    Steep = ffi::GX_DA_STEEP as _,
+    Off = ffi::GX_DA_OFF,
+    Gentle = ffi::GX_DA_GENTLE,
+    Medium = ffi::GX_DA_MEDIUM,
+    Steep = ffi::GX_DA_STEEP,
+}
+
+impl DistFn {
+    pub const fn into_u8(self) -> u8 {
+        match self {
+            DistFn::Off => 0,
+            DistFn::Gentle => 1,
+            DistFn::Medium => 2,
+            DistFn::Steep => 3,
+        }
+    }
 }
 
 /// Spot illumination distribution function
 #[derive(Copy, Clone, Debug)]
-#[repr(u8)]
+#[repr(u32)]
 pub enum SpotFn {
-    Off = ffi::GX_SP_OFF as _,
-    Flat = ffi::GX_SP_FLAT as _,
-    Cos = ffi::GX_SP_COS as _,
-    Cos2 = ffi::GX_SP_COS2 as _,
-    Sharp = ffi::GX_SP_SHARP as _,
-    Ring1 = ffi::GX_SP_RING1 as _,
-    Ring2 = ffi::GX_SP_RING2 as _,
+    Off = ffi::GX_SP_OFF,
+    Flat = ffi::GX_SP_FLAT,
+    Cos = ffi::GX_SP_COS,
+    Cos2 = ffi::GX_SP_COS2,
+    Sharp = ffi::GX_SP_SHARP,
+    Ring1 = ffi::GX_SP_RING1,
+    Ring2 = ffi::GX_SP_RING2,
+}
+
+impl SpotFn {
+    pub const fn into_u8(self) -> u8 {
+        match self {
+            SpotFn::Off => 0,
+            SpotFn::Flat => 1,
+            SpotFn::Cos => 2,
+            SpotFn::Cos2 => 3,
+            SpotFn::Sharp => 4,
+            SpotFn::Ring1 => 5,
+            SpotFn::Ring2 => 6,
+        }
+    }
 }
 
 impl Light {
@@ -737,7 +1172,7 @@ impl Light {
     /// attenuation should be set by using [`Light::spot_attn()`] or [`Light::attn_a()`].
     pub fn dist_attn(&mut self, ref_dist: f32, ref_brite: f32, dist_fn: DistFn) -> &mut Self {
         unsafe {
-            ffi::GX_InitLightDistAttn(&mut self.0, ref_dist, ref_brite, dist_fn as u8);
+            ffi::GX_InitLightDistAttn(&mut self.0, ref_dist, ref_brite, dist_fn.into_u8());
         }
         self
     }
@@ -781,7 +1216,7 @@ impl Light {
     /// attenuation should be set by using [`Light::dist_attn()`] or [`Light::attn_k()`].
     pub fn spot_attn(&mut self, cut_off: f32, spotfn: SpotFn) -> &mut Self {
         unsafe {
-            ffi::GX_InitLightSpot(&mut self.0, cut_off, spotfn as u8);
+            ffi::GX_InitLightSpot(&mut self.0, cut_off, spotfn.into_u8());
         }
         self
     }
@@ -838,26 +1273,49 @@ impl Light {
 #[repr(u8)]
 pub enum TexFilter {
     /// Point sampling, no mipmap
-    Near = ffi::GX_NEAR as _,
+    Near = 0,
     /// Point sampling, linear mipmap
-    NearMipLin = ffi::GX_NEAR_MIP_LIN as _,
+    NearMipLin = 4,
     /// Point sampling, discrete mipmap
-    NearMipNear = ffi::GX_NEAR_MIP_NEAR as _,
+    NearMipNear = 2,
     /// Trilinear filtering
-    LinMipLin = ffi::GX_LIN_MIP_LIN as _,
+    LinMipLin = 5,
     /// Bilinear filtering, discrete mipmap
-    LinMipNear = ffi::GX_LIN_MIP_NEAR as _,
+    LinMipNear = 3,
     /// Bilinear filtering, no mipmap
-    Linear = ffi::GX_LINEAR as _,
+    Linear = 1,
+}
+
+impl TexFilter {
+    pub const fn into_u8(self) -> u8 {
+        match self {
+            TexFilter::Near => 0,
+            TexFilter::NearMipLin => 4,
+            TexFilter::NearMipNear => 2,
+            TexFilter::LinMipLin => 5,
+            TexFilter::LinMipNear => 3,
+            TexFilter::Linear => 1,
+        }
+    }
 }
 
 /// Texture wrap modes
 #[derive(Copy, Clone, Debug)]
-#[repr(u8)]
+#[repr(u32)]
 pub enum WrapMode {
-    Clamp = ffi::GX_CLAMP as _,
-    Repeat = ffi::GX_REPEAT as _,
-    Mirror = ffi::GX_MIRROR as _,
+    Clamp = ffi::GX_CLAMP,
+    Repeat = ffi::GX_REPEAT,
+    Mirror = ffi::GX_MIRROR,
+}
+
+impl WrapMode {
+    pub const fn into_u8(self) -> u8 {
+        match self {
+            WrapMode::Clamp => 0,
+            WrapMode::Repeat => 1,
+            WrapMode::Mirror => 2,
+        }
+    }
 }
 
 #[repr(transparent)]
@@ -869,27 +1327,67 @@ impl Texture<'_> {
         img: &[u8],
         width: u16,
         height: u16,
-        format: u8,
+        format: TextureFormat,
         wrap_s: WrapMode,
         wrap_t: WrapMode,
         mipmap: bool,
     ) -> Texture {
-        let texture = core::mem::MaybeUninit::zeroed();
-        assert_eq!(0, img.as_ptr().align_offset(32));
-        assert!(width <= 1024, "max width for texture is 1024");
-        assert!(height <= 1024, "max height for texture is 1024");
+        let mut texture = core::mem::MaybeUninit::zeroed();
+        debug_assert_eq!(0, img.as_ptr().align_offset(32));
+        debug_assert!(width <= 1024, "max width for texture is 1024");
+        debug_assert!(height <= 1024, "max height for texture is 1024");
         unsafe {
             ffi::GX_InitTexObj(
-                texture.as_ptr() as *mut _,
-                img.as_ptr() as *mut _,
+                texture.as_mut_ptr(),
+                // SAFETY: I pinky promise I don't actually modify the img bytes
+                img.as_ptr().cast::<c_void>().cast_mut(),
                 width,
                 height,
-                format,
-                wrap_s as u8,
-                wrap_t as u8,
-                mipmap as u8,
+                format.into_u8(),
+                wrap_s.into_u8(),
+                wrap_t.into_u8(),
+                u8::from(mipmap),
             );
             Texture(texture.assume_init(), PhantomData)
+        }
+    }
+
+    pub fn wrap_s(&self) -> WrapMode {
+        unsafe {
+            match ffi::GX_GetTexObjWrapS(&self.0) {
+                0 => WrapMode::Clamp,
+                1 => WrapMode::Repeat,
+                2 => WrapMode::Mirror,
+                _ => panic!(),
+            }
+        }
+    }
+
+    pub fn wrap_t(&self) -> WrapMode {
+        unsafe {
+            match ffi::GX_GetTexObjWrapT(&self.0) {
+                0 => WrapMode::Clamp,
+                1 => WrapMode::Repeat,
+                2 => WrapMode::Mirror,
+                _ => panic!(),
+            }
+        }
+    }
+
+    pub fn format(&self) -> TextureFormat {
+        match unsafe { ffi::GX_GetTexObjFmt(&self.0) } {
+            0 => TextureFormat::Intensity4,
+            1 => TextureFormat::Intensity8,
+            2 => TextureFormat::IntensityAlpha4,
+            3 => TextureFormat::IntensityAlpha8,
+            4 => TextureFormat::Rgb565,
+            5 => TextureFormat::Rgb5a3,
+            6 => TextureFormat::Rgba8,
+            8 => TextureFormat::ColorIndexed4,
+            9 => TextureFormat::ColorIndexed8,
+            10 => TextureFormat::ColorIndexed14,
+            14 => TextureFormat::Compressed,
+            _ => panic!(),
         }
     }
 
@@ -903,20 +1401,20 @@ impl Texture<'_> {
         mipmap: bool,
         tlut_name: u32,
     ) -> Texture {
-        let texture = core::mem::MaybeUninit::zeroed();
-        assert_eq!(0, img.as_ptr().align_offset(32));
-        assert!(width <= 1024, "max width for texture is 1024");
-        assert!(height <= 1024, "max height for texture is 1024");
+        let mut texture: MaybeUninit<_gx_texobj> = MaybeUninit::uninit();
+        debug_assert_eq!(0, img.as_ptr().align_offset(32));
+        debug_assert!(width <= 1024, "max width for texture is 1024");
+        debug_assert!(height <= 1024, "max height for texture is 1024");
         unsafe {
             ffi::GX_InitTexObjCI(
-                texture.as_ptr() as *mut _,
-                img.as_ptr() as *mut _,
+                texture.as_mut_ptr().cast(),
+                img.as_ptr().cast_mut().cast(),
                 width,
                 height,
                 format,
-                wrap.0 as u8,
-                wrap.1 as u8,
-                mipmap as u8,
+                wrap.0.into_u8(),
+                wrap.1.into_u8(),
+                u8::from(mipmap),
                 tlut_name,
             );
             Texture(texture.assume_init(), PhantomData)
@@ -926,19 +1424,19 @@ impl Texture<'_> {
     /// Returns the texture height.
     pub fn height(&self) -> u16 {
         // TODO: remove conversions when upstream changes pass.
-        unsafe { ffi::GX_GetTexObjHeight(self as *const _ as *mut _) }
+        unsafe { ffi::GX_GetTexObjHeight(core::ptr::from_ref(&self.0).cast_mut()) }
     }
 
     /// Returns the texture width.
     pub fn width(&self) -> u16 {
         // TODO: remove conversions when upstream changes pass.
-        unsafe { ffi::GX_GetTexObjWidth(self as *const _ as *mut _) }
+        unsafe { ffi::GX_GetTexObjWidth(core::ptr::from_ref(&self.0).cast_mut()) }
     }
 
     /// Returns `true` if the texture's mipmap flag is enabled.
     pub fn is_mipmapped(&self) -> bool {
         // TODO: remove conversions when upstream changes pass.
-        unsafe { ffi::GX_GetTexObjMipMap(self as *const _ as *mut _) != 0 }
+        unsafe { ffi::GX_GetTexObjMipMap(core::ptr::from_ref(&self.0).cast_mut()) != 0 }
     }
 
     /// Enables bias clamping for texture LOD.
@@ -948,7 +1446,7 @@ impl Texture<'_> {
     /// texture space. This prevents over-biasing the LOD when the polygon is perpendicular to the
     /// view direction.
     pub fn set_bias_clamp(&mut self, enable: bool) {
-        unsafe { ffi::GX_InitTexObjBiasClamp(&mut self.0, enable as u8) }
+        unsafe { ffi::GX_InitTexObjBiasClamp(&mut self.0, u8::from(enable)) }
     }
 
     /// Changes LOD computing mode.
@@ -958,7 +1456,7 @@ impl Texture<'_> {
     /// [`Texture::set_bias_clamp()`]) or anisotropic filtering (`GX_ANISO_2` or `GX_ANISO_4` for
     /// [`Texture::set_max_aniso()`] argument).
     pub fn set_edge_lod(&mut self, enable: bool) {
-        unsafe { ffi::GX_InitTexObjEdgeLOD(&mut self.0, enable as u8) }
+        unsafe { ffi::GX_InitTexObjEdgeLOD(&mut self.0, u8::from(enable)) }
     }
 
     /// Sets the filter mode for a texture.
@@ -971,7 +1469,7 @@ impl Texture<'_> {
             matches!(magfilt, TexFilter::Near | TexFilter::Linear),
             "magfilt can only be `TexFilter::Near` or `TexFilter::Linear`"
         );
-        unsafe { ffi::GX_InitTexObjFilterMode(&mut self.0, minfilt as u8, magfilt as u8) }
+        unsafe { ffi::GX_InitTexObjFilterMode(&mut self.0, minfilt.into_u8(), magfilt.into_u8()) }
     }
 
     /// Sets texture Level Of Detail (LOD) controls explicitly for a texture object.
@@ -1026,13 +1524,13 @@ impl Texture<'_> {
         unsafe {
             ffi::GX_InitTexObjLOD(
                 &mut self.0,
-                filters.0 as u8,
-                filters.1 as u8,
+                filters.0.into_u8(),
+                filters.1.into_u8(),
                 lod_range.0,
                 lod_range.1,
                 lodbias,
-                biasclamp as u8,
-                edgelod as u8,
+                u8::from(biasclamp),
+                u8::from(edgelod),
                 maxaniso,
             );
         }
@@ -1073,11 +1571,42 @@ impl Texture<'_> {
 
     /// Allows one to modify the texture coordinate wrap modes for an existing texture object.
     pub fn set_wrap_mode(&mut self, wrap_s: WrapMode, wrap_t: WrapMode) {
-        unsafe { ffi::GX_InitTexObjWrapMode(&mut self.0, wrap_s as u8, wrap_t as u8) }
+        unsafe { ffi::GX_InitTexObjWrapMode(&mut self.0, wrap_s.into_u8(), wrap_t.into_u8()) }
     }
 
     pub fn gxtexobj(&mut self) -> &mut GXTexObj {
         &mut self.0
+    }
+
+    fn filter_mode(&self) -> (TexFilter, TexFilter) {
+        let mut min_filter = 0;
+        let mut max_filter = 0;
+
+        unsafe {
+            ffi::GX_GetTexObjFilterMode(&self.0, &mut min_filter, &mut max_filter);
+        }
+
+        let min = match min_filter {
+            0 => TexFilter::Near,
+            1 => TexFilter::Linear,
+            _ => panic!(),
+        };
+
+        let max = match max_filter {
+            0 => TexFilter::Near,
+            1 => TexFilter::Linear,
+            2 => TexFilter::NearMipNear,
+            3 => TexFilter::LinMipNear,
+            4 => TexFilter::NearMipLin,
+            5 => TexFilter::LinMipLin,
+            _ => panic!(),
+        };
+
+        (min, max)
+    }
+
+    fn address(&self) -> usize {
+        unsafe { ffi::GX_GetTexObjData(&self.0).addr() }
     }
 }
 
@@ -1089,37 +1618,72 @@ impl<'a> From<GXTexObj> for Texture<'a> {
 
 /// Vertex attribute array type
 #[derive(Copy, Clone, Debug)]
-#[repr(u8)]
+#[repr(u32)]
 pub enum VtxAttr {
-    Null = ffi::GX_VA_NULL as _,
-    LightArray = ffi::GX_LIGHTARRAY as _,
-    NrmMtxArray = ffi::GX_NRMMTXARRAY as _,
-    PosMtxArray = ffi::GX_POSMTXARRAY as _,
-    TexMtxArray = ffi::GX_TEXMTXARRAY as _,
-    Color0 = ffi::GX_VA_CLR0 as _,
-    Color1 = ffi::GX_VA_CLR1 as _,
-    MaxAttr = ffi::GX_VA_MAXATTR as _,
+    Null = ffi::GX_VA_NULL,
+    LightArray = ffi::GX_LIGHTARRAY,
+    NrmMtxArray = ffi::GX_NRMMTXARRAY,
+    PosMtxArray = ffi::GX_POSMTXARRAY,
+    TexMtxArray = ffi::GX_TEXMTXARRAY,
+    Color0 = ffi::GX_VA_CLR0,
+    Color1 = ffi::GX_VA_CLR1,
+    MaxAttr = ffi::GX_VA_MAXATTR,
     /// Normal, binormal, tangent
-    Nbt = ffi::GX_VA_NBT as _,
-    Nrm = ffi::GX_VA_NRM as _,
-    Pos = ffi::GX_VA_POS as _,
-    PtnMtxIdx = ffi::GX_VA_PTNMTXIDX as _,
-    Tex0 = ffi::GX_VA_TEX0 as _,
-    Tex0MtxIdx = ffi::GX_VA_TEX0MTXIDX as _,
-    Tex1 = ffi::GX_VA_TEX1 as _,
-    Tex1MtxIdx = ffi::GX_VA_TEX1MTXIDX as _,
-    Tex2 = ffi::GX_VA_TEX2 as _,
-    Tex2MtxIdx = ffi::GX_VA_TEX2MTXIDX as _,
-    Tex3 = ffi::GX_VA_TEX3 as _,
-    Tex3MtxIdx = ffi::GX_VA_TEX3MTXIDX as _,
-    Tex4 = ffi::GX_VA_TEX4 as _,
-    Tex4MtxIdx = ffi::GX_VA_TEX4MTXIDX as _,
-    Tex5 = ffi::GX_VA_TEX5 as _,
-    Tex5MtxIdx = ffi::GX_VA_TEX5MTXIDX as _,
-    Tex6 = ffi::GX_VA_TEX6 as _,
-    Tex6MtxIdx = ffi::GX_VA_TEX6MTXIDX as _,
-    Tex7 = ffi::GX_VA_TEX7 as _,
-    Tex7MtxIdx = ffi::GX_VA_TEX7MTXIDX as _,
+    Nbt = ffi::GX_VA_NBT,
+    Nrm = ffi::GX_VA_NRM,
+    Pos = ffi::GX_VA_POS,
+    PtnMtxIdx = ffi::GX_VA_PTNMTXIDX,
+    Tex0 = ffi::GX_VA_TEX0,
+    Tex0MtxIdx = ffi::GX_VA_TEX0MTXIDX,
+    Tex1 = ffi::GX_VA_TEX1,
+    Tex1MtxIdx = ffi::GX_VA_TEX1MTXIDX,
+    Tex2 = ffi::GX_VA_TEX2,
+    Tex2MtxIdx = ffi::GX_VA_TEX2MTXIDX,
+    Tex3 = ffi::GX_VA_TEX3,
+    Tex3MtxIdx = ffi::GX_VA_TEX3MTXIDX,
+    Tex4 = ffi::GX_VA_TEX4,
+    Tex4MtxIdx = ffi::GX_VA_TEX4MTXIDX,
+    Tex5 = ffi::GX_VA_TEX5,
+    Tex5MtxIdx = ffi::GX_VA_TEX5MTXIDX,
+    Tex6 = ffi::GX_VA_TEX6,
+    Tex6MtxIdx = ffi::GX_VA_TEX6MTXIDX,
+    Tex7 = ffi::GX_VA_TEX7,
+    Tex7MtxIdx = ffi::GX_VA_TEX7MTXIDX,
+}
+
+impl VtxAttr {
+    pub const fn into_u8(self) -> u8 {
+        match self {
+            VtxAttr::Null => 255,
+            VtxAttr::LightArray => 24,
+            VtxAttr::NrmMtxArray => 22,
+            VtxAttr::PosMtxArray => 21,
+            VtxAttr::TexMtxArray => 23,
+            VtxAttr::Color0 => 11,
+            VtxAttr::Color1 => 12,
+            VtxAttr::MaxAttr => 26,
+            VtxAttr::Nbt => 25,
+            VtxAttr::Nrm => 10,
+            VtxAttr::Pos => 9,
+            VtxAttr::PtnMtxIdx => 0,
+            VtxAttr::Tex0 => 13,
+            VtxAttr::Tex0MtxIdx => 1,
+            VtxAttr::Tex1 => 14,
+            VtxAttr::Tex1MtxIdx => 2,
+            VtxAttr::Tex2 => 15,
+            VtxAttr::Tex2MtxIdx => 3,
+            VtxAttr::Tex3 => 16,
+            VtxAttr::Tex3MtxIdx => 4,
+            VtxAttr::Tex4 => 17,
+            VtxAttr::Tex4MtxIdx => 5,
+            VtxAttr::Tex5 => 18,
+            VtxAttr::Tex5MtxIdx => 6,
+            VtxAttr::Tex6 => 19,
+            VtxAttr::Tex6MtxIdx => 7,
+            VtxAttr::Tex7 => 20,
+            VtxAttr::Tex7MtxIdx => 8,
+        }
+    }
 }
 
 /// Structure describing how a single vertex attribute will be referenced.
@@ -1131,10 +1695,19 @@ pub enum VtxAttr {
 pub struct VtxDesc(ffi::GXVtxDesc);
 
 #[derive(Copy, Clone, Debug)]
-#[repr(u8)]
+#[repr(u32)]
 pub enum ProjectionType {
-    Perspective = ffi::GX_PERSPECTIVE as _,
-    Orthographic = ffi::GX_ORTHOGRAPHIC as _,
+    Perspective = ffi::GX_PERSPECTIVE,
+    Orthographic = ffi::GX_ORTHOGRAPHIC,
+}
+
+impl ProjectionType {
+    pub const fn into_u32(self) -> u32 {
+        match self {
+            ProjectionType::Perspective => 0,
+            ProjectionType::Orthographic => 1,
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -1177,20 +1750,29 @@ impl Gx {
     /// the calling thread is the one responsible for generating graphics data. This thread will be
     /// the thread to be suspended when the FIFO gets too full. The current GX thread can be
     /// changed by calling [`Gx::set_current_gx_thread()`].
-    pub fn init(mut size: usize) -> &'static mut Fifo {
-        if size < Fifo::MIN_SIZE {
-            size = Fifo::MIN_SIZE;
-        }
+    ///
+    /// # Panics
+    /// Panics if the size doesn't fit into a `u32`.
+    /// Panics if the `Fifo` ptr is null
+    pub fn init(size: usize) -> &'static mut Fifo {
+        let size = if size < Fifo::MIN_SIZE {
+            Fifo::MIN_SIZE
+        } else {
+            size
+        };
 
         let mut buf = crate::utils::Buf32::new(size);
 
+        let address = buf.as_mut_ptr().map_addr(mem::to_uncached).cast::<c_void>();
+        let len = u32::try_from(buf.len()).expect("size did not fit into a `u32`");
+
         // SAFETY: all safety is ensured by Buf32.
         unsafe {
-            let fifo = ffi::GX_Init(
-                buf.as_mut_ptr().map_addr(mem::to_uncached) as *mut _,
-                buf.len() as u32
-            );
-            &mut *(fifo as *mut Fifo)
+            let fifo = ffi::GX_Init(address, len);
+
+            fifo.cast::<Fifo>()
+                .as_mut()
+                .expect("Fifo ptr should not be null")
         }
     }
 
@@ -1214,7 +1796,7 @@ impl Gx {
     /// The break point mechanism can be used to force the FIFO to stop reading commands at a
     /// certain point; see [`Gx::enable_breakpt()`].
     pub fn set_gp_fifo(fifo: Fifo) {
-        unsafe { ffi::GX_SetGPFifo((&fifo) as *const _ as *mut _) }
+        unsafe { ffi::GX_SetGPFifo(core::ptr::from_ref(&fifo.0).cast_mut()) }
     }
 
     /// Attaches a FIFO to the CPU.
@@ -1224,7 +1806,7 @@ impl Gx {
     /// be in immediate mode. If not, the CPU can write commands, and the GP will execute them when
     /// the GP attaches to this FIFO (multi-buffered mode).
     pub fn set_cpu_fifo(fifo: Fifo) {
-        unsafe { ffi::GX_SetCPUFifo((&fifo) as *const _ as *mut _) }
+        unsafe { ffi::GX_SetCPUFifo(core::ptr::from_ref(&fifo.0).cast_mut()) }
     }
 
     /// Returns the current GX thread.
@@ -1313,7 +1895,7 @@ impl Gx {
     /// Use [`Gx::set_breakpt_callback()`] to set what function runs when the breakpoint is
     /// encountered.
     pub fn enable_breakpt(break_pt: *mut u8) {
-        unsafe { ffi::GX_EnableBreakPt(break_pt as _) }
+        unsafe { ffi::GX_EnableBreakPt(break_pt.cast()) }
     }
 
     /// Registers `cb` as a function to be invoked when a break point is encountered.
@@ -1384,7 +1966,7 @@ impl Gx {
     ///
     /// Another way to load a light object is with `Gx::load_light_idx()`.
     pub fn load_light(lit_obj: &Light, lit_id: u8) {
-        unsafe { ffi::GX_LoadLightObj(lit_obj as *const _ as *mut _, lit_id) }
+        unsafe { ffi::GX_LoadLightObj(core::ptr::from_ref(&lit_obj.0).cast_mut(), lit_id) }
     }
 
     /// Instructs the GP to fetch the light object at *litobjidx* from an array.
@@ -1399,7 +1981,7 @@ impl Gx {
     /// object data from the CPU cache (using `DCStoreRange()`) before calling
     /// `Gx::load_light_idx()`.
     pub fn load_light_idx(litobjidx: usize, litid: u8) {
-        unsafe { ffi::GX_LoadLightObjIdx(litobjidx as u32, litid) }
+        unsafe { ffi::GX_LoadLightObjIdx(u32::try_from(litobjidx).unwrap(), litid) }
     }
 
     /// Causes the GPU to wait for the pipe to flush.
@@ -1482,7 +2064,7 @@ impl Gx {
     /// not texturing pixels that are not visible; however, when alpha compare is used, Z buffering
     /// must be done after texturing (see [`Gx::set_alpha_compare()`]).
     pub fn set_zcomp_loc(before_tex: bool) {
-        unsafe { ffi::GX_SetZCompLoc(before_tex as u8) }
+        unsafe { ffi::GX_SetZCompLoc(u8::from(before_tex)) }
     }
 
     /// Sets color and Z value to clear the EFB to during copy operations.
@@ -1509,7 +2091,30 @@ impl Gx {
     /// Sets the viewport rectangle in screen coordinates.
     /// See [GX_SetViewport](https://libogc.devkitpro.org/gx_8h.html#aaccd37675da5a22596fad756c73badc2) for more.
     pub fn set_viewport(x_orig: f32, y_orig: f32, wd: f32, hd: f32, near_z: f32, far_z: f32) {
-        unsafe { ffi::GX_SetViewport(x_orig, y_orig, wd, hd, near_z, far_z) }
+        const X_FACTOR: f32 = 0.5;
+        const Y_FACTOR: f32 = 342.;
+        const Z_FACTOR: f32 = 16777215.;
+
+        let x0 = wd * X_FACTOR;
+        let y0 = -(hd) * X_FACTOR;
+        let x1 = (x_orig + (wd * X_FACTOR)) + Y_FACTOR;
+        let y1 = (y_orig + (hd * X_FACTOR)) + Y_FACTOR;
+        let n = Z_FACTOR * near_z;
+        let f = Z_FACTOR * far_z;
+        let z = n - f;
+
+        XFReg::VIEW_SCALE_X.load_multi(
+            6,
+            &[
+                x0.to_be_bytes(),
+                y0.to_be_bytes(),
+                z.to_be_bytes(),
+                x1.to_be_bytes(),
+                y1.to_be_bytes(),
+                f.to_be_bytes(),
+            ],
+        );
+        //unsafe { ffi::GX_SetViewport(x_orig, y_orig, wd, hd, near_z, far_z) }
     }
 
     /// Calculates an appropriate Y scale factor value for GX_SetDispCopyYScale() based on the height of the EFB and the height of the XFB.
@@ -1520,44 +2125,93 @@ impl Gx {
 
     /// Sets the vertical scale factor for the EFB to XFB copy operation.
     /// See [GX_SetDispCopyYScale](https://libogc.devkitpro.org/gx_8h.html#a1a4ebb4e742f4ce2f010768e09e07c48) for more.
-    pub fn set_disp_copy_y_scale(y_scale: f32) -> u32 {
-        unsafe { ffi::GX_SetDispCopyYScale(y_scale) }
+    pub fn set_disp_copy_y_scale(y_scale: f32) -> DisplayYScale {
+        let real_y_scale = 256.0 / y_scale;
+        let display_y_scale = DisplayYScale::new().with_scale(real_y_scale);
+
+        // I still have to call this since it does DisplayCopyControl shenanigans as well
+        unsafe { ffi::GX_SetDispCopyYScale(y_scale) };
+        /*
+        BPReg::DISP_COPY_Y_SCALE.load(display_y_scale.as_u32());
+
+        */
+
+        display_y_scale
     }
 
     /// Sets the scissor rectangle.
     /// See [GX_SetScissor](https://libogc.devkitpro.org/gx_8h.html#a689bdd17fc74bf86a4c4f00418a2c596) for more.
-    pub fn set_scissor(x_origin: u32, y_origin: u32, wd: u32, hd: u32) {
-        unsafe { ffi::GX_SetScissor(x_origin, y_origin, wd, hd) }
+    pub fn set_scissor(
+        x_origin: u32,
+        y_origin: u32,
+        wd: u32,
+        hd: u32,
+    ) -> (ScissorTopLeft, ScissorHeightWidth) {
+        const OFFSET: u32 = 342;
+        let xo = x_origin + OFFSET;
+        let yo = y_origin + OFFSET;
+
+        let nwd = xo + (wd - 1);
+        let nht = yo + (hd - 1);
+
+        let scisor_tl = ScissorTopLeft::new().with_y_origin(yo).with_x_origin(xo);
+        let scisor_hw = ScissorHeightWidth::new().with_height(nht).with_width(nwd);
+
+        BPReg::SU_SCIS0.load(scisor_tl.as_u32());
+        BPReg::SU_SCIS1.load(scisor_hw.as_u32());
+
+        (scisor_tl, scisor_hw)
+        //unsafe { ffi::GX_SetScissor(x_origin, y_origin, wd, hd) }
+    }
+
+    pub fn set_scissor_box_offset(x_offset: u32, y_offset: u32) -> ScissorBoxOffset {
+        let real_x = x_offset + 342;
+        let real_y = y_offset + 342;
+
+        let scissor_box_offset = ScissorBoxOffset::new()
+            .with_x_offset(real_x)
+            .with_y_offset(real_y);
+
+        BPReg::SU_SCISOFF.load(scissor_box_offset.as_u32());
+
+        scissor_box_offset
     }
 
     /// Sets the source parameters for the EFB to XFB copy operation.
     /// See [GX_SetDispCopySrc](https://libogc.devkitpro.org/gx_8h.html#a979d8db7abbbc2e9a267f5d1710ac588) for more.
-    pub fn set_disp_copy_src(left: u16, top: u16, wd: u16, hd: u16) {
-        assert_eq!(0, left % 2);
-        assert_eq!(0, top % 2);
-        assert_eq!(0, wd % 2);
-        assert_eq!(0, hd % 2);
+    pub fn set_disp_copy_src(
+        left: u16,
+        top: u16,
+        wd: u16,
+        hd: u16,
+    ) -> (DisplayTopLeft, DisplayWidthHeight) {
+        debug_assert_eq!(0, left % 2);
+        debug_assert_eq!(0, top % 2);
+        debug_assert_eq!(0, wd % 2);
+        debug_assert_eq!(0, hd % 2);
         //unsafe { ffi::GX_SetDispCopySrc(left, top, wd, hd) }
 
-        let mut top_left = 0u32;
-        top_left.set_bits(..10, left.into());
-        top_left.set_bits(10.., top.into());
+        let display_tl = DisplayTopLeft::new().with_x_origin(left).with_y_origin(top);
+        let display_hw = DisplayWidthHeight::new()
+            .with_width(wd - 1)
+            .with_height(hd - 1);
 
-        let mut width_height = 0u32;
-        width_height.set_bits(..10, (wd - 1).into());
-        width_height.set_bits(10.., (hd - 1).into());
+        BPReg::EFB_ADDR_TOP_LEFT.load(display_tl.as_u32());
+        BPReg::EFB_ADDR_DIMENSIONS.load(display_hw.as_u32());
 
-        BPReg::EFB_ADDR_TOP_LEFT.load(top_left);
-        BPReg::EFB_ADDR_DIMENSIONS.load(width_height);
+        (display_tl, display_hw)
     }
 
     /// Sets the witth and height of the display buffer in pixels.
     /// See [GX_SetDispCopyDst](https://libogc.devkitpro.org/gx_8h.html#ab6f639059b750e57af4c593ba92982c5) for more.
-    pub fn set_disp_copy_dst(width: u16, _height: u16) {
-        assert!(width <= 0x3FF, "width isn't a valid value");
+    pub fn set_disp_copy_dst(width: u16, _height: u16) -> DisplayStride {
+        debug_assert!(width <= 0x3FF, "width isn't a valid value");
 
-        BPReg::MIPMAP_STRIDE.load(width.into());
+        let display_stride = DisplayStride::new().with_stride(width);
 
+        BPReg::MIPMAP_STRIDE.load(display_stride.as_u32());
+
+        display_stride
         //unsafe { ffi::GX_SetDispCopyDst(width, height) }
     }
 
@@ -1568,63 +2222,115 @@ impl Gx {
         sample_pattern: &mut [[u8; 2]; 12],
         vf: bool,
         v_filter: &mut [u8; 7],
-    ) {
-        let mut disp_copy_0 = 0x666666u32;
-        let mut disp_copy_1 = 0x666666u32;
-        let mut disp_copy_2 = 0x666666u32;
-        let mut disp_copy_3 = 0x666666u32;
+    ) -> ([DisplayFilter; 4], [CopyFilter; 2]) {
+        let disp_copy_0 = 0x666666u32;
+        let disp_filt_0 = unsafe { DisplayFilter::from_u32(disp_copy_0) };
+        let disp_filt_1 = unsafe { DisplayFilter::from_u32(disp_copy_0) };
+        let disp_filt_2 = unsafe { DisplayFilter::from_u32(disp_copy_0) };
+        let disp_filt_3 = unsafe { DisplayFilter::from_u32(disp_copy_0) };
 
-        let mut trgt_copy_0 = 0x595000u32;
-        let mut trgt_copy_1 = 0x000015u32;
-
+        let trgt_copy_0 = 0x595000u32;
+        let trgt_copy_1 = 0x000015u32;
+        let target_filt_0 = unsafe { CopyFilter::from_u32(trgt_copy_0) };
+        let target_filt_1 = unsafe { CopyFilter::from_u32(trgt_copy_1) };
         if aa {
-            disp_copy_0.set_bits(0..4, sample_pattern[0][0].into());
-            disp_copy_0.set_bits(4..8, sample_pattern[0][1].into());
-            disp_copy_0.set_bits(8..12, sample_pattern[1][0].into());
-            disp_copy_0.set_bits(12..16, sample_pattern[1][1].into());
-            disp_copy_0.set_bits(16..20, sample_pattern[2][0].into());
-            disp_copy_0.set_bits(20..24, sample_pattern[2][1].into());
+            disp_filt_0
+                .with_pattern_0(sample_pattern[0][0])
+                .with_pattern_1(sample_pattern[0][1])
+                .with_pattern_2(sample_pattern[1][0])
+                .with_pattern_3(sample_pattern[1][1])
+                .with_pattern_4(sample_pattern[2][0])
+                .with_pattern_5(sample_pattern[2][1]);
 
-            disp_copy_1.set_bits(0..4, sample_pattern[3][0].into());
-            disp_copy_1.set_bits(4..8, sample_pattern[3][1].into());
-            disp_copy_1.set_bits(8..12, sample_pattern[4][0].into());
-            disp_copy_1.set_bits(12..16, sample_pattern[4][1].into());
-            disp_copy_1.set_bits(16..20, sample_pattern[5][0].into());
-            disp_copy_1.set_bits(20..24, sample_pattern[5][1].into());
+            disp_filt_1
+                .with_pattern_0(sample_pattern[3][0])
+                .with_pattern_1(sample_pattern[3][1])
+                .with_pattern_2(sample_pattern[4][0])
+                .with_pattern_3(sample_pattern[4][1])
+                .with_pattern_4(sample_pattern[5][0])
+                .with_pattern_5(sample_pattern[5][1]);
 
-            disp_copy_2.set_bits(0..4, sample_pattern[6][0].into());
-            disp_copy_2.set_bits(4..8, sample_pattern[6][1].into());
-            disp_copy_2.set_bits(8..12, sample_pattern[7][0].into());
-            disp_copy_2.set_bits(12..16, sample_pattern[7][1].into());
-            disp_copy_2.set_bits(16..20, sample_pattern[8][0].into());
-            disp_copy_2.set_bits(20..24, sample_pattern[8][1].into());
+            disp_filt_2
+                .with_pattern_0(sample_pattern[6][0])
+                .with_pattern_1(sample_pattern[6][1])
+                .with_pattern_2(sample_pattern[7][0])
+                .with_pattern_3(sample_pattern[7][1])
+                .with_pattern_4(sample_pattern[8][0])
+                .with_pattern_5(sample_pattern[8][1]);
 
-            disp_copy_3.set_bits(0..4, sample_pattern[9][0].into());
-            disp_copy_3.set_bits(4..8, sample_pattern[9][1].into());
-            disp_copy_3.set_bits(8..12, sample_pattern[10][0].into());
-            disp_copy_3.set_bits(12..16, sample_pattern[10][1].into());
-            disp_copy_3.set_bits(16..20, sample_pattern[11][0].into());
-            disp_copy_3.set_bits(20..24, sample_pattern[11][1].into());
+            disp_filt_3
+                .with_pattern_0(sample_pattern[9][0])
+                .with_pattern_1(sample_pattern[9][1])
+                .with_pattern_2(sample_pattern[10][0])
+                .with_pattern_3(sample_pattern[10][1])
+                .with_pattern_4(sample_pattern[11][0])
+                .with_pattern_5(sample_pattern[11][1]);
+            /*
+                      disp_copy_0.set_bits(0..4, sample_pattern[0][0].into());
+                      disp_copy_0.set_bits(4..8, sample_pattern[0][1].into());
+                      disp_copy_0.set_bits(8..12, sample_pattern[1][0].into());
+                      disp_copy_0.set_bits(12..16, sample_pattern[1][1].into());
+                      disp_copy_0.set_bits(16..20, sample_pattern[2][0].into());
+                      disp_copy_0.set_bits(20..24, sample_pattern[2][1].into());
+
+                      disp_copy_1.set_bits(0..4, sample_pattern[3][0].into());
+                      disp_copy_1.set_bits(4..8, sample_pattern[3][1].into());
+                      disp_copy_1.set_bits(8..12, sample_pattern[4][0].into());
+                      disp_copy_1.set_bits(12..16, sample_pattern[4][1].into());
+                      disp_copy_1.set_bits(16..20, sample_pattern[5][0].into());
+                      disp_copy_1.set_bits(20..24, sample_pattern[5][1].into());
+
+                      disp_copy_2.set_bits(0..4, sample_pattern[6][0].into());
+                      disp_copy_2.set_bits(4..8, sample_pattern[6][1].into());
+                      disp_copy_2.set_bits(8..12, sample_pattern[7][0].into());
+                      disp_copy_2.set_bits(12..16, sample_pattern[7][1].into());
+                      disp_copy_2.set_bits(16..20, sample_pattern[8][0].into());
+                      disp_copy_2.set_bits(20..24, sample_pattern[8][1].into());
+
+                      disp_copy_3.set_bits(0..4, sample_pattern[9][0].into());
+                      disp_copy_3.set_bits(4..8, sample_pattern[9][1].into());
+                      disp_copy_3.set_bits(8..12, sample_pattern[10][0].into());
+                      disp_copy_3.set_bits(12..16, sample_pattern[10][1].into());
+                      disp_copy_3.set_bits(16..20, sample_pattern[11][0].into());
+                      disp_copy_3.set_bits(20..24, sample_pattern[11][1].into());
+            */
         }
 
         if vf {
-            trgt_copy_0.set_bits(0..6, v_filter[0].into());
-            trgt_copy_0.set_bits(6..12, v_filter[1].into());
-            trgt_copy_0.set_bits(12..18, v_filter[2].into());
-            trgt_copy_0.set_bits(18..24, v_filter[3].into());
+            target_filt_0
+                .with_pattern_0(v_filter[0])
+                .with_pattern_1(v_filter[1])
+                .with_pattern_2(v_filter[2])
+                .with_pattern_3(v_filter[3]);
+            /*
+                      trgt_copy_0.set_bits(0..6, v_filter[0].into());
+                      trgt_copy_0.set_bits(6..12, v_filter[1].into());
+                      trgt_copy_0.set_bits(12..18, v_filter[2].into());
+                      trgt_copy_0.set_bits(18..24, v_filter[3].into());
 
-            trgt_copy_1.set_bits(0..6, v_filter[4].into());
-            trgt_copy_1.set_bits(6..12, v_filter[5].into());
-            trgt_copy_1.set_bits(12..18, v_filter[6].into());
+            */
+            target_filt_0
+                .with_pattern_0(v_filter[4])
+                .with_pattern_1(v_filter[5])
+                .with_pattern_2(v_filter[6]);
+            /*
+                      trgt_copy_1.set_bits(0..6, v_filter[4].into());
+                      trgt_copy_1.set_bits(6..12, v_filter[5].into());
+                      trgt_copy_1.set_bits(12..18, v_filter[6].into());
+            */
         }
 
-        BPReg::DISP_COPY_FILT0.load(disp_copy_0);
-        BPReg::DISP_COPY_FILT1.load(disp_copy_1);
-        BPReg::DISP_COPY_FILT2.load(disp_copy_2);
-        BPReg::DISP_COPY_FILT3.load(disp_copy_3);
+        BPReg::DISP_COPY_FILT0.load(disp_filt_0.as_u32());
+        BPReg::DISP_COPY_FILT1.load(disp_filt_1.as_u32());
+        BPReg::DISP_COPY_FILT2.load(disp_filt_2.as_u32());
+        BPReg::DISP_COPY_FILT3.load(disp_filt_3.as_u32());
 
         BPReg::TRGT_COPY_FILT0.load(trgt_copy_0);
         BPReg::TRGT_COPY_FILT1.load(trgt_copy_1);
+        (
+            [disp_filt_0, disp_filt_1, disp_filt_2, disp_filt_3],
+            [target_filt_0, target_filt_1],
+        )
     }
 
     /// Sets the lighting controls for a particular color channel.
@@ -1640,12 +2346,12 @@ impl Gx {
         unsafe {
             ffi::GX_SetChanCtrl(
                 channel,
-                enable as u8,
-                ambsrc as u8,
-                matsrc as u8,
+                u8::from(enable),
+                ambsrc.into_u8(),
+                matsrc.into_u8(),
                 litmask,
-                diff_fn as u8,
-                attn_fn as u8,
+                diff_fn.into_u8(),
+                attn_fn.into_u8(),
             );
         }
     }
@@ -1653,7 +2359,7 @@ impl Gx {
     /// Controls various rasterization and texturing parameters that relate to field-mode and double-strike rendering.
     /// See [GX_SetFieldMode](https://libogc.devkitpro.org/gx_8h.html#a13f0df0011d04c3d986135e800fbcd21) for more.
     pub fn set_field_mode(field_mode: bool, half_aspect_ratio: bool) {
-        unsafe { ffi::GX_SetFieldMode(field_mode as u8, half_aspect_ratio as u8) }
+        unsafe { ffi::GX_SetFieldMode(u8::from(field_mode), u8::from(half_aspect_ratio)) }
     }
 
     /// Sets the format of pixels in the Embedded Frame Buffer (EFB).
@@ -1672,7 +2378,9 @@ impl Gx {
     ///
     /// See [GX_SetCullMode](https://libogc.devkitpro.org/gx_8h.html#adb4b17c39b24073c3e961458ecf02e87) for more.
     pub fn set_cull_mode(mode: CullMode) {
-        unsafe { ffi::GX_SetCullMode(mode as u8) }
+        // Modify `GEN_MODE` register I need to make a stateful thingy :((
+
+        unsafe { ffi::GX_SetCullMode(mode.into_u8()) }
     }
 
     /// Sets the current GX thread to the calling thread.
@@ -1707,7 +2415,7 @@ impl Gx {
     ///
     /// See [GX_CopyDisp](https://libogc.devkitpro.org/gx_8h.html#a9ed0ae3f900abb6af2e930dff7a6bc28) for more.
     pub unsafe fn copy_disp(dest: *mut c_void, clear: bool) {
-        ffi::GX_CopyDisp(dest, clear as u8)
+        ffi::GX_CopyDisp(dest, u8::from(clear))
     }
 
     /// Sets the gamma correction applied to pixels during EFB to XFB copy operation.
@@ -1718,15 +2426,29 @@ impl Gx {
 
     /// Sets the attribute format (vtxattr) for a single attribute in the Vertex Attribute Table (VAT).
     /// See [GX_SetVtxAttrFmt](https://libogc.devkitpro.org/gx_8h.html#a87437061debcc0457b6b6dc2eb021f23) for more.
-    pub fn set_vtx_attr_fmt(vtxfmt: u8, vtxattr: VtxAttr, comptype: u32, compsize: u32, frac: u32) {
+    pub fn set_vtx_attr_fmt(
+        vtxfmt: u8,
+        vtxattr: VtxAttr,
+        comptype: ComponentType,
+        compsize: ComponentSize,
+        frac: u32,
+    ) {
         // this is debug_assert because libogc just uses the lowest 3 bits
         debug_assert!(
-            vtxfmt < ffi::GX_MAXVTXFMT as u8,
+            u32::from(vtxfmt) < ffi::GX_MAXVTXFMT,
             "index out of bounds: the len is {} but the index is {}",
             ffi::GX_MAXVTXFMT,
             vtxfmt,
         );
-        unsafe { ffi::GX_SetVtxAttrFmt(vtxfmt, vtxattr as u32, comptype, compsize, frac) }
+        unsafe {
+            ffi::GX_SetVtxAttrFmt(
+                vtxfmt,
+                vtxattr.into_u8().into(),
+                comptype.into_u32(),
+                compsize.into_u32(),
+                frac,
+            )
+        }
     }
 
     /// Sets the number of color channels that are output to the TEV stages.
@@ -1743,14 +2465,183 @@ impl Gx {
 
     /// Simplified function to set various TEV parameters for this tevstage based on a predefined combiner mode.
     /// See [GX_SetTevOp](https://libogc.devkitpro.org/gx_8h.html#a68554713cdde7b45ae4d5ce156239cf8) for more.
-    pub fn set_tev_op(tevstage: u8, mode: u8) {
-        unsafe { ffi::GX_SetTevOp(tevstage, mode) }
+    pub fn set_tev_op(tevstage: u8, mode: TevOp) {
+        debug_assert!(tevstage <= 16, "There are only 16 tev stages");
+        //unsafe { ffi::GX_SetTevOp(tevstage, mode) }
+
+        let tev_template = TextureEnviroment::new()
+            .with_op(Operation::Add)
+            .with_bias(TextureEnviromentBias::Zero)
+            .with_scale(TextureEnviromentScale::One)
+            .with_clamp(TextureEnviromentClamp::GreaterEqual)
+            .with_output_register(ColorReg::Previous);
+
+        match mode {
+            TevOp::Modulate => {
+                let val = TextureEnviroment::new()
+                    .with_a(ColorCombinerInput::Zero)
+                    .with_b(ColorCombinerInput::TextureColor)
+                    .with_c(if tevstage != 0 {
+                        ColorCombinerInput::PreviousColor
+                    } else {
+                        ColorCombinerInput::RasterColor
+                    })
+                    .with_d(ColorCombinerInput::Zero)
+                    .with_bias(TextureEnviromentBias::Zero)
+                    .with_scale(TextureEnviromentScale::One)
+                    .with_clamp(TextureEnviromentClamp::GreaterEqual)
+                    .with_output_register(ColorReg::Previous)
+                    .with_op(Operation::Add)
+                    .into_u32();
+                let reg = unsafe { BPReg::from_u8(0xC0 + (tevstage * 2)) };
+                reg.load(val);
+
+                let alpha_val = TextureEnviroment::new()
+                    .with_alpha_a(AlphaCombinerInput::Zero)
+                    .with_alpha_b(AlphaCombinerInput::TextureAlpha)
+                    .with_alpha_c(if tevstage != 0 {
+                        AlphaCombinerInput::Previous
+                    } else {
+                        AlphaCombinerInput::RasterAlpha
+                    })
+                    .with_alpha_d(AlphaCombinerInput::Zero)
+                    .with_bias(TextureEnviromentBias::Zero)
+                    .with_scale(TextureEnviromentScale::One)
+                    .with_clamp(TextureEnviromentClamp::GreaterEqual)
+                    .with_output_register(ColorReg::Previous)
+                    .with_op(Operation::Add)
+                    .into_u32();
+
+                let alpha_reg = unsafe { BPReg::from_u8(0xC1 + (tevstage * 2)) };
+                alpha_reg.load(alpha_val);
+            }
+            TevOp::Decal => {
+                let color_val = tev_template
+                    .with_a(if tevstage != 0 {
+                        ColorCombinerInput::PreviousColor
+                    } else {
+                        ColorCombinerInput::RasterColor
+                    })
+                    .with_b(ColorCombinerInput::TextureColor)
+                    .with_c(ColorCombinerInput::TextureAlpha)
+                    .with_d(ColorCombinerInput::Zero)
+                    .into_u32();
+
+                let alpha_val = tev_template
+                    .with_alpha_a(AlphaCombinerInput::Zero)
+                    .with_alpha_b(AlphaCombinerInput::Zero)
+                    .with_alpha_c(AlphaCombinerInput::Zero)
+                    .with_alpha_b(if tevstage != 0 {
+                        AlphaCombinerInput::Previous
+                    } else {
+                        AlphaCombinerInput::RasterAlpha
+                    })
+                    .into_u32();
+
+                let reg = unsafe { BPReg::from_u8(0xC0 + (tevstage * 2)) };
+                reg.load(color_val);
+
+                let alpha_reg = unsafe { BPReg::from_u8(0xC1 + (tevstage * 2)) };
+                alpha_reg.load(alpha_val);
+            }
+            TevOp::Replace => {
+                let color_val = tev_template
+                    .with_a(ColorCombinerInput::Zero)
+                    .with_b(ColorCombinerInput::Zero)
+                    .with_c(ColorCombinerInput::Zero)
+                    .with_d(ColorCombinerInput::TextureColor)
+                    .into_u32();
+
+                let alpha_val = tev_template
+                    .with_alpha_a(AlphaCombinerInput::Zero)
+                    .with_alpha_b(AlphaCombinerInput::Zero)
+                    .with_alpha_c(AlphaCombinerInput::Zero)
+                    .with_alpha_d(AlphaCombinerInput::TextureAlpha)
+                    .into_u32();
+
+                let reg = unsafe { BPReg::from_u8(0xC0 + (tevstage * 2)) };
+                reg.load(color_val);
+
+                let alpha_reg = unsafe { BPReg::from_u8(0xC1 + (tevstage * 2)) };
+                alpha_reg.load(alpha_val);
+            }
+            TevOp::PassColor => {
+                let color_val = tev_template
+                    .with_a(ColorCombinerInput::Zero)
+                    .with_b(ColorCombinerInput::Zero)
+                    .with_c(ColorCombinerInput::Zero)
+                    .with_d(if tevstage != 0 {
+                        ColorCombinerInput::PreviousColor
+                    } else {
+                        ColorCombinerInput::RasterColor
+                    })
+                    .into_u32();
+
+                let alpha_val = tev_template
+                    .with_alpha_a(AlphaCombinerInput::Zero)
+                    .with_alpha_b(AlphaCombinerInput::Zero)
+                    .with_alpha_c(AlphaCombinerInput::Zero)
+                    .with_alpha_d(if tevstage != 0 {
+                        AlphaCombinerInput::Previous
+                    } else {
+                        AlphaCombinerInput::RasterAlpha
+                    })
+                    .into_u32();
+
+                let reg = unsafe { BPReg::from_u8(0xC0 + (tevstage * 2)) };
+                reg.load(color_val);
+
+                let alpha_reg = unsafe { BPReg::from_u8(0xC1 + (tevstage * 2)) };
+                alpha_reg.load(alpha_val);
+            }
+            TevOp::Blend => {
+                let color_val = tev_template
+                    .with_a(if tevstage != 0 {
+                        ColorCombinerInput::PreviousColor
+                    } else {
+                        ColorCombinerInput::RasterColor
+                    })
+                    .with_b(ColorCombinerInput::One)
+                    .with_c(ColorCombinerInput::TextureColor)
+                    .with_d(ColorCombinerInput::Zero)
+                    .into_u32();
+
+                let alpha_val = tev_template
+                    .with_alpha_a(AlphaCombinerInput::Zero)
+                    .with_alpha_b(AlphaCombinerInput::TextureAlpha)
+                    .with_alpha_c(if tevstage != 0 {
+                        AlphaCombinerInput::Previous
+                    } else {
+                        AlphaCombinerInput::RasterAlpha
+                    })
+                    .with_alpha_d(AlphaCombinerInput::RasterAlpha)
+                    .into_u32();
+
+                let reg = unsafe { BPReg::from_u8(0xC0 + (tevstage * 2)) };
+                reg.load(color_val);
+
+                let alpha_reg = unsafe { BPReg::from_u8(0xC1 + (tevstage * 2)) };
+                alpha_reg.load(alpha_val);
+            }
+        }
     }
 
     /// Specifies the texture and rasterized color that will be available as inputs to this TEV tevstage.
     /// See [GX_SetTevOrder](https://libogc.devkitpro.org/gx_8h.html#ae64799e52298de39efc74bf989fc57f5) for more.
-    pub fn set_tev_order(tevstage: u8, texcoord: u8, texmap: u32, color: u8) {
-        unsafe { ffi::GX_SetTevOrder(tevstage, texcoord, texmap, color) }
+    pub fn set_tev_order(
+        tevstage: u8,
+        texcoord: TexCoordSlot,
+        texmap: TexMapSlot,
+        color: ColorSlot,
+    ) {
+        unsafe {
+            ffi::GX_SetTevOrder(
+                tevstage,
+                texcoord.into_u8(),
+                u32::from(texmap.into_u8()),
+                color.into_u8(),
+            )
+        }
     }
 
     /// Specifies how texture coordinates are generated.
@@ -1786,7 +2677,12 @@ impl Gx {
     /// If the texture is a color-index texture, you **must** load the associated TLUT (using
     /// [`Gx::load_tlut()`]) before calling this function.
     pub fn load_texture(obj: &Texture, mapid: u8) {
-        unsafe { ffi::GX_LoadTexObj((&obj.0) as *const _ as *mut _, mapid) }
+        if mapid == 0 {
+            load_texture_preloaded(obj, mapid);
+            return;
+        }
+
+        unsafe { ffi::GX_LoadTexObj(core::ptr::from_ref::<_gx_texobj>(&obj.0).cast_mut(), mapid) };
     }
 
     /// Sets the projection matrix.
@@ -1813,7 +2709,7 @@ impl Gx {
             .iter()
             .map(|val| val.to_be_bytes())
             .collect::<Vec<[u8; 4]>>();
-        vals.push((projection as u32).to_be_bytes());
+        vals.push((projection.into_u32()).to_be_bytes());
         XFReg::PROJ_PRM_A.load_multi(7, &vals)
     }
 
@@ -1856,7 +2752,7 @@ impl Gx {
     /// is indexed. Direct data bypasses the vertex cache. Direct data is any attribute that is set
     /// to `GX_DIRECT` in the current vertex descriptor.
     pub fn inv_vtx_cache() {
-        GX_PIPE.write(GPCommand::InvalidateVertexCache as u8);
+        GX_PIPE.write(GPCommand::InvalidateVertexCache.into_u8());
     }
 
     /// Clears all vertex attributes of the current vertex descriptor to `GX_NONE`.
@@ -1868,24 +2764,209 @@ impl Gx {
         unsafe { ffi::GX_ClearVtxDesc() }
     }
 
+    pub fn set_vertex_attributes_format(
+        vtx_fmt: u8,
+        attribute_array: &[(VtxAttr, ComponentSize, ComponentType)],
+    ) {
+        let mut vat_a: u32 = 0;
+        let vat_b: u32 = 0x80000000;
+        let vat_c: u32 = 0;
+        for (attr, component_size, component_type) in attribute_array {
+            let type_: u32 = component_type.into_u32();
+            let size: u32 = component_size.into_u32();
+
+            match attr {
+                VtxAttr::Pos => {
+                    vat_a = bitfrob::u32_with_bit(0, vat_a, type_ != 0);
+                    vat_a = bitfrob::u32_with_value(1, 3, vat_a, size);
+                }
+                VtxAttr::Color0 => {
+                    vat_a = bitfrob::u32_with_bit(13, vat_a, type_ != 0);
+                    vat_a = bitfrob::u32_with_value(14, 16, vat_a, size);
+                }
+                VtxAttr::Tex0 => {
+                    vat_a = bitfrob::u32_with_bit(21, vat_a, type_ != 0);
+                    vat_a = bitfrob::u32_with_value(22, 24, vat_a, size);
+                }
+                _ => todo!(),
+            }
+        }
+        match vtx_fmt {
+            0 => {
+                CPReg::VAT_A_FORMAT0.load(vat_a);
+                CPReg::VAT_B_FORMAT0.load(vat_b);
+                CPReg::VAT_C_FORMAT0.load(vat_c);
+            }
+            _ => todo!(),
+        }
+    }
+
+    pub fn set_vertex_descriptors(vtxfmt: u8, vertex_descriptor_array: &[(VtxAttr, VtxDest)]) {
+        let mut vertex_descriptor_low: u32 = 0;
+        let mut vertex_descriptor_high: u32 = 0;
+
+        let mut num_normals = 0;
+        for (attr, dest) in vertex_descriptor_array {
+            let val: u32 = dest.into_u32();
+
+            match attr {
+                VtxAttr::Pos => {
+                    vertex_descriptor_low =
+                        bitfrob::u32_with_value(9, 10, vertex_descriptor_low, val);
+                }
+                VtxAttr::Nrm => {
+                    vertex_descriptor_low =
+                        bitfrob::u32_with_value(11, 12, vertex_descriptor_low, val);
+                    num_normals = 1;
+                }
+                VtxAttr::Nbt => {
+                    vertex_descriptor_low =
+                        bitfrob::u32_with_value(11, 12, vertex_descriptor_low, val);
+                    num_normals = 2;
+                }
+                VtxAttr::Color0 => {
+                    vertex_descriptor_low =
+                        bitfrob::u32_with_value(13, 14, vertex_descriptor_low, val);
+                }
+                VtxAttr::Color1 => {
+                    vertex_descriptor_low =
+                        bitfrob::u32_with_value(15, 16, vertex_descriptor_low, val);
+                }
+                VtxAttr::Tex0 => {
+                    vertex_descriptor_high =
+                        bitfrob::u32_with_value(0, 1, vertex_descriptor_high, val);
+                }
+                _ => todo!(),
+            }
+        }
+
+        let num_colors: u32 = {
+            let mut num_colors = 0;
+            if bitfrob::u32_get_value(13, 14, vertex_descriptor_low) != 0 {
+                num_colors += 1;
+            }
+
+            if bitfrob::u32_get_value(15, 16, vertex_descriptor_low) != 0 {
+                num_colors += 1;
+            }
+            num_colors
+        };
+
+        let num_textures: u32 = {
+            let mut num_textures = 0;
+            if bitfrob::u32_get_value(0, 1, vertex_descriptor_high) != 0 {
+                num_textures += 1;
+            }
+
+            if bitfrob::u32_get_value(2, 3, vertex_descriptor_high) != 0 {
+                num_textures += 1;
+            }
+
+            if bitfrob::u32_get_value(4, 5, vertex_descriptor_high) != 0 {
+                num_textures += 1;
+            }
+
+            if bitfrob::u32_get_value(6, 7, vertex_descriptor_high) != 0 {
+                num_textures += 1;
+            }
+
+            if bitfrob::u32_get_value(8, 9, vertex_descriptor_high) != 0 {
+                num_textures += 1;
+            }
+
+            if bitfrob::u32_get_value(10, 11, vertex_descriptor_high) != 0 {
+                num_textures += 1;
+            }
+
+            if bitfrob::u32_get_value(12, 13, vertex_descriptor_high) != 0 {
+                num_textures += 1;
+            }
+
+            if bitfrob::u32_get_value(14, 15, vertex_descriptor_high) != 0 {
+                num_textures += 1;
+            }
+            num_textures
+        };
+
+        crate::println!("{}, {}, {}", num_colors, num_normals, num_textures);
+
+        let mut xf_vertex_specifications: u32 = 0;
+        xf_vertex_specifications =
+            bitfrob::u32_with_value(0, 1, xf_vertex_specifications, num_colors);
+
+        xf_vertex_specifications =
+            bitfrob::u32_with_value(2, 3, xf_vertex_specifications, num_normals);
+
+        xf_vertex_specifications =
+            bitfrob::u32_with_value(4, 7, xf_vertex_specifications, num_textures);
+
+        crate::println!(
+            "{:X}, {:X}, {:X}",
+            vertex_descriptor_low,
+            vertex_descriptor_high,
+            xf_vertex_specifications
+        );
+        match vtxfmt {
+            0 => {
+                CPReg::VERT_DESC_LO_0.load(vertex_descriptor_low);
+                CPReg::VERT_DESC_HI_0.load(vertex_descriptor_high);
+
+                XFReg::INVTXSPEC.load_multi(1, &[xf_vertex_specifications.to_be_bytes()]);
+            }
+            _ => todo!(),
+        }
+    }
+
     /// Sets the type of a single attribute (attr) in the current vertex descriptor.
     /// See [GX_SetVtxDesc](https://libogc.devkitpro.org/gx_8h.html#af41b45011ae731ae5697b26b2bf97e2f) for more.
     pub fn set_vtx_desc(attr: VtxAttr, v_type: VtxDest) {
-        unsafe { ffi::GX_SetVtxDesc(attr as u8, v_type.0) }
+        unsafe { ffi::GX_SetVtxDesc(attr.into_u8(), v_type.into_u32().try_into().unwrap()) }
     }
 
     /// Used to load a 3x4 modelview matrix mt into matrix memory at location pnidx.
     /// See [GX_LoadPosMtxImm](https://libogc.devkitpro.org/gx_8h.html#a90349e713128a1fa4fd6048dcab7b5e7) for more.
-    pub fn load_pos_mtx_imm(mt: &mut Mtx34, pnidx: u32) {
-        unsafe { ffi::GX_LoadPosMtxImm(mt as *mut _, pnidx) }
+    pub fn load_pos_mtx_imm(mt: &Mtx34, pnidx: u32) {
+        let reg = unsafe { XFReg::from_u16(u16::try_from(pnidx).unwrap() << 2) };
+        reg.load_multi(
+            12,
+            &[
+                mt[0][0].to_be_bytes(),
+                mt[0][1].to_be_bytes(),
+                mt[0][2].to_be_bytes(),
+                mt[0][3].to_be_bytes(),
+                mt[1][0].to_be_bytes(),
+                mt[1][1].to_be_bytes(),
+                mt[1][2].to_be_bytes(),
+                mt[1][3].to_be_bytes(),
+                mt[2][0].to_be_bytes(),
+                mt[2][1].to_be_bytes(),
+                mt[2][2].to_be_bytes(),
+                mt[2][3].to_be_bytes(),
+            ],
+        );
     }
 
-    pub fn load_nrm_mtx_imm(mt: &mut Mtx34, pnidx: u32) {
-        unsafe { ffi::GX_LoadNrmMtxImm(mt as *mut _, pnidx) }
+    pub fn load_nrm_mtx_imm(mt: &[[f32; 3]; 3], pnidx: u32) {
+        let reg = unsafe { XFReg::from_u16(0x0400 | (u16::try_from(pnidx).unwrap() * 3)) };
+        reg.load_multi(
+            9,
+            &[
+                mt[0][0].to_be_bytes(),
+                mt[0][1].to_be_bytes(),
+                mt[0][2].to_be_bytes(),
+                mt[1][0].to_be_bytes(),
+                mt[1][1].to_be_bytes(),
+                mt[1][2].to_be_bytes(),
+                mt[2][0].to_be_bytes(),
+                mt[2][1].to_be_bytes(),
+                mt[2][2].to_be_bytes(),
+            ],
+        );
     }
 
     pub fn load_tex_mtx_imm(mt: &mut Mtx34, pnidx: u32) {
-        unsafe { ffi::GX_LoadTexMtxImm(mt as *mut _, pnidx, ffi::GX_MTX3x4 as _) }
+        const GX_MTX3X4: u8 = 0;
+        unsafe { ffi::GX_LoadTexMtxImm(core::ptr::from_mut(mt).cast(), pnidx, GX_MTX3X4) }
     }
 
     /// Enables or disables dithering.
@@ -1900,7 +2981,7 @@ impl Gx {
     /// rendering for comparisons (e.g. outline rendering algorithm that writes IDs to the alpha
     /// channel, copies the alpha channel to a texture, and later compares the texture in the TEV).
     pub fn set_dither(dither: bool) {
-        unsafe { ffi::GX_SetDither(dither as u8) }
+        unsafe { ffi::GX_SetDither(u8::from(dither)) }
     }
 
     /// Sends a DrawDone command to the GP and stalls until its subsequent execution.
@@ -1923,7 +3004,12 @@ impl Gx {
     /// Sets the Z-buffer compare mode.
     /// See [GX_SetZMode](https://libogc.devkitpro.org/gx_8h.html#a2af0d050f56ef45dd25d0db18909fa00) for more.
     pub fn set_z_mode(enable: bool, func: CmpFn, update_enable: bool) {
-        unsafe { ffi::GX_SetZMode(enable as u8, func as u8, update_enable as u8) }
+        let z_mode = ZMode::new()
+            .with_enable(enable)
+            .with_func(func)
+            .with_update(update_enable)
+            .into_u32();
+        BPReg::PE_ZMODE.load(z_mode);
     }
 
     /// Determines how the source image, generated by the graphics processor, is blended with the Embedded Frame Buffer (EFB).
@@ -1934,60 +3020,115 @@ impl Gx {
         dst_fact: BlendCtrl,
         op: LogicOp,
     ) {
-        unsafe { ffi::GX_SetBlendMode(b_type as u8, src_fact as u8, dst_fact as u8, op as u8) }
+        unsafe {
+            ffi::GX_SetBlendMode(
+                b_type.into_u8(),
+                src_fact.into_u8(),
+                dst_fact.into_u8(),
+                op.into_u8(),
+            );
+        }
     }
 
     /// Enables or disables alpha-buffer updates of the Embedded Frame Buffer (EFB).
     /// See [GX_SetAlphaUpdate](https://libogc.devkitpro.org/gx_8h.html#ac238051bda896c8bb11802184882a2a0) for more.
     pub fn set_alpha_update(enable: bool) {
-        unsafe { ffi::GX_SetAlphaUpdate(enable as u8) }
+        unsafe {
+            ffi::GX_SetAlphaUpdate(u8::from(enable));
+        }
     }
 
     /// Enables or disables color-buffer updates when rendering into the Embedded Frame Buffer (EFB).
     /// See [GX_SetColorUpdate](https://libogc.devkitpro.org/gx_8h.html#a3978e3b08198e52d7cea411e90ece3e5) for more.
     pub fn set_color_update(enable: bool) {
-        unsafe { ffi::GX_SetColorUpdate(enable as u8) }
+        unsafe {
+            ffi::GX_SetColorUpdate(u8::from(enable));
+        }
     }
 
     /// Sets the array base pointer and stride for a single attribute.
     /// See [GX_SetArray](https://libogc.devkitpro.org/gx_8h.html#a5164fc6aa2a678d792af80d94bfa1ec2) for more.
-    pub fn set_array<T>(attr: u32, array: &[T], stride: u8) {
-        unsafe { ffi::GX_SetArray(attr, array.as_ptr() as *mut c_void, stride) }
-    }
+    ///
+    /// # Panics
+    /// This panics if the address of `array` can not fit into a `u32`
+    pub fn set_array<T>(attr: VtxAttr, array: &[T], stride: u8) {
+        // Pinky promise I don't actually modify the data at array with this call
 
+        let (ptr, size) = match attr {
+            VtxAttr::Color0 => (CPReg::COL0_PTR, CPReg::COL0_SIZE),
+            VtxAttr::Color1 => (CPReg::COL1_PTR, CPReg::COL1_SIZE),
+            VtxAttr::Pos => (CPReg::VERT_PTR, CPReg::VERT_SIZE),
+            VtxAttr::Nrm | VtxAttr::Nbt => (CPReg::NORM_PTR, CPReg::NORM_SIZE),
+            VtxAttr::Tex0 => (CPReg::TEX0_PTR, CPReg::TEX0_SIZE),
+            VtxAttr::Tex1 => (CPReg::TEX1_PTR, CPReg::TEX1_SIZE),
+            VtxAttr::Tex2 => (CPReg::TEX2_PTR, CPReg::TEX2_SIZE),
+            VtxAttr::Tex3 => (CPReg::TEX3_PTR, CPReg::TEX3_SIZE),
+            VtxAttr::Tex4 => (CPReg::TEX4_PTR, CPReg::TEX4_SIZE),
+            VtxAttr::Tex5 => (CPReg::TEX5_PTR, CPReg::TEX5_SIZE),
+            VtxAttr::Tex6 => (CPReg::TEX6_PTR, CPReg::TEX6_SIZE),
+            VtxAttr::Tex7 => (CPReg::TEX7_PTR, CPReg::TEX7_SIZE),
+            VtxAttr::PosMtxArray => (CPReg::IDXA_PTR, CPReg::IDXA_SIZE),
+            VtxAttr::NrmMtxArray => (CPReg::IDXB_PTR, CPReg::IDXB_SIZE),
+            VtxAttr::TexMtxArray => (CPReg::IDXC_PTR, CPReg::IDXC_SIZE),
+            VtxAttr::LightArray => (CPReg::IDXD_PTR, CPReg::IDXD_SIZE),
+            _ => return,
+        };
+
+        let address = u32::try_from(array.as_ptr().map_addr(mem::to_physical).addr())
+            .expect("usize should fit into a u32");
+
+        ptr.load(address);
+        size.load(stride.into());
+    }
     /// Begins drawing of a graphics primitive.
     /// See [GX_Begin](https://libogc.devkitpro.org/gx_8h.html#ac1e1239130a33d9fae1352aee8d2cab9) for more.
     pub fn begin(primitive: Primitive, vtxfmt: u8, vtxcnt: u16) {
-        unsafe { ffi::GX_Begin(primitive as u8, vtxfmt, vtxcnt) }
+        // let register = primitive.into_u8() | (vtxfmt & 7);
+        // GX_PIPE.write(register);
+        //
+        // for byte in vtxcnt.to_be_bytes() {
+        //     GX_PIPE.write(byte);
+        // }
+        //
+        //Need to figure out dirty state updating
+        unsafe { ffi::GX_Begin(primitive.into_u8(), vtxfmt, vtxcnt) }
     }
 
     /// Sets the parameters for the alpha compare function which uses the alpha output from the last active TEV stage.
     /// See [Gx_SetAlphaCompare](https://libogc.devkitpro.org/gx_8h.html#a23ac269062a1b2c2efc8ad5aae24b26a) for more.
     pub fn set_alpha_compare(comp0: CmpFn, ref0: u8, aop: AlphaOp, comp1: CmpFn, ref1: u8) {
-        unsafe { ffi::GX_SetAlphaCompare(comp0 as u8, ref0, aop as u8, comp1 as u8, ref1) }
+        let mut val = 0;
+        val = bitfrob::u32_with_value(0, 7, val, ref0.into());
+        val = bitfrob::u32_with_value(8, 15, val, ref1.into());
+        val = bitfrob::u32_with_value(16, 18, val, comp0.into_u8().into());
+        val = bitfrob::u32_with_value(19, 21, val, comp1.into_u8().into());
+        val = bitfrob::u32_with_value(22, 23, val, aop.into_u8().into());
+
+        BPReg::TEV_ALPHAFUNC.load(val);
     }
 
     /// Sets the parameters for the alpha compare function which uses the alpha output from the last active TEV stage.
     /// See [GX_SetClipMode](https://libogc.devkitpro.org/gx_8h.html#a3d348d7af8ded25b57352e956f43d974) for more.
     pub fn set_clip_mode(mode: u8) {
-        unsafe { ffi::GX_SetClipMode(mode) }
+        XFReg::CLIP_DISABLE.load(mode.into());
     }
 
     /// Wrapper around set_clip_mode, since its a simple enable or disbale.
     pub fn enable_clip() {
-        Gx::set_clip_mode(ffi::GX_CLIP_ENABLE as u8);
+        Gx::set_clip_mode(0);
     }
 
     ///Wrapper around set_clip_mode, since it a simple disable or enable.
     pub fn disable_clip() {
-        Gx::set_clip_mode(ffi::GX_CLIP_DISABLE as u8);
+        Gx::set_clip_mode(1);
     }
 
     /// Allows the CPU to write color directly to the Embedded Frame Buffer (EFB) at position x, y.
     /// See [GX_PokeARGB](https://libogc.devkitpro.org/gx_8h.html#a5038d2f65e7959d64c68dcb1855353d8) for more.
     pub fn poke_argb(x: u16, y: u16, color: Color) {
-        assert!(x < 640, "x must be less than 640, currently {}", x);
-        assert!(y < 528, "y must be less than 527, currently {}", y);
+        debug_assert!(x < 640, "x must be less than 640, currently {}", x);
+        debug_assert!(y < 528, "y must be less than 527, currently {}", y);
+
         unsafe {
             ffi::GX_PokeARGB(x, y, color.0);
         }
@@ -2008,11 +3149,6 @@ impl Gx {
         for byte in z_bytes {
             GX_PIPE.write(byte);
         }
-        /*
-        unsafe {
-            ffi::GX_Position3f32(x, y, z);
-        }
-        */
     }
 
     #[inline]
@@ -2209,13 +3345,13 @@ impl Gx {
 
     #[inline]
     pub fn color_3f32(r: f32, g: f32, b: f32) {
-        assert!((0.0..=1.0).contains(&r));
-        assert!((0.0..=1.0).contains(&g));
-        assert!((0.0..=1.0).contains(&b));
+        debug_assert!((0.0..=1.0).contains(&r));
+        debug_assert!((0.0..=1.0).contains(&g));
+        debug_assert!((0.0..=1.0).contains(&b));
 
-        let r: u8 = ceilf(r * 255.0) as u8;
-        let g: u8 = ceilf(g * 255.0) as u8;
-        let b: u8 = ceilf(b * 255.0) as u8;
+        let r: u8 = unsafe { (r * 255.0).round().to_int_unchecked() };
+        let g: u8 = unsafe { (g * 255.0).round().to_int_unchecked() };
+        let b: u8 = unsafe { (b * 255.0).round().to_int_unchecked() };
 
         GX_PIPE.write(r);
         GX_PIPE.write(g);
@@ -2224,9 +3360,9 @@ impl Gx {
 
     #[inline]
     pub fn color_4f32(r: f32, g: f32, b: f32, a: f32) {
-        assert!((0.0..=1.0).contains(&a));
+        debug_assert!((0.0..=1.0).contains(&a));
 
-        let a = ceilf(a * 255.0) as u8;
+        let a: u8 = unsafe { (a * 255.0).round().to_int_unchecked::<u8>() };
 
         Gx::color_3f32(r, g, b);
         GX_PIPE.write(a);
@@ -2284,13 +3420,161 @@ impl Gx {
     }
 
     pub fn flush() {
-        unsafe { ffi::GX_Flush() }
+        iter::repeat(0u32).take(8).for_each(|val| {
+            for byte in val.to_be_bytes() {
+                GX_PIPE.write(byte);
+            }
+        });
     }
 
     #[inline]
-    pub fn end() {
-        unsafe { ffi::GX_End() }
+    pub fn end() {}
+}
+
+fn load_texture_preloaded(obj: &Texture, mapid: u8) {
+    debug_assert!(
+        (0..=7).contains(&mapid),
+        "mapid should be a number between 0 and 7"
+    );
+
+    let mut _region: MaybeUninit<GXTexRegion> = MaybeUninit::uninit();
+
+    #[cfg(feature = "experimental")]
+    {
+        let _region: Option<GXTexRegion> =
+            if let Some(func) = unsafe { GX_TEX_REGION_CALLBACK.get_mut() } {
+                unsafe {
+                    region.as_mut_ptr().write(func(obj, mapid));
+                    Some(region.assume_init())
+                }
+            } else {
+                None
+            };
     }
+    let mut val = 0;
+    let wrap_s = obj.wrap_s();
+    let wrap_t = obj.wrap_t();
+    let (min_filter, max_filter) = obj.filter_mode();
+    let diagonal_load = DiagonalLoad::Diagonal;
+    let aniso = MaxAnisotrophy::One;
+    let lod_clamp = false;
+
+    val = bitfrob::u32_with_value(0, 1, val, wrap_s.into_u8().into());
+    val = bitfrob::u32_with_value(2, 3, val, wrap_t.into_u8().into());
+    val = bitfrob::u32_with_bit(4, val, min_filter.into_u8() != 0);
+    val = bitfrob::u32_with_value(5, 7, val, max_filter.into_u8().into());
+    val = bitfrob::u32_with_bit(
+        8,
+        val,
+        match diagonal_load {
+            DiagonalLoad::Edge => false,
+            DiagonalLoad::Diagonal => true,
+        },
+    );
+    val = bitfrob::u32_with_value(
+        19,
+        20,
+        val,
+        match aniso {
+            MaxAnisotrophy::One => 0,
+            MaxAnisotrophy::Two => 1,
+            MaxAnisotrophy::Four => 2,
+        },
+    );
+    val = bitfrob::u32_with_bit(21, val, lod_clamp);
+
+    let mut img_val = 0;
+    img_val = bitfrob::u32_with_value(0, 9, img_val, (obj.height() - 1).into());
+    img_val = bitfrob::u32_with_value(10, 19, img_val, (obj.width() - 1).into());
+    img_val = bitfrob::u32_with_value(20, 23, img_val, obj.format().into_u8().into());
+
+    let mut even: u32 = 0;
+    even = bitfrob::u32_with_value(0, 14, even, u32::from(mapid) * 1_0000);
+    even = bitfrob::u32_with_value(15, 17, even, 3);
+    even = bitfrob::u32_with_value(18, 20, even, 3);
+    even = bitfrob::u32_with_bit(21, even, false);
+
+    let mut odd = 0;
+    odd = bitfrob::u32_with_value(0, 14, odd, 0x0000_8000 + (u32::from(mapid) * 1_0000));
+    odd = bitfrob::u32_with_value(15, 17, odd, 3);
+    odd = bitfrob::u32_with_value(18, 20, odd, 3);
+    odd = bitfrob::u32_with_bit(21, odd, false);
+
+    let (setmode0, setmode1, setimage0, setimage1, setimage2, setimage3) = match mapid {
+        0 => (
+            BPReg::TX_SETMODE0_I0,
+            BPReg::TX_SETMODE1_I0,
+            BPReg::TX_SETIMAGE0_I0,
+            BPReg::TX_SETIMAGE1_I0,
+            BPReg::TX_SETIMAGE2_I0,
+            BPReg::TX_SETIMAGE3_I0,
+        ),
+        1 => (
+            BPReg::TX_SETMODE0_I1,
+            BPReg::TX_SETMODE1_I1,
+            BPReg::TX_SETIMAGE0_I1,
+            BPReg::TX_SETIMAGE1_I1,
+            BPReg::TX_SETIMAGE2_I1,
+            BPReg::TX_SETIMAGE3_I1,
+        ),
+        2 => (
+            BPReg::TX_SETMODE0_I2,
+            BPReg::TX_SETMODE1_I2,
+            BPReg::TX_SETIMAGE0_I2,
+            BPReg::TX_SETIMAGE1_I2,
+            BPReg::TX_SETIMAGE2_I2,
+            BPReg::TX_SETIMAGE3_I2,
+        ),
+        3 => (
+            BPReg::TX_SETMODE0_I3,
+            BPReg::TX_SETMODE1_I3,
+            BPReg::TX_SETIMAGE0_I3,
+            BPReg::TX_SETIMAGE1_I3,
+            BPReg::TX_SETIMAGE2_I3,
+            BPReg::TX_SETIMAGE3_I3,
+        ),
+        4 => (
+            BPReg::TX_SETMODE0_I4,
+            BPReg::TX_SETMODE1_I4,
+            BPReg::TX_SETIMAGE0_I4,
+            BPReg::TX_SETIMAGE1_I4,
+            BPReg::TX_SETIMAGE2_I4,
+            BPReg::TX_SETIMAGE3_I4,
+        ),
+        5 => (
+            BPReg::TX_SETMODE0_I5,
+            BPReg::TX_SETMODE1_I5,
+            BPReg::TX_SETIMAGE0_I5,
+            BPReg::TX_SETIMAGE1_I5,
+            BPReg::TX_SETIMAGE2_I5,
+            BPReg::TX_SETIMAGE3_I5,
+        ),
+        6 => (
+            BPReg::TX_SETMODE0_I6,
+            BPReg::TX_SETMODE1_I6,
+            BPReg::TX_SETIMAGE0_I6,
+            BPReg::TX_SETIMAGE1_I6,
+            BPReg::TX_SETIMAGE2_I6,
+            BPReg::TX_SETIMAGE3_I6,
+        ),
+        7 => (
+            BPReg::TX_SETMODE0_I7,
+            BPReg::TX_SETMODE1_I7,
+            BPReg::TX_SETIMAGE0_I7,
+            BPReg::TX_SETIMAGE1_I7,
+            BPReg::TX_SETIMAGE2_I7,
+            BPReg::TX_SETIMAGE3_I7,
+        ),
+        val => unreachable!("{val} should be in the range of 0 and 7 include (0 to 7)"),
+    };
+
+    setmode0.load(val);
+    setmode1.load(0x0);
+    setimage0.load(img_val);
+    setimage1.load(even);
+    setimage2.load(odd);
+    setimage3.load(u32::try_from(mem::to_physical(obj.address()) >> 5).unwrap());
+    Gx::flush();
 }
 
 //All the following data is found from
@@ -2300,30 +3584,30 @@ impl Gx {
 fn call_display_list(display_list: &[u8]) {
     let ptr = display_list.as_ptr().map_addr(mem::to_physical);
 
-    assert!(
+    debug_assert!(
         display_list.as_ptr().align_offset(32) == 0,
         "The display list is not correctly 32 byte aligned."
     );
-    assert!(
+    debug_assert!(
         display_list.len() % 32 == 0,
         "The display list is not correctly padded to 32 bytes. Please pad with GPCommand::Nop"
     );
 
-    GX_PIPE.write(GPCommand::CallDisplayList as u8);
+    GX_PIPE.write(GPCommand::CallDisplayList.into_u8());
 
     for byte in ptr.addr().to_be_bytes() {
         GX_PIPE.write(byte);
     }
 
-    for byte in (display_list.len() as u32).to_be_bytes() {
+    for byte in (u32::try_from(display_list.len()).unwrap()).to_be_bytes() {
         GX_PIPE.write(byte);
     }
 }
 
 //Currently doesnt check dirty state
 fn draw_begin(command: GPDrawCommand, vertex_format: u8, vertex_count: u16) {
-    assert!(vertex_format <= 7, "Incorrect vertex format");
-    let gp_cmd = (command as u8) | (vertex_format & 7);
+    debug_assert!(vertex_format <= 7, "Incorrect vertex format");
+    let gp_cmd = (command.into_u8()) | (vertex_format & 7);
 
     GX_PIPE.write(gp_cmd);
     for byte in vertex_count.to_be_bytes() {
@@ -2346,6 +3630,24 @@ pub enum GPCommand {
     LoadBPReg = 0x61,
 }
 
+impl GPCommand {
+    #[must_use]
+    pub const fn into_u8(self) -> u8 {
+        match self {
+            GPCommand::Nop => 0x00,
+            GPCommand::LoadCPReg => 0x08,
+            GPCommand::LoadXFReg => 0x10,
+            GPCommand::LoadPosIndexed => 0x20,
+            GPCommand::LoadNormalIndexed => 0x28,
+            GPCommand::LoadTexureIndexed => 0x30,
+            GPCommand::LoadLightIndexed => 0x038,
+            GPCommand::CallDisplayList => 0x40,
+            GPCommand::InvalidateVertexCache => 0x48,
+            GPCommand::LoadBPReg => 0x61,
+        }
+    }
+}
+
 #[derive(Copy, Clone)]
 #[repr(u8)]
 pub enum GPDrawCommand {
@@ -2358,8 +3660,210 @@ pub enum GPDrawCommand {
     DrawPoints = 0xBB,
 }
 
+impl GPDrawCommand {
+    #[must_use]
+    pub const fn into_u8(self) -> u8 {
+        match self {
+            GPDrawCommand::DrawQuads => 0x80,
+            GPDrawCommand::DrawTriangles => 0x90,
+            GPDrawCommand::DrawTriangleStrip => 0x98,
+            GPDrawCommand::DrawTriangleFan => 0xA0,
+            GPDrawCommand::DrawLines => 0xA8,
+            GPDrawCommand::DrawLineStrip => 0xB0,
+            GPDrawCommand::DrawPoints => 0xBB,
+        }
+    }
+}
+
 #[repr(u32)]
 pub enum ColorChannel {
-    Color0 = ffi::GX_COLOR0,
-    Color1 = ffi::GX_COLOR1,
+    Color0 = 0,
+    Color1 = 1,
+}
+
+//#[cfg(feature = "experimental")]
+pub mod experimental {
+
+    use ogc_sys::GX_PNMTX0;
+
+    use crate::{
+        gx::{
+            regs::{BPReg, XFReg},
+            types::{
+                ClipMode, LinePointSize, MatrixIndexHigh, MatrixIndexLow, ScissorBoxOffset,
+                ScissorHeightWidth, ScissorTopLeft, TextureOffset,
+            },
+            Color, Gx,
+        },
+        video::RenderConfig,
+    };
+
+    pub struct Device {
+        line_point_size: LinePointSize,
+        matrix_index_low: MatrixIndexLow,
+        matrix_index_high: MatrixIndexHigh,
+        clip_mode: ClipMode,
+        scissor_tl: ScissorTopLeft,
+        scissor_hw: ScissorHeightWidth,
+        scissor_box_offset: ScissorBoxOffset,
+    }
+
+    impl Device {
+        pub fn init(render_config: &RenderConfig) -> Self {
+            const IDENTITY_MATRIX_43: [[f32; 4]; 3] =
+                [[1., 0., 0., 0.], [0., 1., 0., 0.], [0., 0., 1., 0.]];
+            const IDENTITY_MATRIX_33: [[f32; 3]; 3] = [[1., 0., 0.], [0., 1., 0.], [0., 0., 1.]];
+
+            // Set Clear Color to black and Set Clear Z to MAX_Z
+            Gx::set_copy_clear(Color::with_alpha(0, 0, 0, 0), 0x00_FF_FF_FF);
+
+            // Set line size, point size, line offset and point offset to their defaults
+
+            let half_aspect_ratio =
+                render_config.vi_height == render_config.extern_framebuffer_height * 2;
+
+            let line_point_size = LinePointSize::new()
+                .with_line_size(6)
+                .with_point_size(6)
+                .with_line_offset(TextureOffset::Zero)
+                .with_point_offset(TextureOffset::Zero)
+                .with_half_aspect_ratio(half_aspect_ratio);
+
+            BPReg::SU_LPSIZE.load(line_point_size.into_u32());
+
+            Gx::load_pos_mtx_imm(&IDENTITY_MATRIX_43, GX_PNMTX0);
+            Gx::load_nrm_mtx_imm(&IDENTITY_MATRIX_33, GX_PNMTX0);
+
+            // Load Identity Matrixes at the end of the address space of xf
+            // POS ENd of =0xff
+            let reg = unsafe { XFReg::from_u16(240) };
+            reg.load_multi(
+                12,
+                &[
+                    IDENTITY_MATRIX_43[0][0].to_be_bytes(),
+                    IDENTITY_MATRIX_43[0][1].to_be_bytes(),
+                    IDENTITY_MATRIX_43[0][2].to_be_bytes(),
+                    IDENTITY_MATRIX_43[0][3].to_be_bytes(),
+                    IDENTITY_MATRIX_43[1][0].to_be_bytes(),
+                    IDENTITY_MATRIX_43[1][1].to_be_bytes(),
+                    IDENTITY_MATRIX_43[1][2].to_be_bytes(),
+                    IDENTITY_MATRIX_43[1][3].to_be_bytes(),
+                    IDENTITY_MATRIX_43[2][0].to_be_bytes(),
+                    IDENTITY_MATRIX_43[2][1].to_be_bytes(),
+                    IDENTITY_MATRIX_43[2][2].to_be_bytes(),
+                    IDENTITY_MATRIX_43[2][3].to_be_bytes(),
+                ],
+            );
+
+            // Base Dual Texture Transform Matrix location = 0x500;
+            let reg = unsafe { XFReg::from_u16(0x500 + 240) };
+            reg.load_multi(
+                12,
+                &[
+                    IDENTITY_MATRIX_43[0][0].to_be_bytes(),
+                    IDENTITY_MATRIX_43[0][1].to_be_bytes(),
+                    IDENTITY_MATRIX_43[0][2].to_be_bytes(),
+                    IDENTITY_MATRIX_43[0][3].to_be_bytes(),
+                    IDENTITY_MATRIX_43[1][0].to_be_bytes(),
+                    IDENTITY_MATRIX_43[1][1].to_be_bytes(),
+                    IDENTITY_MATRIX_43[1][2].to_be_bytes(),
+                    IDENTITY_MATRIX_43[1][3].to_be_bytes(),
+                    IDENTITY_MATRIX_43[2][0].to_be_bytes(),
+                    IDENTITY_MATRIX_43[2][1].to_be_bytes(),
+                    IDENTITY_MATRIX_43[2][2].to_be_bytes(),
+                    IDENTITY_MATRIX_43[2][3].to_be_bytes(),
+                ],
+            );
+
+            //indexed by 32 byte words
+            // 240 bytes / 4 bytes = 60
+
+            const IDENTITY_IDX: u8 = 60;
+            let matrix_index_low = MatrixIndexLow::new()
+                .with_geometry_matrix_index(IDENTITY_IDX)
+                .with_texture_0_matrix_index(IDENTITY_IDX)
+                .with_texture_1_matrix_index(IDENTITY_IDX)
+                .with_texture_2_matrix_index(IDENTITY_IDX)
+                .with_texture_3_matrix_index(IDENTITY_IDX);
+
+            let matrix_index_high = MatrixIndexHigh::new()
+                .with_texture_4_matrix_index(IDENTITY_IDX)
+                .with_texture_5_matrix_index(IDENTITY_IDX)
+                .with_texture_5_matrix_index(IDENTITY_IDX)
+                .with_texture_7_matrix_index(IDENTITY_IDX);
+
+            // Load IDENTITY into Matrix indexes.
+            XFReg::MTXIDX_A.load(matrix_index_low.as_u32());
+            XFReg::MTXIDX_B.load(matrix_index_high.as_u32());
+
+            Gx::set_viewport(
+                0.,
+                0.,
+                render_config.framebuffer_width.into(),
+                render_config.embed_framebuffer_height.into(),
+                0.,
+                1.,
+            );
+
+            let clip_mode = ClipMode::new()
+                .with_disable(false)
+                .with_trivial_rejection_disable(false)
+                .with_clipping_acceleration_disable(false);
+
+            XFReg::CLIP_DISABLE.load(clip_mode.as_u32());
+
+            let (scissor_tl, scissor_hw) = Gx::set_scissor(
+                0,
+                0,
+                render_config.framebuffer_width.into(),
+                render_config.embed_framebuffer_height.into(),
+            );
+
+            let scissor_box_offset = Gx::set_scissor_box_offset(0, 0);
+
+            /*
+            GX_SetDispCopySrc(0,0,rmode->fbWidth,rmode->efbHeight);
+
+
+            GX_SetDispCopyDst(rmode->fbWidth,rmode->efbHeight);
+            GX_SetDispCopyYScale(1.0) -> (DisplayYScale, DisplayCopyControl);
+            GX_SetCopyClamp(GX_CLAMP_TOP|GX_CLAMP_BOTTOM); -> DisplayCopyControl
+            GX_SetCopyFilter(GX_FALSE,NULL,GX_FALSE,NULL);
+            GX_SetDispCopyGamma(GX_GM_1_0); -> DisplayCopyControl
+            GX_SetDispCopyFrame2Field(GX_COPY_PROGRESSIVE); -> DisplayCopyControl
+            */
+            /*
+            let (display_tl, display_hw) = Gx::set_disp_copy_src(
+                0,
+                0,
+                render_config.framebuffer_width,
+                render_config.embed_framebuffer_height,
+            );
+            let display_stride = Gx::set_disp_copy_dst(
+                render_config.framebuffer_width,
+                render_config.embed_framebuffer_height,
+            );
+
+            let display_y_scale = Gx::set_disp_copy_y_scale(1.0);
+
+            let (display_filter, vertical_filter) =
+            Gx::set_copy_filter(false, &mut [[0u8; 2]; 12], false, &mut [0u8; 7]);
+            // Display { display_tl, display_hw, display_stride, display_y_scale, display_filter,
+            // vertical_filter }
+            */
+            //GX_ClearBoundingBox
+            BPReg::BOUNDING_BOX0.load(0x3ff);
+            BPReg::BOUNDING_BOX1.load(0x3ff);
+
+            Self {
+                line_point_size,
+                matrix_index_low,
+                matrix_index_high,
+                clip_mode,
+                scissor_tl,
+                scissor_hw,
+                scissor_box_offset,
+            }
+        }
+    }
 }

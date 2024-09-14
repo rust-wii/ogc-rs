@@ -18,14 +18,15 @@
 
 #![no_std]
 #![allow(dead_code)]
-#![feature(panic_info_message)]
 #![feature(alloc_error_handler)]
 #![feature(negative_impls)]
 #![feature(core_intrinsics)]
 #![feature(slice_ptr_get)]
 #![feature(allocator_api)]
 #![feature(strict_provenance)]
-
+#![feature(exposed_provenance)]
+#![feature(exclusive_wrapper)]
+#![feature(asm_experimental_arch)]
 extern crate alloc;
 
 /// Interprocess Control / IOS Implementation

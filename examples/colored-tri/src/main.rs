@@ -4,17 +4,15 @@
 use core::mem::ManuallyDrop;
 
 use ogc_rs::{
-    ffi::{
-        GX_CLR_RGBA, GX_COLOR0A0, GX_PASSCLR, GX_POS_XYZ, GX_RGBA8, GX_S16, GX_TEXCOORDNULL,
-        GX_TEXMAP_NULL, GX_VA_CLR0, GX_VA_POS,
-    },
     gu::{Gu, RotationAxis},
-    gx::{types::VtxDest, CmpFn, Color, CullMode, Gx, Primitive, ProjectionType, VtxAttr},
+    gx::{
+        types::{ComponentSize, ComponentType, TexCoordSlot, TexMapSlot, VtxDest},
+        CmpFn, Color, CullMode, Gx, Primitive, ProjectionType, VtxAttr,
+    },
     video::Video,
 };
 
 extern crate alloc;
-
 #[start]
 fn main(_argc: isize, _argv: *const *const u8) -> isize {
     let vi = Video::init();
@@ -25,7 +23,8 @@ fn main(_argc: isize, _argv: *const *const u8) -> isize {
     Video::set_black(false);
     Video::flush();
 
-    let fifo = ManuallyDrop::new(Gx::init(256 * 1024));
+    let _fifo = ManuallyDrop::new(Gx::init(256 * 1024));
+    //    let fifo = ManuallyDrop::new(Gx::init(256 * 1024));
     // Set values to use when video is flipped / cleared
     Gx::set_copy_clear(Color::new(0x00, 0x00, 0x00), 0x00_FF_FF_FF);
 
@@ -76,20 +75,32 @@ fn main(_argc: isize, _argv: *const *const u8) -> isize {
     Gx::clear_vtx_desc();
     Gx::set_vtx_desc(VtxAttr::Pos, VtxDest::INDEX8);
     Gx::set_vtx_desc(VtxAttr::Color0, VtxDest::INDEX8);
-    Gx::set_vtx_attr_fmt(0, VtxAttr::Pos, GX_POS_XYZ, GX_S16, 0);
-    Gx::set_vtx_attr_fmt(0, VtxAttr::Color0, GX_CLR_RGBA, GX_RGBA8, 0);
+    Gx::set_vtx_attr_fmt(
+        0,
+        VtxAttr::Pos,
+        ComponentType::POSITION_XYZ,
+        ComponentSize::I16,
+        0,
+    );
+    Gx::set_vtx_attr_fmt(
+        0,
+        VtxAttr::Color0,
+        ComponentType::COLOR_RGBA,
+        ComponentSize::COLOR_RGBA8,
+        0,
+    );
 
     let positions: [[i16; 3]; 3] = [[0, 15, 0], [-15, -15, 0], [15, -15, 0]];
     let colors: [[u8; 4]; 3] = [[255, 0, 0, 255], [0, 255, 0, 255], [0, 0, 255, 255]];
 
     Gx::set_array(
-        GX_VA_POS,
+        VtxAttr::Pos,
         &positions,
         core::mem::size_of::<[i16; 3]>().try_into().unwrap(),
     );
 
     Gx::set_array(
-        GX_VA_CLR0,
+        VtxAttr::Color0,
         &colors,
         core::mem::size_of::<[u8; 4]>().try_into().unwrap(),
     );
@@ -99,11 +110,11 @@ fn main(_argc: isize, _argv: *const *const u8) -> isize {
 
     Gx::set_tev_order(
         0,
-        GX_TEXCOORDNULL.try_into().unwrap(),
-        GX_TEXMAP_NULL,
-        GX_COLOR0A0.try_into().unwrap(),
+        TexCoordSlot::None,
+        TexMapSlot::Zero,
+        ogc_rs::gx::types::ColorSlot::Color0Alpha0,
     );
-    Gx::set_tev_op(0, GX_PASSCLR.try_into().unwrap());
+    Gx::set_tev_op(0, ogc_rs::gx::types::TevOp::PassColor);
 
     let mut i: u16 = 0;
     loop {
