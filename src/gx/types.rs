@@ -38,7 +38,10 @@ impl Gamma {
     pub const TWO_TWO: Self = Self(2);
 }
 
+/* #[derive(Copy, Clone, PartialEq)]
 pub struct VtxDest(pub(crate) u8);
+
+
 
 impl VtxDest {
     pub const NONE: Self = Self(0);
@@ -46,7 +49,7 @@ impl VtxDest {
     pub const INDEX8: Self = Self(2);
     pub const INDEX16: Self = Self(3);
 }
-
+ */
 pub struct PixelEngineControl {
     pixel_format: PixelFormat,
     z_format: ZFormat,
@@ -141,45 +144,47 @@ impl TextureFormat {
         }
     }
 }
+//
+// #[derive(PartialEq)]
+// pub struct ComponentType(u32);
+//
+// impl ComponentType {
+//     pub const POSITION_XY: ComponentType = ComponentType(0);
+//     pub const POSITION_XYZ: ComponentType = ComponentType(1);
+//     pub const NORMAL_XYZ: ComponentType = ComponentType(0);
+//     pub const NORMAL_NBT: ComponentType = ComponentType(1);
+//     pub const NORMAL_NBT3: ComponentType = ComponentType(2);
+//     pub const COLOR_RGB8: ComponentType = ComponentType(0);
+//     pub const COLOR_RGBA: ComponentType = ComponentType(1);
+//     pub const TEXTURE_S: ComponentType = ComponentType(0);
+//     pub const TEXTURE_ST: ComponentType = ComponentType(1);
+//
+//     pub const fn into_u32(self) -> u32 {
+//         self.0
+//     }
+// }
 
-pub struct ComponentType(u32);
-
-impl ComponentType {
-    pub const POSITION_XY: ComponentType = ComponentType(0);
-    pub const POSITION_XYZ: ComponentType = ComponentType(1);
-    pub const NORMAL_XYZ: ComponentType = ComponentType(0);
-    pub const NORMAL_NBT: ComponentType = ComponentType(1);
-    pub const NORMAL_NBT3: ComponentType = ComponentType(2);
-    pub const COLOR_RGB8: ComponentType = ComponentType(0);
-    pub const COLOR_RGBA: ComponentType = ComponentType(1);
-    pub const TEXTURE_S: ComponentType = ComponentType(0);
-    pub const TEXTURE_ST: ComponentType = ComponentType(1);
-
-    pub const fn into_u32(self) -> u32 {
-        self.0
-    }
-}
-
-pub struct ComponentSize(u32);
-
-impl ComponentSize {
-    pub const U8: ComponentSize = ComponentSize(0);
-    pub const I8: ComponentSize = ComponentSize(1);
-    pub const U16: ComponentSize = ComponentSize(2);
-    pub const I16: ComponentSize = ComponentSize(3);
-    pub const F32: ComponentSize = ComponentSize(4);
-
-    pub const COLOR_RGB565: ComponentSize = ComponentSize(0);
-    pub const COLOR_RGB8: ComponentSize = ComponentSize(1);
-    pub const COLOR_RGBX8: ComponentSize = ComponentSize(2);
-    pub const COLOR_RGBA4: ComponentSize = ComponentSize(3);
-    pub const COLOR_RGBA6: ComponentSize = ComponentSize(4);
-    pub const COLOR_RGBA8: ComponentSize = ComponentSize(5);
-
-    pub const fn into_u32(self) -> u32 {
-        self.0
-    }
-}
+// #[derive(PartialEq)]
+// pub struct ComponentSize(u32);
+//
+// impl ComponentSize {
+//     pub const U8: ComponentSize = ComponentSize(0);
+//     pub const I8: ComponentSize = ComponentSize(1);
+//     pub const U16: ComponentSize = ComponentSize(2);
+//     pub const I16: ComponentSize = ComponentSize(3);
+//     pub const F32: ComponentSize = ComponentSize(4);
+//
+//     pub const COLOR_RGB565: ComponentSize = ComponentSize(0);
+//     pub const COLOR_RGB8: ComponentSize = ComponentSize(1);
+//     pub const COLOR_RGBX8: ComponentSize = ComponentSize(2);
+//     pub const COLOR_RGBA4: ComponentSize = ComponentSize(3);
+//     pub const COLOR_RGBA6: ComponentSize = ComponentSize(4);
+//     pub const COLOR_RGBA8: ComponentSize = ComponentSize(5);
+//
+//     pub const fn into_u32(self) -> u32 {
+//         self.0
+//     }
+// }
 
 pub type TexCoordSlot = Slot;
 pub type TexMapSlot = Slot;
@@ -1076,6 +1081,9 @@ impl DisplayFilter {
     pub const fn new() -> Self {
         Self(0)
     }
+
+    /// # Safety
+    ///  A proper bit pattern for this type is provided
     pub const unsafe fn from_u32(val: u32) -> Self {
         Self(val)
     }
@@ -1131,6 +1139,8 @@ impl CopyFilter {
     pub const fn new() -> Self {
         Self(0)
     }
+    /// # Safety
+    /// A proper bit pattern for this type is provided
     pub const unsafe fn from_u32(val: u32) -> Self {
         Self(val)
     }
@@ -1160,5 +1170,150 @@ impl CopyFilter {
     }
     pub const fn into_u32(self) -> u32 {
         self.0
+    }
+}
+
+pub type VtxDest = VertexDestination;
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum VertexDestination {
+    None,
+    Direct,
+    Indexed8bit,
+    Indexed16bit,
+}
+
+pub enum Error {
+    FromU32Error(u32),
+}
+
+impl core::fmt::Debug for Error {
+    fn fmt(&self, _f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        todo!()
+    }
+}
+
+impl VertexDestination {
+    pub const NONE: Self = Self::None;
+    pub const DIRECT: Self = Self::Direct;
+    pub const INDEX8: Self = Self::Indexed8bit;
+    pub const INDEX16: Self = Self::Indexed16bit;
+
+    pub const fn into_u32(self) -> u32 {
+        match self {
+            VertexDestination::None => 0,
+            VertexDestination::Direct => 1,
+            VertexDestination::Indexed8bit => 2,
+            VertexDestination::Indexed16bit => 3,
+        }
+    }
+
+    pub const fn try_from_u32(value: u32) -> Result<Self, Error> {
+        match value {
+            0 => Ok(Self::None),
+            1 => Ok(Self::Direct),
+            2 => Ok(Self::Indexed16bit),
+            3 => Ok(Self::Indexed8bit),
+            val => Err(Error::FromU32Error(val)),
+        }
+    }
+}
+
+impl From<VertexDestination> for u32 {
+    fn from(value: VertexDestination) -> Self {
+        value.into_u32()
+    }
+}
+
+impl TryFrom<u32> for VertexDestination {
+    type Error = Error;
+    fn try_from(value: u32) -> Result<Self, Self::Error> {
+        Self::try_from_u32(value)
+    }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum ComponentType {
+    PositionXy,
+    PositionXyz,
+    NormalXyz,
+    NormalNbt,
+    NormalNbt3,
+    TexcoordS,
+    TexcoordSt,
+    ColorRgb,
+    ColorRgba,
+}
+
+impl ComponentType {
+    pub const POSITION_XY: Self = Self::PositionXy;
+    pub const POSITION_XYZ: Self = Self::PositionXyz;
+    pub const NORMAL_XYZ: Self = Self::NormalXyz;
+    pub const NORMAL_NBT: Self = Self::NormalNbt;
+    pub const NORMAL_NBT3: Self = Self::NormalNbt3;
+    pub const COLOR_RGB8: Self = Self::ColorRgb;
+    pub const COLOR_RGBA: Self = Self::ColorRgba;
+    pub const TEXTURE_S: Self = Self::TexcoordS;
+    pub const TEXTURE_ST: Self = Self::TexcoordSt;
+
+    pub const fn into_u32(self) -> u32 {
+        match self {
+            ComponentType::PositionXy | Self::NormalXyz | Self::TexcoordS | Self::ColorRgb => 0,
+            ComponentType::PositionXyz | Self::NormalNbt | Self::TexcoordSt | Self::ColorRgba => 1,
+            Self::NormalNbt3 => 2,
+        }
+    }
+}
+
+impl From<ComponentType> for u32 {
+    fn from(value: ComponentType) -> Self {
+        value.into_u32()
+    }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum ComponentSize {
+    U8,
+    S8,
+    U16,
+    S16,
+    F32,
+    Rgb565,
+    Rgb888,
+    Rgb888X,
+    Rgba4,
+    Rgba6,
+    Rgba8,
+}
+
+impl ComponentSize {
+    pub const U8: Self = Self::U8;
+    pub const I8: Self = Self::S8;
+    pub const U16: Self = Self::U16;
+    pub const I16: Self = Self::S16;
+    pub const F32: Self = Self::F32;
+
+    pub const COLOR_RGB565: Self = Self::Rgb565;
+    pub const COLOR_RGB8: Self = Self::Rgb888;
+    pub const COLOR_RGBX8: Self = Self::Rgb888X;
+    pub const COLOR_RGBA4: Self = Self::Rgba4;
+    pub const COLOR_RGBA6: Self = Self::Rgba6;
+    pub const COLOR_RGBA8: Self = Self::Rgba8;
+
+    pub const fn into_u32(self) -> u32 {
+        match self {
+            Self::U8 | Self::Rgb565 => 0,
+            Self::S8 | Self::Rgb888 => 1,
+            Self::U16 | Self::Rgb888X => 2,
+            Self::S16 | Self::Rgba4 => 3,
+            Self::F32 | Self::Rgba6 => 4,
+            Self::Rgba8 => 5,
+        }
+    }
+}
+
+impl From<ComponentSize> for u32 {
+    fn from(value: ComponentSize) -> Self {
+        value.into_u32()
     }
 }

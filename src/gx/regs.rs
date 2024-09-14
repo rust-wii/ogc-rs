@@ -227,7 +227,7 @@ impl BPReg {
 
     //Loads and write a specific value `val` to self,
     pub fn load(&self, val: u32) {
-        assert!(val <= 0xFFFFFF);
+        debug_assert!(val <= 0xFFFFFF);
         GX_PIPE.write(GPCommand::LoadBPReg.into_u8());
         GX_PIPE.write(self.0);
         //We only want the bottom 24 bits so we only grab the bottom 3 bytes
@@ -236,7 +236,8 @@ impl BPReg {
         }
     }
 
-    //
+    /// # Safety
+    /// Provide a value in the proper range of the BP memory space
     pub unsafe fn from_u8(byte: u8) -> Self {
         Self(byte)
     }
@@ -394,10 +395,6 @@ impl XFReg {
     pub fn load(&self, val: u32) {
         GX_PIPE.write(GPCommand::LoadXFReg.into_u8());
 
-        for byte in 0u16.to_be_bytes() {
-            GX_PIPE.write(byte);
-        }
-
         for byte in self.0.to_be_bytes() {
             GX_PIPE.write(byte);
         }
@@ -410,7 +407,7 @@ impl XFReg {
     // Using self as the base load multiple registers and write `vals` to them
     // vals need to have the same legth as the `length`
     pub fn load_multi(&self, length: u16, vals: &[[u8; 4]]) {
-        assert!(vals.len() == length.into());
+        debug_assert!(vals.len() == length.into());
 
         GX_PIPE.write(GPCommand::LoadXFReg.into_u8());
         for byte in (length - 1).to_be_bytes() {
@@ -428,6 +425,8 @@ impl XFReg {
         }
     }
 
+    /// # Safety
+    /// Provide a value in the proper range of the XF memory space
     pub unsafe fn from_u16(byte: u16) -> Self {
         Self(byte)
     }
@@ -465,5 +464,11 @@ impl TextureMode0 {
             max_aniso: MaxAnisotrophy::One,
             lod_clamp: false,
         }
+    }
+}
+
+impl Default for TextureMode0 {
+    fn default() -> Self {
+        Self::new()
     }
 }

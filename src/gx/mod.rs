@@ -5,13 +5,14 @@
 use num_traits::Float;
 
 use core::ffi::c_void;
+use core::iter;
 use core::marker::PhantomData;
 use core::mem::MaybeUninit;
-use core::sync::Exclusive;
 
 use crate::ffi::{self, Mtx as Mtx34, Mtx44};
 use crate::gx::regs::BPReg;
 use crate::lwp;
+use crate::print;
 use crate::utils::mem;
 use alloc::vec::Vec;
 use ffi::GXTexObj;
@@ -31,11 +32,8 @@ use self::types::{Gamma, PixelEngineControl, PixelFormat, VtxDest, ZFormat};
 
 pub const GX_PIPE: VolAddress<u8, (), Safe> = unsafe { VolAddress::new(0xCC00_8000) };
 
-mod regs;
+pub mod regs;
 pub mod types;
-
-static mut GX_TEX_REGION_CALLBACK: Exclusive<Option<&dyn Fn(&Texture, u8) -> GXTexRegion>> =
-    Exclusive::new(None);
 
 #[derive(Copy, Clone, Debug)]
 #[repr(transparent)]
@@ -51,7 +49,7 @@ impl Color {
     }
 }
 
-pub fn def_tex_region_callback(obj: &Texture, mapid: u8) -> GXTexRegion {
+pub fn def_tex_region_callback(_obj: &Texture, _mapid: u8) -> GXTexRegion {
     todo!()
 }
 
@@ -842,8 +840,8 @@ impl Fifo {
     /// When the FIFO is only attached to the CPU or only attached to the GP, the high and low
     /// watermark interrupts are disabled.
     pub fn set_limits(&mut self, hiwatermark: u32, lowatermark: u32) {
-        assert_eq!(0, hiwatermark % 32);
-        assert_eq!(0, lowatermark % 32);
+        debug_assert_eq!(0, hiwatermark % 32);
+        debug_assert_eq!(0, lowatermark % 32);
         // assert!(hiwatermark < self.len());
         // assert!(lowatermark < self.len());
         unsafe { ffi::GX_InitFifoLimits(&mut self.0, hiwatermark, lowatermark) }
@@ -1335,9 +1333,9 @@ impl Texture<'_> {
         mipmap: bool,
     ) -> Texture {
         let mut texture = core::mem::MaybeUninit::zeroed();
-        assert_eq!(0, img.as_ptr().align_offset(32));
-        assert!(width <= 1024, "max width for texture is 1024");
-        assert!(height <= 1024, "max height for texture is 1024");
+        debug_assert_eq!(0, img.as_ptr().align_offset(32));
+        debug_assert!(width <= 1024, "max width for texture is 1024");
+        debug_assert!(height <= 1024, "max height for texture is 1024");
         unsafe {
             ffi::GX_InitTexObj(
                 texture.as_mut_ptr(),
@@ -1404,9 +1402,9 @@ impl Texture<'_> {
         tlut_name: u32,
     ) -> Texture {
         let mut texture: MaybeUninit<_gx_texobj> = MaybeUninit::uninit();
-        assert_eq!(0, img.as_ptr().align_offset(32));
-        assert!(width <= 1024, "max width for texture is 1024");
-        assert!(height <= 1024, "max height for texture is 1024");
+        debug_assert_eq!(0, img.as_ptr().align_offset(32));
+        debug_assert!(width <= 1024, "max width for texture is 1024");
+        debug_assert!(height <= 1024, "max height for texture is 1024");
         unsafe {
             ffi::GX_InitTexObjCI(
                 texture.as_mut_ptr().cast(),
@@ -1752,27 +1750,29 @@ impl Gx {
     /// the calling thread is the one responsible for generating graphics data. This thread will be
     /// the thread to be suspended when the FIFO gets too full. The current GX thread can be
     /// changed by calling [`Gx::set_current_gx_thread()`].
-    pub fn init(mut size: usize) -> &'static mut Fifo {
-        if size < Fifo::MIN_SIZE {
-            size = Fifo::MIN_SIZE;
-        }
+    ///
+    /// # Panics
+    /// Panics if the size doesn't fit into a `u32`.
+    /// Panics if the `Fifo` ptr is null
+    pub fn init(size: usize) -> &'static mut Fifo {
+        let size = if size < Fifo::MIN_SIZE {
+            Fifo::MIN_SIZE
+        } else {
+            size
+        };
 
         let mut buf = crate::utils::Buf32::new(size);
 
+        let address = buf.as_mut_ptr().map_addr(mem::to_uncached).cast::<c_void>();
+        let len = u32::try_from(buf.len()).expect("size did not fit into a `u32`");
+
         // SAFETY: all safety is ensured by Buf32.
         unsafe {
-            let fifo = ffi::GX_Init(
-                buf.as_mut_ptr().map_addr(mem::to_uncached).cast::<c_void>(),
-                u32::try_from(buf.len()).unwrap(),
-            );
+            let fifo = ffi::GX_Init(address, len);
 
-            #[cfg(feature = "experimental")]
-            {
-                let _ = GX_TEX_REGION_CALLBACK
-                    .get_mut()
-                    .replace(&def_tex_region_callback);
-            }
-            fifo.cast::<Fifo>().as_mut().unwrap()
+            fifo.cast::<Fifo>()
+                .as_mut()
+                .expect("Fifo ptr should not be null")
         }
     }
 
@@ -2185,10 +2185,10 @@ impl Gx {
         wd: u16,
         hd: u16,
     ) -> (DisplayTopLeft, DisplayWidthHeight) {
-        assert_eq!(0, left % 2);
-        assert_eq!(0, top % 2);
-        assert_eq!(0, wd % 2);
-        assert_eq!(0, hd % 2);
+        debug_assert_eq!(0, left % 2);
+        debug_assert_eq!(0, top % 2);
+        debug_assert_eq!(0, wd % 2);
+        debug_assert_eq!(0, hd % 2);
         //unsafe { ffi::GX_SetDispCopySrc(left, top, wd, hd) }
 
         let display_tl = DisplayTopLeft::new().with_x_origin(left).with_y_origin(top);
@@ -2205,7 +2205,7 @@ impl Gx {
     /// Sets the witth and height of the display buffer in pixels.
     /// See [GX_SetDispCopyDst](https://libogc.devkitpro.org/gx_8h.html#ab6f639059b750e57af4c593ba92982c5) for more.
     pub fn set_disp_copy_dst(width: u16, _height: u16) -> DisplayStride {
-        assert!(width <= 0x3FF, "width isn't a valid value");
+        debug_assert!(width <= 0x3FF, "width isn't a valid value");
 
         let display_stride = DisplayStride::new().with_stride(width);
 
@@ -2466,7 +2466,7 @@ impl Gx {
     /// Simplified function to set various TEV parameters for this tevstage based on a predefined combiner mode.
     /// See [GX_SetTevOp](https://libogc.devkitpro.org/gx_8h.html#a68554713cdde7b45ae4d5ce156239cf8) for more.
     pub fn set_tev_op(tevstage: u8, mode: TevOp) {
-        assert!(tevstage <= 16, "There are only 16 tev stages");
+        debug_assert!(tevstage <= 16, "There are only 16 tev stages");
         //unsafe { ffi::GX_SetTevOp(tevstage, mode) }
 
         let tev_template = TextureEnviroment::new()
@@ -2764,10 +2764,163 @@ impl Gx {
         unsafe { ffi::GX_ClearVtxDesc() }
     }
 
+    pub fn set_vertex_attributes_format(
+        vtx_fmt: u8,
+        attribute_array: &[(VtxAttr, ComponentSize, ComponentType)],
+    ) {
+        let mut vat_a: u32 = 0;
+        let vat_b: u32 = 0x80000000;
+        let vat_c: u32 = 0;
+        for (attr, component_size, component_type) in attribute_array {
+            let type_: u32 = component_type.into_u32();
+            let size: u32 = component_size.into_u32();
+
+            match attr {
+                VtxAttr::Pos => {
+                    vat_a = bitfrob::u32_with_bit(0, vat_a, type_ != 0);
+                    vat_a = bitfrob::u32_with_value(1, 3, vat_a, size);
+                }
+                VtxAttr::Color0 => {
+                    vat_a = bitfrob::u32_with_bit(13, vat_a, type_ != 0);
+                    vat_a = bitfrob::u32_with_value(14, 16, vat_a, size);
+                }
+                VtxAttr::Tex0 => {
+                    vat_a = bitfrob::u32_with_bit(21, vat_a, type_ != 0);
+                    vat_a = bitfrob::u32_with_value(22, 24, vat_a, size);
+                }
+                _ => todo!(),
+            }
+        }
+        match vtx_fmt {
+            0 => {
+                CPReg::VAT_A_FORMAT0.load(vat_a);
+                CPReg::VAT_B_FORMAT0.load(vat_b);
+                CPReg::VAT_C_FORMAT0.load(vat_c);
+            }
+            _ => todo!(),
+        }
+    }
+
+    pub fn set_vertex_descriptors(vtxfmt: u8, vertex_descriptor_array: &[(VtxAttr, VtxDest)]) {
+        let mut vertex_descriptor_low: u32 = 0;
+        let mut vertex_descriptor_high: u32 = 0;
+
+        let mut num_normals = 0;
+        for (attr, dest) in vertex_descriptor_array {
+            let val: u32 = dest.into_u32();
+
+            match attr {
+                VtxAttr::Pos => {
+                    vertex_descriptor_low =
+                        bitfrob::u32_with_value(9, 10, vertex_descriptor_low, val);
+                }
+                VtxAttr::Nrm => {
+                    vertex_descriptor_low =
+                        bitfrob::u32_with_value(11, 12, vertex_descriptor_low, val);
+                    num_normals = 1;
+                }
+                VtxAttr::Nbt => {
+                    vertex_descriptor_low =
+                        bitfrob::u32_with_value(11, 12, vertex_descriptor_low, val);
+                    num_normals = 2;
+                }
+                VtxAttr::Color0 => {
+                    vertex_descriptor_low =
+                        bitfrob::u32_with_value(13, 14, vertex_descriptor_low, val);
+                }
+                VtxAttr::Color1 => {
+                    vertex_descriptor_low =
+                        bitfrob::u32_with_value(15, 16, vertex_descriptor_low, val);
+                }
+                VtxAttr::Tex0 => {
+                    vertex_descriptor_high =
+                        bitfrob::u32_with_value(0, 1, vertex_descriptor_high, val);
+                }
+                _ => todo!(),
+            }
+        }
+
+        let num_colors: u32 = {
+            let mut num_colors = 0;
+            if bitfrob::u32_get_value(13, 14, vertex_descriptor_low) != 0 {
+                num_colors += 1;
+            }
+
+            if bitfrob::u32_get_value(15, 16, vertex_descriptor_low) != 0 {
+                num_colors += 1;
+            }
+            num_colors
+        };
+
+        let num_textures: u32 = {
+            let mut num_textures = 0;
+            if bitfrob::u32_get_value(0, 1, vertex_descriptor_high) != 0 {
+                num_textures += 1;
+            }
+
+            if bitfrob::u32_get_value(2, 3, vertex_descriptor_high) != 0 {
+                num_textures += 1;
+            }
+
+            if bitfrob::u32_get_value(4, 5, vertex_descriptor_high) != 0 {
+                num_textures += 1;
+            }
+
+            if bitfrob::u32_get_value(6, 7, vertex_descriptor_high) != 0 {
+                num_textures += 1;
+            }
+
+            if bitfrob::u32_get_value(8, 9, vertex_descriptor_high) != 0 {
+                num_textures += 1;
+            }
+
+            if bitfrob::u32_get_value(10, 11, vertex_descriptor_high) != 0 {
+                num_textures += 1;
+            }
+
+            if bitfrob::u32_get_value(12, 13, vertex_descriptor_high) != 0 {
+                num_textures += 1;
+            }
+
+            if bitfrob::u32_get_value(14, 15, vertex_descriptor_high) != 0 {
+                num_textures += 1;
+            }
+            num_textures
+        };
+
+        crate::println!("{}, {}, {}", num_colors, num_normals, num_textures);
+
+        let mut xf_vertex_specifications: u32 = 0;
+        xf_vertex_specifications =
+            bitfrob::u32_with_value(0, 1, xf_vertex_specifications, num_colors);
+
+        xf_vertex_specifications =
+            bitfrob::u32_with_value(2, 3, xf_vertex_specifications, num_normals);
+
+        xf_vertex_specifications =
+            bitfrob::u32_with_value(4, 7, xf_vertex_specifications, num_textures);
+
+        crate::println!(
+            "{:X}, {:X}, {:X}",
+            vertex_descriptor_low,
+            vertex_descriptor_high,
+            xf_vertex_specifications
+        );
+        match vtxfmt {
+            0 => {
+                CPReg::VERT_DESC_LO_0.load(vertex_descriptor_low);
+                CPReg::VERT_DESC_HI_0.load(vertex_descriptor_high);
+
+                XFReg::INVTXSPEC.load_multi(1, &[xf_vertex_specifications.to_be_bytes()]);
+            }
+            _ => todo!(),
+        }
+    }
+
     /// Sets the type of a single attribute (attr) in the current vertex descriptor.
     /// See [GX_SetVtxDesc](https://libogc.devkitpro.org/gx_8h.html#af41b45011ae731ae5697b26b2bf97e2f) for more.
     pub fn set_vtx_desc(attr: VtxAttr, v_type: VtxDest) {
-        unsafe { ffi::GX_SetVtxDesc(attr.into_u8(), v_type.0) }
+        unsafe { ffi::GX_SetVtxDesc(attr.into_u8(), v_type.into_u32().try_into().unwrap()) }
     }
 
     /// Used to load a 3x4 modelview matrix mt into matrix memory at location pnidx.
@@ -2790,7 +2943,7 @@ impl Gx {
                 mt[2][2].to_be_bytes(),
                 mt[2][3].to_be_bytes(),
             ],
-        )
+        );
     }
 
     pub fn load_nrm_mtx_imm(mt: &[[f32; 3]; 3], pnidx: u32) {
@@ -2873,247 +3026,109 @@ impl Gx {
                 src_fact.into_u8(),
                 dst_fact.into_u8(),
                 op.into_u8(),
-            )
+            );
         }
     }
 
     /// Enables or disables alpha-buffer updates of the Embedded Frame Buffer (EFB).
     /// See [GX_SetAlphaUpdate](https://libogc.devkitpro.org/gx_8h.html#ac238051bda896c8bb11802184882a2a0) for more.
     pub fn set_alpha_update(enable: bool) {
-        unsafe { ffi::GX_SetAlphaUpdate(u8::from(enable)) }
+        unsafe {
+            ffi::GX_SetAlphaUpdate(u8::from(enable));
+        }
     }
 
     /// Enables or disables color-buffer updates when rendering into the Embedded Frame Buffer (EFB).
     /// See [GX_SetColorUpdate](https://libogc.devkitpro.org/gx_8h.html#a3978e3b08198e52d7cea411e90ece3e5) for more.
     pub fn set_color_update(enable: bool) {
-        unsafe { ffi::GX_SetColorUpdate(u8::from(enable)) }
+        unsafe {
+            ffi::GX_SetColorUpdate(u8::from(enable));
+        }
     }
 
     /// Sets the array base pointer and stride for a single attribute.
     /// See [GX_SetArray](https://libogc.devkitpro.org/gx_8h.html#a5164fc6aa2a678d792af80d94bfa1ec2) for more.
+    ///
+    /// # Panics
+    /// This panics if the address of `array` can not fit into a `u32`
     pub fn set_array<T>(attr: VtxAttr, array: &[T], stride: u8) {
         // Pinky promise I don't actually modify the data at array with this call
-        match attr {
-            VtxAttr::Color0 => {
-                CPReg::COL0_PTR.load(
-                    array
-                        .as_ptr()
-                        .map_addr(mem::to_physical)
-                        .addr()
-                        .try_into()
-                        .unwrap(),
-                );
-                CPReg::COL0_SIZE.load(stride.into())
-            }
-            VtxAttr::Color1 => {
-                CPReg::COL1_PTR.load(
-                    array
-                        .as_ptr()
-                        .map_addr(mem::to_physical)
-                        .addr()
-                        .try_into()
-                        .unwrap(),
-                );
-                CPReg::COL1_SIZE.load(stride.into());
-            }
-            VtxAttr::Pos => {
-                CPReg::VERT_PTR.load(
-                    array
-                        .as_ptr()
-                        .map_addr(mem::to_physical)
-                        .addr()
-                        .try_into()
-                        .unwrap(),
-                );
-                CPReg::VERT_SIZE.load(stride.into())
-            }
-            VtxAttr::Tex0 => {
-                CPReg::TEX0_PTR.load(
-                    array
-                        .as_ptr()
-                        .map_addr(mem::to_physical)
-                        .addr()
-                        .try_into()
-                        .unwrap(),
-                );
-                CPReg::TEX0_SIZE.load(stride.into())
-            }
-            VtxAttr::Tex1 => {
-                CPReg::TEX1_PTR.load(
-                    array
-                        .as_ptr()
-                        .map_addr(mem::to_physical)
-                        .addr()
-                        .try_into()
-                        .unwrap(),
-                );
-                CPReg::TEX1_SIZE.load(stride.into())
-            }
-            VtxAttr::Tex2 => {
-                CPReg::TEX2_PTR.load(
-                    array
-                        .as_ptr()
-                        .map_addr(mem::to_physical)
-                        .addr()
-                        .try_into()
-                        .unwrap(),
-                );
-                CPReg::TEX2_SIZE.load(stride.into())
-            }
-            VtxAttr::Tex3 => {
-                CPReg::TEX3_PTR.load(
-                    array
-                        .as_ptr()
-                        .map_addr(mem::to_physical)
-                        .addr()
-                        .try_into()
-                        .unwrap(),
-                );
-                CPReg::TEX3_SIZE.load(stride.into())
-            }
 
-            VtxAttr::Tex4 => {
-                CPReg::TEX4_PTR.load(
-                    array
-                        .as_ptr()
-                        .map_addr(mem::to_physical)
-                        .addr()
-                        .try_into()
-                        .unwrap(),
-                );
-                CPReg::TEX4_SIZE.load(stride.into())
-            }
+        let (ptr, size) = match attr {
+            VtxAttr::Color0 => (CPReg::COL0_PTR, CPReg::COL0_SIZE),
+            VtxAttr::Color1 => (CPReg::COL1_PTR, CPReg::COL1_SIZE),
+            VtxAttr::Pos => (CPReg::VERT_PTR, CPReg::VERT_SIZE),
+            VtxAttr::Nrm | VtxAttr::Nbt => (CPReg::NORM_PTR, CPReg::NORM_SIZE),
+            VtxAttr::Tex0 => (CPReg::TEX0_PTR, CPReg::TEX0_SIZE),
+            VtxAttr::Tex1 => (CPReg::TEX1_PTR, CPReg::TEX1_SIZE),
+            VtxAttr::Tex2 => (CPReg::TEX2_PTR, CPReg::TEX2_SIZE),
+            VtxAttr::Tex3 => (CPReg::TEX3_PTR, CPReg::TEX3_SIZE),
+            VtxAttr::Tex4 => (CPReg::TEX4_PTR, CPReg::TEX4_SIZE),
+            VtxAttr::Tex5 => (CPReg::TEX5_PTR, CPReg::TEX5_SIZE),
+            VtxAttr::Tex6 => (CPReg::TEX6_PTR, CPReg::TEX6_SIZE),
+            VtxAttr::Tex7 => (CPReg::TEX7_PTR, CPReg::TEX7_SIZE),
+            VtxAttr::PosMtxArray => (CPReg::IDXA_PTR, CPReg::IDXA_SIZE),
+            VtxAttr::NrmMtxArray => (CPReg::IDXB_PTR, CPReg::IDXB_SIZE),
+            VtxAttr::TexMtxArray => (CPReg::IDXC_PTR, CPReg::IDXC_SIZE),
+            VtxAttr::LightArray => (CPReg::IDXD_PTR, CPReg::IDXD_SIZE),
+            _ => return,
+        };
 
-            VtxAttr::Tex5 => {
-                CPReg::TEX5_PTR.load(
-                    array
-                        .as_ptr()
-                        .map_addr(mem::to_physical)
-                        .addr()
-                        .try_into()
-                        .unwrap(),
-                );
-                CPReg::TEX5_SIZE.load(stride.into())
-            }
+        let address = u32::try_from(array.as_ptr().map_addr(mem::to_physical).addr())
+            .expect("usize should fit into a u32");
 
-            VtxAttr::Tex6 => {
-                CPReg::TEX6_PTR.load(
-                    array
-                        .as_ptr()
-                        .map_addr(mem::to_physical)
-                        .addr()
-                        .try_into()
-                        .unwrap(),
-                );
-                CPReg::TEX6_SIZE.load(stride.into())
-            }
-            VtxAttr::Tex7 => {
-                CPReg::TEX7_PTR.load(
-                    array
-                        .as_ptr()
-                        .map_addr(mem::to_physical)
-                        .addr()
-                        .try_into()
-                        .unwrap(),
-                );
-                CPReg::TEX7_SIZE.load(stride.into())
-            }
-            VtxAttr::Nrm | VtxAttr::Nbt => {
-                CPReg::NORM_PTR.load(
-                    array
-                        .as_ptr()
-                        .map_addr(mem::to_physical)
-                        .addr()
-                        .try_into()
-                        .unwrap(),
-                );
-                CPReg::NORM_SIZE.load(stride.into());
-            }
-            VtxAttr::PosMtxArray => {
-                CPReg::IDXA_PTR.load(
-                    array
-                        .as_ptr()
-                        .map_addr(mem::to_physical)
-                        .addr()
-                        .try_into()
-                        .unwrap(),
-                );
-                CPReg::IDXA_SIZE.load(stride.into());
-            }
-            VtxAttr::NrmMtxArray => {
-                CPReg::IDXB_PTR.load(
-                    array
-                        .as_ptr()
-                        .map_addr(mem::to_physical)
-                        .addr()
-                        .try_into()
-                        .unwrap(),
-                );
-                CPReg::IDXB_SIZE.load(stride.into());
-            }
-            VtxAttr::TexMtxArray => {
-                CPReg::IDXC_PTR.load(
-                    array
-                        .as_ptr()
-                        .map_addr(mem::to_physical)
-                        .addr()
-                        .try_into()
-                        .unwrap(),
-                );
-                CPReg::IDXC_SIZE.load(stride.into());
-            }
-            VtxAttr::LightArray => {
-                CPReg::IDXD_PTR.load(
-                    array
-                        .as_ptr()
-                        .map_addr(mem::to_physical)
-                        .addr()
-                        .try_into()
-                        .unwrap(),
-                );
-                CPReg::IDXD_SIZE.load(stride.into());
-            }
-            // IDX based arrays are already setup in matrix mem so don't need to do anything with
-            // thoses
-            _ => {}
-        }
+        ptr.load(address);
+        size.load(stride.into());
     }
-
     /// Begins drawing of a graphics primitive.
     /// See [GX_Begin](https://libogc.devkitpro.org/gx_8h.html#ac1e1239130a33d9fae1352aee8d2cab9) for more.
     pub fn begin(primitive: Primitive, vtxfmt: u8, vtxcnt: u16) {
+        // let register = primitive.into_u8() | (vtxfmt & 7);
+        // GX_PIPE.write(register);
+        //
+        // for byte in vtxcnt.to_be_bytes() {
+        //     GX_PIPE.write(byte);
+        // }
+        //
+        //Need to figure out dirty state updating
         unsafe { ffi::GX_Begin(primitive.into_u8(), vtxfmt, vtxcnt) }
     }
 
     /// Sets the parameters for the alpha compare function which uses the alpha output from the last active TEV stage.
     /// See [Gx_SetAlphaCompare](https://libogc.devkitpro.org/gx_8h.html#a23ac269062a1b2c2efc8ad5aae24b26a) for more.
     pub fn set_alpha_compare(comp0: CmpFn, ref0: u8, aop: AlphaOp, comp1: CmpFn, ref1: u8) {
-        unsafe {
-            ffi::GX_SetAlphaCompare(comp0.into_u8(), ref0, aop.into_u8(), comp1.into_u8(), ref1)
-        }
+        let mut val = 0;
+        val = bitfrob::u32_with_value(0, 7, val, ref0.into());
+        val = bitfrob::u32_with_value(8, 15, val, ref1.into());
+        val = bitfrob::u32_with_value(16, 18, val, comp0.into_u8().into());
+        val = bitfrob::u32_with_value(19, 21, val, comp1.into_u8().into());
+        val = bitfrob::u32_with_value(22, 23, val, aop.into_u8().into());
+
+        BPReg::TEV_ALPHAFUNC.load(val);
     }
 
     /// Sets the parameters for the alpha compare function which uses the alpha output from the last active TEV stage.
     /// See [GX_SetClipMode](https://libogc.devkitpro.org/gx_8h.html#a3d348d7af8ded25b57352e956f43d974) for more.
     pub fn set_clip_mode(mode: u8) {
-        unsafe { ffi::GX_SetClipMode(mode) }
+        XFReg::CLIP_DISABLE.load(mode.into());
     }
 
     /// Wrapper around set_clip_mode, since its a simple enable or disbale.
     pub fn enable_clip() {
-        Gx::set_clip_mode(u8::try_from(ffi::GX_CLIP_ENABLE).unwrap());
+        Gx::set_clip_mode(0);
     }
 
     ///Wrapper around set_clip_mode, since it a simple disable or enable.
     pub fn disable_clip() {
-        Gx::set_clip_mode(u8::try_from(ffi::GX_CLIP_DISABLE).unwrap());
+        Gx::set_clip_mode(1);
     }
 
     /// Allows the CPU to write color directly to the Embedded Frame Buffer (EFB) at position x, y.
     /// See [GX_PokeARGB](https://libogc.devkitpro.org/gx_8h.html#a5038d2f65e7959d64c68dcb1855353d8) for more.
     pub fn poke_argb(x: u16, y: u16, color: Color) {
-        assert!(x < 640, "x must be less than 640, currently {}", x);
-        assert!(y < 528, "y must be less than 527, currently {}", y);
+        debug_assert!(x < 640, "x must be less than 640, currently {}", x);
+        debug_assert!(y < 528, "y must be less than 527, currently {}", y);
+
         unsafe {
             ffi::GX_PokeARGB(x, y, color.0);
         }
@@ -3134,11 +3149,6 @@ impl Gx {
         for byte in z_bytes {
             GX_PIPE.write(byte);
         }
-        /*
-        unsafe {
-            ffi::GX_Position3f32(x, y, z);
-        }
-        */
     }
 
     #[inline]
@@ -3335,9 +3345,9 @@ impl Gx {
 
     #[inline]
     pub fn color_3f32(r: f32, g: f32, b: f32) {
-        assert!((0.0..=1.0).contains(&r));
-        assert!((0.0..=1.0).contains(&g));
-        assert!((0.0..=1.0).contains(&b));
+        debug_assert!((0.0..=1.0).contains(&r));
+        debug_assert!((0.0..=1.0).contains(&g));
+        debug_assert!((0.0..=1.0).contains(&b));
 
         let r: u8 = unsafe { (r * 255.0).round().to_int_unchecked() };
         let g: u8 = unsafe { (g * 255.0).round().to_int_unchecked() };
@@ -3350,7 +3360,7 @@ impl Gx {
 
     #[inline]
     pub fn color_4f32(r: f32, g: f32, b: f32, a: f32) {
-        assert!((0.0..=1.0).contains(&a));
+        debug_assert!((0.0..=1.0).contains(&a));
 
         let a: u8 = unsafe { (a * 255.0).round().to_int_unchecked::<u8>() };
 
@@ -3410,27 +3420,37 @@ impl Gx {
     }
 
     pub fn flush() {
-        unsafe { ffi::GX_Flush() }
+        iter::repeat(0u32).take(8).for_each(|val| {
+            for byte in val.to_be_bytes() {
+                GX_PIPE.write(byte);
+            }
+        });
     }
 
     #[inline]
-    pub fn end() {
-        unsafe { ffi::GX_End() }
-    }
+    pub fn end() {}
 }
 
 fn load_texture_preloaded(obj: &Texture, mapid: u8) {
-    let mut region: MaybeUninit<GXTexRegion> = MaybeUninit::uninit();
+    debug_assert!(
+        (0..=7).contains(&mapid),
+        "mapid should be a number between 0 and 7"
+    );
 
-    let _region: Option<GXTexRegion> =
-        if let Some(func) = unsafe { GX_TEX_REGION_CALLBACK.get_mut() } {
-            unsafe {
-                region.as_mut_ptr().write(func(obj, mapid));
-                Some(region.assume_init())
-            }
-        } else {
-            None
-        };
+    let mut _region: MaybeUninit<GXTexRegion> = MaybeUninit::uninit();
+
+    #[cfg(feature = "experimental")]
+    {
+        let _region: Option<GXTexRegion> =
+            if let Some(func) = unsafe { GX_TEX_REGION_CALLBACK.get_mut() } {
+                unsafe {
+                    region.as_mut_ptr().write(func(obj, mapid));
+                    Some(region.assume_init())
+                }
+            } else {
+                None
+            };
+    }
     let mut val = 0;
     let wrap_s = obj.wrap_s();
     let wrap_t = obj.wrap_t();
@@ -3469,7 +3489,7 @@ fn load_texture_preloaded(obj: &Texture, mapid: u8) {
     img_val = bitfrob::u32_with_value(20, 23, img_val, obj.format().into_u8().into());
 
     let mut even: u32 = 0;
-    even = bitfrob::u32_with_value(0, 14, even, 0x0000_0000 + (u32::from(mapid) * 1_0000));
+    even = bitfrob::u32_with_value(0, 14, even, u32::from(mapid) * 1_0000);
     even = bitfrob::u32_with_value(15, 17, even, 3);
     even = bitfrob::u32_with_value(18, 20, even, 3);
     even = bitfrob::u32_with_bit(21, even, false);
@@ -3480,97 +3500,80 @@ fn load_texture_preloaded(obj: &Texture, mapid: u8) {
     odd = bitfrob::u32_with_value(18, 20, odd, 3);
     odd = bitfrob::u32_with_bit(21, odd, false);
 
-    match mapid {
-        0 => {
-            BPReg::TX_SETMODE0_I0.load(val);
-            BPReg::TX_SETMODE1_I0.load(0x0);
-            BPReg::TX_SETIMAGE0_I0.load(img_val);
+    let (setmode0, setmode1, setimage0, setimage1, setimage2, setimage3) = match mapid {
+        0 => (
+            BPReg::TX_SETMODE0_I0,
+            BPReg::TX_SETMODE1_I0,
+            BPReg::TX_SETIMAGE0_I0,
+            BPReg::TX_SETIMAGE1_I0,
+            BPReg::TX_SETIMAGE2_I0,
+            BPReg::TX_SETIMAGE3_I0,
+        ),
+        1 => (
+            BPReg::TX_SETMODE0_I1,
+            BPReg::TX_SETMODE1_I1,
+            BPReg::TX_SETIMAGE0_I1,
+            BPReg::TX_SETIMAGE1_I1,
+            BPReg::TX_SETIMAGE2_I1,
+            BPReg::TX_SETIMAGE3_I1,
+        ),
+        2 => (
+            BPReg::TX_SETMODE0_I2,
+            BPReg::TX_SETMODE1_I2,
+            BPReg::TX_SETIMAGE0_I2,
+            BPReg::TX_SETIMAGE1_I2,
+            BPReg::TX_SETIMAGE2_I2,
+            BPReg::TX_SETIMAGE3_I2,
+        ),
+        3 => (
+            BPReg::TX_SETMODE0_I3,
+            BPReg::TX_SETMODE1_I3,
+            BPReg::TX_SETIMAGE0_I3,
+            BPReg::TX_SETIMAGE1_I3,
+            BPReg::TX_SETIMAGE2_I3,
+            BPReg::TX_SETIMAGE3_I3,
+        ),
+        4 => (
+            BPReg::TX_SETMODE0_I4,
+            BPReg::TX_SETMODE1_I4,
+            BPReg::TX_SETIMAGE0_I4,
+            BPReg::TX_SETIMAGE1_I4,
+            BPReg::TX_SETIMAGE2_I4,
+            BPReg::TX_SETIMAGE3_I4,
+        ),
+        5 => (
+            BPReg::TX_SETMODE0_I5,
+            BPReg::TX_SETMODE1_I5,
+            BPReg::TX_SETIMAGE0_I5,
+            BPReg::TX_SETIMAGE1_I5,
+            BPReg::TX_SETIMAGE2_I5,
+            BPReg::TX_SETIMAGE3_I5,
+        ),
+        6 => (
+            BPReg::TX_SETMODE0_I6,
+            BPReg::TX_SETMODE1_I6,
+            BPReg::TX_SETIMAGE0_I6,
+            BPReg::TX_SETIMAGE1_I6,
+            BPReg::TX_SETIMAGE2_I6,
+            BPReg::TX_SETIMAGE3_I6,
+        ),
+        7 => (
+            BPReg::TX_SETMODE0_I7,
+            BPReg::TX_SETMODE1_I7,
+            BPReg::TX_SETIMAGE0_I7,
+            BPReg::TX_SETIMAGE1_I7,
+            BPReg::TX_SETIMAGE2_I7,
+            BPReg::TX_SETIMAGE3_I7,
+        ),
+        val => unreachable!("{val} should be in the range of 0 and 7 include (0 to 7)"),
+    };
 
-            BPReg::TX_SETIMAGE1_I0.load(even);
-            BPReg::TX_SETIMAGE2_I0.load(odd);
-
-            BPReg::TX_SETIMAGE3_I0
-                .load(u32::try_from(mem::to_physical(obj.address()) >> 5).unwrap());
-        }
-        1 => {
-            BPReg::TX_SETMODE0_I1.load(val);
-            BPReg::TX_SETMODE1_I1.load(0x0);
-
-            BPReg::TX_SETIMAGE0_I1.load(img_val);
-            BPReg::TX_SETIMAGE1_I1.load(even);
-            BPReg::TX_SETIMAGE2_I1.load(odd);
-
-            BPReg::TX_SETIMAGE3_I1
-                .load(u32::try_from(mem::to_physical(obj.address()) >> 5).unwrap());
-        }
-        2 => {
-            BPReg::TX_SETMODE0_I2.load(val);
-            BPReg::TX_SETMODE1_I2.load(0x0);
-
-            BPReg::TX_SETIMAGE0_I2.load(img_val);
-            BPReg::TX_SETIMAGE1_I2.load(even);
-            BPReg::TX_SETIMAGE2_I2.load(odd);
-
-            BPReg::TX_SETIMAGE3_I2
-                .load(u32::try_from(mem::to_physical(obj.address()) >> 5).unwrap());
-        }
-        3 => {
-            BPReg::TX_SETMODE0_I3.load(val);
-            BPReg::TX_SETMODE1_I3.load(0x0);
-
-            BPReg::TX_SETIMAGE0_I3.load(img_val);
-            BPReg::TX_SETIMAGE1_I3.load(even);
-            BPReg::TX_SETIMAGE2_I3.load(odd);
-
-            BPReg::TX_SETIMAGE3_I3
-                .load(u32::try_from(mem::to_physical(obj.address()) >> 5).unwrap());
-        }
-        4 => {
-            BPReg::TX_SETMODE0_I4.load(val);
-            BPReg::TX_SETMODE1_I4.load(0x0);
-
-            BPReg::TX_SETIMAGE0_I4.load(img_val);
-            BPReg::TX_SETIMAGE1_I4.load(even);
-            BPReg::TX_SETIMAGE2_I4.load(odd);
-
-            BPReg::TX_SETIMAGE3_I4
-                .load(u32::try_from(mem::to_physical(obj.address()) >> 5).unwrap());
-        }
-        5 => {
-            BPReg::TX_SETMODE0_I5.load(val);
-            BPReg::TX_SETMODE1_I5.load(0x0);
-
-            BPReg::TX_SETIMAGE0_I5.load(img_val);
-            BPReg::TX_SETIMAGE1_I5.load(even);
-            BPReg::TX_SETIMAGE2_I5.load(odd);
-
-            BPReg::TX_SETIMAGE3_I5
-                .load(u32::try_from(mem::to_physical(obj.address()) >> 5).unwrap());
-        }
-        6 => {
-            BPReg::TX_SETMODE0_I6.load(val);
-            BPReg::TX_SETMODE1_I6.load(0x0);
-
-            BPReg::TX_SETIMAGE0_I6.load(img_val);
-            BPReg::TX_SETIMAGE1_I6.load(even);
-            BPReg::TX_SETIMAGE2_I6.load(odd);
-
-            BPReg::TX_SETIMAGE3_I6
-                .load(u32::try_from(mem::to_physical(obj.address()) >> 5).unwrap());
-        }
-        7 => {
-            BPReg::TX_SETMODE0_I7.load(val);
-            BPReg::TX_SETMODE1_I7.load(0x0);
-
-            BPReg::TX_SETIMAGE0_I7.load(img_val);
-            BPReg::TX_SETIMAGE1_I7.load(even);
-            BPReg::TX_SETIMAGE2_I7.load(odd);
-
-            BPReg::TX_SETIMAGE3_I7
-                .load(u32::try_from(mem::to_physical(obj.address()) >> 5).unwrap());
-        }
-        _ => todo!(),
-    }
+    setmode0.load(val);
+    setmode1.load(0x0);
+    setimage0.load(img_val);
+    setimage1.load(even);
+    setimage2.load(odd);
+    setimage3.load(u32::try_from(mem::to_physical(obj.address()) >> 5).unwrap());
     Gx::flush();
 }
 
@@ -3581,11 +3584,11 @@ fn load_texture_preloaded(obj: &Texture, mapid: u8) {
 fn call_display_list(display_list: &[u8]) {
     let ptr = display_list.as_ptr().map_addr(mem::to_physical);
 
-    assert!(
+    debug_assert!(
         display_list.as_ptr().align_offset(32) == 0,
         "The display list is not correctly 32 byte aligned."
     );
-    assert!(
+    debug_assert!(
         display_list.len() % 32 == 0,
         "The display list is not correctly padded to 32 bytes. Please pad with GPCommand::Nop"
     );
@@ -3603,7 +3606,7 @@ fn call_display_list(display_list: &[u8]) {
 
 //Currently doesnt check dirty state
 fn draw_begin(command: GPDrawCommand, vertex_format: u8, vertex_count: u16) {
-    assert!(vertex_format <= 7, "Incorrect vertex format");
+    debug_assert!(vertex_format <= 7, "Incorrect vertex format");
     let gp_cmd = (command.into_u8()) | (vertex_format & 7);
 
     GX_PIPE.write(gp_cmd);
@@ -3628,6 +3631,7 @@ pub enum GPCommand {
 }
 
 impl GPCommand {
+    #[must_use]
     pub const fn into_u8(self) -> u8 {
         match self {
             GPCommand::Nop => 0x00,
@@ -3657,6 +3661,7 @@ pub enum GPDrawCommand {
 }
 
 impl GPDrawCommand {
+    #[must_use]
     pub const fn into_u8(self) -> u8 {
         match self {
             GPDrawCommand::DrawQuads => 0x80,
@@ -3772,6 +3777,7 @@ pub mod experimental {
 
             //indexed by 32 byte words
             // 240 bytes / 4 bytes = 60
+
             const IDENTITY_IDX: u8 = 60;
             let matrix_index_low = MatrixIndexLow::new()
                 .with_geometry_matrix_index(IDENTITY_IDX)
