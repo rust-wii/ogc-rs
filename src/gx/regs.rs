@@ -405,7 +405,7 @@ impl XFReg {
     // Using self as the base load multiple registers and write `vals` to them
     // vals need to have the same legth as the `length`
     pub fn load_multi(&self, length: u16, vals: &[[u8; 4]]) {
-        assert!(vals.len() == length.try_into().unwrap());
+        assert!(vals.len() == length.into());
 
         GX_PIPE.write(GPCommand::LoadXFReg as u8);
         for byte in (length - 1).to_be_bytes() {

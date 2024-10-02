@@ -13,8 +13,10 @@ use alloc::{
 };
 
 use bitflags::bitflags;
-use core::{ffi::c_void, slice};
-use cstr_core::CStr;
+use core::{
+    ffi::{c_void, CStr},
+    slice,
+};
 use num_enum::IntoPrimitive;
 
 bitflags! {
@@ -228,6 +230,8 @@ pub fn dot_to_nbo(dot: &str) -> Result<IPV4Address> {
     }
 }
 
+/// Converts a string slice into an IPV4 address.
+///
 /// This function call converts the specified string in the Internet standard dot notation
 /// to a network address, and stores the address in the structure provided.
 /// The converted address will be in Network Byte Order.
@@ -245,7 +249,7 @@ pub fn dot_to_net_addr(dot: &str, addr: &mut IPV4Address) -> Result<()> {
 /// to a string in the Internet standard dot notation.
 pub fn addr_to_dot(addr: &mut IPV4Address) -> Result<String> {
     let r = unsafe { ffi::inet_ntoa(addr.into()) };
-    let r_res = unsafe { CStr::from_ptr(r).to_str() };
+    let r_res = unsafe { CStr::from_ptr(r.cast_const().cast()).to_str() };
 
     if let Ok(r) = r_res {
         if r.is_empty() {
@@ -282,7 +286,10 @@ pub fn get_host_by_name(addr_string: &str) -> Result<HostInformation> {
             };
 
             Ok(HostInformation {
-                name: CStr::from_ptr((*r).h_name).to_str().unwrap().to_string(),
+                name: CStr::from_ptr((*r).h_name.cast_const().cast())
+                    .to_str()
+                    .unwrap()
+                    .to_string(),
                 aliases: arr_to_str((*r).h_aliases),
                 address_type: (*r).h_addrtype,
                 length: (*r).h_length,

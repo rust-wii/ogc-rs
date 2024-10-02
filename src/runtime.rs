@@ -56,7 +56,6 @@ fn panic_handler(panic_info: &PanicInfo) -> ! {
 ///
 /// **Note**: The allocation error handler uses the ``println`` macro for output.
 /// In order for this to work ``Console`` and a minimal ``Video`` setup is required!
-
 #[cfg(feature = "default_alloc_handler")]
 #[alloc_error_handler]
 fn alloc_error(layout: Layout) -> ! {
