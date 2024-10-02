@@ -228,6 +228,8 @@ pub fn dot_to_nbo(dot: &str) -> Result<IPV4Address> {
     }
 }
 
+/// Converts a string slice into an IPV4 address.
+///
 /// This function call converts the specified string in the Internet standard dot notation
 /// to a network address, and stores the address in the structure provided.
 /// The converted address will be in Network Byte Order.
