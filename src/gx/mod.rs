@@ -4,6 +4,7 @@
 
 use core::ffi::c_void;
 use core::marker::PhantomData;
+use core::mem::ManuallyDrop;
 
 use alloc::vec::Vec;
 use bit_field::BitField;
@@ -14,8 +15,8 @@ use num_traits::Float;
 
 use crate::ffi::{self, Mtx as Mtx34, Mtx44};
 use crate::gx::regs::BPReg;
-use crate::lwp;
 use crate::utils::mem;
+use crate::{lwp, Buf32};
 
 use self::regs::XFReg;
 use self::types::{Gamma, PixelEngineControl, PixelFormat, VtxDest, ZFormat};
@@ -1183,7 +1184,8 @@ impl Gx {
             size = Fifo::MIN_SIZE;
         }
 
-        let mut buf = crate::utils::Buf32::new(size);
+        //TODO: keep buf around othersise can start overwritting memory
+        let mut buf = ManuallyDrop::new(crate::utils::Buf32::new(size));
 
         // SAFETY: all safety is ensured by Buf32.
         unsafe {
