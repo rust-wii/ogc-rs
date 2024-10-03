@@ -15,8 +15,8 @@ use num_traits::Float;
 
 use crate::ffi::{self, Mtx as Mtx34, Mtx44};
 use crate::gx::regs::BPReg;
+use crate::lwp;
 use crate::utils::mem;
-use crate::{lwp, Buf32};
 
 use self::regs::XFReg;
 use self::types::{Gamma, PixelEngineControl, PixelFormat, VtxDest, ZFormat};
