@@ -76,8 +76,6 @@ pub fn alloc_aligned_buffer(buffer: &[u8]) -> Vec<u8> {
     };
 
     let mut align_buf = unsafe {
-        let ptr = alloc::alloc::alloc_zeroed(Layout::from_size_align(size, 32).unwrap());
-        Vec::from_raw_parts(ptr, 0, size)
         let ptr = NonNull::new(alloc::alloc::alloc_zeroed(
             Layout::from_size_align(size, 32).unwrap(),
         ))
