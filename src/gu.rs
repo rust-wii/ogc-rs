@@ -5,7 +5,8 @@
 use core::fmt;
 
 use ffi::guQuaternion;
-use libm::tanf;
+
+use num_traits::Float;
 
 use crate::{
     ffi::{self, guVector, Mtx as Mtx34, Mtx44},
@@ -388,7 +389,7 @@ impl Mat4 {
 
     pub fn gu_perspective(fov_y: f32, aspect_ratio: f32, z_near: f32, z_far: f32) -> Self {
         let fov_y_radians = (fov_y * 0.5) * 0.017453292;
-        let cot = 1.0 / tanf(fov_y_radians);
+        let cot = 1.0 / fov_y_radians.tan();
         let plane = 1.0 / (z_far - z_near);
 
         Mat4([
@@ -511,7 +512,7 @@ impl Mat3x4 {
         translation: (f32, f32),
     ) -> Self {
         let fov_y_radians = (fov_y * 0.5) * 0.017453292;
-        let cot = 1.0 / tanf(fov_y_radians);
+        let cot = 1.0 / fov_y_radians.tan();
 
         Mat3x4([
             [(cot / aspect_ratio) * scale.0, 0.0, -translation.0, 0.0],

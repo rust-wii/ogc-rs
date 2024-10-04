@@ -27,12 +27,12 @@ unsafe impl GlobalAlloc for OGCAllocator {
                 layout.size()
             );
         } else {
-            libc::memalign(layout.align(), layout.size()) as *mut u8
+            libc::memalign(layout.align().max(8), layout.size()).cast::<u8>()
         }
     }
 
     unsafe fn dealloc(&self, ptr: *mut u8, _layout: Layout) {
-        libc::free(ptr as *mut _);
+        libc::free(ptr.cast::<libc::c_void>());
     }
 }
 

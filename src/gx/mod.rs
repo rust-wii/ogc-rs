@@ -4,12 +4,14 @@
 
 use core::ffi::c_void;
 use core::marker::PhantomData;
+use core::mem::ManuallyDrop;
 
 use alloc::vec::Vec;
 use bit_field::BitField;
 use ffi::GXTexObj;
-use libm::ceilf;
 use voladdress::{Safe, VolAddress};
+
+use num_traits::Float;
 
 use crate::ffi::{self, Mtx as Mtx34, Mtx44};
 use crate::gx::regs::BPReg;
@@ -1182,13 +1184,14 @@ impl Gx {
             size = Fifo::MIN_SIZE;
         }
 
-        let mut buf = crate::utils::Buf32::new(size);
+        //TODO: keep buf around othersise can start overwritting memory
+        let mut buf = ManuallyDrop::new(crate::utils::Buf32::new(size));
 
         // SAFETY: all safety is ensured by Buf32.
         unsafe {
             let fifo = ffi::GX_Init(
                 buf.as_mut_ptr().map_addr(mem::to_uncached) as *mut _,
-                buf.len() as u32
+                buf.len() as u32,
             );
             &mut *(fifo as *mut Fifo)
         }
@@ -2213,9 +2216,9 @@ impl Gx {
         assert!((0.0..=1.0).contains(&g));
         assert!((0.0..=1.0).contains(&b));
 
-        let r: u8 = ceilf(r * 255.0) as u8;
-        let g: u8 = ceilf(g * 255.0) as u8;
-        let b: u8 = ceilf(b * 255.0) as u8;
+        let r: u8 = (r * 255.0).round() as u8;
+        let g: u8 = (g * 255.0).round() as u8;
+        let b: u8 = (b * 255.0).round() as u8;
 
         GX_PIPE.write(r);
         GX_PIPE.write(g);
@@ -2226,7 +2229,7 @@ impl Gx {
     pub fn color_4f32(r: f32, g: f32, b: f32, a: f32) {
         assert!((0.0..=1.0).contains(&a));
 
-        let a = ceilf(a * 255.0) as u8;
+        let a = (a * 255.0).round() as u8;
 
         Gx::color_3f32(r, g, b);
         GX_PIPE.write(a);

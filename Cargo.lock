@@ -249,7 +249,7 @@ dependencies = [
  "cfg-if",
  "glam",
  "libc",
- "libm",
+ "num-traits",
  "num_enum",
  "ogc-sys",
  "voladdress",
