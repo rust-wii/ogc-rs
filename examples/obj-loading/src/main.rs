@@ -4,16 +4,13 @@
 mod obj;
 use core::f32::consts::PI;
 use core::mem::ManuallyDrop;
-use ogc_rs::ffi::{GX_F32, GX_TEX_ST, GX_U8, GX_VA_TEX0};
+use ogc_rs::ffi::{GX_F32, GX_NRM_XYZ, GX_TEX_ST, GX_VA_NRM, GX_VA_TEX0};
 use ogc_rs::gu::RotationAxis;
 use ogc_rs::input::{Button, ControllerPort, ControllerType, Input};
 use ogc_rs::{alloc_aligned_buffer, print};
 
 use ogc_rs::{
-    ffi::{
-        GX_CLR_RGBA, GX_COLOR0A0, GX_MODULATE, GX_POS_XYZ, GX_RGBA8, GX_TEXCOORD0, GX_TEXMAP0,
-        GX_TF_CMPR, GX_VA_CLR0, GX_VA_POS,
-    },
+    ffi::{GX_COLOR0A0, GX_MODULATE, GX_POS_XYZ, GX_TEXCOORD0, GX_TEXMAP0, GX_TF_CMPR, GX_VA_POS},
     gu::Gu,
     gx::{
         types::VtxDest, CmpFn, Color, CullMode, Gx, Primitive, ProjectionType, TexFilter, Texture,
@@ -93,13 +90,13 @@ fn main(_argc: isize, _argv: *const *const u8) -> isize {
     Gx::inv_vtx_cache();
     Gx::clear_vtx_desc();
     Gx::set_vtx_desc(VtxAttr::Pos, VtxDest::INDEX16);
-    Gx::set_vtx_desc(VtxAttr::Color0, VtxDest::INDEX8);
+    Gx::set_vtx_desc(VtxAttr::Nrm, VtxDest::INDEX8);
     Gx::set_vtx_desc(VtxAttr::Tex0, VtxDest::INDEX8);
     Gx::set_vtx_attr_fmt(0, VtxAttr::Pos, GX_POS_XYZ, GX_F32, 0);
-    Gx::set_vtx_attr_fmt(0, VtxAttr::Color0, GX_CLR_RGBA, GX_RGBA8, 0);
-    Gx::set_vtx_attr_fmt(0, VtxAttr::Tex0, GX_TEX_ST, GX_U8, 0);
+    Gx::set_vtx_attr_fmt(0, VtxAttr::Nrm, GX_NRM_XYZ, GX_F32, 0);
+    Gx::set_vtx_attr_fmt(0, VtxAttr::Tex0, GX_TEX_ST, GX_F32, 0);
 
-    let indices: Vec<usize> = obj
+    let indices: Vec<(usize, Option<usize>, Option<usize>)> = obj
         .indices()
         .unwrap()
         .flatten()
@@ -111,8 +108,9 @@ fn main(_argc: isize, _argv: *const *const u8) -> isize {
     let positions: Vec<[f32; 3]> = obj.vertices().unwrap().collect::<Vec<[f32; 3]>>();
     println!("{:?}", positions);
 
-    let colors: [[u8; 4]; 3] = [[255, 255, 255, 255], [0, 255, 0, 255], [0, 0, 255, 255]];
-    let tex: [[u8; 2]; 3] = [[0, 1], [1, 0], [1, 1]];
+    let normals: Vec<[f32; 3]> = obj.normals().unwrap().collect();
+
+    let tex: Vec<[f32; 2]> = obj.texcoords().unwrap().collect::<Vec<[f32; 2]>>();
 
     Gx::set_array(
         GX_VA_POS,
@@ -121,14 +119,14 @@ fn main(_argc: isize, _argv: *const *const u8) -> isize {
     );
 
     Gx::set_array(
-        GX_VA_CLR0,
-        &colors,
-        core::mem::size_of::<[u8; 4]>().try_into().unwrap(),
+        GX_VA_NRM,
+        &normals,
+        core::mem::size_of::<[f32; 3]>().try_into().unwrap(),
     );
     Gx::set_array(
         GX_VA_TEX0,
         &tex,
-        core::mem::size_of::<[u8; 2]>().try_into().unwrap(),
+        core::mem::size_of::<[f32; 2]>().try_into().unwrap(),
     );
 
     let header = minipng::decode_png_header(WHITE_BYTES).unwrap();
@@ -215,12 +213,22 @@ fn main(_argc: isize, _argv: *const *const u8) -> isize {
         Gx::load_pos_mtx_imm(&mut mdl_mtx, 0);
         Gx::set_cull_mode(CullMode::None);
         Gx::begin(Primitive::Triangles, 0, indices.len().try_into().unwrap());
+        // v / vt / vn
         for index in indices.iter() {
-            Gx::position1x16(u16::try_from(*index).unwrap());
+            Gx::position1x16(u16::try_from(index.0).unwrap());
             // let [x, y, z] = positions[*index];
             // Gx::position_3f32(x, y, z);
-            Gx::position1x8((index % 3).try_into().unwrap());
-            Gx::position1x8((index % 3).try_into().unwrap());
+            if let Some(idx) = index.2 {
+                Gx::position1x8(idx.try_into().unwrap());
+            } else {
+                panic!()
+            }
+
+            if let Some(idx) = index.1 {
+                Gx::position1x8(idx.try_into().unwrap());
+            } else {
+                panic!()
+            }
         }
 
         Gx::end();
