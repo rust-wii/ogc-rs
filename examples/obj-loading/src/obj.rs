@@ -54,7 +54,7 @@ pub fn from_bytes<Data: AsRef<[u8]>>(data: Data) -> Result<Obj<Data>, Error> {
 
     let valid_vertex_position_count = obj_iter::<f32>(obj, "v ").count();
     let valid_vertex_normal_count = obj_iter::<f32>(obj, "vn ").count();
-    let valid_vertex_texcoord_count = obj_iter::<f32>(obj, "vt ").count();
+    let valid_vertex_texcoord_count = obj_iter2::<f32>(obj, "vt ").count();
 
     if valid_vertex_position_count != obj.lines().filter(|line| line.starts_with("v ")).count() {
         return Err(Error::InvalidVertex);
@@ -94,14 +94,16 @@ impl<Data: AsRef<[u8]>> Obj<Data> {
         }))
     }
 
-    pub fn indices(&self) -> Result<impl Iterator<Item = [usize; 3]> + '_, Error> {
+    pub fn indices(
+        &self,
+    ) -> Result<impl Iterator<Item = [(usize, Option<usize>, Option<usize>); 3]> + '_, Error> {
         let Ok(obj) = core::str::from_utf8(self.data.as_ref()) else {
             return Err(Error::InvalidUtf8);
         };
 
         Ok(obj.lines().filter_map(|line| {
             if line.starts_with("f ") {
-                let mut indices: [usize; 3] = [0usize; 3];
+                let mut indices = [(0usize, None, None); 3];
                 for (i, index) in line.splitn(4, ' ').skip(1).enumerate() {
                     let has_slash = index.contains('/');
 
@@ -139,13 +141,27 @@ impl<Data: AsRef<[u8]>> Obj<Data> {
                         )
                     };
 
-                    indices[i] = idx.0;
+                    indices[i] = idx;
                 }
                 Some(indices)
             } else {
                 None
             }
         }))
+    }
+
+    pub fn normals(&self) -> Result<impl Iterator<Item = [f32; 3]> + '_, Error> {
+        let Ok(obj) = core::str::from_utf8(self.data.as_ref()) else {
+            return Err(Error::InvalidUtf8);
+        };
+        Ok(obj_iter(obj, "vn "))
+    }
+
+    pub fn texcoords(&self) -> Result<impl Iterator<Item = [f32; 2]> + '_, Error> {
+        let Ok(obj) = core::str::from_utf8(self.data.as_ref()) else {
+            return Err(Error::InvalidUtf8);
+        };
+        Ok(obj_iter2(obj, "vt "))
     }
 }
 
@@ -157,6 +173,26 @@ fn obj_iter<'a, T: Default + Copy + FromStr>(
         if line.starts_with(prefix) {
             let mut array = [T::default(); 3];
             for (i, t) in line.splitn(4, ' ').skip(1).enumerate() {
+                let Ok(t) = t.parse::<T>() else {
+                    return None;
+                };
+                array[i] = t;
+            }
+            Some(array)
+        } else {
+            None
+        }
+    })
+}
+
+fn obj_iter2<'a, T: Default + Copy + FromStr>(
+    str: &'a str,
+    prefix: &'a str,
+) -> impl Iterator<Item = [T; 2]> + 'a {
+    str.lines().filter_map(move |line| {
+        if line.starts_with(prefix) {
+            let mut array = [T::default(); 2];
+            for (i, t) in line.splitn(3, ' ').skip(1).enumerate() {
                 let Ok(t) = t.parse::<T>() else {
                     return None;
                 };
