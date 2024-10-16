@@ -70,7 +70,7 @@ pub fn set_speed_limit(speed_limit: u32) -> Result<(), ios::Error> {
     //value currently
     debug_assert!(
         (0..=500).contains(&speed_limit),
-        "Speed limit must be in in the range 0 to 100 inclusive"
+        "Speed limit must be in in the range 0 to 500 inclusive"
     );
 
     let dolphin = ios::open(c"/dev/dolphin", Mode::ReadWrite)?;
