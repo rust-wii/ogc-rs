@@ -1,5 +1,7 @@
 use core::{ffi::CStr, fmt::Display};
 
+pub mod dolphin;
+
 #[repr(u32)]
 /// Interprocess Control / IOS File Mode
 pub enum Mode {
@@ -265,10 +267,9 @@ pub fn ioctlv<
     //Invariant: This must be COUNT_IN + COUNT_OUT (waiting for `generic_const_exprs` to be
     //stabilizied)
     const COUNT_IN_OUT: usize,
-    IOCTL: Into<i32>,
 >(
     fd: FileDescriptor,
-    ioctl: IOCTL,
+    ioctl: impl Into<i32>,
     buf_ins: &[&[u8]],
     buf_outs: &mut [&mut [u8]],
 ) -> Result<(), Error> {
