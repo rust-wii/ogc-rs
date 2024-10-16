@@ -34,7 +34,7 @@ impl From<Ioctl> for i32 {
     }
 }
 
-//Get elapsed time since the emulation started.
+//Get elapsed time since the emulation started in milliseconds.
 pub fn get_elapsed_time() -> Result<u32, ios::Error> {
     let dolphin = ios::open(c"/dev/dolphin", Mode::ReadWrite)?;
 
