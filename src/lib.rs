@@ -23,6 +23,7 @@
 #![feature(slice_ptr_get)]
 #![feature(allocator_api)]
 #![feature(strict_provenance)]
+#![feature(asm_experimental_arch)]
 
 extern crate alloc;
 
@@ -90,6 +91,8 @@ pub mod cache;
 
 // TPL implementation
 pub mod tpl;
+
+pub mod time;
 
 #[cfg(feature = "glam_compat")]
 pub mod glam_impl;
