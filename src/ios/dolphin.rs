@@ -45,6 +45,7 @@ pub fn get_elapsed_time() -> Result<u32, ios::Error> {
     Ok(u32::from_be_bytes(buf))
 }
 
+//TODO: Figure out a way to get out of the allocation since I know the max size it can be?
 pub fn get_version() -> Result<CString, ios::Error> {
     let dolphin = ios::open(c"/dev/dolphin", Mode::ReadWrite)?;
 
@@ -91,7 +92,7 @@ pub fn get_cpu_speed() -> Result<u32, ios::Error> {
     let _ = ios::close(dolphin);
     Ok(u32::from_be_bytes(buf))
 }
-
+//TODO: Figure out a way to get out of the allocation since I know the max size it can be?
 pub fn get_product_code() -> Result<CString, ios::Error> {
     let dolphin = ios::open(c"/dev/dolphin", Mode::ReadWrite)?;
 
