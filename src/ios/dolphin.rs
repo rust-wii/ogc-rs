@@ -11,9 +11,9 @@ pub enum Ioctl {
     SetSpeedLimit,
     GetCpuSpeed,
     GetRealProductCode,
-    DiscordSetClient,   //TODO: Unimplemented Currently
-    DiscordSetPresence, //TODO: Unimplemented Currently
-    DiscordReset,       //TODO: Unimplemented Currently,
+    DiscordSetClient,
+    DiscordSetPresence,
+    DiscordReset,
     GetSystemTime,
 }
 
@@ -101,6 +101,78 @@ pub fn get_product_code() -> Result<CString, ios::Error> {
 
     let _ = ios::close(dolphin);
     Ok(CStr::from_bytes_until_nul(&buf).unwrap().to_owned())
+}
+
+pub fn set_discord_client(client_id: &CStr) -> Result<(), ios::Error> {
+    let dolphin = ios::open(c"/dev/dolphin", Mode::ReadWrite)?;
+
+    ios::ioctlv::<1, 0, 1>(
+        dolphin,
+        Ioctl::DiscordSetClient,
+        &[client_id.to_bytes()],
+        &mut [],
+    )?;
+
+    let _ = ios::close(dolphin);
+    Ok(())
+}
+
+pub struct ImageDetails<'a> {
+    image_key: &'a CStr,
+    image_text: &'a CStr,
+}
+
+impl<'a> ImageDetails<'a> {
+    pub fn new(key: &'a CStr, text: &'a CStr) -> Self {
+        Self {
+            image_key: key,
+            image_text: text,
+        }
+    }
+}
+
+pub struct Timestamps {
+    start: u64,
+    end: u64,
+}
+
+impl Timestamps {
+    pub fn new(start: u64, end: u64) -> Self {
+        Self { start, end }
+    }
+}
+
+pub fn set_discord_presence(
+    details: &CStr,
+    state: &CStr,
+    large_image_details: ImageDetails,
+    small_image_details: ImageDetails,
+    start_end_timestamps: Timestamps,
+    party_size: u32,
+    max_party_size: u32,
+) -> Result<(), ios::Error> {
+    let dolphin = ios::open(c"/dev/dolphin", Mode::ReadWrite)?;
+
+    ios::ioctlv::<10, 0, 10>(
+        dolphin,
+        Ioctl::DiscordSetPresence,
+        &[
+            details.to_bytes_with_nul(),
+            state.to_bytes_with_nul(),
+            large_image_details.image_key.to_bytes_with_nul(),
+            large_image_details.image_text.to_bytes_with_nul(),
+            small_image_details.image_key.to_bytes_with_nul(),
+            small_image_details.image_text.to_bytes_with_nul(),
+            &start_end_timestamps.start.to_be_bytes(),
+            &start_end_timestamps.end.to_be_bytes(),
+            &party_size.to_be_bytes(),
+            &max_party_size.to_be_bytes(),
+        ],
+        &mut [],
+    )?;
+
+    let _ = ios::close(dolphin);
+    Ok(())
 }
 
 //Get system time since UNIX_EPOCH
