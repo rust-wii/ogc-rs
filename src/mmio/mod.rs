@@ -4,4 +4,5 @@ pub mod dsp;
 pub mod mi;
 pub mod pe;
 pub mod pi;
+pub mod serial_interface;
 pub mod vi;
