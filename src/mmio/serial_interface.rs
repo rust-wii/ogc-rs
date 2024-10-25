@@ -53,10 +53,10 @@ pub const STATUS_REGISTER: VolAddress<Status, Safe, Safe> = unsafe { VolAddress:
 pub const EXTERNAL_CLOCK_LOCK: VolAddress<ExternalClockLock, Safe, Safe> =
     unsafe { VolAddress::new(BASE + 0x3C) };
 
-pub const INPUT_OUTPUT_BUFFER: VolBlock<u8, Safe, Safe, 128> =
+pub const INPUT_OUTPUT_BUFFER: VolBlock<u32, Safe, Safe, 32> =
     unsafe { VolBlock::new(BASE + 0x80) };
 
-mod types {
+pub mod types {
     use bit_field::BitField;
 
     use super::{
