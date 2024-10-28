@@ -106,8 +106,14 @@ cfg_if::cfg_if! {
     }
 }
 
-#[cfg(feature = "mmio")]
-pub mod mmio;
+//#[cfg(feature = "mmio")]
+cfg_if::cfg_if! {
+    if #[cfg(feature = "mmio")] {
+        mod mmio;
+    } else {
+        pub mod mmio;
+    }
+}
 
 ///Prelude
 pub mod prelude {
