@@ -109,9 +109,9 @@ cfg_if::cfg_if! {
 //#[cfg(feature = "mmio")]
 cfg_if::cfg_if! {
     if #[cfg(feature = "mmio")] {
-        mod mmio;
-    } else {
         pub mod mmio;
+    } else {
+        mod mmio;
     }
 }
 
