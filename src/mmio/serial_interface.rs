@@ -1,62 +1,61 @@
-use types::{
+pub use types::{
     CommuicationStatus, ExternalClockLock, InputBufferHigh, InputBufferLow, OutputBuffer,
     PollingRegister, Status,
 };
 use voladdress::{Safe, VolAddress, VolBlock};
 
-pub const BASE: usize = 0xCD00_6400; //or 0xCC00_6400 if you are using gamecube
+const BASE: usize = 0xCD00_6400; //or 0xCC00_6400 if you are using gamecube
 
-pub const CHANNEL_0_OUT_BUFFER: VolAddress<OutputBuffer, Safe, Safe> =
-    unsafe { VolAddress::new(BASE) };
+const CHANNEL_0_OUT_BUFFER: VolAddress<OutputBuffer, Safe, Safe> = unsafe { VolAddress::new(BASE) };
 
-pub const CHANNEL_0_IN_BUFFER_HIGH: VolAddress<InputBufferHigh, Safe, Safe> =
+const CHANNEL_0_IN_BUFFER_HIGH: VolAddress<InputBufferHigh, Safe, Safe> =
     unsafe { VolAddress::new(BASE + 0x4) };
 
-pub const CHANNEL_0_IN_BUFFER_LOW: VolAddress<InputBufferLow, Safe, Safe> =
+const CHANNEL_0_IN_BUFFER_LOW: VolAddress<InputBufferLow, Safe, Safe> =
     unsafe { VolAddress::new(BASE + 0x8) };
 
-pub const CHANNEL_1_OUT_BUFFER: VolAddress<OutputBuffer, Safe, Safe> =
+const CHANNEL_1_OUT_BUFFER: VolAddress<OutputBuffer, Safe, Safe> =
     unsafe { VolAddress::new(BASE + 0xC) };
 
-pub const CHANNEL_1_IN_BUFFER_HIGH: VolAddress<InputBufferHigh, Safe, Safe> =
+const CHANNEL_1_IN_BUFFER_HIGH: VolAddress<InputBufferHigh, Safe, Safe> =
     unsafe { VolAddress::new(BASE + 0x10) };
 
-pub const CHANNEL_1_IN_BUFFER_LOW: VolAddress<InputBufferLow, Safe, Safe> =
+const CHANNEL_1_IN_BUFFER_LOW: VolAddress<InputBufferLow, Safe, Safe> =
     unsafe { VolAddress::new(BASE + 0x14) };
 
-pub const CHANNEL_2_OUT_BUFFER: VolAddress<OutputBuffer, Safe, Safe> =
+const CHANNEL_2_OUT_BUFFER: VolAddress<OutputBuffer, Safe, Safe> =
     unsafe { VolAddress::new(BASE + 0x18) };
 
-pub const CHANNEL_2_IN_BUFFER_HIGH: VolAddress<InputBufferHigh, Safe, Safe> =
+const CHANNEL_2_IN_BUFFER_HIGH: VolAddress<InputBufferHigh, Safe, Safe> =
     unsafe { VolAddress::new(BASE + 0x1C) };
 
-pub const CHANNEL_2_IN_BUFFER_LOW: VolAddress<InputBufferLow, Safe, Safe> =
+const CHANNEL_2_IN_BUFFER_LOW: VolAddress<InputBufferLow, Safe, Safe> =
     unsafe { VolAddress::new(BASE + 0x20) };
 
-pub const CHANNEL_3_OUT_BUFFER: VolAddress<OutputBuffer, Safe, Safe> =
+const CHANNEL_3_OUT_BUFFER: VolAddress<OutputBuffer, Safe, Safe> =
     unsafe { VolAddress::new(BASE + 0x24) };
 
-pub const CHANNEL_3_IN_BUFFER_HIGH: VolAddress<InputBufferHigh, Safe, Safe> =
+const CHANNEL_3_IN_BUFFER_HIGH: VolAddress<InputBufferHigh, Safe, Safe> =
     unsafe { VolAddress::new(BASE + 0x28) };
 
-pub const CHANNEL_3_IN_BUFFER_LOW: VolAddress<InputBufferLow, Safe, Safe> =
+const CHANNEL_3_IN_BUFFER_LOW: VolAddress<InputBufferLow, Safe, Safe> =
     unsafe { VolAddress::new(BASE + 0x2C) };
 
-pub const POLLING_REGISTER: VolAddress<PollingRegister, Safe, Safe> =
+const POLLING_REGISTER: VolAddress<PollingRegister, Safe, Safe> =
     unsafe { VolAddress::new(BASE + 0x30) };
 
-pub const COMMUNICATION_STATUS_REGISTER: VolAddress<CommuicationStatus, Safe, Safe> =
+const COMMUNICATION_STATUS_REGISTER: VolAddress<CommuicationStatus, Safe, Safe> =
     unsafe { VolAddress::new(BASE + 0x34) };
 
-pub const STATUS_REGISTER: VolAddress<Status, Safe, Safe> = unsafe { VolAddress::new(BASE + 0x38) };
+const STATUS_REGISTER: VolAddress<Status, Safe, Safe> = unsafe { VolAddress::new(BASE + 0x38) };
 
-pub const EXTERNAL_CLOCK_LOCK: VolAddress<ExternalClockLock, Safe, Safe> =
+const EXTERNAL_CLOCK_LOCK: VolAddress<ExternalClockLock, Safe, Safe> =
     unsafe { VolAddress::new(BASE + 0x3C) };
 
 pub const INPUT_OUTPUT_BUFFER: VolBlock<u32, Safe, Safe, 32> =
     unsafe { VolBlock::new(BASE + 0x80) };
 
-pub mod types {
+pub(crate) mod types {
     use bit_field::BitField;
 
     use super::{
