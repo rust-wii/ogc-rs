@@ -1,13 +1,26 @@
+#![warn(missing_docs)]
+#![warn(clippy::pedantic)]
+
 use core::{ffi::CStr, fmt::Display};
 
+/// Dolphin IOS Device
+///
+/// `/dev/dolphin` device helper functions.
+/// This is only on the system when running the Dolphin Emulator
 pub mod dolphin;
 
 #[repr(u32)]
 /// Interprocess Control / IOS File Mode
 pub enum Mode {
+    /// None Mode
+    ///
+    /// This mode is generally used when only `ioctl` is used
     None = 0,
+    /// Read Mode
     Read = 1,
+    /// Write Mode
     Write = 2,
+    /// Read / Write Mode
     ReadWrite = 3,
 }
 
@@ -109,7 +122,7 @@ pub fn open(file_path: &CStr, file_mode: Mode) -> Result<FileDescriptor, Error> 
 
     match unsafe { ogc_sys::IOS_Open(file_path.as_ptr().cast(), file_mode.into()) } {
         val if { val == -4 || val == -5 || val == -6 || val == -8 || val == -22 } => {
-            Err(Error::try_from(val).map_err(|_| Error::UnknownErrorCode(val))?)
+            Err(Error::try_from(val).map_err(|()| Error::UnknownErrorCode(val))?)
         }
         val if { val >= 0 } => Ok(FileDescriptor(val)),
         val => Err(Error::UnknownErrorCode(val)),
@@ -123,7 +136,7 @@ pub fn open(file_path: &CStr, file_mode: Mode) -> Result<FileDescriptor, Error> 
 pub fn close(fd: FileDescriptor) -> Result<(), Error> {
     match unsafe { ogc_sys::IOS_Close(fd.0) } {
         val if { val == -4 || val == -5 || val == -6 || val == -8 || val == -22 } => {
-            Err(Error::try_from(val).map_err(|_| Error::UnknownErrorCode(val))?)
+            Err(Error::try_from(val).map_err(|()| Error::UnknownErrorCode(val))?)
         }
         val if { val >= 0 } => Ok(()),
         val => Err(Error::UnknownErrorCode(val)),
@@ -147,7 +160,7 @@ pub fn read(fd: FileDescriptor, buf: &mut [u8]) -> Result<i32, Error> {
         )
     } {
         val if { val == -4 || val == -5 || val == -6 || val == -8 || val == -22 } => {
-            Err(Error::try_from(val).map_err(|_| Error::UnknownErrorCode(val))?)
+            Err(Error::try_from(val).map_err(|()| Error::UnknownErrorCode(val))?)
         }
         val if { val >= 0 } => Ok(val),
         val => Err(Error::UnknownErrorCode(val)),
@@ -171,7 +184,7 @@ pub fn write(fd: FileDescriptor, buf: &[u8]) -> Result<i32, Error> {
         )
     } {
         val if { val == -4 || val == -5 || val == -6 || val == -8 || val == -22 } => {
-            Err(Error::try_from(val).map_err(|_| Error::UnknownErrorCode(val))?)
+            Err(Error::try_from(val).map_err(|()| Error::UnknownErrorCode(val))?)
         }
         val if { val >= 0 } => Ok(val),
         val => Err(Error::UnknownErrorCode(val)),
@@ -208,7 +221,7 @@ impl From<SeekMode> for i32 {
 pub fn seek(fd: FileDescriptor, offset: i32, mode: SeekMode) -> Result<(), Error> {
     match unsafe { ogc_sys::IOS_Seek(fd.0, offset, mode.into()) } {
         val if { val == -4 || val == -5 || val == -6 || val == -8 || val == -22 } => {
-            Err(Error::try_from(val).map_err(|_| Error::UnknownErrorCode(val))?)
+            Err(Error::try_from(val).map_err(|()| Error::UnknownErrorCode(val))?)
         }
         val if { val >= 0 } => Ok(()),
         val => Err(Error::UnknownErrorCode(val)),
@@ -247,7 +260,7 @@ pub fn ioctl<IOCTL: Into<i32>>(
         )
     } {
         val if { val == -4 || val == -5 || val == -6 || val == -8 || val == -22 } => {
-            Err(Error::try_from(val).map_err(|_| Error::UnknownErrorCode(val))?)
+            Err(Error::try_from(val).map_err(|()| Error::UnknownErrorCode(val))?)
         }
         val if { val >= 0 } => Ok(()),
         val => Err(Error::UnknownErrorCode(val)),
@@ -317,7 +330,7 @@ pub fn ioctlv<
         )
     } {
         val if { val == -4 || val == -5 || val == -6 || val == -8 || val == -22 } => {
-            Err(Error::try_from(val).map_err(|_| Error::UnknownErrorCode(val))?)
+            Err(Error::try_from(val).map_err(|()| Error::UnknownErrorCode(val))?)
         }
         val if { val >= 0 } => Ok(()),
         val => Err(Error::UnknownErrorCode(val)),

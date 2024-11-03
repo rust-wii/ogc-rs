@@ -4,16 +4,27 @@ use alloc::{borrow::ToOwned, ffi::CString};
 
 use crate::ios::{self, Mode};
 
+/// Dolphin Device Supported Ioctls
 pub enum Ioctl {
+    /// Get Elapsed Time
     GetElapsedTime,
+    /// Get Current Dolphin Version
     GetVersion,
+    /// Get Set Speed Limit
     GetSpeedLimit,
+    /// Set Speed Limit
     SetSpeedLimit,
+    /// Get Emulated CPU Clock Speed
     GetCpuSpeed,
+    /// Get Provided Product code from settings.txt
     GetRealProductCode,
+    /// Set Discord Client handed to dolphin
     DiscordSetClient,
+    /// Set Discord Presence of provided discord client
     DiscordSetPresence,
+    /// Reset Discord Client and Presence setup
     DiscordReset,
+    /// Get Current System Time in milliseconds
     GetSystemTime,
 }
 
@@ -34,7 +45,9 @@ impl From<Ioctl> for i32 {
     }
 }
 
-//Get elapsed time since the emulation started in milliseconds.
+/// Get elapsed time since the emulation started in milliseconds.
+/// # Errors
+/// See [`ios::Error`]
 pub fn get_elapsed_time() -> Result<u32, ios::Error> {
     let dolphin = ios::open(c"/dev/dolphin", Mode::ReadWrite)?;
 
@@ -46,6 +59,9 @@ pub fn get_elapsed_time() -> Result<u32, ios::Error> {
 }
 
 //TODO: Figure out a way to get out of the allocation since I know the max size it can be?
+/// Get current dolphin version
+/// # Errors
+/// See [`ios::Error`]
 pub fn get_version() -> Result<CString, ios::Error> {
     let dolphin = ios::open(c"/dev/dolphin", Mode::ReadWrite)?;
 
@@ -53,9 +69,13 @@ pub fn get_version() -> Result<CString, ios::Error> {
     ios::ioctlv::<0, 1, 1>(dolphin, Ioctl::GetVersion, &[], &mut [&mut buf])?;
 
     let _ = ios::close(dolphin);
-    Ok(CStr::from_bytes_until_nul(&buf).unwrap().to_owned())
+    let cstr = CStr::from_bytes_until_nul(&buf).map_err(|_| ios::Error::Invalid)?;
+    Ok(cstr.to_owned())
 }
 
+/// Get CPU Speed limit provided by Dolphin Emulator
+/// # Errors
+/// See [`ios::Error`]
 pub fn get_speed_limit() -> Result<u32, ios::Error> {
     let dolphin = ios::open(c"/dev/dolphin", Mode::ReadWrite)?;
 
@@ -65,7 +85,9 @@ pub fn get_speed_limit() -> Result<u32, ios::Error> {
     let _ = ios::close(dolphin);
     Ok(u32::from_be_bytes(buf))
 }
-
+/// Set CPU Speed Limit of Dolphin Emulator
+/// # Errors
+/// See [`ios::Error`]
 pub fn set_speed_limit(speed_limit: u32) -> Result<(), ios::Error> {
     //NOTE: This is arbitrary I just don't think some one wants to set anything higher then this
     //value currently
@@ -83,6 +105,9 @@ pub fn set_speed_limit(speed_limit: u32) -> Result<(), ios::Error> {
     Ok(())
 }
 
+/// Get Emulated CPU Clock Speed
+/// # Errors
+/// See [`ios::Error`]
 pub fn get_cpu_speed() -> Result<u32, ios::Error> {
     let dolphin = ios::open(c"/dev/dolphin", Mode::ReadWrite)?;
 
@@ -93,6 +118,9 @@ pub fn get_cpu_speed() -> Result<u32, ios::Error> {
     Ok(u32::from_be_bytes(buf))
 }
 //TODO: Figure out a way to get out of the allocation since I know the max size it can be?
+/// Get Real Product Code provided by `settings.txt`
+/// # Errors
+/// See [`ios::Error`]
 pub fn get_product_code() -> Result<CString, ios::Error> {
     let dolphin = ios::open(c"/dev/dolphin", Mode::ReadWrite)?;
 
@@ -100,9 +128,13 @@ pub fn get_product_code() -> Result<CString, ios::Error> {
     ios::ioctlv::<0, 1, 1>(dolphin, Ioctl::GetRealProductCode, &[], &mut [&mut buf])?;
 
     let _ = ios::close(dolphin);
-    Ok(CStr::from_bytes_until_nul(&buf).unwrap().to_owned())
+    let cstr = CStr::from_bytes_until_nul(&buf).map_err(|_| ios::Error::Invalid)?;
+    Ok(cstr.to_owned())
 }
 
+/// Sets Discord Client attached to dolphin
+/// # Errors
+/// See [`ios::Error`]
 pub fn set_discord_client(client_id: &CStr) -> Result<(), ios::Error> {
     let dolphin = ios::open(c"/dev/dolphin", Mode::ReadWrite)?;
 
@@ -117,12 +149,18 @@ pub fn set_discord_client(client_id: &CStr) -> Result<(), ios::Error> {
     Ok(())
 }
 
+/// Dolphin Presence Image Details
+///
+/// This is a pair of a Image Key and a Image subtitle
+#[derive(Copy, Clone)]
 pub struct ImageDetails<'a> {
     image_key: &'a CStr,
     image_text: &'a CStr,
 }
 
 impl<'a> ImageDetails<'a> {
+    /// Returns a new instance of [`ImageDetails`] provided by key and text
+    #[must_use]
     pub fn new(key: &'a CStr, text: &'a CStr) -> Self {
         Self {
             image_key: key,
@@ -131,17 +169,26 @@ impl<'a> ImageDetails<'a> {
     }
 }
 
+/// Start and End Timestamp Pair
+///
+/// This is used to see how long the presence/activity has been.
+#[derive(Copy, Clone)]
 pub struct Timestamps {
     start: u64,
     end: u64,
 }
 
 impl Timestamps {
+    /// Returns a new instance of [`Timestamps`] provided by `start` timestamp and `end` timestamp
+    #[must_use]
     pub fn new(start: u64, end: u64) -> Self {
         Self { start, end }
     }
 }
 
+/// Set Discord Presence Details
+/// # Errors
+/// See [`ios::Error`]
 pub fn set_discord_presence(
     details: &CStr,
     state: &CStr,
@@ -175,7 +222,9 @@ pub fn set_discord_presence(
     Ok(())
 }
 
-//Get system time since UNIX_EPOCH
+/// Get system time since `UNIX_EPOCH` provided by Dolphin Emulator
+/// # Errors
+/// See [`ios::Error`]
 pub fn get_system_time() -> Result<u64, ios::Error> {
     let dolphin = ios::open(c"/dev/dolphin", Mode::ReadWrite)?;
 
