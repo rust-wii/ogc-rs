@@ -10,9 +10,11 @@ pub struct InterruptMask(u32);
 pub const INTERRUPT_MASK: VolAddress<InterruptMask, Safe, Safe> =
     unsafe { VolAddress::new(0xCC00_3004) };
 
-pub const CPU_FIFO_START: VolAddress<u32, Safe, Safe> = unsafe { VolAddress::new(0xCC00_3008) };
-pub const CPU_FIFO_END: VolAddress<u32, Unsafe, Unsafe> = unsafe { VolAddress::new(0xCC00_300C) };
-pub const CPU_FIFO_WRITE_PTR: VolAddress<u32, Unsafe, Unsafe> =
+pub const CPU_FIFO_START: VolAddress<*const u8, Safe, Unsafe> =
+    unsafe { VolAddress::new(0xCC00_300C) };
+pub const CPU_FIFO_END: VolAddress<*const u8, Unsafe, Unsafe> =
+    unsafe { VolAddress::new(0xCC00_3010) };
+pub const CPU_FIFO_WRITE_PTR: VolAddress<*mut u8, Unsafe, Unsafe> =
     unsafe { VolAddress::new(0xCC00_3014) };
 pub const RESET: VolAddress<u32, (), Unsafe> = unsafe { VolAddress::new(0xCC00_3024) };
 
