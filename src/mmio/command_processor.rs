@@ -3,11 +3,13 @@
 
 use voladdress::{Safe, VolAddress};
 
+pub use types::{Control, Status};
+
 const BASE: usize = 0xCC00_0000;
 
-const STATUS_REGISTER: VolAddress<u16, Safe, Safe> = unsafe { VolAddress::new(BASE) };
+const STATUS_REGISTER: VolAddress<Status, Safe, Safe> = unsafe { VolAddress::new(BASE) };
 
-const CONTROL_REGISTER: VolAddress<u16, Safe, Safe> = unsafe { VolAddress::new(BASE + 0x2) };
+const CONTROL_REGISTER: VolAddress<Control, Safe, Safe> = unsafe { VolAddress::new(BASE + 0x2) };
 
 const CLEAR_REGISTER: VolAddress<u16, Safe, Safe> = unsafe { VolAddress::new(BASE + 0x4) };
 
@@ -114,3 +116,147 @@ const CLOCKS_PER_VERTEX_IN_COUNT_HIGH: VolAddress<u16, Safe, Safe> =
 
 const CLOCKS_PER_VERTEX_OUT_COUNT: VolAddress<u16, Safe, Safe> =
     unsafe { VolAddress::new(BASE + 0x64) };
+
+pub(crate) mod types {
+    use bit_field::BitField;
+
+    use super::{CONTROL_REGISTER, STATUS_REGISTER};
+
+    #[repr(transparent)]
+    #[derive(Copy, Clone, Debug)]
+    pub struct Status(u16);
+
+    impl Status {
+        pub const fn new() -> Self {
+            Self(0)
+        }
+
+        pub fn read() -> Self {
+            STATUS_REGISTER.read()
+        }
+
+        pub fn write(self) {
+            STATUS_REGISTER.write(self);
+        }
+
+        pub fn overflow(self) -> bool {
+            self.0.get_bit(0)
+        }
+
+        pub fn with_overflow(mut self, has_overflowed: bool) -> Self {
+            self.0.set_bit(0, has_overflowed);
+            self
+        }
+
+        pub fn underflow(self) -> bool {
+            self.0.get_bit(1)
+        }
+
+        pub fn with_underflow(mut self, has_underflowed: bool) -> Self {
+            self.0.set_bit(1, has_underflowed);
+            self
+        }
+
+        pub fn read_idle(self) -> bool {
+            self.0.get_bit(2)
+        }
+
+        pub fn with_read_idle(mut self, is_idle: bool) -> Self {
+            self.0.set_bit(2, is_idle);
+            self
+        }
+
+        pub fn command_idle(self) -> bool {
+            self.0.get_bit(3)
+        }
+
+        pub fn with_command_idle(mut self, is_idle: bool) -> Self {
+            self.0.set_bit(3, is_idle);
+            self
+        }
+
+        pub fn breakpoint(self) -> bool {
+            self.0.get_bit(4)
+        }
+
+        pub fn with_breakpoint(mut self, breakpoint_hit: bool) -> Self {
+            self.0.set_bit(4, breakpoint_hit);
+            self
+        }
+    }
+
+    #[repr(transparent)]
+    #[derive(Copy, Clone, Debug)]
+    pub struct Control(u16);
+
+    impl Control {
+        pub const fn new() -> Self {
+            Self(0)
+        }
+
+        pub fn read() -> Self {
+            CONTROL_REGISTER.read()
+        }
+
+        pub fn write(self) {
+            CONTROL_REGISTER.write(self);
+        }
+
+        pub fn read_enable(&self) -> bool {
+            self.0.get_bit(0)
+        }
+
+        pub fn with_read_enable(mut self, read_enable: bool) -> Self {
+            self.0.set_bit(0, read_enable);
+            self
+        }
+
+        pub fn breakpoint_enable(&self) -> bool {
+            self.0.get_bit(1)
+        }
+
+        pub fn with_breakpoint_enable(mut self, breakpoint_enable: bool) -> Self {
+            self.0.set_bit(1, breakpoint_enable);
+            self
+        }
+
+        pub fn overflow_interrupt_enable(&self) -> bool {
+            self.0.get_bit(2)
+        }
+
+        pub fn with_overflow_interrupt_enable(mut self, overflow_interrupt_enable: bool) -> Self {
+            self.0.set_bit(2, overflow_interrupt_enable);
+            self
+        }
+
+        pub fn underflow_interrupt_enable(&self) -> bool {
+            self.0.get_bit(3)
+        }
+
+        pub fn with_underflow_interrupt_enable(mut self, underflow_interrupt_enable: bool) -> Self {
+            self.0.set_bit(3, underflow_interrupt_enable);
+            self
+        }
+
+        pub fn link_enable(&self) -> bool {
+            self.0.get_bit(4)
+        }
+
+        pub fn with_link_enable(mut self, link_enable: bool) -> Self {
+            self.0.set_bit(4, link_enable);
+            self
+        }
+
+        pub fn breakpoint_interrupt_enable(&self) -> bool {
+            self.0.get_bit(5)
+        }
+
+        pub fn with_breakpoint_interrupt_enable(
+            mut self,
+            breakpoint_interrupt_enable: bool,
+        ) -> Self {
+            self.0.set_bit(5, breakpoint_interrupt_enable);
+            self
+        }
+    }
+}
