@@ -3,7 +3,7 @@
 
 use voladdress::{Safe, VolAddress};
 
-pub use types::{Control, Status};
+pub use types::{Clear, Control, Status};
 
 const BASE: usize = 0xCC00_0000;
 
@@ -11,7 +11,7 @@ const STATUS_REGISTER: VolAddress<Status, Safe, Safe> = unsafe { VolAddress::new
 
 const CONTROL_REGISTER: VolAddress<Control, Safe, Safe> = unsafe { VolAddress::new(BASE + 0x2) };
 
-const CLEAR_REGISTER: VolAddress<u16, Safe, Safe> = unsafe { VolAddress::new(BASE + 0x4) };
+const CLEAR_REGISTER: VolAddress<Clear, Safe, Safe> = unsafe { VolAddress::new(BASE + 0x4) };
 
 const PERFORMANCE_SELECT: VolAddress<u16, Safe, Safe> = unsafe { VolAddress::new(BASE + 0x6) };
 
@@ -120,7 +120,7 @@ const CLOCKS_PER_VERTEX_OUT_COUNT: VolAddress<u16, Safe, Safe> =
 pub(crate) mod types {
     use bit_field::BitField;
 
-    use super::{CONTROL_REGISTER, STATUS_REGISTER};
+    use super::{CLEAR_REGISTER, CONTROL_REGISTER, STATUS_REGISTER};
 
     #[repr(transparent)]
     #[derive(Copy, Clone, Debug)]
@@ -256,6 +256,51 @@ pub(crate) mod types {
             breakpoint_interrupt_enable: bool,
         ) -> Self {
             self.0.set_bit(5, breakpoint_interrupt_enable);
+            self
+        }
+    }
+
+    #[repr(transparent)]
+    #[derive(Debug, Copy, Clone)]
+    pub struct Clear(u16);
+
+    impl Clear {
+        pub const fn new() -> Self {
+            Self(0)
+        }
+
+        pub fn read() -> Self {
+            CLEAR_REGISTER.read()
+        }
+
+        pub fn write(self) {
+            CLEAR_REGISTER.write(self);
+        }
+
+        pub fn clear_overflow(&self) -> bool {
+            self.0.get_bit(0)
+        }
+
+        pub fn with_clear_overflow(mut self, clear_overflow: bool) -> Self {
+            self.0.set_bit(0, clear_overflow);
+            self
+        }
+
+        pub fn clear_underflow(&self) -> bool {
+            self.0.get_bit(1)
+        }
+
+        pub fn with_clear_underflow(mut self, clear_underflow: bool) -> Self {
+            self.0.set_bit(1, clear_underflow);
+            self
+        }
+
+        pub fn clear_metrics(&self) -> bool {
+            self.0.get_bit(2)
+        }
+
+        pub fn with_clear_metrics(mut self, clear_metrics: bool) -> Self {
+            self.0.set_bit(2, clear_metrics);
             self
         }
     }
