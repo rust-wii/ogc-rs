@@ -4044,6 +4044,10 @@ extern "C" {
     pub fn GX_GetTexObjLOD(obj: *const GXTexObj, minlod: *mut f32_, maxlod: *mut f32_);
 }
 extern "C" {
+    #[doc = "void GX_GetTexObjFilterMode(const GXTexObj* obj, u8 *minfilt, u8 *magfilt)\n Returns the filter mode for the texture object _obj._\n\n > **Note:** Use GX_InitTexObjLOD() or GX_InitTexObjFilterMode() to initialize the\n texture filter mode.\n\n # Arguments\n\n* `obj` (direction in) - ptr to a texture object\n * `minfilt` (direction out) - minification filter mode; will be one of texfilter\n * `maxfilt` (direction out) - magnification filter mode; will be _GX_NEAR_ or _GX_LINEAR_\n\n # Returns\n\nnone"]
+    pub fn GX_GetTexObjFilterMode(obj: *const GXTexObj, minfilt: *mut u8_, magfilt: *mut u8_);
+}
+extern "C" {
     #[doc = "void GX_GetTexObjAll(const GXTexObj* obj, void** image_ptr, u16* width, u16* height, u8* format, u8* wrap_s, u8* wrap_t, u8* mipmap);\n Returns the parameters described by a texture object. Texture objects are used to describe all the parameters associated with a texture, including size, format, wrap modes, filter modes, etc. Texture objects are initialized using either GX_InitTexObj() or, for color index format textures, GX_InitTexObjCI().\n\n # Arguments\n\n* `obj` (direction in) - ptr to a texture object\n * `image_ptr` (direction out) - Returns a physical pointer to the image data for a texture.\n * `width` (direction out) - Returns the width of the texture or LOD 0 for mipmaps\n * `height` (direction out) - Returns the height of the texture or LOD 0 for mipmaps\n * `format` (direction out) - Returns the texel format\n * `mipmap` (direction out) - Returns the mipmap enable flag.\n\n # Returns\n\nnone"]
     pub fn GX_GetTexObjAll(
         obj: *const GXTexObj,

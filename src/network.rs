@@ -438,3 +438,62 @@ impl Drop for Socket {
         }
     }
 }
+
+mod experimental {
+    use core::ffi::c_int;
+
+    use crate::ios::{self, Mode};
+
+    struct SocketParams {
+        domain: c_int,
+        r#type: c_int,
+        protocol: c_int,
+    }
+
+    struct ConnectParams {
+        socket: c_int,
+        has_addr: u32,
+        addr: [u8; 28],
+    }
+
+    #[repr(C)]
+    struct SocketAddress {
+        socket_address_length: u8,
+        socket_address_family: u8,
+        socket_address_data: [u8; 14],
+    }
+
+    type sockaddr = SocketAddress;
+
+    pub fn socket(domain: c_int, r#type: c_int, protocol: c_int) {
+        let mut bytes = [0u8; 12];
+        bytes[0..4].copy_from_slice(&domain.to_be_bytes());
+        bytes[4..8].copy_from_slice(&r#type.to_be_bytes());
+        bytes[8..12].copy_from_slice(&protocol.to_be_bytes());
+
+        const IOCTL_SO_SOCKET: c_int = 0xF;
+
+        if let Ok(fd) = ios::open(c"/dev/net/ip/top", Mode::None) {
+            ios::ioctl(fd, IOCTL_SO_SOCKET, &bytes, &mut []).unwrap()
+        }
+    }
+
+    fn connect(sockfd: c_int, sockaddr: *const sockaddr, len: u32) {
+        let mut bytes = [0u8; 36];
+        bytes[0..4].copy_from_slice(&sockfd.to_be_bytes());
+        bytes[4..8].copy_from_slice(&1u32.to_be_bytes());
+
+        unsafe {
+            bytes[8..11].copy_from_slice(&[
+                (*sockaddr).socket_address_length,
+                (*sockaddr).socket_address_family,
+            ]);
+            bytes[11..26].copy_from_slice(&(*sockaddr).socket_address_data);
+        }
+
+        const IOCTL_SO_CONNECT: c_int = 0x4;
+        if let Ok(fd) = ios::open(c"/dev/net/ip/top", Mode::None) {
+            ios::ioctl(fd, IOCTL_SO_CONNECT, &bytes, &mut []).unwrap()
+        }
+    }
+}

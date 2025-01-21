@@ -1,0 +1,5656 @@
+    Checking ogc-rs v0.1.1 (/home/profelements/git/ogc-rs)
+warning: unused import: `mem::to_physical`
+    --> src/gx/mod.rs:2376:17
+     |
+2376 |     use crate::{mem::to_physical, print, println};
+     |                 ^^^^^^^^^^^^^^^^
+     |
+     = note: `#[warn(unused_imports)]` on by default
+
+warning: inconsistent casing in hexadecimal literal
+  --> src/mmio/cp.rs:45:30
+   |
+45 |     unsafe { VolAddress::new(0xCC00_002a) };
+   |                              ^^^^^^^^^^^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#mixed_case_hex_literals
+   = note: `#[warn(clippy::mixed_case_hex_literals)]` on by default
+
+warning: inconsistent casing in hexadecimal literal
+  --> src/mmio/cp.rs:48:30
+   |
+48 |     unsafe { VolAddress::new(0xCC00_002c) };
+   |                              ^^^^^^^^^^^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#mixed_case_hex_literals
+
+warning: inconsistent casing in hexadecimal literal
+  --> src/mmio/cp.rs:50:30
+   |
+50 |     unsafe { VolAddress::new(0xCC00_002e) };
+   |                              ^^^^^^^^^^^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#mixed_case_hex_literals
+
+warning: inconsistent casing in hexadecimal literal
+  --> src/mmio/cp.rs:61:84
+   |
+61 | pub const FIFO_READ_PTR_HI: VolAddress<u16, Safe, Safe> = unsafe { VolAddress::new(0xCC00_003a) };
+   |                                                                                    ^^^^^^^^^^^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#mixed_case_hex_literals
+
+warning: inconsistent casing in hexadecimal literal
+  --> src/mmio/cp.rs:64:30
+   |
+64 |     unsafe { VolAddress::new(0xCC00_003c) };
+   |                              ^^^^^^^^^^^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#mixed_case_hex_literals
+
+warning: inconsistent casing in hexadecimal literal
+  --> src/mmio/cp.rs:66:30
+   |
+66 |     unsafe { VolAddress::new(0xCC00_003e) };
+   |                              ^^^^^^^^^^^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#mixed_case_hex_literals
+
+warning: inconsistent casing in hexadecimal literal
+  --> src/mmio/dsp.rs:18:30
+   |
+18 |     unsafe { VolAddress::new(0xCC00_500a) };
+   |                              ^^^^^^^^^^^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#mixed_case_hex_literals
+
+warning: inconsistent casing in hexadecimal literal
+  --> src/mmio/vi.rs:86:30
+   |
+86 |     unsafe { VolAddress::new(0xCC00_204a) };
+   |                              ^^^^^^^^^^^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#mixed_case_hex_literals
+
+warning: accessing first element with `chunk.get(0)`
+  --> src/pad.rs:54:18
+   |
+54 |                 *chunk.get(0).unwrap_or(&0),
+   |                  ^^^^^^^^^^^^ help: try: `chunk.first()`
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#get_first
+   = note: `#[warn(clippy::get_first)]` on by default
+
+warning: the following explicit lifetimes could be elided: 'a
+    --> src/gx/mod.rs:1086:6
+     |
+1086 | impl<'a> From<GXTexObj> for Texture<'a> {
+     |      ^^                             ^^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#needless_lifetimes
+     = note: `#[warn(clippy::needless_lifetimes)]` on by default
+help: elide the lifetimes
+     |
+1086 - impl<'a> From<GXTexObj> for Texture<'a> {
+1086 + impl From<GXTexObj> for Texture<'_> {
+     |
+
+warning: empty line after doc comment
+ --> src/mmio/cp.rs:3:1
+  |
+3 | / /// TODO: ACTUALLY CHECK WHATS SAFE AND WHATS UNSAFE INSTEAD OF ASSUMING SAFE LOL
+4 | |
+  | |_
+5 |   #[repr(transparent)]
+6 |   pub struct StatusRegisterControl(u16);
+  |   -------------------------------- the comment documents this struct
+  |
+  = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#empty_line_after_doc_comments
+  = note: `#[warn(clippy::empty_line_after_doc_comments)]` on by default
+  = help: if the empty line is unintentional remove it
+
+warning: missing documentation for a module
+  --> src/lib.rs:29:1
+   |
+29 | pub mod pad;
+   | ^^^^^^^^^^^
+   |
+   = note: requested on the command line with `-W missing-docs`
+
+warning: missing documentation for a module
+  --> src/lib.rs:48:1
+   |
+48 | pub mod mp3player;
+   | ^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a module
+  --> src/lib.rs:79:1
+   |
+79 | pub mod aesnd;
+   | ^^^^^^^^^^^^^
+
+warning: missing documentation for a module
+  --> src/lib.rs:82:1
+   |
+82 | pub mod input;
+   | ^^^^^^^^^^^^^
+
+warning: missing documentation for a module
+  --> src/lib.rs:88:1
+   |
+88 | pub mod mutex;
+   | ^^^^^^^^^^^^^
+
+warning: missing documentation for a module
+  --> src/lib.rs:91:1
+   |
+91 | pub mod cache;
+   | ^^^^^^^^^^^^^
+
+warning: missing documentation for a module
+  --> src/lib.rs:96:1
+   |
+96 | pub mod time;
+   | ^^^^^^^^^^^^
+
+warning: missing documentation for a module
+   --> src/lib.rs:113:9
+    |
+113 |         pub mod mmio;
+    |         ^^^^^^^^^^^^
+
+warning: missing documentation for an enum
+  --> src/pad.rs:11:1
+   |
+11 | pub enum Channel {
+   | ^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/pad.rs:12:5
+   |
+12 |     Zero,
+   |     ^^^^
+
+warning: missing documentation for a variant
+  --> src/pad.rs:13:5
+   |
+13 |     One,
+   |     ^^^
+
+warning: missing documentation for a variant
+  --> src/pad.rs:14:5
+   |
+14 |     Two,
+   |     ^^^
+
+warning: missing documentation for a variant
+  --> src/pad.rs:15:5
+   |
+15 |     Three,
+   |     ^^^^^
+
+warning: missing documentation for an enum
+  --> src/pad.rs:30:1
+   |
+30 | pub enum Error {
+   | ^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/pad.rs:31:5
+   |
+31 |     NoResponse,
+   |     ^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/pad.rs:32:5
+   |
+32 |     Collision,
+   |     ^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/pad.rs:33:5
+   |
+33 |     BufferUnderrun,
+   |     ^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/pad.rs:34:5
+   |
+34 |     BufferOverrun,
+   |     ^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/pad.rs:35:5
+   |
+35 |     Unknown,
+   |     ^^^^^^^
+
+warning: missing documentation for a function
+  --> src/pad.rs:38:1
+   |
+38 | pub fn transfer(channel: Channel, input_buf: &[u8], output_buf: &mut [u8]) -> Result<(), Error> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a function
+   --> src/pad.rs:155:1
+    |
+155 | pub fn get_type(channel: Channel) -> Result<[u8; 3], Error> {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a function
+   --> src/pad.rs:167:1
+    |
+167 | pub fn get_origin(channel: Channel) -> Result<[u8; 10], Error> {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a function
+   --> src/pad.rs:174:1
+    |
+174 | pub fn recalibrate(channel: Channel) -> Result<[u8; 10], Error> {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a function
+   --> src/pad.rs:181:1
+    |
+181 | pub fn set_analog_mode(channel: Channel, mode: u8) -> Result<(), Error> {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+   --> src/pad.rs:200:1
+    |
+200 | pub struct Controller {
+    | ^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+   --> src/pad.rs:205:1
+    |
+205 | pub struct State {
+    | ^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/pad.rs:206:5
+    |
+206 |     pub a: bool,
+    |     ^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/pad.rs:207:5
+    |
+207 |     pub b: bool,
+    |     ^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/pad.rs:208:5
+    |
+208 |     pub x: bool,
+    |     ^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/pad.rs:209:5
+    |
+209 |     pub y: bool,
+    |     ^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/pad.rs:210:5
+    |
+210 |     pub start: bool,
+    |     ^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/pad.rs:211:5
+    |
+211 |     pub dpad_left: bool,
+    |     ^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/pad.rs:212:5
+    |
+212 |     pub dpad_right: bool,
+    |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/pad.rs:213:5
+    |
+213 |     pub dpad_down: bool,
+    |     ^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/pad.rs:214:5
+    |
+214 |     pub dpad_up: bool,
+    |     ^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/pad.rs:215:5
+    |
+215 |     pub z: bool,
+    |     ^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/pad.rs:216:5
+    |
+216 |     pub r: bool,
+    |     ^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/pad.rs:217:5
+    |
+217 |     pub l: bool,
+    |     ^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/pad.rs:218:5
+    |
+218 |     pub stick_x: i8,
+    |     ^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/pad.rs:219:5
+    |
+219 |     pub stick_y: i8,
+    |     ^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/pad.rs:220:5
+    |
+220 |     pub sub_stick_x: i8,
+    |     ^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/pad.rs:221:5
+    |
+221 |     pub sub_stick_y: i8,
+    |     ^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/pad.rs:222:5
+    |
+222 |     pub analog_l: u8,
+    |     ^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/pad.rs:223:5
+    |
+223 |     pub analog_r: u8,
+    |     ^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/pad.rs:227:5
+    |
+227 |     pub fn new(channel: Channel) -> Result<Self, Error> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/pad.rs:260:5
+    |
+260 |     pub fn raw(&self) -> [u8; 8] {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/pad.rs:292:5
+    |
+292 |     pub fn state(&self) -> State {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/pad.rs:324:5
+    |
+324 |     pub fn read(&self) -> Result<State, Error> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/pad.rs:363:5
+    |
+363 |     pub fn copy_on_vblank(&mut self) -> &mut Self {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a module
+ --> src/ios.rs:3:1
+  |
+3 | pub mod dolphin;
+  | ^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+ --> src/ios.rs:8:5
+  |
+8 |     None = 0,
+  |     ^^^^
+
+warning: missing documentation for a variant
+ --> src/ios.rs:9:5
+  |
+9 |     Read = 1,
+  |     ^^^^
+
+warning: missing documentation for a variant
+  --> src/ios.rs:10:5
+   |
+10 |     Write = 2,
+   |     ^^^^^
+
+warning: missing documentation for a variant
+  --> src/ios.rs:11:5
+   |
+11 |     ReadWrite = 3,
+   |     ^^^^^^^^^
+
+warning: missing documentation for an enum
+ --> src/ios/dolphin.rs:7:1
+  |
+7 | pub enum Ioctl {
+  | ^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+ --> src/ios/dolphin.rs:8:5
+  |
+8 |     GetElapsedTime,
+  |     ^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+ --> src/ios/dolphin.rs:9:5
+  |
+9 |     GetVersion,
+  |     ^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/ios/dolphin.rs:10:5
+   |
+10 |     GetSpeedLimit,
+   |     ^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/ios/dolphin.rs:11:5
+   |
+11 |     SetSpeedLimit,
+   |     ^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/ios/dolphin.rs:12:5
+   |
+12 |     GetCpuSpeed,
+   |     ^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/ios/dolphin.rs:13:5
+   |
+13 |     GetRealProductCode,
+   |     ^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/ios/dolphin.rs:14:5
+   |
+14 |     DiscordSetClient,
+   |     ^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/ios/dolphin.rs:15:5
+   |
+15 |     DiscordSetPresence,
+   |     ^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/ios/dolphin.rs:16:5
+   |
+16 |     DiscordReset,
+   |     ^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/ios/dolphin.rs:17:5
+   |
+17 |     GetSystemTime,
+   |     ^^^^^^^^^^^^^
+
+warning: missing documentation for a function
+  --> src/ios/dolphin.rs:38:1
+   |
+38 | pub fn get_elapsed_time() -> Result<u32, ios::Error> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a function
+  --> src/ios/dolphin.rs:49:1
+   |
+49 | pub fn get_version() -> Result<CString, ios::Error> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a function
+  --> src/ios/dolphin.rs:59:1
+   |
+59 | pub fn get_speed_limit() -> Result<u32, ios::Error> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a function
+  --> src/ios/dolphin.rs:69:1
+   |
+69 | pub fn set_speed_limit(speed_limit: u32) -> Result<(), ios::Error> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a function
+  --> src/ios/dolphin.rs:86:1
+   |
+86 | pub fn get_cpu_speed() -> Result<u32, ios::Error> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a function
+  --> src/ios/dolphin.rs:96:1
+   |
+96 | pub fn get_product_code() -> Result<CString, ios::Error> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a function
+   --> src/ios/dolphin.rs:106:1
+    |
+106 | pub fn set_discord_client(client_id: &CStr) -> Result<(), ios::Error> {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+   --> src/ios/dolphin.rs:120:1
+    |
+120 | pub struct ImageDetails<'a> {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/ios/dolphin.rs:126:5
+    |
+126 |     pub fn new(key: &'a CStr, text: &'a CStr) -> Self {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+   --> src/ios/dolphin.rs:134:1
+    |
+134 | pub struct Timestamps {
+    | ^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/ios/dolphin.rs:140:5
+    |
+140 |     pub fn new(start: u64, end: u64) -> Self {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a function
+   --> src/ios/dolphin.rs:145:1
+    |
+145 | / pub fn set_discord_presence(
+146 | |     details: &CStr,
+147 | |     state: &CStr,
+148 | |     large_image_details: ImageDetails,
+...   |
+152 | |     max_party_size: u32,
+153 | | ) -> Result<(), ios::Error> {
+    | |___________________________^
+
+warning: missing documentation for a function
+   --> src/ios/dolphin.rs:179:1
+    |
+179 | pub fn get_system_time() -> Result<u64, ios::Error> {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/error.rs:11:5
+   |
+11 |     Network(String),
+   |     ^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/error.rs:12:5
+   |
+12 |     Audio(String),
+   |     ^^^^^
+
+warning: missing documentation for a variant
+  --> src/error.rs:13:5
+   |
+13 |     Console(String),
+   |     ^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/error.rs:14:5
+   |
+14 |     System(String),
+   |     ^^^^^^
+
+warning: missing documentation for an associated constant
+  --> src/network.rs:22:1
+   |
+22 | / bitflags! {
+23 | |     /// Optional flags for sockets.
+24 | |     pub struct SocketFlags: i32 {
+25 | |         const SO_DEBUG        = 0x0001;
+...  |
+36 | |     }
+37 | | }
+   | |_^
+   |
+   = note: this warning originates in the macro `__impl_bitflags` which comes from the expansion of the macro `bitflags` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: missing documentation for an associated constant
+  --> src/network.rs:39:1
+   |
+39 | / bitflags! {
+40 | |     /// Additional socket options.
+41 | |     pub struct SocketOptions: u32 {
+42 | |         const SO_SNDBUF    = 0x1001;
+...  |
+50 | |     }
+51 | | }
+   | |_^
+   |
+   = note: this warning originates in the macro `__impl_bitflags` which comes from the expansion of the macro `bitflags` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: missing documentation for an associated constant
+  --> src/network.rs:53:1
+   |
+53 | / bitflags! {
+54 | |     /// Incoming Address Routing
+55 | |     pub struct AddressRouting: u32 {
+56 | |         const INADDR_ANY        = 0;
+57 | |         const INADDR_BROADCAST  = 0xffffffff;
+58 | |     }
+59 | | }
+   | |_^
+   |
+   = note: this warning originates in the macro `__impl_bitflags` which comes from the expansion of the macro `bitflags` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: missing documentation for an associated constant
+  --> src/network.rs:61:1
+   |
+61 | / bitflags! {
+62 | |     /// Definitions for IP precedence
+63 | |     pub struct IPPrecedence: u32 {
+64 | |         const IPTOS_PREC_MASK            = 0xe0;
+...  |
+73 | |     }
+74 | | }
+   | |_^
+   |
+   = note: this warning originates in the macro `__impl_bitflags` which comes from the expansion of the macro `bitflags` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: missing documentation for an associated constant
+  --> src/network.rs:76:1
+   |
+76 | / bitflags! {
+77 | |     /// IPV4 ToS Bits
+78 | |     pub struct TOSBits: u32 {
+79 | |         const IPTOS_TOS_MASK    = 0x1E;
+...  |
+85 | |     }
+86 | | }
+   | |_^
+   |
+   = note: this warning originates in the macro `__impl_bitflags` which comes from the expansion of the macro `bitflags` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: missing documentation for an associated constant
+  --> src/network.rs:88:1
+   |
+88 | / bitflags! {
+89 | |     /// Ioctl Commands
+90 | |     pub struct IoctlCommands: u32 {
+91 | |         const IOCPARM_MASK = 0x7f;
+...  |
+96 | |     }
+97 | | }
+   | |_^
+   |
+   = note: this warning originates in the macro `__impl_bitflags` which comes from the expansion of the macro `bitflags` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: missing documentation for an associated constant
+   --> src/network.rs:99:1
+    |
+99  | / bitflags! {
+100 | |     /// Bits that may be set/returned in events and revents from net_poll
+101 | |     pub struct PollBits: u32 {
+102 | |         const POLLIN   = 0x0001;
+...   |
+108 | |     }
+109 | | }
+    | |_^
+    |
+    = note: this warning originates in the macro `__impl_bitflags` which comes from the expansion of the macro `bitflags` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: missing documentation for a variant
+   --> src/network.rs:115:5
+    |
+115 |     AfUnspec = 0,
+    |     ^^^^^^^^
+
+warning: missing documentation for a variant
+   --> src/network.rs:116:5
+    |
+116 |     AfInet = 2,
+    |     ^^^^^^
+
+warning: missing documentation for a variant
+   --> src/network.rs:123:5
+    |
+123 |     SockStream = 1,
+    |     ^^^^^^^^^^
+
+warning: missing documentation for a variant
+   --> src/network.rs:124:5
+    |
+124 |     SockDgram = 2,
+    |     ^^^^^^^^^
+
+warning: missing documentation for a variant
+   --> src/network.rs:125:5
+    |
+125 |     SockRaw = 3,
+    |     ^^^^^^^
+
+warning: missing documentation for a constant
+   --> src/network.rs:136:1
+    |
+136 | pub const TCP_KEEPALIVE: u32 = 0x02;
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+   --> src/network.rs:140:1
+    |
+140 | pub const SOCKET_ERROR: i32 = -1;
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+   --> src/network.rs:147:1
+    |
+147 | pub const IPPROTO_TCP: u32 = 6;
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+   --> src/network.rs:148:1
+    |
+148 | pub const IPPROTO_UDP: u32 = 17;
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+   --> src/network.rs:152:1
+    |
+152 | pub const IP_TTL: u32 = 2;
+    | ^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/network.rs:157:5
+    |
+157 |     pub address: u32,
+    |     ^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/network.rs:172:5
+    |
+172 |     pub length: u8,
+    |     ^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/network.rs:174:5
+    |
+174 |     pub family: ProtocolFamily,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/network.rs:176:5
+    |
+176 |     pub port: u16,
+    |     ^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/network.rs:178:5
+    |
+178 |     pub addr: IPV4Address,
+    |     ^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/network.rs:184:5
+    |
+184 |     pub length: u8,
+    |     ^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/network.rs:186:5
+    |
+186 |     pub family: ProtocolFamily,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+   --> src/network.rs:188:5
+    |
+188 |     pub data: [i8; 14],
+    |     ^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/audio.rs:19:5
+   |
+19 |     Started = 1,
+   |     ^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/audio.rs:20:5
+   |
+20 |     Stopped = 0,
+   |     ^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/audio.rs:27:5
+   |
+27 |     FortyEightKhz = 1,
+   |     ^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/audio.rs:28:5
+   |
+28 |     ThirtySixKhz = 0,
+   |     ^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+ --> src/mp3player.rs:6:1
+  |
+6 | pub struct MP3Player {
+  | ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/mp3player.rs:11:5
+   |
+11 |     pub fn new(asnd: Asnd) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/mp3player.rs:20:5
+   |
+20 |     pub fn play_buffer(&mut self, buffer: &[u8]) {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/mp3player.rs:30:5
+   |
+30 |     pub fn is_playing(&self) -> bool {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/mp3player.rs:34:5
+   |
+34 |     pub fn volume(&mut self, volume: u32) {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/mp3player.rs:38:5
+   |
+38 |     pub fn stop(&mut self) {
+   |     ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/system.rs:18:5
+   |
+18 |     Restart = 0,
+   |     ^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/system.rs:19:5
+   |
+19 |     HotReset = 1,
+   |     ^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/system.rs:20:5
+   |
+20 |     Shutdown = 2,
+   |     ^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/system.rs:21:5
+   |
+21 |     ReturnToMenu = 3,
+   |     ^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/system.rs:22:5
+   |
+22 |     PowerOff = 4,
+   |     ^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/system.rs:23:5
+   |
+23 |     PowerOffStandby = 5,
+   |     ^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/system.rs:24:5
+   |
+24 |     PowerOffIdle = 6,
+   |     ^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/system.rs:31:5
+   |
+31 |     ProtectNone = 0,
+   |     ^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/system.rs:32:5
+   |
+32 |     ProtectRead = 1,
+   |     ^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/system.rs:33:5
+   |
+33 |     ProtectWrite = 2,
+   |     ^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/system.rs:34:5
+   |
+34 |     ProtectReadWrite = 1 | 2,
+   |     ^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/system.rs:41:5
+   |
+41 |     ChannelZero = 0,
+   |     ^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/system.rs:42:5
+   |
+42 |     ChannelOne = 1,
+   |     ^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/system.rs:43:5
+   |
+43 |     ChannelTwo = 2,
+   |     ^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/system.rs:44:5
+   |
+44 |     ChannelThree = 3,
+   |     ^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/system.rs:45:5
+   |
+45 |     All = 4,
+   |     ^^^
+
+warning: missing documentation for a struct field
+  --> src/system.rs:50:5
+   |
+50 |     pub font_type: u16,
+   |     ^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/system.rs:51:5
+   |
+51 |     pub first_char: u16,
+   |     ^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/system.rs:52:5
+   |
+52 |     pub last_char: u16,
+   |     ^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/system.rs:53:5
+   |
+53 |     pub inval_char: u16,
+   |     ^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/system.rs:54:5
+   |
+54 |     pub asc: u16,
+   |     ^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/system.rs:55:5
+   |
+55 |     pub desc: u16,
+   |     ^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/system.rs:56:5
+   |
+56 |     pub width: u16,
+   |     ^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/system.rs:57:5
+   |
+57 |     pub leading: u16,
+   |     ^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/system.rs:58:5
+   |
+58 |     pub cell_dimensions: (u16, u16),
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/system.rs:59:5
+   |
+59 |     pub sheet_size: u32,
+   |     ^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/system.rs:60:5
+   |
+60 |     pub sheet_format: u16,
+   |     ^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/system.rs:61:5
+   |
+61 |     pub sheet_colrow: (u16, u16),
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/system.rs:62:5
+   |
+62 |     pub sheet_dimensions: (u16, u16),
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/system.rs:63:5
+   |
+63 |     pub width_table: u16,
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/system.rs:64:5
+   |
+64 |     pub sheet_image: u32,
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/system.rs:65:5
+   |
+65 |     pub sheet_fullsize: u32,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/video.rs:12:1
+   |
+12 | pub struct RenderConfig {
+   | ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/video.rs:13:5
+   |
+13 |     pub tv_type: u32,
+   |     ^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/video.rs:14:5
+   |
+14 |     pub framebuffer_width: u16,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/video.rs:15:5
+   |
+15 |     pub embed_framebuffer_height: u16,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/video.rs:16:5
+   |
+16 |     pub extern_framebuffer_height: u16,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/video.rs:17:5
+   |
+17 |     pub vi_x_origin: u16,
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/video.rs:18:5
+   |
+18 |     pub vi_y_origin: u16,
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/video.rs:19:5
+   |
+19 |     pub vi_width: u16,
+   |     ^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/video.rs:20:5
+   |
+20 |     pub vi_height: u16,
+   |     ^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/video.rs:21:5
+   |
+21 |     pub extern_framebuffer_mode: u32,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/video.rs:22:5
+   |
+22 |     pub field_rendering: u8,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/video.rs:23:5
+   |
+23 |     pub anti_aliasing: u8,
+   |     ^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/video.rs:24:5
+   |
+24 |     pub sample_pattern: [[u8; 2usize]; 12usize],
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/video.rs:25:5
+   |
+25 |     pub v_filter: [u8; 7usize],
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an enum
+  --> src/video.rs:70:1
+   |
+70 | pub enum TVMode {
+   | ^^^^^^^^^^^^^^^
+
+warning: missing documentation for an enum
+  --> src/video.rs:87:1
+   |
+87 | pub enum ViField {
+   | ^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/video.rs:88:5
+   |
+88 |     ViLowerField = 0,
+   |     ^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/video.rs:89:5
+   |
+89 |     ViUpperField = 1,
+   |     ^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/video.rs:94:5
+   |
+94 |     pub render_config: RenderConfig,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> src/video.rs:95:5
+   |
+95 |     pub framebuffer: *mut c_void,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/video.rs:99:5
+   |
+99 |     pub fn init() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/video.rs:119:5
+    |
+119 |     pub fn clear_framebuffer(&mut self, rconf: &RenderConfig, colour: u32) {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/video.rs:125:5
+    |
+125 |     pub fn get_preferred_mode() -> RenderConfig {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/video.rs:134:5
+    |
+134 |     pub fn configure(render_config: &RenderConfig) {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/video.rs:140:5
+    |
+140 |     pub fn flush() {
+    |     ^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/video.rs:146:5
+    |
+146 |     pub fn get_current_line() {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/video.rs:152:5
+    |
+152 |     pub fn get_tv_mode() -> TVMode {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/video.rs:157:5
+    |
+157 |     pub fn get_next_field() -> ViField {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/video.rs:162:5
+    |
+162 |     pub fn is_component_cable() -> bool {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/video.rs:167:5
+    |
+167 |     pub fn set_black(is_black: bool) {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/video.rs:187:5
+    |
+187 | /     pub fn register_post_retrace_callback<F>(callback: Box<F>)
+188 | |     where
+189 | |         F: Fn(u32),
+    | |___________________^
+
+warning: missing documentation for an associated function
+   --> src/video.rs:200:5
+    |
+200 | /     pub fn register_pre_retrace_callback<F>(callback: Box<F>)
+201 | |     where
+202 | |         F: Fn(u32),
+    | |___________________^
+
+warning: missing documentation for an associated function
+   --> src/video.rs:213:5
+    |
+213 |     pub fn wait_vsync() {
+    |     ^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/debug.rs:11:5
+   |
+11 |     Usb = 0,
+   |     ^^^
+
+warning: missing documentation for a variant
+  --> src/debug.rs:12:5
+   |
+12 |     Tcp = 1,
+   |     ^^^
+
+warning: missing documentation for a function
+  --> src/utils.rs:71:1
+   |
+71 | pub fn alloc_aligned_buffer(buffer: &[u8]) -> Vec<u8> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/utils.rs:15:5
+   |
+15 |     pub const BASE_CACHED: usize = ffi::SYS_BASE_CACHED as _;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/utils.rs:16:5
+   |
+16 |     pub const BASE_UNCACHED: usize = ffi::SYS_BASE_UNCACHED as _;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an enum
+  --> src/gu.rs:17:1
+   |
+17 | pub enum RotationAxis {
+   | ^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/gu.rs:18:5
+   |
+18 |     X = 0x58,
+   |     ^
+
+warning: missing documentation for a variant
+  --> src/gu.rs:19:5
+   |
+19 |     Y = 0x59,
+   |     ^
+
+warning: missing documentation for a variant
+  --> src/gu.rs:20:5
+   |
+20 |     Z = 0x5A,
+   |     ^
+
+warning: missing documentation for an associated function
+  --> src/gu.rs:28:5
+   |
+28 |     pub fn vec_half_angle(a_vec: &mut guVector, b_vec: &mut guVector, ab_vec: &mut guVector) {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/gu.rs:32:5
+   |
+32 |     pub fn vec_add(a_vec: &mut guVector, b_vec: &mut guVector, ab_vec: &mut guVector) {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/gu.rs:36:5
+   |
+36 |     pub fn vec_sub(a_vec: &mut guVector, b_vec: &mut guVector, ab_vec: &mut guVector) {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/gu.rs:40:5
+   |
+40 |     pub fn vec_scale(src: &mut guVector, dest: &mut guVector, scale: f32) {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/gu.rs:44:5
+   |
+44 |     pub fn vec_normalize(vector: &mut guVector) {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/gu.rs:48:5
+   |
+48 |     pub fn vec_mult(mat: &mut Mtx34, src: &mut guVector, dest: &mut guVector) {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/gu.rs:52:5
+   |
+52 |     pub fn vec_cross(a_vec: &mut guVector, b_vec: &mut guVector, ab_vec: &mut guVector) {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/gu.rs:56:5
+   |
+56 |     pub fn vec_mult_sr(mat: &mut Mtx34, src: &mut guVector, dest: &mut guVector) {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/gu.rs:60:5
+   |
+60 |     pub fn vec_dot(a_vec: &mut guVector, b_vec: &mut guVector) -> f32 {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/gu.rs:65:5
+   |
+65 | /     pub fn quat_add(
+66 | |         a_quat: &mut guQuaternion,
+67 | |         b_quat: &mut guQuaternion,
+68 | |         ab_quat: &mut guQuaternion,
+69 | |     ) {
+   | |_____^
+
+warning: missing documentation for an associated function
+  --> src/gu.rs:73:5
+   |
+73 | /     pub fn quat_sub(
+74 | |         a_quat: &mut guQuaternion,
+75 | |         b_quat: &mut guQuaternion,
+76 | |         ab_quat: &mut guQuaternion,
+77 | |     ) {
+   | |_____^
+
+warning: missing documentation for an associated function
+  --> src/gu.rs:81:5
+   |
+81 |     pub fn quat_norm(quaternion: &mut guQuaternion, dest: &mut guQuaternion) {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/gu.rs:84:5
+   |
+84 |     pub fn quat_inverse(quaternion: &mut guQuaternion, dest: &mut guQuaternion) {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/gu.rs:88:5
+   |
+88 | /     pub fn frustrum(
+89 | |         mt: &mut Mtx44,
+90 | |         top: f32,
+91 | |         bottom: f32,
+...  |
+95 | |         z_far: f32,
+96 | |     ) {
+   | |_____^
+
+warning: missing documentation for an associated function
+   --> src/gu.rs:130:5
+    |
+130 |     pub fn mtx44_identity(mt: &mut Mtx44) {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/gu.rs:134:5
+    |
+134 |     pub fn mtx44_copy(src: &mut Mtx44, dst: &mut Mtx44) {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/gu.rs:138:5
+    |
+138 |     pub fn mtx44_inverse(src: &mut Mtx44, inverse: &mut Mtx44) {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/gu.rs:144:5
+    |
+144 | /     pub fn light_frustum(
+145 | |         mt: &mut Mtx34,
+146 | |         frust_box: (f32, f32, f32, f32),
+147 | |         z_near: f32,
+148 | |         scale: (f32, f32),
+149 | |         translation: (f32, f32),
+150 | |     ) {
+    | |_____^
+
+warning: missing documentation for an associated function
+   --> src/gu.rs:167:5
+    |
+167 | /     pub fn light_perspective(
+168 | |         mt: &mut Mtx34,
+169 | |         fov_y: f32,
+170 | |         aspect_ratio: f32,
+171 | |         scale: (f32, f32),
+172 | |         translation: (f32, f32),
+173 | |     ) {
+    | |_____^
+
+warning: missing documentation for an associated function
+   --> src/gu.rs:187:5
+    |
+187 | /     pub fn light_ortho(
+188 | |         mt: &mut Mtx34,
+189 | |         top: f32,
+190 | |         bottom: f32,
+...   |
+194 | |         translation: (f32, f32),
+195 | |     ) {
+    | |_____^
+
+warning: missing documentation for an associated function
+   --> src/gu.rs:228:5
+    |
+228 |     pub fn mtx_identity(mt: &mut Mtx34) {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/gu.rs:232:5
+    |
+232 |     pub fn mtx_concat(a: &mut Mtx34, b: &mut Mtx34, ab: &mut Mtx34) {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/gu.rs:236:5
+    |
+236 |     pub fn mtx_scale(mt: &mut Mtx34, scale: (f32, f32, f32)) {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/gu.rs:240:5
+    |
+240 |     pub fn mtx_scale_apply(src: &mut Mtx34, dst: &mut Mtx34, scale: (f32, f32, f32)) {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/gu.rs:252:5
+    |
+252 |     pub fn mtx_apply_scale(src: &mut Mtx34, dst: &mut Mtx34, scale: (f32, f32, f32)) {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/gu.rs:264:5
+    |
+264 |     pub fn mtx_translation(mt: &mut Mtx34, translation: (f32, f32, f32)) {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/gu.rs:275:5
+    |
+275 |     pub fn mtx_translation_apply(src: &mut Mtx34, dst: &mut Mtx34, translation: (f32, f32, f32)) {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/gu.rs:287:5
+    |
+287 |     pub fn mtx_apply_translation(src: &mut Mtx34, dst: &mut Mtx34, translation: (f32, f32, f32)) {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/gu.rs:299:5
+    |
+299 |     pub fn mtx_inverse(src: &mut Mtx34, inverse: &mut Mtx34) {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/gu.rs:305:5
+    |
+305 |     pub fn mtx_inv_xpose(src: &mut Mtx34, xpose: &mut Mtx34) {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/gu.rs:311:5
+    |
+311 |     pub fn mtx_transpose(src: &mut Mtx34, xpose: &mut Mtx34) {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/gu.rs:317:5
+    |
+317 |     pub fn mtx_rotation_radians(mt: &mut Mtx34, axis: RotationAxis, rot_radians: f32) {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/gu.rs:321:5
+    |
+321 |     pub fn mtx_rotation_trig(mt: &mut Mtx34, axis: RotationAxis, sin: f32, cos: f32) {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/gu.rs:325:5
+    |
+325 |     pub fn mtx_rotation_axis_radians(mt: &mut Mtx34, axis: &mut guVector, rot_radians: f32) {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/gu.rs:329:5
+    |
+329 |     pub fn mtx_reflect(mt: &mut Mtx34, point: &mut guVector, normal: &mut guVector) {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/gu.rs:333:5
+    |
+333 |     pub fn mtx_quaternion(mt: &mut Mtx34, quaternion: &mut guQuaternion) {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+   --> src/gu.rs:341:1
+    |
+341 | pub struct Mat4([[f32; 4]; 4]);
+    | ^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated constant
+   --> src/gu.rs:343:5
+    |
+343 |     pub const IDENTITY: Mat4 = Mat4([
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated constant
+   --> src/gu.rs:350:5
+    |
+350 |     pub const ZERO: Mat4 = Mat4([[0.0; 4]; 4]);
+    |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/gu.rs:352:5
+    |
+352 |     pub fn as_array(&self) -> &[[f32; 4]; 4] {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/gu.rs:356:5
+    |
+356 |     pub fn as_array_mut(&mut self) -> &mut [[f32; 4]; 4] {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/gu.rs:360:5
+    |
+360 | /     pub fn gu_frustrum(
+361 | |         top: f32,
+362 | |         bottom: f32,
+363 | |         left: f32,
+...   |
+366 | |         z_far: f32,
+367 | |     ) -> Self {
+    | |_____________^
+
+warning: missing documentation for an associated function
+   --> src/gu.rs:390:5
+    |
+390 |     pub fn gu_perspective(fov_y: f32, aspect_ratio: f32, z_near: f32, z_far: f32) -> Self {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/gu.rs:403:5
+    |
+403 |     pub fn gu_ortho(top: f32, bottom: f32, left: f32, right: f32, z_near: f32, z_far: f32) -> Self {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/gu.rs:426:5
+    |
+426 |     pub fn load_as_proj_mat(&mut self, p: gx::ProjectionType) {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+   --> src/gu.rs:461:1
+    |
+461 | pub struct Mat3x4([[f32; 4]; 3]);
+    | ^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated constant
+   --> src/gu.rs:463:5
+    |
+463 |     pub const IDENTITY: Mat3x4 = Mat3x4([
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated constant
+   --> src/gu.rs:469:5
+    |
+469 |     pub const ZERO: Mat3x4 = Mat3x4([[0.0; 4]; 3]);
+    |     ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/gu.rs:471:5
+    |
+471 |     pub fn as_array(&self) -> &[[f32; 4]; 3] {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/gu.rs:475:5
+    |
+475 |     pub fn as_array_mut(&mut self) -> &mut [[f32; 4]; 3] {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/gu.rs:479:5
+    |
+479 | /     pub fn gu_light_frustrum(
+480 | |         top: f32,
+481 | |         bottom: f32,
+482 | |         left: f32,
+...   |
+486 | |         translation: (f32, f32),
+487 | |     ) -> Self {
+    | |_____________^
+
+warning: missing documentation for an associated function
+   --> src/gu.rs:508:5
+    |
+508 | /     pub fn gu_light_perspective(
+509 | |         fov_y: f32,
+510 | |         aspect_ratio: f32,
+511 | |         scale: (f32, f32),
+512 | |         translation: (f32, f32),
+513 | |     ) -> Self {
+    | |_____________^
+
+warning: missing documentation for an associated function
+   --> src/gu.rs:524:5
+    |
+524 | /     pub fn gu_light_ortho(
+525 | |         top: f32,
+526 | |         bottom: f32,
+527 | |         left: f32,
+...   |
+530 | |         translation: (f32, f32),
+531 | |     ) -> Self {
+    | |_____________^
+
+warning: missing documentation for an associated function
+   --> src/gu.rs:552:5
+    |
+552 |     pub fn gu_look_at(pos: (f32, f32, f32), up: (f32, f32, f32), target: (f32, f32, f32)) -> Self {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/gu.rs:576:5
+    |
+576 |     pub fn gu_translation_apply(&mut self, translation: (f32, f32, f32)) {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/gu.rs:588:5
+    |
+588 |     pub fn concat(&mut self, other: &mut Mat3x4) {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/gu.rs:596:5
+    |
+596 |     pub fn load_as_pos_mtx(&mut self, pnidx: u32) {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/gu.rs:599:5
+    |
+599 |     pub fn load_as_nrm_mtx(&mut self, pnidx: u32) {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/gu.rs:602:5
+    |
+602 |     pub fn load_as_tex_mtx(&mut self, pnidx: u32) {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/gx/mod.rs:24:1
+   |
+24 | pub const GX_PIPE: VolAddress<u8, (), Safe> = unsafe { VolAddress::new(0xCC00_8000) };
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a module
+  --> src/gx/mod.rs:27:1
+   |
+27 | pub mod types;
+   | ^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/gx/mod.rs:31:1
+   |
+31 | pub struct Color(ffi::GXColor);
+   | ^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/gx/mod.rs:34:5
+   |
+34 |     pub const fn new(r: u8, g: u8, b: u8) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/gx/mod.rs:38:5
+   |
+38 |     pub const fn with_alpha(r: u8, g: u8, b: u8, a: u8) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/gx/mod.rs:66:5
+   |
+66 |     Never = ffi::GX_NEVER as _,
+   |     ^^^^^
+
+warning: missing documentation for a variant
+  --> src/gx/mod.rs:67:5
+   |
+67 |     Less = ffi::GX_LESS as _,
+   |     ^^^^
+
+warning: missing documentation for a variant
+  --> src/gx/mod.rs:68:5
+   |
+68 |     Equal = ffi::GX_EQUAL as _,
+   |     ^^^^^
+
+warning: missing documentation for a variant
+  --> src/gx/mod.rs:69:5
+   |
+69 |     LessEq = ffi::GX_LEQUAL as _,
+   |     ^^^^^^
+
+warning: missing documentation for a variant
+  --> src/gx/mod.rs:70:5
+   |
+70 |     Greater = ffi::GX_GREATER as _,
+   |     ^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/gx/mod.rs:71:5
+   |
+71 |     NotEq = ffi::GX_NEQUAL as _,
+   |     ^^^^^
+
+warning: missing documentation for a variant
+  --> src/gx/mod.rs:72:5
+   |
+72 |     GreaterEq = ffi::GX_GEQUAL as _,
+   |     ^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/gx/mod.rs:73:5
+   |
+73 |     Always = ffi::GX_ALWAYS as _,
+   |     ^^^^^^
+
+warning: missing documentation for a variant
+  --> src/gx/mod.rs:80:5
+   |
+80 |     And = ffi::GX_AOP_AND as _,
+   |     ^^^
+
+warning: missing documentation for a variant
+  --> src/gx/mod.rs:81:5
+   |
+81 |     Or = ffi::GX_AOP_OR as _,
+   |     ^^
+
+warning: missing documentation for a variant
+  --> src/gx/mod.rs:82:5
+   |
+82 |     Xnor = ffi::GX_AOP_XNOR as _,
+   |     ^^^^
+
+warning: missing documentation for a variant
+  --> src/gx/mod.rs:83:5
+   |
+83 |     Xor = ffi::GX_AOP_XOR as _,
+   |     ^^^
+
+warning: missing documentation for a variant
+   --> src/gx/mod.rs:198:5
+    |
+198 |     ClipRatio = ffi::GX_PERF0_CLIP_RATIO,
+    |     ^^^^^^^^^
+
+warning: missing documentation for a variant
+   --> src/gx/mod.rs:219:5
+    |
+219 |     Triangles0Clr = ffi::GX_PERF0_TRIANGLES_0CLR,
+    |     ^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+   --> src/gx/mod.rs:220:5
+    |
+220 |     Triangles0Tex = ffi::GX_PERF0_TRIANGLES_0TEX,
+    |     ^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+   --> src/gx/mod.rs:221:5
+    |
+221 |     Triangles1Clr = ffi::GX_PERF0_TRIANGLES_1CLR,
+    |     ^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+   --> src/gx/mod.rs:222:5
+    |
+222 |     Triangles1Tex = ffi::GX_PERF0_TRIANGLES_1TEX,
+    |     ^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+   --> src/gx/mod.rs:223:5
+    |
+223 |     Triangles2Clr = ffi::GX_PERF0_TRIANGLES_2CLR,
+    |     ^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+   --> src/gx/mod.rs:224:5
+    |
+224 |     Triangles2Tex = ffi::GX_PERF0_TRIANGLES_2TEX,
+    |     ^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+   --> src/gx/mod.rs:225:5
+    |
+225 |     Triangles3Tex = ffi::GX_PERF0_TRIANGLES_3TEX,
+    |     ^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+   --> src/gx/mod.rs:226:5
+    |
+226 |     Triangles4Tex = ffi::GX_PERF0_TRIANGLES_4TEX,
+    |     ^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+   --> src/gx/mod.rs:227:5
+    |
+227 |     Triangles5Tex = ffi::GX_PERF0_TRIANGLES_5TEX,
+    |     ^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+   --> src/gx/mod.rs:228:5
+    |
+228 |     Triangles6Tex = ffi::GX_PERF0_TRIANGLES_6TEX,
+    |     ^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+   --> src/gx/mod.rs:229:5
+    |
+229 |     Triangles7Tex = ffi::GX_PERF0_TRIANGLES_7TEX,
+    |     ^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+   --> src/gx/mod.rs:230:5
+    |
+230 |     Triangles8Tex = ffi::GX_PERF0_TRIANGLES_8TEX,
+    |     ^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+   --> src/gx/mod.rs:282:5
+    |
+282 |     TcCheck12 = ffi::GX_PERF1_TC_CHECK1_2,
+    |     ^^^^^^^^^
+
+warning: missing documentation for a variant
+   --> src/gx/mod.rs:283:5
+    |
+283 |     TcCheck34 = ffi::GX_PERF1_TC_CHECK3_4,
+    |     ^^^^^^^^^
+
+warning: missing documentation for a variant
+   --> src/gx/mod.rs:284:5
+    |
+284 |     TcCheck56 = ffi::GX_PERF1_TC_CHECK5_6,
+    |     ^^^^^^^^^
+
+warning: missing documentation for a variant
+   --> src/gx/mod.rs:285:5
+    |
+285 |     TcCheck78 = ffi::GX_PERF1_TC_CHECK7_8,
+    |     ^^^^^^^^^
+
+warning: missing documentation for a variant
+   --> src/gx/mod.rs:296:5
+    |
+296 |     VcAllStalls = ffi::GX_PERF1_VC_ALL_STALLS,
+    |     ^^^^^^^^^^^
+
+warning: missing documentation for a variant
+   --> src/gx/mod.rs:297:5
+    |
+297 |     VcElemqFull = ffi::GX_PERF1_VC_ELEMQ_FULL,
+    |     ^^^^^^^^^^^
+
+warning: missing documentation for a variant
+   --> src/gx/mod.rs:298:5
+    |
+298 |     VcMemreqFull = ffi::GX_PERF1_VC_MEMREQ_FULL,
+    |     ^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+   --> src/gx/mod.rs:301:5
+    |
+301 |     VcMissqFull = ffi::GX_PERF1_VC_MISSQ_FULL,
+    |     ^^^^^^^^^^^
+
+warning: missing documentation for a variant
+   --> src/gx/mod.rs:302:5
+    |
+302 |     VcMissrepFull = ffi::GX_PERF1_VC_MISSREP_FULL,
+    |     ^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+   --> src/gx/mod.rs:303:5
+    |
+303 |     VcStatus7 = ffi::GX_PERF1_VC_STATUS7,
+    |     ^^^^^^^^^
+
+warning: missing documentation for a variant
+   --> src/gx/mod.rs:304:5
+    |
+304 |     VcStreamBufLow = ffi::GX_PERF1_VC_STREAMBUF_LOW,
+    |     ^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+   --> src/gx/mod.rs:337:5
+    |
+337 |     Linear = ffi::GX_ZC_LINEAR as _,
+    |     ^^^^^^
+
+warning: missing documentation for a variant
+   --> src/gx/mod.rs:338:5
+    |
+338 |     Near = ffi::GX_ZC_NEAR as _,
+    |     ^^^^
+
+warning: missing documentation for a variant
+   --> src/gx/mod.rs:339:5
+    |
+339 |     Mid = ffi::GX_ZC_MID as _,
+    |     ^^^
+
+warning: missing documentation for a variant
+   --> src/gx/mod.rs:340:5
+    |
+340 |     Far = ffi::GX_ZC_FAR as _,
+    |     ^^^
+
+warning: missing documentation for a variant
+   --> src/gx/mod.rs:347:5
+    |
+347 |     Register = ffi::GX_SRC_REG as _,
+    |     ^^^^^^^^
+
+warning: missing documentation for a variant
+   --> src/gx/mod.rs:348:5
+    |
+348 |     Vertex = ffi::GX_SRC_VTX as _,
+    |     ^^^^^^
+
+warning: missing documentation for an enum
+   --> src/gx/mod.rs:353:1
+    |
+353 | pub enum DiffFn {
+    | ^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+   --> src/gx/mod.rs:354:5
+    |
+354 |     None = ffi::GX_DF_NONE as _,
+    |     ^^^^
+
+warning: missing documentation for a variant
+   --> src/gx/mod.rs:355:5
+    |
+355 |     Signed = ffi::GX_DF_SIGNED as _,
+    |     ^^^^^^
+
+warning: missing documentation for a variant
+   --> src/gx/mod.rs:356:5
+    |
+356 |     Clamp = ffi::GX_DF_CLAMP as _,
+    |     ^^^^^
+
+warning: missing documentation for an enum
+   --> src/gx/mod.rs:361:1
+    |
+361 | pub enum AttnFn {
+    | ^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/gx/mod.rs:474:5
+    |
+474 |     pub fn is_empty(&self) -> bool {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+   --> src/gx/mod.rs:524:5
+    |
+524 |     Off = ffi::GX_DA_OFF as _,
+    |     ^^^
+
+warning: missing documentation for a variant
+   --> src/gx/mod.rs:525:5
+    |
+525 |     Gentle = ffi::GX_DA_GENTLE as _,
+    |     ^^^^^^
+
+warning: missing documentation for a variant
+   --> src/gx/mod.rs:526:5
+    |
+526 |     Medium = ffi::GX_DA_MEDIUM as _,
+    |     ^^^^^^
+
+warning: missing documentation for a variant
+   --> src/gx/mod.rs:527:5
+    |
+527 |     Steep = ffi::GX_DA_STEEP as _,
+    |     ^^^^^
+
+warning: missing documentation for a variant
+   --> src/gx/mod.rs:534:5
+    |
+534 |     Off = ffi::GX_SP_OFF as _,
+    |     ^^^
+
+warning: missing documentation for a variant
+   --> src/gx/mod.rs:535:5
+    |
+535 |     Flat = ffi::GX_SP_FLAT as _,
+    |     ^^^^
+
+warning: missing documentation for a variant
+   --> src/gx/mod.rs:536:5
+    |
+536 |     Cos = ffi::GX_SP_COS as _,
+    |     ^^^
+
+warning: missing documentation for a variant
+   --> src/gx/mod.rs:537:5
+    |
+537 |     Cos2 = ffi::GX_SP_COS2 as _,
+    |     ^^^^
+
+warning: missing documentation for a variant
+   --> src/gx/mod.rs:538:5
+    |
+538 |     Sharp = ffi::GX_SP_SHARP as _,
+    |     ^^^^^
+
+warning: missing documentation for a variant
+   --> src/gx/mod.rs:539:5
+    |
+539 |     Ring1 = ffi::GX_SP_RING1 as _,
+    |     ^^^^^
+
+warning: missing documentation for a variant
+   --> src/gx/mod.rs:540:5
+    |
+540 |     Ring2 = ffi::GX_SP_RING2 as _,
+    |     ^^^^^
+
+warning: missing documentation for a variant
+   --> src/gx/mod.rs:860:5
+    |
+860 |     Clamp = ffi::GX_CLAMP as _,
+    |     ^^^^^
+
+warning: missing documentation for a variant
+   --> src/gx/mod.rs:861:5
+    |
+861 |     Repeat = ffi::GX_REPEAT as _,
+    |     ^^^^^^
+
+warning: missing documentation for a variant
+   --> src/gx/mod.rs:862:5
+    |
+862 |     Mirror = ffi::GX_MIRROR as _,
+    |     ^^^^^^
+
+warning: missing documentation for a struct
+   --> src/gx/mod.rs:866:1
+    |
+866 | pub struct Texture<'img>(ffi::GXTexObj, PhantomData<&'img [u8]>);
+    | ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+    --> src/gx/mod.rs:1081:5
+     |
+1081 |     pub fn gxtexobj(&mut self) -> &mut GXTexObj {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/gx/mod.rs:1096:5
+     |
+1096 |     Null = ffi::GX_VA_NULL as _,
+     |     ^^^^
+
+warning: missing documentation for a variant
+    --> src/gx/mod.rs:1097:5
+     |
+1097 |     LightArray = ffi::GX_LIGHTARRAY as _,
+     |     ^^^^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/gx/mod.rs:1098:5
+     |
+1098 |     NrmMtxArray = ffi::GX_NRMMTXARRAY as _,
+     |     ^^^^^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/gx/mod.rs:1099:5
+     |
+1099 |     PosMtxArray = ffi::GX_POSMTXARRAY as _,
+     |     ^^^^^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/gx/mod.rs:1100:5
+     |
+1100 |     TexMtxArray = ffi::GX_TEXMTXARRAY as _,
+     |     ^^^^^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/gx/mod.rs:1101:5
+     |
+1101 |     Color0 = ffi::GX_VA_CLR0 as _,
+     |     ^^^^^^
+
+warning: missing documentation for a variant
+    --> src/gx/mod.rs:1102:5
+     |
+1102 |     Color1 = ffi::GX_VA_CLR1 as _,
+     |     ^^^^^^
+
+warning: missing documentation for a variant
+    --> src/gx/mod.rs:1103:5
+     |
+1103 |     MaxAttr = ffi::GX_VA_MAXATTR as _,
+     |     ^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/gx/mod.rs:1106:5
+     |
+1106 |     Nrm = ffi::GX_VA_NRM as _,
+     |     ^^^
+
+warning: missing documentation for a variant
+    --> src/gx/mod.rs:1107:5
+     |
+1107 |     Pos = ffi::GX_VA_POS as _,
+     |     ^^^
+
+warning: missing documentation for a variant
+    --> src/gx/mod.rs:1108:5
+     |
+1108 |     PtnMtxIdx = ffi::GX_VA_PTNMTXIDX as _,
+     |     ^^^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/gx/mod.rs:1109:5
+     |
+1109 |     Tex0 = ffi::GX_VA_TEX0 as _,
+     |     ^^^^
+
+warning: missing documentation for a variant
+    --> src/gx/mod.rs:1110:5
+     |
+1110 |     Tex0MtxIdx = ffi::GX_VA_TEX0MTXIDX as _,
+     |     ^^^^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/gx/mod.rs:1111:5
+     |
+1111 |     Tex1 = ffi::GX_VA_TEX1 as _,
+     |     ^^^^
+
+warning: missing documentation for a variant
+    --> src/gx/mod.rs:1112:5
+     |
+1112 |     Tex1MtxIdx = ffi::GX_VA_TEX1MTXIDX as _,
+     |     ^^^^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/gx/mod.rs:1113:5
+     |
+1113 |     Tex2 = ffi::GX_VA_TEX2 as _,
+     |     ^^^^
+
+warning: missing documentation for a variant
+    --> src/gx/mod.rs:1114:5
+     |
+1114 |     Tex2MtxIdx = ffi::GX_VA_TEX2MTXIDX as _,
+     |     ^^^^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/gx/mod.rs:1115:5
+     |
+1115 |     Tex3 = ffi::GX_VA_TEX3 as _,
+     |     ^^^^
+
+warning: missing documentation for a variant
+    --> src/gx/mod.rs:1116:5
+     |
+1116 |     Tex3MtxIdx = ffi::GX_VA_TEX3MTXIDX as _,
+     |     ^^^^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/gx/mod.rs:1117:5
+     |
+1117 |     Tex4 = ffi::GX_VA_TEX4 as _,
+     |     ^^^^
+
+warning: missing documentation for a variant
+    --> src/gx/mod.rs:1118:5
+     |
+1118 |     Tex4MtxIdx = ffi::GX_VA_TEX4MTXIDX as _,
+     |     ^^^^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/gx/mod.rs:1119:5
+     |
+1119 |     Tex5 = ffi::GX_VA_TEX5 as _,
+     |     ^^^^
+
+warning: missing documentation for a variant
+    --> src/gx/mod.rs:1120:5
+     |
+1120 |     Tex5MtxIdx = ffi::GX_VA_TEX5MTXIDX as _,
+     |     ^^^^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/gx/mod.rs:1121:5
+     |
+1121 |     Tex6 = ffi::GX_VA_TEX6 as _,
+     |     ^^^^
+
+warning: missing documentation for a variant
+    --> src/gx/mod.rs:1122:5
+     |
+1122 |     Tex6MtxIdx = ffi::GX_VA_TEX6MTXIDX as _,
+     |     ^^^^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/gx/mod.rs:1123:5
+     |
+1123 |     Tex7 = ffi::GX_VA_TEX7 as _,
+     |     ^^^^
+
+warning: missing documentation for a variant
+    --> src/gx/mod.rs:1124:5
+     |
+1124 |     Tex7MtxIdx = ffi::GX_VA_TEX7MTXIDX as _,
+     |     ^^^^^^^^^^
+
+warning: missing documentation for an enum
+    --> src/gx/mod.rs:1137:1
+     |
+1137 | pub enum ProjectionType {
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/gx/mod.rs:1138:5
+     |
+1138 |     Perspective = ffi::GX_PERSPECTIVE as _,
+     |     ^^^^^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/gx/mod.rs:1139:5
+     |
+1139 |     Orthographic = ffi::GX_ORTHOGRAPHIC as _,
+     |     ^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+    --> src/gx/mod.rs:1143:1
+     |
+1143 | pub struct GpStatus {
+     | ^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+    --> src/gx/mod.rs:1886:5
+     |
+1886 |     pub fn load_nrm_mtx_imm(mt: &mut Mtx34, pnidx: u32) {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+    --> src/gx/mod.rs:1890:5
+     |
+1890 |     pub fn load_tex_mtx_imm(mt: &mut Mtx34, pnidx: u32) {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+    --> src/gx/mod.rs:2000:5
+     |
+2000 |     pub fn position_3f32(x: f32, y: f32, z: f32) {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+    --> src/gx/mod.rs:2022:5
+     |
+2022 |     pub fn position_3u16(x: u16, y: u16, z: u16) {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+    --> src/gx/mod.rs:2039:5
+     |
+2039 |     pub fn position_3i16(x: i16, y: i16, z: i16) {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+    --> src/gx/mod.rs:2056:5
+     |
+2056 |     pub fn position_3u8(x: u8, y: u8, z: u8) {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+    --> src/gx/mod.rs:2073:5
+     |
+2073 |     pub fn position_3i8(x: i8, y: i8, z: i8) {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+    --> src/gx/mod.rs:2090:5
+     |
+2090 |     pub fn position_2f32(x: f32, y: f32) {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+    --> src/gx/mod.rs:2104:5
+     |
+2104 |     pub fn position_2u16(x: u16, y: u16) {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+    --> src/gx/mod.rs:2118:5
+     |
+2118 |     pub fn position_2i16(x: i16, y: i16) {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+    --> src/gx/mod.rs:2132:5
+     |
+2132 |     pub fn position_2u8(x: u8, y: u8) {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+    --> src/gx/mod.rs:2146:5
+     |
+2146 |     pub fn position_2i8(x: i8, y: i8) {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+    --> src/gx/mod.rs:2160:5
+     |
+2160 |     pub fn position1x8(index: u8) {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+    --> src/gx/mod.rs:2168:5
+     |
+2168 |     pub fn position1x16(index: u16) {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+    --> src/gx/mod.rs:2176:5
+     |
+2176 |     pub fn color_4u8(r: u8, g: u8, b: u8, a: u8) {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+    --> src/gx/mod.rs:2197:5
+     |
+2197 |     pub fn color_3u8(r: u8, g: u8, b: u8) {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+    --> src/gx/mod.rs:2214:5
+     |
+2214 |     pub fn color_3f32(r: f32, g: f32, b: f32) {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+    --> src/gx/mod.rs:2229:5
+     |
+2229 |     pub fn color_4f32(r: f32, g: f32, b: f32, a: f32) {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+    --> src/gx/mod.rs:2239:5
+     |
+2239 |     pub fn color_1u32(clr: u32) {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+    --> src/gx/mod.rs:2247:5
+     |
+2247 |     pub fn color_1u16(clr: u16) {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+    --> src/gx/mod.rs:2255:5
+     |
+2255 |     pub fn color1x8(index: u8) {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+    --> src/gx/mod.rs:2263:5
+     |
+2263 |     pub fn color1x16(index: u16) {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+    --> src/gx/mod.rs:2276:5
+     |
+2276 |     pub fn tex_coord_2f32(s: f32, t: f32) {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+    --> src/gx/mod.rs:2289:5
+     |
+2289 |     pub fn flush() {
+     |     ^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+    --> src/gx/mod.rs:2294:5
+     |
+2294 |     pub fn end() {
+     |     ^^^^^^^^^^^^
+
+warning: missing documentation for an enum
+    --> src/gx/mod.rs:2339:1
+     |
+2339 | pub enum GPCommand {
+     | ^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/gx/mod.rs:2340:5
+     |
+2340 |     Nop = 0x00,
+     |     ^^^
+
+warning: missing documentation for a variant
+    --> src/gx/mod.rs:2341:5
+     |
+2341 |     LoadCPReg = 0x08,
+     |     ^^^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/gx/mod.rs:2342:5
+     |
+2342 |     LoadXFReg = 0x10,
+     |     ^^^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/gx/mod.rs:2343:5
+     |
+2343 |     LoadPosIndexed = 0x20,
+     |     ^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/gx/mod.rs:2344:5
+     |
+2344 |     LoadNormalIndexed = 0x28,
+     |     ^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/gx/mod.rs:2345:5
+     |
+2345 |     LoadTexureIndexed = 0x30,
+     |     ^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/gx/mod.rs:2346:5
+     |
+2346 |     LoadLightIndexed = 0x38,
+     |     ^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/gx/mod.rs:2347:5
+     |
+2347 |     CallDisplayList = 0x40,
+     |     ^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/gx/mod.rs:2348:5
+     |
+2348 |     InvalidateVertexCache = 0x48,
+     |     ^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/gx/mod.rs:2349:5
+     |
+2349 |     LoadBPReg = 0x61,
+     |     ^^^^^^^^^
+
+warning: missing documentation for an enum
+    --> src/gx/mod.rs:2354:1
+     |
+2354 | pub enum GPDrawCommand {
+     | ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/gx/mod.rs:2355:5
+     |
+2355 |     DrawQuads = 0x80,
+     |     ^^^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/gx/mod.rs:2356:5
+     |
+2356 |     DrawTriangles = 0x90,
+     |     ^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/gx/mod.rs:2357:5
+     |
+2357 |     DrawTriangleStrip = 0x98,
+     |     ^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/gx/mod.rs:2358:5
+     |
+2358 |     DrawTriangleFan = 0xA0,
+     |     ^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/gx/mod.rs:2359:5
+     |
+2359 |     DrawLines = 0xA8,
+     |     ^^^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/gx/mod.rs:2360:5
+     |
+2360 |     DrawLineStrip = 0xB0,
+     |     ^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/gx/mod.rs:2361:5
+     |
+2361 |     DrawPoints = 0xBB,
+     |     ^^^^^^^^^^
+
+warning: missing documentation for an enum
+    --> src/gx/mod.rs:2365:1
+     |
+2365 | pub enum ColorChannel {
+     | ^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+    --> src/gx/mod.rs:2366:5
+     |
+2366 |     Color0 = ffi::GX_COLOR0,
+     |     ^^^^^^
+
+warning: missing documentation for a variant
+    --> src/gx/mod.rs:2367:5
+     |
+2367 |     Color1 = ffi::GX_COLOR1,
+     |     ^^^^^^
+
+warning: missing documentation for a struct
+ --> src/gx/types.rs:3:1
+  |
+3 | pub struct PixelFormat(u8);
+  | ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated constant
+ --> src/gx/types.rs:6:5
+  |
+6 |     pub const RGB8_Z24: Self = Self(0);
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated constant
+ --> src/gx/types.rs:7:5
+  |
+7 |     pub const RGBA6_Z24: Self = Self(1);
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated constant
+ --> src/gx/types.rs:8:5
+  |
+8 |     pub const RGB565_Z16: Self = Self(2);
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated constant
+ --> src/gx/types.rs:9:5
+  |
+9 |     pub const Z24: Self = Self(3);
+  |     ^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated constant
+  --> src/gx/types.rs:10:5
+   |
+10 |     pub const Y8: Self = Self(4);
+   |     ^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated constant
+  --> src/gx/types.rs:11:5
+   |
+11 |     pub const U8: Self = Self(5);
+   |     ^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated constant
+  --> src/gx/types.rs:12:5
+   |
+12 |     pub const V8: Self = Self(6);
+   |     ^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated constant
+  --> src/gx/types.rs:13:5
+   |
+13 |     pub const YUV420: Self = Self(7);
+   |     ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/gx/types.rs:16:1
+   |
+16 | pub struct ZFormat(u8);
+   | ^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated constant
+  --> src/gx/types.rs:19:5
+   |
+19 |     pub const LINEAR: Self = Self(0);
+   |     ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated constant
+  --> src/gx/types.rs:20:5
+   |
+20 |     pub const NEAR: Self = Self(1);
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated constant
+  --> src/gx/types.rs:21:5
+   |
+21 |     pub const MID: Self = Self(2);
+   |     ^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated constant
+  --> src/gx/types.rs:22:5
+   |
+22 |     pub const FAR: Self = Self(3);
+   |     ^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/gx/types.rs:25:1
+   |
+25 | pub struct ZCompareLocation(bool);
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated constant
+  --> src/gx/types.rs:28:5
+   |
+28 |     pub const AFTER_TEXTURE: Self = Self(false);
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated constant
+  --> src/gx/types.rs:29:5
+   |
+29 |     pub const BEFORE_TEXTURE: Self = Self(true);
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/gx/types.rs:32:1
+   |
+32 | pub struct Gamma(pub(crate) u8);
+   | ^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated constant
+  --> src/gx/types.rs:35:5
+   |
+35 |     pub const ONE_ZERO: Self = Self(0);
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated constant
+  --> src/gx/types.rs:36:5
+   |
+36 |     pub const ONE_SEVEN: Self = Self(1);
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated constant
+  --> src/gx/types.rs:37:5
+   |
+37 |     pub const TWO_TWO: Self = Self(2);
+   |     ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/gx/types.rs:40:1
+   |
+40 | pub struct VtxDest(pub(crate) u8);
+   | ^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated constant
+  --> src/gx/types.rs:43:5
+   |
+43 |     pub const NONE: Self = Self(0);
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated constant
+  --> src/gx/types.rs:44:5
+   |
+44 |     pub const DIRECT: Self = Self(1);
+   |     ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated constant
+  --> src/gx/types.rs:45:5
+   |
+45 |     pub const INDEX8: Self = Self(2);
+   |     ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated constant
+  --> src/gx/types.rs:46:5
+   |
+46 |     pub const INDEX16: Self = Self(3);
+   |     ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/gx/types.rs:49:1
+   |
+49 | pub struct PixelEngineControl {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/gx/types.rs:56:5
+   |
+56 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/gx/types.rs:64:5
+   |
+64 |     pub fn to_u32(&self) -> u32 {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/gx/types.rs:75:5
+   |
+75 |     pub fn pixel_format(mut self, format: PixelFormat) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/gx/types.rs:81:5
+   |
+81 |     pub fn z_format(mut self, format: ZFormat) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/gx/types.rs:87:5
+   |
+87 |     pub fn z_comp_loc(mut self, z_comp_loc: ZCompareLocation) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+   --> src/asnd.rs:114:5
+    |
+114 |     Mono8Bit,
+    |     ^^^^^^^^
+
+warning: missing documentation for a variant
+   --> src/asnd.rs:115:5
+    |
+115 |     Mono16Bit,
+    |     ^^^^^^^^^
+
+warning: missing documentation for a variant
+   --> src/asnd.rs:116:5
+    |
+116 |     Mono16BitBe,
+    |     ^^^^^^^^^^^
+
+warning: missing documentation for a variant
+   --> src/asnd.rs:117:5
+    |
+117 |     Stereo8Bit,
+    |     ^^^^^^^^^^
+
+warning: missing documentation for a variant
+   --> src/asnd.rs:118:5
+    |
+118 |     Stereo16Bit,
+    |     ^^^^^^^^^^^
+
+warning: missing documentation for a variant
+   --> src/asnd.rs:119:5
+    |
+119 |     Stereo16BitBe,
+    |     ^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+   --> src/asnd.rs:120:5
+    |
+120 |     Mono8BitU,
+    |     ^^^^^^^^^
+
+warning: missing documentation for a variant
+   --> src/asnd.rs:121:5
+    |
+121 |     Mono16BitLE,
+    |     ^^^^^^^^^^^
+
+warning: missing documentation for a variant
+   --> src/asnd.rs:122:5
+    |
+122 |     Stereo8BitU,
+    |     ^^^^^^^^^^^
+
+warning: missing documentation for a variant
+   --> src/asnd.rs:123:5
+    |
+123 |     Stereo16BitLe,
+    |     ^^^^^^^^^^^^^
+
+warning: missing documentation for an enum
+  --> src/aesnd.rs:10:1
+   |
+10 | pub enum AudioFormat {
+   | ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/aesnd.rs:11:5
+   |
+11 |     VoiceMono8 = ffi::VOICE_MONO8,
+   |     ^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/aesnd.rs:12:5
+   |
+12 |     VoiceStereo8 = ffi::VOICE_STEREO8,
+   |     ^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/aesnd.rs:13:5
+   |
+13 |     VoiceMono16 = ffi::VOICE_MONO16,
+   |     ^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/aesnd.rs:14:5
+   |
+14 |     VoiceStereo16 = ffi::VOICE_STEREO16,
+   |     ^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/aesnd.rs:15:5
+   |
+15 |     VoiceMono8U = ffi::VOICE_MONO8_UNSIGNED,
+   |     ^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/aesnd.rs:16:5
+   |
+16 |     VoiceStereo8U = ffi::VOICE_STEREO8_UNSIGNED,
+   |     ^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/aesnd.rs:17:5
+   |
+17 |     VoiceMono16U = ffi::VOICE_MONO16_UNSIGNED,
+   |     ^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/aesnd.rs:18:5
+   |
+18 |     VoiceStereo16U = ffi::VOICE_STEREO16_UNSIGNED,
+   |     ^^^^^^^^^^^^^^
+
+warning: missing documentation for a type alias
+  --> src/aesnd.rs:21:1
+   |
+21 | pub type VoiceCallback = Option<Box<fn(*mut AESNDPB, u32, *mut c_void)>>;
+   | ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a type alias
+  --> src/aesnd.rs:22:1
+   |
+22 | pub type AudioCallback = Option<Box<fn(*mut c_void, u32, *mut c_void)>>;
+   | ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/aesnd.rs:24:1
+   |
+24 | pub struct Aesnd;
+   | ^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/aesnd.rs:27:5
+   |
+27 |     pub fn init() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/aesnd.rs:34:5
+   |
+34 |     pub fn reset() {
+   |     ^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/aesnd.rs:40:5
+   |
+40 |     pub fn set_pause(pause: bool) {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/aesnd.rs:46:5
+   |
+46 |     pub fn pause() {
+   |     ^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/aesnd.rs:50:5
+   |
+50 |     pub fn unpause() {
+   |     ^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/aesnd.rs:54:5
+   |
+54 |     pub fn get_dsp_process_time() -> Duration {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/aesnd.rs:58:5
+   |
+58 |     pub fn get_dsp_process_usage() -> f32 {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/aesnd.rs:62:5
+   |
+62 |     pub fn register_audio_callback<F>(callback: Option<unsafe extern "C" fn(*mut c_void, u32, *mut c_void)>) {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/aesnd.rs:68:5
+   |
+68 |     pub fn set_voice_stop(play_state: &mut AESNDPB, stop: bool) {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/aesnd.rs:74:5
+   |
+74 |     pub fn set_voice_mute(play_state: &mut AESNDPB, mute: bool) {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/aesnd.rs:80:5
+   |
+80 |     pub fn set_voice_loop(play_state: &mut AESNDPB, loop_: bool) {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/aesnd.rs:86:5
+   |
+86 |     pub fn set_voice_format(play_state: &mut AESNDPB, format: AudioFormat) {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/aesnd.rs:92:5
+   |
+92 |     pub fn set_voice_stream(play_state: &mut AESNDPB, stream: bool) {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/aesnd.rs:98:5
+   |
+98 |     pub fn set_voice_frequency(play_state: &mut AESNDPB, frequency: f32) {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/aesnd.rs:104:5
+    |
+104 |     pub fn set_voice_volume(play_state: &mut AESNDPB, volume: (f32, f32)) {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/aesnd.rs:114:5
+    |
+114 |     pub fn set_voice_delay(play_state: &mut AESNDPB, delay: u32) {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/aesnd.rs:120:5
+    |
+120 |     pub fn set_voice_buffer(play_state: &mut AESNDPB, buffer: &[u8]) {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/aesnd.rs:147:5
+    |
+147 | /     pub fn play_voice(
+148 | |         play_state: &mut AESNDPB,
+149 | |         format: AudioFormat,
+150 | |         buffer: &[u8],
+...   |
+153 | |         loop_: bool,
+154 | |     ) {
+    | |_____^
+
+warning: missing documentation for an associated function
+   --> src/aesnd.rs:187:5
+    |
+187 | /     pub fn register_voice_callback(
+188 | |         play_state: &mut AESNDPB,
+189 | |         callback: Option<unsafe extern "C" fn(*mut AESNDPB, u32, *mut c_void)>,
+190 | |     ) {
+    | |_____^
+
+warning: missing documentation for an associated function
+   --> src/aesnd.rs:196:5
+    |
+196 |     pub fn new_playstate() -> AESNDPB {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a module
+ --> src/input/mod.rs:1:1
+  |
+1 | pub mod controller;
+  | ^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a module
+ --> src/input/mod.rs:2:1
+  |
+2 | pub mod pad;
+  | ^^^^^^^^^^^
+
+warning: missing documentation for a module
+ --> src/input/mod.rs:3:1
+  |
+3 | pub mod wpad;
+  | ^^^^^^^^^^^^
+
+warning: missing documentation for an enum
+ --> src/input/mod.rs:7:1
+  |
+7 | pub enum ControllerPort {
+  | ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+ --> src/input/mod.rs:8:5
+  |
+8 |     One = 0,
+  |     ^^^
+
+warning: missing documentation for a variant
+ --> src/input/mod.rs:9:5
+  |
+9 |     Two = 1,
+  |     ^^^
+
+warning: missing documentation for a variant
+  --> src/input/mod.rs:10:5
+   |
+10 |     Three = 2,
+   |     ^^^^^
+
+warning: missing documentation for a variant
+  --> src/input/mod.rs:11:5
+   |
+11 |     Four = 3,
+   |     ^^^^
+
+warning: missing documentation for an enum
+ --> src/input/controller.rs:5:1
+  |
+5 | pub enum ControllerType {
+  | ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+ --> src/input/controller.rs:6:5
+  |
+6 |     Gamecube,
+  |     ^^^^^^^^
+
+warning: missing documentation for a variant
+ --> src/input/controller.rs:7:5
+  |
+7 |     Wii,
+  |     ^^^
+
+warning: missing documentation for an enum
+  --> src/input/controller.rs:10:1
+   |
+10 | pub enum Button {
+   | ^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/input/controller.rs:11:5
+   |
+11 |     Left,
+   |     ^^^^
+
+warning: missing documentation for a variant
+  --> src/input/controller.rs:12:5
+   |
+12 |     Right,
+   |     ^^^^^
+
+warning: missing documentation for a variant
+  --> src/input/controller.rs:13:5
+   |
+13 |     Up,
+   |     ^^
+
+warning: missing documentation for a variant
+  --> src/input/controller.rs:14:5
+   |
+14 |     Down,
+   |     ^^^^
+
+warning: missing documentation for a variant
+  --> src/input/controller.rs:15:5
+   |
+15 |     TrigL,
+   |     ^^^^^
+
+warning: missing documentation for a variant
+  --> src/input/controller.rs:16:5
+   |
+16 |     TrigR,
+   |     ^^^^^
+
+warning: missing documentation for a variant
+  --> src/input/controller.rs:17:5
+   |
+17 |     TrigZ,
+   |     ^^^^^
+
+warning: missing documentation for a variant
+  --> src/input/controller.rs:18:5
+   |
+18 |     TrigZL,
+   |     ^^^^^^
+
+warning: missing documentation for a variant
+  --> src/input/controller.rs:19:5
+   |
+19 |     TrigZR,
+   |     ^^^^^^
+
+warning: missing documentation for a variant
+  --> src/input/controller.rs:20:5
+   |
+20 |     A,
+   |     ^
+
+warning: missing documentation for a variant
+  --> src/input/controller.rs:21:5
+   |
+21 |     B,
+   |     ^
+
+warning: missing documentation for a variant
+  --> src/input/controller.rs:22:5
+   |
+22 |     C,
+   |     ^
+
+warning: missing documentation for a variant
+  --> src/input/controller.rs:23:5
+   |
+23 |     X,
+   |     ^
+
+warning: missing documentation for a variant
+  --> src/input/controller.rs:24:5
+   |
+24 |     Y,
+   |     ^
+
+warning: missing documentation for a variant
+  --> src/input/controller.rs:25:5
+   |
+25 |     Z,
+   |     ^
+
+warning: missing documentation for a variant
+  --> src/input/controller.rs:26:5
+   |
+26 |     One,
+   |     ^^^
+
+warning: missing documentation for a variant
+  --> src/input/controller.rs:27:5
+   |
+27 |     Two,
+   |     ^^^
+
+warning: missing documentation for a variant
+  --> src/input/controller.rs:28:5
+   |
+28 |     Minus,
+   |     ^^^^^
+
+warning: missing documentation for a variant
+  --> src/input/controller.rs:29:5
+   |
+29 |     Plus,
+   |     ^^^^
+
+warning: missing documentation for a variant
+  --> src/input/controller.rs:30:5
+   |
+30 |     Home,
+   |     ^^^^
+
+warning: missing documentation for a variant
+  --> src/input/controller.rs:31:5
+   |
+31 |     Start,
+   |     ^^^^^
+
+warning: missing documentation for a struct
+  --> src/input/controller.rs:73:1
+   |
+73 | pub struct Input {
+   | ^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/input/controller.rs:79:5
+   |
+79 |     pub fn new(ctrl_type: ControllerType, id: ControllerPort) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/input/controller.rs:83:5
+   |
+83 |     pub fn as_pad(&self) -> Pad {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/input/controller.rs:87:5
+   |
+87 |     pub fn as_wpad(&self) -> WPad {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/input/controller.rs:91:5
+   |
+91 |     pub fn is_button_up(&self, button: Button) -> bool {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/input/controller.rs:104:5
+    |
+104 |     pub fn is_button_down(&self, button: Button) -> bool {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/input/controller.rs:117:5
+    |
+117 |     pub fn is_button_held(&self, button: Button) -> bool {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/input/controller.rs:130:5
+    |
+130 |     pub fn init(ctrl_type: ControllerType) {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/input/controller.rs:141:5
+    |
+141 |     pub fn update(ctrl_type: ControllerType) {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+ --> src/input/pad.rs:5:1
+  |
+5 | pub struct Pad {
+  | ^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/input/pad.rs:9:1
+   |
+9  | / bitflags! {
+10 | |     pub struct PadButton: u16 {
+11 | |        const LEFT = 0x0001;
+12 | |        const RIGHT = 0x0002;
+...  |
+23 | |     }
+24 | | }
+   | |_^
+   |
+   = note: this warning originates in the macro `bitflags` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: missing documentation for an associated constant
+  --> src/input/pad.rs:9:1
+   |
+9  | / bitflags! {
+10 | |     pub struct PadButton: u16 {
+11 | |        const LEFT = 0x0001;
+12 | |        const RIGHT = 0x0002;
+...  |
+23 | |     }
+24 | | }
+   | |_^
+   |
+   = note: this warning originates in the macro `__impl_bitflags` which comes from the expansion of the macro `bitflags` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: missing documentation for an associated function
+  --> src/input/pad.rs:27:5
+   |
+27 |     pub fn new(id: ControllerPort) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/input/pad.rs:31:5
+   |
+31 |     pub fn buttons_up(&self) -> PadButton {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/input/pad.rs:35:5
+   |
+35 |     pub fn is_button_up(&self, button: PadButton) -> bool {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/input/pad.rs:40:5
+   |
+40 |     pub fn buttons_down(&self) -> PadButton {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/input/pad.rs:44:5
+   |
+44 |     pub fn is_button_down(&self, button: PadButton) -> bool {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/input/pad.rs:49:5
+   |
+49 |     pub fn buttons_held(&self) -> PadButton {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/input/pad.rs:53:5
+   |
+53 |     pub fn is_button_held(&self, button: PadButton) -> bool {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/input/pad.rs:58:5
+   |
+58 |     pub fn stick_x(&self) -> i8 {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/input/pad.rs:62:5
+   |
+62 |     pub fn stick_y(&self) -> i8 {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/input/pad.rs:66:5
+   |
+66 |     pub fn c_stick_x(&self) -> i8 {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/input/pad.rs:70:5
+   |
+70 |     pub fn c_stick_y(&self) -> i8 {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/input/pad.rs:74:5
+   |
+74 |     pub fn trigger_l(&self) -> u8 {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/input/pad.rs:78:5
+   |
+78 |     pub fn trigger_r(&self) -> u8 {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/input/pad.rs:82:5
+   |
+82 |     pub fn init() {
+   |     ^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/input/pad.rs:86:5
+   |
+86 |     pub fn update() {
+   |     ^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+ --> src/input/wpad.rs:6:1
+  |
+6 | pub struct WPad {
+  | ^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/input/wpad.rs:10:1
+   |
+10 | / bitflags! {
+11 | |     pub struct WPadButton: u32 {
+12 | |         const TWO = 0x0001;
+13 | |         const ONE = 0x0002;
+...  |
+55 | |     }
+56 | | }
+   | |_^
+   |
+   = note: this warning originates in the macro `bitflags` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: missing documentation for an associated constant
+  --> src/input/wpad.rs:10:1
+   |
+10 | / bitflags! {
+11 | |     pub struct WPadButton: u32 {
+12 | |         const TWO = 0x0001;
+13 | |         const ONE = 0x0002;
+...  |
+55 | |     }
+56 | | }
+   | |_^
+   |
+   = note: this warning originates in the macro `__impl_bitflags` which comes from the expansion of the macro `bitflags` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: missing documentation for an enum
+  --> src/input/wpad.rs:60:1
+   |
+60 | pub enum WPadDataFormat {
+   | ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/input/wpad.rs:61:5
+   |
+61 |     Buttons = ffi::WPAD_FMT_BTNS,
+   |     ^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/input/wpad.rs:62:5
+   |
+62 |     ButtonsAccel = ffi::WPAD_FMT_BTNS_ACC,
+   |     ^^^^^^^^^^^^
+
+warning: missing documentation for a variant
+  --> src/input/wpad.rs:63:5
+   |
+63 |     ButtonsAccelIR = ffi::WPAD_FMT_BTNS_ACC_IR,
+   |     ^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/input/wpad.rs:67:5
+   |
+67 |     pub fn new(id: ControllerPort) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/input/wpad.rs:71:5
+   |
+71 |     pub fn buttons_up(&self) -> WPadButton {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/input/wpad.rs:75:5
+   |
+75 |     pub fn is_button_up(&self, button: WPadButton) -> bool {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/input/wpad.rs:80:5
+   |
+80 |     pub fn buttons_down(&self) -> WPadButton {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/input/wpad.rs:84:5
+   |
+84 |     pub fn is_button_down(&self, button: WPadButton) -> bool {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/input/wpad.rs:89:5
+   |
+89 |     pub fn buttons_held(&self) -> WPadButton {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/input/wpad.rs:93:5
+   |
+93 |     pub fn is_button_held(&self, button: WPadButton) -> bool {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/input/wpad.rs:98:5
+   |
+98 |     pub fn raw(&self) -> Box<ffi::WPADData> {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/input/wpad.rs:102:5
+    |
+102 |     pub fn ir(&self) -> (f32, f32) {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/input/wpad.rs:107:5
+    |
+107 |     pub fn gforce(self) -> (f32, f32, f32) {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/input/wpad.rs:112:5
+    |
+112 |     pub fn accel(&self) -> (u16, u16, u16) {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/input/wpad.rs:117:5
+    |
+117 |     pub fn expansion(&self) -> ffi::expansion_t {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/input/wpad.rs:122:5
+    |
+122 |     pub fn set_data_format(&self, data_format: WPadDataFormat) {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/input/wpad.rs:126:5
+    |
+126 |     pub fn set_motion_plus(&self, enable_motion_plus: bool) {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/input/wpad.rs:130:5
+    |
+130 |     pub fn init() {
+    |     ^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/input/wpad.rs:134:5
+    |
+134 |     pub fn update() {
+    |     ^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/lwp.rs:74:1
+   |
+74 | pub struct Builder {
+   | ^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a type alias
+  --> src/lwp.rs:81:1
+   |
+81 | pub type EntryFn = Option<unsafe extern "C" fn(*mut c_void) -> *mut c_void>;
+   | ^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/lwp.rs:90:5
+   |
+90 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/lwp.rs:100:5
+    |
+100 |     pub fn arg(mut self, arg: *mut c_void) -> Self {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/lwp.rs:106:5
+    |
+106 |     pub fn stack_base(mut self, base: *mut c_void) -> Self {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/lwp.rs:112:5
+    |
+112 |     pub fn stack_size(mut self, size: usize) -> Self {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/lwp.rs:118:5
+    |
+118 |     pub fn priority(mut self, prio: u8) -> Self {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/lwp.rs:123:5
+    |
+123 | /     pub fn spawn(
+124 | |         self,
+125 | |         entry: EntryFn,
+126 | |     ) -> Result<Thread, i32> {
+    | |____________________________^
+
+warning: missing documentation for a struct
+ --> src/time.rs:9:1
+  |
+9 | pub struct Instant(Duration);
+  | ^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/time.rs:13:5
+   |
+13 |     pub fn now() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/time.rs:18:5
+   |
+18 |     pub fn duration_since(&self, earlier: Self) -> Duration {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/time.rs:23:5
+   |
+23 |     pub fn checked_duration_since(&self, earlier: Self) -> Option<Duration> {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/time.rs:28:5
+   |
+28 |     pub fn saturating_duration_since(&self, earlier: Self) -> Duration {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/time.rs:33:5
+   |
+33 |     pub fn elapsed(&self) -> Duration {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/time.rs:38:5
+   |
+38 |     pub fn checked_add(&self, duration: Duration) -> Option<Self> {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> src/time.rs:43:5
+   |
+43 |     pub fn checked_sub(&self, duration: Duration) -> Option<Self> {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a module
+ --> src/mmio/mod.rs:1:1
+  |
+1 | pub mod cp;
+  | ^^^^^^^^^^
+
+warning: missing documentation for a module
+ --> src/mmio/mod.rs:2:1
+  |
+2 | pub mod di;
+  | ^^^^^^^^^^
+
+warning: missing documentation for a module
+ --> src/mmio/mod.rs:3:1
+  |
+3 | pub mod dsp;
+  | ^^^^^^^^^^^
+
+warning: missing documentation for a module
+ --> src/mmio/mod.rs:4:1
+  |
+4 | pub mod mi;
+  | ^^^^^^^^^^
+
+warning: missing documentation for a module
+ --> src/mmio/mod.rs:5:1
+  |
+5 | pub mod pe;
+  | ^^^^^^^^^^
+
+warning: missing documentation for a module
+ --> src/mmio/mod.rs:6:1
+  |
+6 | pub mod pi;
+  | ^^^^^^^^^^
+
+warning: missing documentation for a module
+ --> src/mmio/mod.rs:7:1
+  |
+7 | pub mod serial_interface;
+  | ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a module
+ --> src/mmio/mod.rs:8:1
+  |
+8 | pub mod vi;
+  | ^^^^^^^^^^
+
+warning: missing documentation for a constant
+ --> src/mmio/cp.rs:7:1
+  |
+7 | pub const STATUS_REGISTER: VolAddress<StatusRegisterControl, Unsafe, Unsafe> =
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/mmio/cp.rs:11:1
+   |
+11 | pub struct ControlRegisterControl(u16);
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/cp.rs:12:1
+   |
+12 | pub const CONTROL_REGISTER: VolAddress<ControlRegisterControl, Unsafe, Unsafe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/mmio/cp.rs:16:1
+   |
+16 | pub struct ClearRegisterControl(u16);
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/cp.rs:17:1
+   |
+17 | pub const CLEAR_REGISTER: VolAddress<ClearRegisterControl, (), Unsafe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/cp.rs:20:1
+   |
+20 | pub const TOKEN_REGISTER: VolAddress<u16, Unsafe, Unsafe> = unsafe { VolAddress::new(0xCC00_000E) };
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/mmio/cp.rs:23:1
+   |
+23 | pub struct BoundingBoxWidthBound(u16);
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/cp.rs:24:1
+   |
+24 | pub const BBOX_LEFT: VolAddress<BoundingBoxWidthBound, Safe, Safe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/cp.rs:26:1
+   |
+26 | pub const BBOX_RIGHT: VolAddress<BoundingBoxWidthBound, Safe, Safe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/mmio/cp.rs:30:1
+   |
+30 | pub struct BoundingBoxHeightBound(u16);
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/cp.rs:31:1
+   |
+31 | pub const BBOX_TOP: VolAddress<BoundingBoxHeightBound, Safe, Safe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/cp.rs:33:1
+   |
+33 | pub const BBOX_BOTTOM: VolAddress<BoundingBoxHeightBound, Safe, Safe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/cp.rs:36:1
+   |
+36 | pub const FIFO_BASE_LO: VolAddress<u16, Safe, Safe> = unsafe { VolAddress::new(0xCC00_0020) };
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/cp.rs:37:1
+   |
+37 | pub const FIFO_BASE_HI: VolAddress<u16, Safe, Safe> = unsafe { VolAddress::new(0xCC00_0022) };
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/cp.rs:39:1
+   |
+39 | pub const FIFO_END_LO: VolAddress<u16, Safe, Safe> = unsafe { VolAddress::new(0xCC00_0024) };
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/cp.rs:40:1
+   |
+40 | pub const FIFO_END_HI: VolAddress<u16, Safe, Safe> = unsafe { VolAddress::new(0xCC00_0026) };
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/cp.rs:42:1
+   |
+42 | pub const FIFO_HIGH_WATERMARK_LO: VolAddress<u16, Safe, Safe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/cp.rs:44:1
+   |
+44 | pub const FIFO_HIGH_WATERMARK_HI: VolAddress<u16, Safe, Safe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/cp.rs:47:1
+   |
+47 | pub const FIFO_LOW_WATERMARK_LO: VolAddress<u16, Safe, Safe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/cp.rs:49:1
+   |
+49 | pub const FIFO_LOW_WATERMARK_HI: VolAddress<u16, Safe, Safe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/cp.rs:52:1
+   |
+52 | pub const FIFO_RW_DISTANCE_LO: VolAddress<u16, Safe, Safe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/cp.rs:54:1
+   |
+54 | pub const FIFO_RW_DISTANCE_HI: VolAddress<u16, Safe, Safe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/cp.rs:57:1
+   |
+57 | pub const FIFO_WRITE_PTR_LO: VolAddress<u16, Safe, Safe> = unsafe { VolAddress::new(0xCC00_0034) };
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/cp.rs:58:1
+   |
+58 | pub const FIFO_WRITE_PTR_HI: VolAddress<u16, Safe, Safe> = unsafe { VolAddress::new(0xCC00_0036) };
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/cp.rs:60:1
+   |
+60 | pub const FIFO_READ_PTR_LO: VolAddress<u16, Safe, Safe> = unsafe { VolAddress::new(0xCC00_0038) };
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/cp.rs:61:1
+   |
+61 | pub const FIFO_READ_PTR_HI: VolAddress<u16, Safe, Safe> = unsafe { VolAddress::new(0xCC00_003a) };
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/cp.rs:63:1
+   |
+63 | pub const FIFO_BREAKPOINT_PTR_LO: VolAddress<u16, Safe, Safe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/cp.rs:65:1
+   |
+65 | pub const FIFO_BREAKPOINT_PTR_HI: VolAddress<u16, Safe, Safe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+ --> src/mmio/di.rs:4:1
+  |
+4 | pub struct DiStatusControl(u32);
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+ --> src/mmio/di.rs:5:1
+  |
+5 | pub const DI_STATUS_REGISTER: VolAddress<DiStatusControl, Safe, Safe> =
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+ --> src/mmio/di.rs:9:1
+  |
+9 | pub struct DiCoverControl(u32);
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/di.rs:10:1
+   |
+10 | pub const DI_COVER_REGISTER: VolAddress<DiCoverControl, Safe, Safe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/mmio/di.rs:14:1
+   |
+14 | pub struct DiCommandBufControl(u32);
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/di.rs:15:1
+   |
+15 | pub const DI_COMMAND_BUFFER_ZERO: VolAddress<DiCommandBufControl, Safe, Safe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/di.rs:17:1
+   |
+17 | pub const DI_COMMAND_BUFFER_ONE: VolAddress<u32, Safe, Safe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/di.rs:19:1
+   |
+19 | pub const DI_COMMAND_BUFFER_TWO: VolAddress<u32, Safe, Safe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+ --> src/mmio/dsp.rs:4:1
+  |
+4 | pub struct MailBoxVal(u16);
+  | ^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+ --> src/mmio/dsp.rs:6:1
+  |
+6 | pub const DSP_MAILBOX_HI: VolAddress<MailBoxVal, Safe, Safe> =
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+ --> src/mmio/dsp.rs:8:1
+  |
+8 | pub const DSP_MAILBOX_LO: VolAddress<MailBoxVal, Safe, Safe> =
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/dsp.rs:10:1
+   |
+10 | pub const CPU_MAILBOX_HI: VolAddress<MailBoxVal, Safe, Safe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/dsp.rs:12:1
+   |
+12 | pub const CPU_MAILBOX_LO: VolAddress<MailBoxVal, Safe, Safe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/mmio/dsp.rs:16:1
+   |
+16 | pub struct DSPControlStatus(u16);
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/dsp.rs:17:1
+   |
+17 | pub const DSP_CONTROL_STATUS_REGISTER: VolAddress<DSPControlStatus, Unsafe, Safe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/dsp.rs:20:1
+   |
+20 | pub const AR_SIZE: VolAddress<u16, Unsafe, Unsafe> = unsafe { VolAddress::new(0xCC00_5012) };
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/dsp.rs:21:1
+   |
+21 | pub const AR_MODE: VolAddress<u16, Unsafe, Unsafe> = unsafe { VolAddress::new(0xCC00_5016) };
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/dsp.rs:22:1
+   |
+22 | pub const AR_REFRESH: VolAddress<u16, Unsafe, Unsafe> = unsafe { VolAddress::new(0xCC00_501A) };
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/dsp.rs:23:1
+   |
+23 | pub const AR_MRAM_ADDR_HI: VolAddress<u16, Unsafe, Unsafe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/dsp.rs:25:1
+   |
+25 | pub const AR_MRAM_ADDR_LO: VolAddress<u16, Unsafe, Unsafe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/dsp.rs:27:1
+   |
+27 | pub const AR_ARAM_ADDR_HI: VolAddress<u16, Unsafe, Unsafe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/dsp.rs:29:1
+   |
+29 | pub const AR_ARAM_ADDR_LO: VolAddress<u16, Unsafe, Unsafe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/mmio/dsp.rs:33:1
+   |
+33 | pub struct DmaCountHi(u16);
+   | ^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/dsp.rs:34:1
+   |
+34 | pub const AR_DMA_COUNT_HI: VolAddress<DmaCountHi, Unsafe, Unsafe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/dsp.rs:36:1
+   |
+36 | pub const AR_DMA_COUNT_LO: VolAddress<u16, Unsafe, Unsafe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/dsp.rs:39:1
+   |
+39 | pub const AR_START_ADDR_HI: VolAddress<u16, Unsafe, Safe> = unsafe { VolAddress::new(0xCC00_5030) };
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/dsp.rs:40:1
+   |
+40 | pub const AR_START_ADDR_LO: VolAddress<u16, Unsafe, Safe> = unsafe { VolAddress::new(0xCC00_5032) };
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/mmio/dsp.rs:44:1
+   |
+44 | pub struct DmaControl(u16);
+   | ^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/dsp.rs:45:1
+   |
+45 | pub const DMA_CONTROL: VolAddress<DmaControl, Unsafe, Safe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/dsp.rs:48:1
+   |
+48 | pub const DMA_BYTES_LEFT: VolAddress<u16, Safe, Unsafe> = unsafe { VolAddress::new(0xCC00_503A) };
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+ --> src/mmio/mi.rs:4:1
+  |
+4 | pub struct PageAddress(u32);
+  | ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+ --> src/mmio/mi.rs:5:1
+  |
+5 | pub const PROTECTED_REGION_ZERO: VolAddress<PageAddress, Safe, Safe> =
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+ --> src/mmio/mi.rs:7:1
+  |
+7 | pub const PROTECTED_REGION_ONE: VolAddress<PageAddress, Safe, Safe> =
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+ --> src/mmio/mi.rs:9:1
+  |
+9 | pub const PROTECTED_REGION_TWO: VolAddress<PageAddress, Safe, Safe> =
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/mi.rs:11:1
+   |
+11 | pub const PROTECTED_REGION_THREE: VolAddress<PageAddress, Safe, Safe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/mmio/mi.rs:15:1
+   |
+15 | pub struct ProtectionType(u16);
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/mi.rs:16:1
+   |
+16 | pub const PROJECTION_TYPE: VolAddress<ProtectionType, Safe, Safe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/mmio/mi.rs:20:1
+   |
+20 | pub struct MemoryInterruptMask(u16);
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/mi.rs:21:1
+   |
+21 | pub const MI_INTERRUPT_MASK: VolAddress<MemoryInterruptMask, Safe, Safe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/mmio/mi.rs:25:1
+   |
+25 | pub struct MemoryInterruptCause(u16);
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/mi.rs:26:1
+   |
+26 | pub const MI_INTERRUPT_CAUSE: VolAddress<MemoryInterruptCause, Safe, Safe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/mmio/mi.rs:30:1
+   |
+30 | pub struct MemUnknown(u16);
+   | ^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/mi.rs:31:1
+   |
+31 | pub const MEM_UNKNOWN: VolAddress<MemUnknown, Unsafe, Unsafe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/mmio/mi.rs:35:1
+   |
+35 | pub struct MemAddrLo(u16);
+   | ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/mi.rs:36:1
+   |
+36 | pub const MEM_ADDR_LO: VolAddress<MemAddrLo, Safe, ()> = unsafe { VolAddress::new(0xCC00_4022) };
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/mmio/mi.rs:39:1
+   |
+39 | pub struct MemAddrHi(u16);
+   | ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/mi.rs:40:1
+   |
+40 | pub const MEM_ADDR_HI: VolAddress<MemAddrHi, Safe, ()> = unsafe { VolAddress::new(0xCC00_4024) };
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/mi.rs:42:1
+   |
+42 | pub const TIMER_HI: VolSeries<u16, Safe, (), 10, 2> = unsafe { VolSeries::new(0xCC00_4032) };
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/mi.rs:43:1
+   |
+43 | pub const TIMER_LO: VolSeries<u16, Safe, (), 10, 2> = unsafe { VolSeries::new(0xCC00_4034) };
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+ --> src/mmio/pe.rs:4:1
+  |
+4 | pub struct ZConfigControl(u16);
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+ --> src/mmio/pe.rs:5:1
+  |
+5 | pub const Z_CONFIG: VolAddress<ZConfigControl, Safe, Safe> =
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+ --> src/mmio/pe.rs:9:1
+  |
+9 | pub struct AlphaConfigControl(u16);
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/pe.rs:10:1
+   |
+10 | pub const ALPHA_CONFIG: VolAddress<AlphaConfigControl, Safe, Safe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/mmio/pe.rs:14:1
+   |
+14 | pub struct DestAlpha(u16);
+   | ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/pe.rs:15:1
+   |
+15 | pub const DEST_ALPHA: VolAddress<DestAlpha, Safe, Safe> = unsafe { VolAddress::new(0xCC00_1004) };
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/mmio/pe.rs:18:1
+   |
+18 | pub struct AlphaMode(u16);
+   | ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/pe.rs:19:1
+   |
+19 | pub const ALPHA_MODE: VolAddress<AlphaMode, Safe, Safe> = unsafe { VolAddress::new(0xCC00_1006) };
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/mmio/pe.rs:22:1
+   |
+22 | pub struct AlphaRead(u16);
+   | ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/pe.rs:23:1
+   |
+23 | pub const ALPHA_READ: VolAddress<AlphaRead, Safe, Safe> = unsafe { VolAddress::new(0xCC00_1008) };
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/mmio/pe.rs:26:1
+   |
+26 | pub struct InterruptStatusControl(u16);
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/pe.rs:27:1
+   |
+27 | pub const INTERRUPT_STATUS_REGISTER: VolAddress<InterruptStatusControl, Unsafe, Unsafe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/pe.rs:30:1
+   |
+30 | pub const PE_TOKEN: VolAddress<u16, Safe, Safe> = unsafe { VolAddress::new(0xCC00_100E) };
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+ --> src/mmio/pi.rs:4:1
+  |
+4 | pub struct InterruptCause(u32);
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+ --> src/mmio/pi.rs:5:1
+  |
+5 | pub const INTERRUPT_CAUSE: VolAddress<InterruptCause, Safe, ()> =
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+ --> src/mmio/pi.rs:9:1
+  |
+9 | pub struct InterruptMask(u32);
+  | ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/pi.rs:10:1
+   |
+10 | pub const INTERRUPT_MASK: VolAddress<InterruptMask, Safe, Safe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/pi.rs:13:1
+   |
+13 | pub const CPU_FIFO_START: VolAddress<u32, Safe, Safe> = unsafe { VolAddress::new(0xCC00_3008) };
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/pi.rs:14:1
+   |
+14 | pub const CPU_FIFO_END: VolAddress<u32, Unsafe, Unsafe> = unsafe { VolAddress::new(0xCC00_300C) };
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/pi.rs:15:1
+   |
+15 | pub const CPU_FIFO_WRITE_PTR: VolAddress<u32, Unsafe, Unsafe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/pi.rs:17:1
+   |
+17 | pub const RESET: VolAddress<u32, (), Unsafe> = unsafe { VolAddress::new(0xCC00_3024) };
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/mmio/pi.rs:20:1
+   |
+20 | pub struct HardwareDescription(u32);
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/pi.rs:21:1
+   |
+21 | pub const HW_DESCRIPTION: VolAddress<HardwareDescription, Unsafe, Unsafe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/serial_interface.rs:55:1
+   |
+55 | pub const INPUT_OUTPUT_BUFFER: VolBlock<u32, Safe, Safe, 32> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/mmio/serial_interface.rs:71:5
+   |
+71 |     pub struct OutputBuffer(u32);
+   |     ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/mmio/serial_interface.rs:81:9
+   |
+81 |         pub fn new() -> Self {
+   |         ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/mmio/serial_interface.rs:86:9
+   |
+86 |         pub fn read_zero() -> Self {
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/mmio/serial_interface.rs:91:9
+   |
+91 |         pub fn read_one() -> Self {
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> src/mmio/serial_interface.rs:96:9
+   |
+96 |         pub fn read_two() -> Self {
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/mmio/serial_interface.rs:101:9
+    |
+101 |         pub fn read_three() -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:105:9
+    |
+105 |         pub fn write_zero(self) {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:109:9
+    |
+109 |         pub fn write_one(self) {
+    |         ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:113:9
+    |
+113 |         pub fn write_two(self) {
+    |         ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:117:9
+    |
+117 |         pub fn write_three(self) {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:122:9
+    |
+122 |         pub fn command_opcode(self) -> u32 {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:127:9
+    |
+127 |         pub fn with_command_opcode(mut self, opcode: u32) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:133:9
+    |
+133 |         pub fn output_zero(self) -> u32 {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:138:9
+    |
+138 |         pub fn with_output_zero(mut self, output_zero: u32) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:144:9
+    |
+144 |         pub fn output_one(self) -> u32 {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:149:9
+    |
+149 |         pub fn with_output_one(mut self, output_one: u32) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+   --> src/mmio/serial_interface.rs:157:5
+    |
+157 |     pub struct InputBufferHigh(u32);
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/mmio/serial_interface.rs:167:9
+    |
+167 |         pub fn new() -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/mmio/serial_interface.rs:172:9
+    |
+172 |         pub fn read_zero() -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/mmio/serial_interface.rs:177:9
+    |
+177 |         pub fn read_one() -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/mmio/serial_interface.rs:182:9
+    |
+182 |         pub fn read_two() -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/mmio/serial_interface.rs:187:9
+    |
+187 |         pub fn read_three() -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:191:9
+    |
+191 |         pub fn write_zero(self) {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:195:9
+    |
+195 |         pub fn write_one(self) {
+    |         ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:199:9
+    |
+199 |         pub fn write_two(self) {
+    |         ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:203:9
+    |
+203 |         pub fn write_three(self) {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:208:9
+    |
+208 |         pub fn error_status(self) -> bool {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:213:9
+    |
+213 |         pub fn with_error_status(mut self, status: bool) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:219:9
+    |
+219 |         pub fn error_latch(self) -> bool {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:224:9
+    |
+224 |         pub fn with_error_latch(mut self, latch: bool) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:230:9
+    |
+230 |         pub fn input_zero(self) -> u32 {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:235:9
+    |
+235 |         pub fn with_input_zero(mut self, zero: u32) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:241:9
+    |
+241 |         pub fn input_one(self) -> u32 {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:246:9
+    |
+246 |         pub fn with_input_one(mut self, one: u32) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:252:9
+    |
+252 |         pub fn input_two(self) -> u32 {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:257:9
+    |
+257 |         pub fn with_input_two(mut self, two: u32) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:263:9
+    |
+263 |         pub fn input_three(self) -> u32 {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:268:9
+    |
+268 |         pub fn with_input_three(mut self, three: u32) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+   --> src/mmio/serial_interface.rs:276:5
+    |
+276 |     pub struct InputBufferLow(u32);
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/mmio/serial_interface.rs:286:9
+    |
+286 |         pub fn new() -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/mmio/serial_interface.rs:291:9
+    |
+291 |         pub fn read_zero() -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/mmio/serial_interface.rs:296:9
+    |
+296 |         pub fn read_one() -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/mmio/serial_interface.rs:301:9
+    |
+301 |         pub fn read_two() -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/mmio/serial_interface.rs:306:9
+    |
+306 |         pub fn read_three() -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:310:9
+    |
+310 |         pub fn write_zero(self) {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:314:9
+    |
+314 |         pub fn write_one(self) {
+    |         ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:318:9
+    |
+318 |         pub fn write_two(self) {
+    |         ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:322:9
+    |
+322 |         pub fn write_three(self) {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:327:9
+    |
+327 |         pub fn input_four(self) -> u32 {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:332:9
+    |
+332 |         pub fn with_input_four(mut self, four: u32) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:338:9
+    |
+338 |         pub fn input_five(self) -> u32 {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:343:9
+    |
+343 |         pub fn with_input_five(mut self, five: u32) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:349:9
+    |
+349 |         pub fn input_six(self) -> u32 {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:354:9
+    |
+354 |         pub fn with_input_six(mut self, six: u32) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:360:9
+    |
+360 |         pub fn input_seven(self) -> u32 {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:365:9
+    |
+365 |         pub fn with_input_seven(mut self, seven: u32) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+   --> src/mmio/serial_interface.rs:373:5
+    |
+373 |     pub struct PollingRegister(u32);
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/mmio/serial_interface.rs:383:9
+    |
+383 |         pub fn new() -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/mmio/serial_interface.rs:388:9
+    |
+388 |         pub fn read() -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:392:9
+    |
+392 |         pub fn write(self) {
+    |         ^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:397:9
+    |
+397 |         pub fn lines_per_poll(self) -> u32 {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:402:9
+    |
+402 |         pub fn with_lines_per_poll(mut self, lines: u32) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:408:9
+    |
+408 |         pub fn polls_per_frame(self) -> u32 {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:413:9
+    |
+413 |         pub fn with_polls_per_frame(mut self, polls: u32) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:419:9
+    |
+419 |         pub fn channel_0_enable(self) -> bool {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:424:9
+    |
+424 |         pub fn with_channel_0_enable(mut self, enable: bool) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:430:9
+    |
+430 |         pub fn channel_1_enable(self) -> bool {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:435:9
+    |
+435 |         pub fn with_channel_1_enable(mut self, enable: bool) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:441:9
+    |
+441 |         pub fn channel_2_enable(self) -> bool {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:446:9
+    |
+446 |         pub fn with_channel_2_enable(mut self, enable: bool) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:452:9
+    |
+452 |         pub fn channel_3_enable(self) -> bool {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:457:9
+    |
+457 |         pub fn with_channel_3_enable(mut self, enable: bool) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:463:9
+    |
+463 |         pub fn channel_0_copy_on_vblank(self) -> bool {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:468:9
+    |
+468 |         pub fn with_channel_0_copy_on_vblank(mut self, vblank: bool) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:474:9
+    |
+474 |         pub fn channel_1_copy_on_vblank(self) -> bool {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:479:9
+    |
+479 |         pub fn with_channel_1_copy_on_vblank(mut self, vblank: bool) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:485:9
+    |
+485 |         pub fn channel_2_copy_on_vblank(self) -> bool {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:490:9
+    |
+490 |         pub fn with_channel_2_copy_on_vblank(mut self, vblank: bool) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:496:9
+    |
+496 |         pub fn channel_3_copy_on_vblank(self) -> bool {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:501:9
+    |
+501 |         pub fn with_channel_3_copy_on_vblank(mut self, vblank: bool) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+   --> src/mmio/serial_interface.rs:509:5
+    |
+509 |     pub struct CommuicationStatus(u32);
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/mmio/serial_interface.rs:518:9
+    |
+518 |         pub fn new() -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/mmio/serial_interface.rs:523:9
+    |
+523 |         pub fn read() -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:527:9
+    |
+527 |         pub fn write(self) {
+    |         ^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:532:9
+    |
+532 |         pub fn transfer_start(self) -> bool {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:537:9
+    |
+537 |         pub fn with_transfer_start(mut self, start: bool) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:543:9
+    |
+543 |         pub fn channel(self) -> u32 {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:548:9
+    |
+548 |         pub fn with_channel(mut self, channel: u32) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:554:9
+    |
+554 |         pub fn input_length(self) -> u32 {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:559:9
+    |
+559 |         pub fn with_input_length(mut self, length: u32) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:565:9
+    |
+565 |         pub fn output_length(self) -> u32 {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:570:9
+    |
+570 |         pub fn with_output_length(mut self, length: u32) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:576:9
+    |
+576 |         pub fn read_status_interrupt_mask(self) -> bool {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:581:9
+    |
+581 |         pub fn with_read_status_interrupt_mask(mut self, enable: bool) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:587:9
+    |
+587 |         pub fn read_status_interrupt(self) -> bool {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:592:9
+    |
+592 |         pub fn with_read_status_interrupt(mut self, enable: bool) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:598:9
+    |
+598 |         pub fn communication_error(self) -> bool {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:603:9
+    |
+603 |         pub fn with_communication_error(mut self, error: bool) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:609:9
+    |
+609 |         pub fn transfer_complete_interrupt_mask(self) -> bool {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:614:9
+    |
+614 |         pub fn with_transfer_complete_interrupt_mask(mut self, enable: bool) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:620:9
+    |
+620 |         pub fn transfer_complete_interrupt(self) -> bool {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:625:9
+    |
+625 |         pub fn with_transfer_complete_interrupt(mut self, enable: bool) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+   --> src/mmio/serial_interface.rs:633:5
+    |
+633 |     pub struct Status(u32);
+    |     ^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/mmio/serial_interface.rs:643:9
+    |
+643 |         pub fn new() -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/mmio/serial_interface.rs:648:9
+    |
+648 |         pub fn read() -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:652:9
+    |
+652 |         pub fn write(self) {
+    |         ^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:657:9
+    |
+657 |         pub fn output_buffer_write(self) -> bool {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:662:9
+    |
+662 |         pub fn with_output_buffer_write(mut self, write: bool) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:668:9
+    |
+668 |         pub fn channel_0_read_status(self) -> bool {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:673:9
+    |
+673 |         pub fn with_channel_0_read_status(mut self, read_status: bool) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:679:9
+    |
+679 |         pub fn channel_0_write_status(self) -> bool {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:684:9
+    |
+684 |         pub fn with_channel_0_write_status(mut self, write_status: bool) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:690:9
+    |
+690 |         pub fn channel_0_no_response_error(self) -> bool {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:695:9
+    |
+695 |         pub fn with_channel_0_no_response_error(mut self, error: bool) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:701:9
+    |
+701 |         pub fn channel_0_collision_error(self) -> bool {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:706:9
+    |
+706 |         pub fn with_channel_0_collision_error(mut self, error: bool) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:712:9
+    |
+712 |         pub fn channel_0_buffer_overrun_error(self) -> bool {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:717:9
+    |
+717 |         pub fn with_channel_0_buffer_overrun_error(mut self, error: bool) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:723:9
+    |
+723 |         pub fn channel_0_buffer_underrun_error(self) -> bool {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:728:9
+    |
+728 |         pub fn with_channel_0_buffer_underrun_error(mut self, error: bool) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:734:9
+    |
+734 |         pub fn channel_1_read_status(self) -> bool {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:739:9
+    |
+739 |         pub fn with_channel_1_read_status(mut self, read_status: bool) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:745:9
+    |
+745 |         pub fn channel_1_write_status(self) -> bool {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:750:9
+    |
+750 |         pub fn with_channel_1_write_status(mut self, write_status: bool) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:756:9
+    |
+756 |         pub fn channel_1_no_response_error(self) -> bool {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:761:9
+    |
+761 |         pub fn with_channel_1_no_response_error(mut self, error: bool) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:767:9
+    |
+767 |         pub fn channel_1_collision_error(self) -> bool {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:772:9
+    |
+772 |         pub fn with_channel_1_collision_error(mut self, error: bool) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:778:9
+    |
+778 |         pub fn channel_1_buffer_overrun_error(self) -> bool {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:783:9
+    |
+783 |         pub fn with_channel_1_buffer_overrun_error(mut self, error: bool) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:789:9
+    |
+789 |         pub fn channel_1_buffer_underrrun_error(self) -> bool {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:794:9
+    |
+794 |         pub fn with_channel_1_buffer_underrun_error(mut self, error: bool) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:800:9
+    |
+800 |         pub fn channel_2_read_status(self) -> bool {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:805:9
+    |
+805 |         pub fn with_channel_2_read_status(mut self, read_status: bool) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:811:9
+    |
+811 |         pub fn channel_2_write_status(self) -> bool {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:816:9
+    |
+816 |         pub fn with_channel_2_write_status(mut self, write_status: bool) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:822:9
+    |
+822 |         pub fn channel_2_no_response_error(self) -> bool {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:827:9
+    |
+827 |         pub fn with_channel_2_no_response_error(mut self, error: bool) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:833:9
+    |
+833 |         pub fn channel_2_collision_error(self) -> bool {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:838:9
+    |
+838 |         pub fn with_channel_2_collision_error(mut self, error: bool) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:844:9
+    |
+844 |         pub fn channel_2_buffer_overrun_error(self) -> bool {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:849:9
+    |
+849 |         pub fn with_channel_2_buffer_overrun_error(mut self, error: bool) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:855:9
+    |
+855 |         pub fn channel_2_buffer_underrun_error(self) -> bool {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:860:9
+    |
+860 |         pub fn with_channel_2_buffer_underrun_error(mut self, error: bool) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:866:9
+    |
+866 |         pub fn channel_3_read_status(self) -> bool {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:871:9
+    |
+871 |         pub fn with_channel_3_read_status(mut self, read_status: bool) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:877:9
+    |
+877 |         pub fn channel_3_write_status(self) -> bool {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:882:9
+    |
+882 |         pub fn with_channel_3_write_status(mut self, write_status: bool) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:888:9
+    |
+888 |         pub fn channel_3_no_response_error(self) -> bool {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:893:9
+    |
+893 |         pub fn with_channel_3_no_response_error(mut self, error: bool) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:899:9
+    |
+899 |         pub fn channel_3_collision_error(self) -> bool {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:904:9
+    |
+904 |         pub fn with_channel_3_collision_error(mut self, error: bool) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:910:9
+    |
+910 |         pub fn channel_3_buffer_overrun_error(self) -> bool {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:915:9
+    |
+915 |         pub fn with_channel_3_buffer_overrun_error(mut self, error: bool) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:921:9
+    |
+921 |         pub fn channel_3_buffer_underrun_error(self) -> bool {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:926:9
+    |
+926 |         pub fn with_channel_3_buffer_underrun_error(mut self, error: bool) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+   --> src/mmio/serial_interface.rs:934:5
+    |
+934 |     pub struct ExternalClockLock(u32);
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/mmio/serial_interface.rs:944:9
+    |
+944 |         pub fn new() -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+   --> src/mmio/serial_interface.rs:949:9
+    |
+949 |         pub fn read() -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:953:9
+    |
+953 |         pub fn write(self) {
+    |         ^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:958:9
+    |
+958 |         pub fn thirty_two_mhz_clock_lock(self) -> bool {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> src/mmio/serial_interface.rs:963:9
+    |
+963 |         pub fn with_thirty_two_mhz_clock_lock(mut self, lock: bool) -> Self {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+ --> src/mmio/vi.rs:4:1
+  |
+4 | pub struct VerticalTimingControl(u16);
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+ --> src/mmio/vi.rs:5:1
+  |
+5 | pub const VERTICAL_TIMING_REGISTER: VolAddress<VerticalTimingControl, Unsafe, Unsafe> =
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+ --> src/mmio/vi.rs:9:1
+  |
+9 | pub struct DisplayConfig(u16);
+  | ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/vi.rs:10:1
+   |
+10 | pub const DISPLAY_CONFIG_REGISTER: VolAddress<DisplayConfig, Unsafe, Unsafe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/mmio/vi.rs:14:1
+   |
+14 | pub struct HorizontalTimingZero(u32);
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/vi.rs:15:1
+   |
+15 | pub const HORIZONTAL_TIMING_ZERO: VolAddress<HorizontalTimingZero, Safe, Safe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/mmio/vi.rs:19:1
+   |
+19 | pub struct HorizontalTimingOne(u32);
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/vi.rs:20:1
+   |
+20 | pub const HORIZONTAL_TIMING_ONE: VolAddress<HorizontalTimingOne, Safe, Safe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/mmio/vi.rs:24:1
+   |
+24 | pub struct BlankingLines(u32);
+   | ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/vi.rs:25:1
+   |
+25 | pub const ODD_VERTICAL_TIMING_REGISTER: VolAddress<BlankingLines, Unsafe, Unsafe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/vi.rs:27:1
+   |
+27 | pub const EVEN_VERTICAL_TIMING_REGISTER: VolAddress<BlankingLines, Unsafe, Unsafe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/mmio/vi.rs:31:1
+   |
+31 | pub struct BurstInterval(u32);
+   | ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/vi.rs:32:1
+   |
+32 | pub const ODD_BURST_BLANKING_INTERVAL_REGISTER: VolAddress<BurstInterval, Unsafe, Unsafe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/vi.rs:34:1
+   |
+34 | pub const EVEN_BURST_BLANKING_INTERVAL_REGISTER: VolAddress<BurstInterval, Unsafe, Unsafe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/mmio/vi.rs:38:1
+   |
+38 | pub struct TopFieldBase(u32);
+   | ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/vi.rs:39:1
+   |
+39 | pub const TOP_FIELD_BASE_REGISTER_L: VolAddress<TopFieldBase, Unsafe, Unsafe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/vi.rs:42:1
+   |
+42 | pub const TOP_FIELD_BASE_REGISTER_R: VolAddress<u32, Unsafe, Unsafe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/mmio/vi.rs:46:1
+   |
+46 | pub struct BottomFieldBase(u32);
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/vi.rs:47:1
+   |
+47 | pub const BOTTOM_FIELD_BASE_REGISTER_L: VolAddress<BottomFieldBase, Unsafe, Unsafe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/vi.rs:50:1
+   |
+50 | pub const BOTTOM_FIELD_BASE_REGISTER_R: VolAddress<u32, Unsafe, Unsafe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/mmio/vi.rs:54:1
+   |
+54 | pub struct ScreenPosition(u16);
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/vi.rs:55:1
+   |
+55 | pub const CURRENT_VERTICAL_POSITION: VolAddress<ScreenPosition, Safe, ()> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/vi.rs:57:1
+   |
+57 | pub const CURRENT_HORIZONTAL_POSITION: VolAddress<ScreenPosition, Safe, ()> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/mmio/vi.rs:61:1
+   |
+61 | pub struct DisplayInterrupt(u32);
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/vi.rs:62:1
+   |
+62 | pub const DISPLAY_INTERRUPT_ZERO: VolAddress<DisplayInterrupt, Safe, Safe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/vi.rs:64:1
+   |
+64 | pub const DISPLAY_INTERRUPT_ONE: VolAddress<DisplayInterrupt, Safe, Safe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/vi.rs:66:1
+   |
+66 | pub const DISPLAY_INTERRUPT_TWO: VolAddress<DisplayInterrupt, Safe, Safe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/vi.rs:68:1
+   |
+68 | pub const DISPLAY_INTERRUPT_THREE: VolAddress<DisplayInterrupt, Safe, Safe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/mmio/vi.rs:72:1
+   |
+72 | pub struct DisplayLatchControl(u32);
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/vi.rs:73:1
+   |
+73 | pub const DISPLAY_LATCH_REGISTER_ZERO: VolAddress<DisplayLatchControl, Unsafe, Unsafe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/vi.rs:75:1
+   |
+75 | pub const DISPLAY_LATCH_REGISTER_ONE: VolAddress<DisplayLatchControl, Unsafe, Unsafe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/mmio/vi.rs:79:1
+   |
+79 | pub struct ScalerControl(u16);
+   | ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/vi.rs:80:1
+   |
+80 | pub const SCALING_WIDTH_REGISTER: VolAddress<ScalingControl, Unsafe, Unsafe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/mmio/vi.rs:84:1
+   |
+84 | pub struct ScalingControl(u16);
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/vi.rs:85:1
+   |
+85 | pub const HORIZONTAL_SCALING_REGISTER: VolAddress<ScalingControl, Unsafe, Unsafe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+  --> src/mmio/vi.rs:89:1
+   |
+89 | pub struct FilterCoefficents(u32);
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/vi.rs:90:1
+   |
+90 | pub const FILTER_COEFFICENT_TABLE_ZERO: VolAddress<FilterCoefficents, Safe, Safe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/vi.rs:92:1
+   |
+92 | pub const FILTER_COEFFICENT_TABLE_ONE: VolAddress<FilterCoefficents, Safe, Safe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/vi.rs:94:1
+   |
+94 | pub const FILTER_COEFFICENT_TABLE_TWO: VolAddress<FilterCoefficents, Safe, Safe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/vi.rs:96:1
+   |
+96 | pub const FILTER_COEFFICENT_TABLE_THREE: VolAddress<FilterCoefficents, Safe, Safe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+  --> src/mmio/vi.rs:98:1
+   |
+98 | pub const FILTER_COEFFICENT_TABLE_FOUR: VolAddress<FilterCoefficents, Safe, Safe> =
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+   --> src/mmio/vi.rs:100:1
+    |
+100 | pub const FILTER_COEFFICENT_TABLE_FIVE: VolAddress<FilterCoefficents, Safe, Safe> =
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+   --> src/mmio/vi.rs:102:1
+    |
+102 | pub const FILTER_COEFFICENT_TABLE_SIX: VolAddress<FilterCoefficents, Safe, Safe> =
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+   --> src/mmio/vi.rs:105:1
+    |
+105 | pub const UNKNOWN_ANTIALIASING: VolAddress<u32, Unsafe, Unsafe> =
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+   --> src/mmio/vi.rs:109:1
+    |
+109 | pub struct VideoClockControl(u16);
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+   --> src/mmio/vi.rs:110:1
+    |
+110 | pub const VIDEO_CLOCK_SELECT_REGISTER: VolAddress<VideoClockControl, Safe, Safe> =
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+   --> src/mmio/vi.rs:114:1
+    |
+114 | pub struct VideoSelect(u16);
+    | ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+   --> src/mmio/vi.rs:115:1
+    |
+115 | pub const VIDEO_DTV_SELECT_REGISTER: VolAddress<VideoSelect, Safe, Safe> =
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+   --> src/mmio/vi.rs:119:1
+    |
+119 | pub struct BorderHBEControl(u16);
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+   --> src/mmio/vi.rs:120:1
+    |
+120 | pub const BORDER_HBE: VolAddress<BorderHBEControl, Safe, Safe> =
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct
+   --> src/mmio/vi.rs:124:1
+    |
+124 | pub struct BorderHBSControl(u16);
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+   --> src/mmio/vi.rs:125:1
+    |
+125 | pub const BORDER_HBS: VolAddress<BorderHBSControl, Safe, Safe> =
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+   --> src/mmio/vi.rs:128:1
+    |
+128 | pub const UNUSED_ZERO: VolAddress<u16, Safe, Safe> = unsafe { VolAddress::new(0xCC00_2076) };
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+   --> src/mmio/vi.rs:129:1
+    |
+129 | pub const UNUSED_ONE: VolAddress<u32, Safe, Safe> = unsafe { VolAddress::new(0xCC00_2078) };
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a constant
+   --> src/mmio/vi.rs:130:1
+    |
+130 | pub const UNUSED_TWO: VolAddress<u32, Safe, Safe> = unsafe { VolAddress::new(0xCC00_207C) };
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: `ogc-rs` (lib) generated 995 warnings (87 duplicates) (run `cargo clippy --fix --lib -p ogc-rs` to apply 3 suggestions)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.77s

@@ -9,4 +9,5 @@ dev = { panic = "abort" }
 release = { panic = "abort", lto = true, codegen-units = 1, strip = "symbols", opt-level = "s" }
 
 [dependencies]
+bitfrob = "1.3.2"
 ogc-rs = { path = "../../", features = ["ffi"] } 

@@ -6,7 +6,7 @@ use core::f32::consts::PI;
 use core::mem::ManuallyDrop;
 use ogc_rs::ffi::{GX_F32, GX_NRM_XYZ, GX_TEX_ST, GX_VA_NRM, GX_VA_TEX0};
 use ogc_rs::gu::RotationAxis;
-use ogc_rs::input::{Button, ControllerPort, ControllerType, Input};
+use ogc_rs::pad::{Channel, Controller};
 use ogc_rs::{alloc_aligned_buffer, print};
 
 use ogc_rs::{
@@ -170,16 +170,11 @@ fn main(_argc: isize, _argv: *const *const u8) -> isize {
     Gx::flush();
     let mut i: u16 = 0;
 
-    Input::init(ControllerType::Gamecube);
-    let input = Input::new(ControllerType::Gamecube, ControllerPort::One);
-
+    let controller = Controller::new().unwrap();
     loop {
-        Input::update(ControllerType::Gamecube);
-
-        if input.is_button_down(Button::Start) {
+        if controller.state().start {
             break 0;
         }
-
         Gx::inv_vtx_cache();
         Gx::invalidate_tex_all();
 
