@@ -22,10 +22,11 @@
 #![feature(negative_impls)]
 #![feature(slice_ptr_get)]
 #![feature(allocator_api)]
-#![feature(strict_provenance)]
 #![feature(asm_experimental_arch)]
 
 extern crate alloc;
+
+pub mod pad;
 
 /// Interprocess Control / IOS Implementation
 ///
@@ -115,6 +116,67 @@ cfg_if::cfg_if! {
     }
 }
 
+mod interrupts {
+    use bit_field::BitField;
+
+    fn get_msr() -> u32 {
+        let msr: u32;
+        unsafe { core::arch::asm!("mfmsr {}", out(reg) msr) };
+        msr
+    }
+
+    fn set_msr(msr: u32) {
+        unsafe { core::arch::asm!("mtmsr {}", in(reg) msr) };
+    }
+
+    pub fn disable() -> u32 {
+        let restore_state = get_msr();
+        let mut msr = restore_state;
+        // Set External Interrupts false
+        msr.set_bit(15, false);
+        set_msr(msr);
+        return restore_state;
+    }
+
+    pub fn enable(restore_state: u32) {
+        set_msr(restore_state);
+    }
+}
+
+#[cfg(feature = "critical-section-wii")]
+mod sync {
+    use bit_field::BitField;
+
+    struct WiiCriticalSection;
+
+    critical_section::set_impl!(WiiCriticalSection);
+
+    fn get_msr() -> u32 {
+        let msr: u32;
+        unsafe { core::arch::asm!("mfmsr {}", out(reg) msr) };
+        msr
+    }
+
+    fn set_msr(msr: u32) {
+        unsafe { core::arch::asm!("mtmsr {}", in(reg) msr) };
+    }
+
+    unsafe impl critical_section::Impl for WiiCriticalSection {
+        unsafe fn acquire() -> critical_section::RawRestoreState {
+            let restore_state = get_msr();
+            let mut msr = restore_state;
+            // Set External Interrupts false
+            msr.set_bit(15, false);
+            set_msr(msr);
+            restore_state
+        }
+
+        unsafe fn release(restore_state: critical_section::RawRestoreState) {
+            set_msr(restore_state);
+        }
+    }
+}
+
 ///Prelude
 pub mod prelude {
     // alloc Export
@@ -139,4 +201,19 @@ pub mod prelude {
 
     #[global_allocator]
     static GLOBAL_ALLOCATOR: OGCAllocator = OGCAllocator;
+}
+
+mod test {
+
+    struct Func<Args, Ret>(fn(Args) -> Ret);
+
+    impl<Args, Ret> Func<Args, Ret> {
+        fn cast<Args2, Ret2>(self) -> Func<Args2, Ret2> {
+            unsafe { core::mem::transmute(self) }
+        }
+
+        unsafe fn call(&self, args: Args) -> Ret {
+            (self.0)(args)
+        }
+    }
 }

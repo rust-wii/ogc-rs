@@ -2366,3 +2366,260 @@ pub enum ColorChannel {
     Color0 = ffi::GX_COLOR0,
     Color1 = ffi::GX_COLOR1,
 }
+
+pub mod experimental {
+    use core::alloc::Layout;
+
+    use aliasable::boxed::AliasableBox;
+    use alloc::boxed::Box;
+    use bit_field::BitField;
+    use num_traits::ToBytes;
+
+    use crate::{
+        mmio::command_processor::{
+            read_fifo_base, write_fifo_base, write_fifo_end, write_fifo_high_watermark,
+            write_fifo_low_watermark, write_fifo_read_addr, write_fifo_read_write_distance,
+            write_fifo_write_addr, AlignedPhysPtr, Clear, Control,
+        },
+        print, println,
+    };
+
+    use super::GX_PIPE;
+
+    pub struct Fifo<const SIZE: usize> {
+        buffer: AliasableBox<[u8; SIZE]>,
+        high_watermark_index: usize,
+        low_watermark_index: usize,
+        read_write_distance: u32,
+        write_index: usize,
+        read_index: usize,
+        breakpoint_index: Option<usize>,
+    }
+
+    #[derive(Copy, Clone, Debug)]
+    pub enum Error {
+        InvalidSize,
+        InvalidLayout,
+        NotEnoughMemory,
+        BufferTooBig,
+        WriteIndexOutOfRange,
+        MisalignedPtr,
+        IndexOutOfRange,
+        InvalidFifoPair,
+    }
+
+    pub unsafe fn move_to_write_pipe_address(address: usize) {
+        debug_assert!(core::mem::size_of::<usize>() == core::mem::size_of::<u32>());
+
+        core::arch::asm!("mtspr 921,{}",  in(reg) address);
+    }
+
+    pub unsafe fn enable_write_pipe() {
+        let mut hid2: usize;
+        core::arch::asm!("mfspr {},920", out(reg) hid2);
+
+        hid2.set_bit(30, true);
+
+        core::arch::asm!("mtspr 920,{}", in(reg) hid2);
+    }
+
+    impl<const SIZE: usize> Fifo<SIZE> {
+        pub fn new() -> Result<Self, Error> {
+            const HIGH_WATERMARK: usize = 16 * 1024;
+            const MIN_SIZE: usize = 64 * 1024;
+
+            if SIZE < MIN_SIZE {
+                println!("[ERROR]: SIZE must be at least {}", MIN_SIZE);
+                return Err(Error::InvalidSize);
+            }
+
+            if SIZE.next_multiple_of(32) != SIZE {
+                println!("[ERROR]: SIZE is not a multiple of 32");
+                return Err(Error::InvalidSize);
+            }
+
+            let buffer = {
+                let layout = Layout::from_size_align(SIZE, 32).map_err(|_| Error::InvalidLayout)?;
+                let ptr = unsafe { alloc::alloc::alloc(layout) };
+                if ptr.is_null() {
+                    return Err(Error::NotEnoughMemory);
+                }
+
+                unsafe { Box::from_raw(ptr.cast::<[u8; SIZE]>()) }
+            };
+
+            Ok(Self {
+                buffer: AliasableBox::from_unique(buffer),
+                high_watermark_index: SIZE.checked_sub(HIGH_WATERMARK).ok_or(Error::InvalidSize)?,
+                low_watermark_index: SIZE / 2,
+                read_write_distance: 0,
+                write_index: 0,
+                read_index: 0,
+                breakpoint_index: None,
+            })
+        }
+
+        pub fn set_as_cpu_fifo(&mut self) -> Result<(), Error> {
+            critical_section::with(|_| {
+                //Disable Command Processor linking and interrupts
+                Control::read()
+                    .with_link_enable(false)
+                    .with_underflow_interrupt_enable(false)
+                    .with_overflow_interrupt_enable(true)
+                    .write();
+
+                let start_ptr = AlignedPhysPtr::from_virtual(self.buffer.as_mut_ptr())
+                    .unwrap()
+                    .as_mut_ptr();
+
+                let end_ptr = AlignedPhysPtr::from_virtual(unsafe {
+                    self.buffer.as_mut_ptr().add(self.buffer.len())
+                })
+                .unwrap()
+                .as_mut_ptr();
+
+                let write_ptr = AlignedPhysPtr::from_virtual(unsafe {
+                    self.buffer.as_mut_ptr().add(self.write_index)
+                })
+                .unwrap()
+                .as_mut_ptr();
+
+                if start_ptr.align_offset(32) != 0
+                    || end_ptr.align_offset(32) != 0
+                    || write_ptr.align_offset(32) != 0
+                {
+                    return Err(Error::MisalignedPtr);
+                }
+
+                // SAFETY:
+                // All ptrs are in physical space: ptr.addr() <= 0x1FFF_FFFF
+                // All ptrs are 32 byte aligned: ptr.align_offset(32) == 0
+
+                unsafe {
+                    crate::mmio::pi::CPU_FIFO_START.write(start_ptr);
+                    crate::mmio::pi::CPU_FIFO_END.write(end_ptr);
+                    crate::mmio::pi::CPU_FIFO_WRITE_PTR.write(write_ptr);
+                }
+
+                Ok(())
+            })
+        }
+
+        pub fn set_as_gpu_fifo(&mut self) -> Result<(), Error> {
+            critical_section::with(|_| {
+                //Disable Command Processor read, linking and interrupts
+                Control::read()
+                    .with_read_enable(false)
+                    .with_link_enable(false)
+                    .with_underflow_interrupt_enable(false)
+                    .with_overflow_interrupt_enable(false)
+                    .write();
+
+                unsafe {
+                    write_fifo_base(
+                        AlignedPhysPtr::from_virtual(self.buffer.as_mut_ptr()).unwrap(),
+                    );
+
+                    write_fifo_end(
+                        AlignedPhysPtr::from_virtual(
+                            self.buffer.as_mut_ptr().add(self.buffer.len()),
+                        )
+                        .unwrap(),
+                    );
+                    write_fifo_high_watermark(
+                        AlignedPhysPtr::from_virtual(
+                            self.buffer.as_mut_ptr().add(self.high_watermark_index),
+                        )
+                        .unwrap(),
+                    );
+                    write_fifo_low_watermark(
+                        AlignedPhysPtr::from_virtual(
+                            self.buffer.as_mut_ptr().add(self.low_watermark_index),
+                        )
+                        .unwrap(),
+                    );
+
+                    write_fifo_read_write_distance(self.read_write_distance);
+
+                    write_fifo_read_addr(
+                        AlignedPhysPtr::from_virtual(self.buffer.as_mut_ptr().add(self.read_index))
+                            .unwrap(),
+                    );
+
+                    write_fifo_write_addr(
+                        AlignedPhysPtr::from_virtual(
+                            self.buffer.as_mut_ptr().add(self.write_index),
+                        )
+                        .unwrap(),
+                    );
+
+                    //Re-enable reading from the fifo
+                    Control::read().with_read_enable(true).write();
+                }
+
+                Ok(())
+            })
+        }
+
+        pub unsafe fn load_bp_reg(&mut self, register_index: u8, value: &[u8; 4]) {
+            self.write_bytes(&[0x61, register_index, value[1], value[2], value[3]]);
+        }
+
+        pub unsafe fn load_cp_reg(&mut self, register_index: u8, value: &[u8; 4]) {
+            self.write_bytes(&[0x08, register_index, value[0], value[1], value[2], value[3]]);
+        }
+
+        pub unsafe fn load_xf_reg(&mut self, register_index: u16, value: &[u8; 4]) {
+            let reg_bytes = u32::from(register_index).to_be_bytes();
+            self.write_bytes(&[
+                0x10,
+                reg_bytes[0],
+                reg_bytes[1],
+                reg_bytes[2],
+                reg_bytes[3],
+                value[0],
+                value[1],
+                value[2],
+                value[3],
+            ]);
+        }
+
+        pub unsafe fn set_copy_clear(&mut self, colors: &[u8; 4], z: u32) {
+            let [r, g, b, a] = colors;
+            self.load_bp_reg(0x4f, &[0, 0, *r, *g]);
+            self.load_bp_reg(0x50, &[0, 0, *b, *a]);
+            self.load_bp_reg(0x51, &z.to_be_bytes());
+        }
+
+        pub fn link_cpu_gpu_fifo(&mut self) -> Result<(), Error> {
+            critical_section::with(|_| {
+                let pi_ptr = crate::mmio::pi::CPU_FIFO_START.read();
+                let (high, low) = unsafe { read_fifo_base().split() };
+
+                println!("{:?}, {:?}", high, low);
+
+                if pi_ptr == unsafe { read_fifo_base().as_mut_ptr() } {
+                    //Clear underflow and overflow
+                    Clear::new()
+                        .with_clear_overflow(true)
+                        .with_clear_underflow(true)
+                        .write();
+                    Control::read()
+                        .with_read_enable(true)
+                        .with_link_enable(true)
+                        .write();
+
+                    Ok(())
+                } else {
+                    return Err(Error::InvalidFifoPair);
+                }
+            })
+        }
+
+        pub fn write_bytes(&mut self, bytes: &[u8]) {
+            for byte in bytes {
+                GX_PIPE.write(*byte);
+            }
+        }
+    }
+}
