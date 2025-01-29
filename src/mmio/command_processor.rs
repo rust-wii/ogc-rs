@@ -3,7 +3,7 @@
 
 use voladdress::{Safe, VolAddress};
 
-pub use types::{Clear, Control, Status};
+pub use types::{BoundingBox, Clear, Control, PerformanceSelect, Status, Token};
 
 const BASE: usize = 0xCC00_0000;
 
@@ -13,9 +13,10 @@ const CONTROL_REGISTER: VolAddress<Control, Safe, Safe> = unsafe { VolAddress::n
 
 const CLEAR_REGISTER: VolAddress<Clear, Safe, Safe> = unsafe { VolAddress::new(BASE + 0x4) };
 
-const PERFORMANCE_SELECT: VolAddress<u16, Safe, Safe> = unsafe { VolAddress::new(BASE + 0x6) };
+const PERFORMANCE_SELECT: VolAddress<PerformanceSelect, Safe, Safe> =
+    unsafe { VolAddress::new(BASE + 0x6) };
 
-const TOKEN: VolAddress<u16, Safe, Safe> = unsafe { VolAddress::new(BASE + 0xE) };
+const TOKEN: VolAddress<Token, Safe, Safe> = unsafe { VolAddress::new(BASE + 0xE) };
 
 const BOUNDING_BOX_LEFT: VolAddress<u16, Safe, Safe> = unsafe { VolAddress::new(BASE + 0x10) };
 
@@ -118,9 +119,14 @@ const CLOCKS_PER_VERTEX_OUT_COUNT: VolAddress<u16, Safe, Safe> =
     unsafe { VolAddress::new(BASE + 0x64) };
 
 pub(crate) mod types {
+    use core::ptr::NonNull;
+
     use bit_field::BitField;
 
-    use super::{CLEAR_REGISTER, CONTROL_REGISTER, STATUS_REGISTER};
+    use super::{
+        BOUNDING_BOX_BOTTOM, BOUNDING_BOX_LEFT, BOUNDING_BOX_RIGHT, BOUNDING_BOX_TOP,
+        CLEAR_REGISTER, CONTROL_REGISTER, PERFORMANCE_SELECT, STATUS_REGISTER, TOKEN,
+    };
 
     #[repr(transparent)]
     #[derive(Copy, Clone, Debug)]
@@ -302,6 +308,112 @@ pub(crate) mod types {
         pub fn with_clear_metrics(mut self, clear_metrics: bool) -> Self {
             self.0.set_bit(2, clear_metrics);
             self
+        }
+    }
+
+    #[repr(transparent)]
+    #[derive(Copy, Clone, Debug)]
+    pub struct PerformanceSelect(u16);
+
+    impl PerformanceSelect {
+        pub const fn new() -> Self {
+            Self(0)
+        }
+
+        pub fn read() -> Self {
+            PERFORMANCE_SELECT.read()
+        }
+
+        pub fn write(self) {
+            PERFORMANCE_SELECT.write(self);
+        }
+
+        //TODO: Swap `u16` with an enum
+        pub fn value(&self) -> u16 {
+            self.0
+        }
+
+        //TODO: Swap `u16` with an enum
+        pub fn with_value(mut self, value: u16) -> Self {
+            debug_assert!(
+                (0..=5).contains(&value),
+                "value must be between 0 and 5 inclusive"
+            );
+            self.0 = value;
+            self
+        }
+    }
+
+    #[repr(transparent)]
+    #[derive(Copy, Clone, Debug)]
+    pub struct Token(u16);
+
+    impl Token {
+        pub const fn new() -> Self {
+            Self(0)
+        }
+
+        pub fn read() -> Self {
+            TOKEN.read()
+        }
+
+        pub fn write(self) {
+            TOKEN.write(self);
+        }
+
+        pub fn value(&self) -> u16 {
+            self.0
+        }
+
+        pub fn with_value(mut self, value: u16) -> Self {
+            self.0 = value;
+            self
+        }
+    }
+
+    #[derive(Copy, Clone, Debug)]
+    pub struct BoundingBox {
+        left: u16,
+        right: u16,
+        top: u16,
+        bottom: u16,
+    }
+
+    impl BoundingBox {
+        pub const fn new() -> Self {
+            Self {
+                left: 0,
+                right: 0,
+                top: 0,
+                bottom: 0,
+            }
+        }
+
+        pub fn read() -> Self {
+            Self {
+                left: BOUNDING_BOX_LEFT.read(),
+                right: BOUNDING_BOX_RIGHT.read(),
+                top: BOUNDING_BOX_TOP.read(),
+                bottom: BOUNDING_BOX_BOTTOM.read(),
+            }
+        }
+    }
+
+    pub struct AlignedPhysPtr<T: ?Sized>(NonNull<T>);
+
+    impl<T> AlignedPhysPtr<T> {
+        pub fn new(ptr: *mut T) -> Option<Self> {
+            let phys_ptr = match ptr.addr() {
+                0x00000000..=0x017FFFFF => ptr,
+                0x10000000..=0x13FFFFFF => ptr,
+                0x80000000..=0x817FFFFF => ptr.map_addr(|addr| addr - 0x80000000),
+                0x90000000..=0x93FFFFFF => ptr.map_addr(|addr| addr - 0x90000000),
+                0xC0000000..=0xC17FFFFF => ptr.map_addr(|addr| addr - 0xC0000000),
+                0xD0000000..=0xD3FFFFFF => ptr.map_addr(|addr| addr - 0xD0000000),
+                _ => panic!("Unknown address range encountered"),
+            };
+
+            NonNull::new(phys_ptr).and_then(|val| Some(Self(val)))
         }
     }
 }
