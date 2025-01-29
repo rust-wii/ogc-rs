@@ -410,10 +410,15 @@ pub(crate) mod types {
                 0x90000000..=0x93FFFFFF => ptr.map_addr(|addr| addr - 0x90000000),
                 0xC0000000..=0xC17FFFFF => ptr.map_addr(|addr| addr - 0xC0000000),
                 0xD0000000..=0xD3FFFFFF => ptr.map_addr(|addr| addr - 0xD0000000),
-                _ => panic!("Unknown address range encountered"),
+                _ => return None,
             };
 
-            NonNull::new(phys_ptr).and_then(|val| Some(Self(val)))
+            if phys_ptr.align_offset(32) != 0 {
+                None
+            } else {
+                NonNull::new(phys_ptr).and_then(|val| Some(Self(val)))
+            }
+        }
         }
     }
 }
