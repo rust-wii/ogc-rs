@@ -544,7 +544,7 @@ pub(crate) mod types {
 
             NonNull::new(core::ptr::with_exposed_provenance_mut(addr))
                 .and_then(|val| Some(AlignedPhysPtr(val)))
-                .unwrap()
+                .expect("expected a ptr that was not null")
         }
     }
 }
