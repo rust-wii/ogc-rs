@@ -344,7 +344,7 @@ pub(crate) mod types {
         }
 
         /// Checks if the Command Processor can read from the fifo
-        pub fn read_enable(&self) -> bool {
+        pub fn read_enable(self) -> bool {
             self.0.get_bit(0)
         }
 
@@ -355,7 +355,7 @@ pub(crate) mod types {
         }
 
         /// Checks whether fifo breakpoints are enabled
-        pub fn breakpoint_enable(&self) -> bool {
+        pub fn breakpoint_enable(self) -> bool {
             self.0.get_bit(1)
         }
 
@@ -366,7 +366,7 @@ pub(crate) mod types {
         }
 
         /// Checks whether the overflow interupt is enabled
-        pub fn overflow_interrupt_enable(&self) -> bool {
+        pub fn overflow_interrupt_enable(self) -> bool {
             self.0.get_bit(2)
         }
 
@@ -377,7 +377,7 @@ pub(crate) mod types {
         }
 
         /// Check if the underflow interrupt is enabled
-        pub fn underflow_interrupt_enable(&self) -> bool {
+        pub fn underflow_interrupt_enable(self) -> bool {
             self.0.get_bit(3)
         }
 
@@ -388,7 +388,7 @@ pub(crate) mod types {
         }
 
         /// Check whether the Command Processor and Processor Interface is linked
-        pub fn link_enable(&self) -> bool {
+        pub fn link_enable(self) -> bool {
             self.0.get_bit(4)
         }
 
@@ -399,7 +399,7 @@ pub(crate) mod types {
         }
 
         /// Checks whether the breakpoint interrupt is enabled
-        pub fn breakpoint_interrupt_enable(&self) -> bool {
+        pub fn breakpoint_interrupt_enable(self) -> bool {
             self.0.get_bit(5)
         }
 
@@ -439,7 +439,7 @@ pub(crate) mod types {
         }
 
         /// Returns a bool to check if the fifo overflow will get cleared
-        pub fn clear_overflow(&self) -> bool {
+        pub fn clear_overflow(self) -> bool {
             self.0.get_bit(0)
         }
 
@@ -450,7 +450,7 @@ pub(crate) mod types {
         }
 
         /// Returns a bool to check if the fifo underflow will get cleared
-        pub fn clear_underflow(&self) -> bool {
+        pub fn clear_underflow(self) -> bool {
             self.0.get_bit(1)
         }
 
@@ -461,7 +461,7 @@ pub(crate) mod types {
         }
 
         /// Returns a bool to see if the metrics are gonna get cleared
-        pub fn clear_metrics(&self) -> bool {
+        pub fn clear_metrics(self) -> bool {
             self.0.get_bit(2)
         }
         /// Sets whether to clear the CP metrics and writes to `self`
@@ -498,7 +498,7 @@ pub(crate) mod types {
 
         //TODO: Swap `u16` with an enum
         /// The value of the performance select
-        pub fn value(&self) -> u16 {
+        pub fn value(self) -> u16 {
             self.0
         }
 
@@ -538,7 +538,7 @@ pub(crate) mod types {
         }
 
         /// Grabs the token value out of the token
-        pub fn value(&self) -> u16 {
+        pub fn value(self) -> u16 {
             self.0
         }
 
@@ -599,19 +599,18 @@ pub(crate) mod types {
         /// address space
         pub fn new(ptr: *mut T) -> Option<Self> {
             let phys_ptr = match ptr.addr() {
-                0x00000000..=0x017FFFFF => ptr,
-                0x10000000..=0x13FFFFFF => ptr,
-                0x80000000..=0x817FFFFF => ptr.map_addr(|addr| addr - 0x80000000),
-                0x90000000..=0x93FFFFFF => ptr.map_addr(|addr| addr - 0x90000000),
-                0xC0000000..=0xC17FFFFF => ptr.map_addr(|addr| addr - 0xC0000000),
-                0xD0000000..=0xD3FFFFFF => ptr.map_addr(|addr| addr - 0xD0000000),
+                0x0000_0000..=0x017F_FFFF | 0x1000_0000..=0x13FF_FFFF => ptr,
+                0x8000_0000..=0x817F_FFFF => ptr.map_addr(|addr| addr - 0x8000_0000),
+                0x9000_0000..=0x93FF_FFFF => ptr.map_addr(|addr| addr - 0x9000_0000),
+                0xC000_0000..=0xC17F_FFFF => ptr.map_addr(|addr| addr - 0xC000_0000),
+                0xD000_0000..=0xD3FF_FFFF => ptr.map_addr(|addr| addr - 0xD000_0000),
                 _ => return None,
             };
 
             if phys_ptr.align_offset(32) != 0 {
                 None
             } else {
-                NonNull::new(phys_ptr).and_then(|val| Some(Self(val)))
+                NonNull::new(phys_ptr).map(|val| Self(val))
             }
         }
         /// Consumes a [`AlignedPhysPtr`] to gives out its halves
@@ -633,7 +632,7 @@ pub(crate) mod types {
             addr = *addr.set_bits(16..=31, high.0.into());
 
             NonNull::new(core::ptr::with_exposed_provenance_mut(addr))
-                .and_then(|val| Some(AlignedPhysPtr(val)))
+                .map(|val| AlignedPhysPtr(val))
                 .expect("expected a ptr that was not null")
         }
     }
