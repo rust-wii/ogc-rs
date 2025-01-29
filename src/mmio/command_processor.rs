@@ -135,11 +135,19 @@ pub unsafe fn write_fifo_base(ptr: AlignedPhysPtr<u8>) {
     FIFO_BASE_ADDRESS_HIGH.write(high);
 }
 
+pub unsafe fn read_fifo_base() -> AlignedPhysPtr<u8> {
+    AlignedPhysPtr::from_split(FIFO_BASE_ADDRESS_LOW.read(), FIFO_BASE_ADDRESS_HIGH.read())
+}
+
 pub unsafe fn write_fifo_end(ptr: AlignedPhysPtr<u8>) {
     let (low, high) = ptr.split();
 
     FIFO_END_ADDRESS_LOW.write(low);
     FIFO_END_ADDRESS_HIGH.write(high);
+}
+
+pub unsafe fn read_fifo_end() -> AlignedPhysPtr<u8> {
+    AlignedPhysPtr::from_split(FIFO_END_ADDRESS_LOW.read(), FIFO_END_ADDRESS_HIGH.read())
 }
 
 pub unsafe fn write_fifo_low_watermark(ptr: AlignedPhysPtr<u8>) {
@@ -149,11 +157,25 @@ pub unsafe fn write_fifo_low_watermark(ptr: AlignedPhysPtr<u8>) {
     FIFO_LOW_WATERMARK_ADDRESS_HIGH.write(high);
 }
 
+pub unsafe fn read_fifo_low_watermark() -> AlignedPhysPtr<u8> {
+    AlignedPhysPtr::from_split(
+        FIFO_LOW_WATERMARK_ADDRESS_LOW.read(),
+        FIFO_LOW_WATERMARK_ADDRESS_HIGH.read(),
+    )
+}
+
 pub unsafe fn write_fifo_high_watermark(ptr: AlignedPhysPtr<u8>) {
     let (low, high) = ptr.split();
 
     FIFO_HIGH_WATERMARK_ADDRESS_LOW.write(low);
     FIFO_HIGH_WATERMARK_ADDRESS_HIGH.write(high);
+}
+
+pub unsafe fn read_fifo_high_watermark() -> AlignedPhysPtr<u8> {
+    AlignedPhysPtr::from_split(
+        FIFO_HIGH_WATERMARK_ADDRESS_LOW.read(),
+        FIFO_HIGH_WATERMARK_ADDRESS_HIGH.read(),
+    )
 }
 
 pub unsafe fn write_fifo_read_ptr(ptr: AlignedPhysPtr<u8>) {
@@ -163,6 +185,10 @@ pub unsafe fn write_fifo_read_ptr(ptr: AlignedPhysPtr<u8>) {
     FIFO_READ_ADDRESS_HIGH.write(high);
 }
 
+pub unsafe fn read_fifo_read_ptr() -> AlignedPhysPtr<u8> {
+    AlignedPhysPtr::from_split(FIFO_READ_ADDRESS_LOW.read(), FIFO_READ_ADDRESS_HIGH.read())
+}
+
 pub unsafe fn write_fifo_write_ptr(ptr: AlignedPhysPtr<u8>) {
     let (low, high) = ptr.split();
 
@@ -170,11 +196,25 @@ pub unsafe fn write_fifo_write_ptr(ptr: AlignedPhysPtr<u8>) {
     FIFO_WRITE_ADDRESS_HIGH.write(high);
 }
 
+pub unsafe fn read_fifo_write_ptr() -> AlignedPhysPtr<u8> {
+    AlignedPhysPtr::from_split(
+        FIFO_WRITE_ADDRESS_LOW.read(),
+        FIFO_WRITE_ADDRESS_HIGH.read(),
+    )
+}
+
 pub unsafe fn write_fifo_breakpoint_ptr(ptr: AlignedPhysPtr<u8>) {
     let (low, high) = ptr.split();
 
     FIFO_BREAKPOINT_ADDRESS_LOW.write(low);
     FIFO_BREAKPOINT_ADDRESS_HIGH.write(high);
+}
+
+pub unsafe fn read_fifo_breakpoint_ptr() -> AlignedPhysPtr<u8> {
+    AlignedPhysPtr::from_split(
+        FIFO_BREAKPOINT_ADDRESS_LOW.read(),
+        FIFO_BREAKPOINT_ADDRESS_HIGH.read(),
+    )
 }
 
 pub(crate) mod types {
