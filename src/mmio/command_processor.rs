@@ -3,7 +3,10 @@
 
 use voladdress::{Safe, VolAddress};
 
-pub use types::{BoundingBox, Clear, Control, PerformanceSelect, Status, Token};
+pub use types::{
+    AlignedPhysPtr, AlignedPhysPtrHigh, AlignedPhysPtrLow, BoundingBox, Clear, Control,
+    PerformanceSelect, Status, Token,
+};
 
 const BASE: usize = 0xCC00_0000;
 
@@ -26,24 +29,28 @@ const BOUNDING_BOX_TOP: VolAddress<u16, Safe, Safe> = unsafe { VolAddress::new(B
 
 const BOUNDING_BOX_BOTTOM: VolAddress<u16, Safe, Safe> = unsafe { VolAddress::new(BASE + 0x16) };
 
-const FIFO_BASE_ADDRESS_LOW: VolAddress<u16, Safe, Safe> = unsafe { VolAddress::new(BASE + 0x20) };
+const FIFO_BASE_ADDRESS_LOW: VolAddress<AlignedPhysPtrLow, Safe, Safe> =
+    unsafe { VolAddress::new(BASE + 0x20) };
 
-const FIFO_BASE_ADDRESS_HIGH: VolAddress<u16, Safe, Safe> = unsafe { VolAddress::new(BASE + 0x22) };
+const FIFO_BASE_ADDRESS_HIGH: VolAddress<AlignedPhysPtrHigh, Safe, Safe> =
+    unsafe { VolAddress::new(BASE + 0x22) };
 
-const FIFO_END_ADDRESS_LOW: VolAddress<u16, Safe, Safe> = unsafe { VolAddress::new(BASE + 0x24) };
+const FIFO_END_ADDRESS_LOW: VolAddress<AlignedPhysPtrLow, Safe, Safe> =
+    unsafe { VolAddress::new(BASE + 0x24) };
 
-const FIFO_END_ADDRESS_HIGH: VolAddress<u16, Safe, Safe> = unsafe { VolAddress::new(BASE + 0x26) };
+const FIFO_END_ADDRESS_HIGH: VolAddress<AlignedPhysPtrHigh, Safe, Safe> =
+    unsafe { VolAddress::new(BASE + 0x26) };
 
-const FIFO_HIGH_WATERMARK_ADDRESS_LOW: VolAddress<u16, Safe, Safe> =
+const FIFO_HIGH_WATERMARK_ADDRESS_LOW: VolAddress<AlignedPhysPtrLow, Safe, Safe> =
     unsafe { VolAddress::new(BASE + 0x28) };
 
-const FIFO_HIGH_WATERMARK_ADDRESS_HIGH: VolAddress<u16, Safe, Safe> =
+const FIFO_HIGH_WATERMARK_ADDRESS_HIGH: VolAddress<AlignedPhysPtrHigh, Safe, Safe> =
     unsafe { VolAddress::new(BASE + 0x2A) };
 
-const FIFO_LOW_WATERMARK_ADDRESS_LOW: VolAddress<u16, Safe, Safe> =
+const FIFO_LOW_WATERMARK_ADDRESS_LOW: VolAddress<AlignedPhysPtrLow, Safe, Safe> =
     unsafe { VolAddress::new(BASE + 0x2C) };
 
-const FIFO_LOW_WATERMARK_ADDRESS_HIGH: VolAddress<u16, Safe, Safe> =
+const FIFO_LOW_WATERMARK_ADDRESS_HIGH: VolAddress<AlignedPhysPtrHigh, Safe, Safe> =
     unsafe { VolAddress::new(BASE + 0x2E) };
 
 const FIFO_READ_WRITE_DISTANCE_LOW: VolAddress<u16, Safe, Safe> =
@@ -52,19 +59,22 @@ const FIFO_READ_WRITE_DISTANCE_LOW: VolAddress<u16, Safe, Safe> =
 const FIFO_READ_WRITE_DISTANCE_HIGH: VolAddress<u16, Safe, Safe> =
     unsafe { VolAddress::new(BASE + 0x32) };
 
-const FIFO_WRITE_ADDRESS_LOW: VolAddress<u16, Safe, Safe> = unsafe { VolAddress::new(BASE + 0x34) };
+const FIFO_WRITE_ADDRESS_LOW: VolAddress<AlignedPhysPtrLow, Safe, Safe> =
+    unsafe { VolAddress::new(BASE + 0x34) };
 
-const FIFO_WRITE_ADDRESS_HIGH: VolAddress<u16, Safe, Safe> =
+const FIFO_WRITE_ADDRESS_HIGH: VolAddress<AlignedPhysPtrHigh, Safe, Safe> =
     unsafe { VolAddress::new(BASE + 0x36) };
 
-const FIFO_READ_ADDRESS_LOW: VolAddress<u16, Safe, Safe> = unsafe { VolAddress::new(BASE + 0x38) };
+const FIFO_READ_ADDRESS_LOW: VolAddress<AlignedPhysPtrLow, Safe, Safe> =
+    unsafe { VolAddress::new(BASE + 0x38) };
 
-const FIFO_READ_ADDRESS_HIGH: VolAddress<u16, Safe, Safe> = unsafe { VolAddress::new(BASE + 0x3A) };
+const FIFO_READ_ADDRESS_HIGH: VolAddress<AlignedPhysPtrHigh, Safe, Safe> =
+    unsafe { VolAddress::new(BASE + 0x3A) };
 
-const FIFO_BREAKPOINT_ADDRESS_LOW: VolAddress<u16, Safe, Safe> =
+const FIFO_BREAKPOINT_ADDRESS_LOW: VolAddress<AlignedPhysPtrLow, Safe, Safe> =
     unsafe { VolAddress::new(BASE + 0x3C) };
 
-const FIFO_BREAKPOINT_ADDRESS_HIGH: VolAddress<u16, Safe, Safe> =
+const FIFO_BREAKPOINT_ADDRESS_HIGH: VolAddress<AlignedPhysPtrHigh, Safe, Safe> =
     unsafe { VolAddress::new(BASE + 0x3E) };
 
 const TRANSFORM_RASTER_BUSY_COUNT_LOW: VolAddress<u16, Safe, Safe> =
@@ -117,6 +127,55 @@ const CLOCKS_PER_VERTEX_IN_COUNT_HIGH: VolAddress<u16, Safe, Safe> =
 
 const CLOCKS_PER_VERTEX_OUT_COUNT: VolAddress<u16, Safe, Safe> =
     unsafe { VolAddress::new(BASE + 0x64) };
+
+pub unsafe fn write_fifo_base(ptr: AlignedPhysPtr<u8>) {
+    let (low, high) = ptr.split();
+
+    FIFO_BASE_ADDRESS_LOW.write(low);
+    FIFO_BASE_ADDRESS_HIGH.write(high);
+}
+
+pub unsafe fn write_fifo_end(ptr: AlignedPhysPtr<u8>) {
+    let (low, high) = ptr.split();
+
+    FIFO_END_ADDRESS_LOW.write(low);
+    FIFO_END_ADDRESS_HIGH.write(high);
+}
+
+pub unsafe fn write_fifo_low_watermark(ptr: AlignedPhysPtr<u8>) {
+    let (low, high) = ptr.split();
+
+    FIFO_LOW_WATERMARK_ADDRESS_LOW.write(low);
+    FIFO_LOW_WATERMARK_ADDRESS_HIGH.write(high);
+}
+
+pub unsafe fn write_fifo_high_watermark(ptr: AlignedPhysPtr<u8>) {
+    let (low, high) = ptr.split();
+
+    FIFO_HIGH_WATERMARK_ADDRESS_LOW.write(low);
+    FIFO_HIGH_WATERMARK_ADDRESS_HIGH.write(high);
+}
+
+pub unsafe fn write_fifo_read_ptr(ptr: AlignedPhysPtr<u8>) {
+    let (low, high) = ptr.split();
+
+    FIFO_READ_ADDRESS_LOW.write(low);
+    FIFO_READ_ADDRESS_HIGH.write(high);
+}
+
+pub unsafe fn write_fifo_write_ptr(ptr: AlignedPhysPtr<u8>) {
+    let (low, high) = ptr.split();
+
+    FIFO_WRITE_ADDRESS_LOW.write(low);
+    FIFO_WRITE_ADDRESS_HIGH.write(high);
+}
+
+pub unsafe fn write_fifo_breakpoint_ptr(ptr: AlignedPhysPtr<u8>) {
+    let (low, high) = ptr.split();
+
+    FIFO_BREAKPOINT_ADDRESS_LOW.write(low);
+    FIFO_BREAKPOINT_ADDRESS_HIGH.write(high);
+}
 
 pub(crate) mod types {
     use core::ptr::NonNull;
@@ -401,6 +460,14 @@ pub(crate) mod types {
 
     pub struct AlignedPhysPtr<T: ?Sized>(NonNull<T>);
 
+    #[repr(transparent)]
+    #[derive(Copy, Clone, Debug)]
+    pub struct AlignedPhysPtrLow(u16);
+
+    #[repr(transparent)]
+    #[derive(Copy, Clone, Debug)]
+    pub struct AlignedPhysPtrHigh(u16);
+
     impl<T> AlignedPhysPtr<T> {
         pub fn new(ptr: *mut T) -> Option<Self> {
             let phys_ptr = match ptr.addr() {
@@ -419,6 +486,25 @@ pub(crate) mod types {
                 NonNull::new(phys_ptr).and_then(|val| Some(Self(val)))
             }
         }
+
+        pub fn split(self) -> (AlignedPhysPtrLow, AlignedPhysPtrHigh) {
+            let addr = self.0.as_ptr().expose_provenance();
+
+            let low = u16::try_from(addr.get_bits(0..=15)).unwrap();
+            let high = u16::try_from(addr.get_bits(16..=31)).unwrap();
+
+            (AlignedPhysPtrLow(low), AlignedPhysPtrHigh(high))
+        }
+        /// Safety: Only values previously gotten from `AlignedPhysPtr::split` should be passed
+        /// into this function
+        pub unsafe fn from_split(low: AlignedPhysPtrLow, high: AlignedPhysPtrHigh) -> Self {
+            let mut addr = 0usize;
+            addr = *addr.set_bits(0..=15, low.0.into());
+            addr = *addr.set_bits(16..=31, high.0.into());
+
+            NonNull::new(core::ptr::with_exposed_provenance_mut(addr))
+                .and_then(|val| Some(AlignedPhysPtr(val)))
+                .unwrap()
         }
     }
 }
