@@ -18,4 +18,10 @@ pub mod serial_interface;
 /// subsystem.
 pub mod command_processor;
 
+/// Processor Interface Helper Types and MMIO
+///
+/// This is used to check up on and mask out all interrupts and provides an interface to the
+/// processor interface fifo
+pub mod processor_interface;
+
 pub mod vi;
