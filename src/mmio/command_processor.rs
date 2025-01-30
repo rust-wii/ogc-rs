@@ -638,7 +638,8 @@ pub(crate) mod types {
                 .expect("expected a ptr that was not null")
         }
 
-        pub fn as_ptr(&self) -> *mut T {
+        /// Acquires the underlying `*mut` pointer.
+        pub fn into_ptr(self) -> *mut T {
             self.0.as_ptr()
         }
     }
