@@ -3,9 +3,12 @@
 
 use voladdress::{Safe, VolAddress};
 
+#[allow(unused_imports)]
+pub use types::BoundingBox;
+
 pub use types::{
-    AlignedPhysPtr, AlignedPhysPtrHigh, AlignedPhysPtrLow, BoundingBox, Clear, Control,
-    PerformanceSelect, Status, Token,
+    AlignedPhysPtr, AlignedPhysPtrHigh, AlignedPhysPtrLow, Clear, Control, PerformanceSelect,
+    Status, Token,
 };
 
 const BASE: usize = 0xCC00_0000;
