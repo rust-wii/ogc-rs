@@ -14,9 +14,9 @@ const INTERRUPT_CAUSE: VolAddress<InterruptCause, Safe, Safe> = unsafe { VolAddr
 
 const INTERRUPT_MASK: VolAddress<InterruptMask, Safe, Safe> = unsafe { VolAddress::new(BASE + 4) };
 
-const FIFO_BASE_ADDRESS: VolAddress<*mut u8, Safe, Safe> = unsafe { VolAddress::new(BASE + 0xC) };
+const FIFO_BASE_ADDRESS: VolAddress<*const u8, Safe, Safe> = unsafe { VolAddress::new(BASE + 0xC) };
 
-const FIFO_END_ADDRESS: VolAddress<*mut u8, Safe, Safe> = unsafe { VolAddress::new(BASE + 0x10) };
+const FIFO_END_ADDRESS: VolAddress<*const u8, Safe, Safe> = unsafe { VolAddress::new(BASE + 0x10) };
 
 const FIFO_WRITE_ADDRESS: VolAddress<*mut u8, Safe, Safe> = unsafe { VolAddress::new(BASE + 0x14) };
 
@@ -27,7 +27,7 @@ pub unsafe fn write_fifo_base(ptr: AlignedPhysPtr<u8>) {
 
 /// Read fifo base mmio register, returning the physical pointer
 pub unsafe fn read_fifo_base() -> AlignedPhysPtr<u8> {
-    AlignedPhysPtr::new(FIFO_BASE_ADDRESS.read()).unwrap()
+    AlignedPhysPtr::new(FIFO_BASE_ADDRESS.read().cast_mut()).unwrap()
 }
 
 /// Write `ptr` to the fifo end mmio register.
@@ -37,7 +37,7 @@ pub unsafe fn write_fifo_end(ptr: AlignedPhysPtr<u8>) {
 
 /// Read fifo end mmio register, returning the physical pointer
 pub unsafe fn read_fifo_end() -> AlignedPhysPtr<u8> {
-    AlignedPhysPtr::new(FIFO_END_ADDRESS.read()).unwrap()
+    AlignedPhysPtr::new(FIFO_END_ADDRESS.read().cast_mut()).unwrap()
 }
 
 /// Write `ptr` to the fifo write ptr mmio register.
