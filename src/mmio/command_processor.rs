@@ -3,9 +3,12 @@
 
 use voladdress::{Safe, VolAddress};
 
+#[allow(unused_imports)]
+pub use types::BoundingBox;
+
 pub use types::{
-    AlignedPhysPtr, AlignedPhysPtrHigh, AlignedPhysPtrLow, BoundingBox, Clear, Control,
-    PerformanceSelect, Status, Token,
+    AlignedPhysPtr, AlignedPhysPtrHigh, AlignedPhysPtrLow, Clear, Control, PerformanceSelect,
+    Status, Token,
 };
 
 const BASE: usize = 0xCC00_0000;
@@ -600,10 +603,12 @@ pub(crate) mod types {
         pub fn new(ptr: *mut T) -> Option<Self> {
             let phys_ptr = match ptr.addr() {
                 0x0000_0000..=0x017F_FFFF | 0x1000_0000..=0x13FF_FFFF => ptr,
-                0x8000_0000..=0x817F_FFFF => ptr.map_addr(|addr| addr - 0x8000_0000),
-                0x9000_0000..=0x93FF_FFFF => ptr.map_addr(|addr| addr - 0x9000_0000),
-                0xC000_0000..=0xC17F_FFFF => ptr.map_addr(|addr| addr - 0xC000_0000),
-                0xD000_0000..=0xD3FF_FFFF => ptr.map_addr(|addr| addr - 0xD000_0000),
+                0x8000_0000..=0x817F_FFFF | 0x9000_0000..=0x93FF_FFFF => {
+                    ptr.map_addr(|addr| addr - 0x8000_0000)
+                }
+                0xC000_0000..=0xC17F_FFFF | 0xD000_0000..=0xD3FF_FFFF => {
+                    ptr.map_addr(|addr| addr - 0xC000_0000)
+                }
                 _ => return None,
             };
 
@@ -634,6 +639,11 @@ pub(crate) mod types {
             NonNull::new(core::ptr::with_exposed_provenance_mut(addr))
                 .map(|val| AlignedPhysPtr(val))
                 .expect("expected a ptr that was not null")
+        }
+
+        /// Acquires the underlying `*mut` pointer.
+        pub fn into_ptr(self) -> *mut T {
+            self.0.as_ptr()
         }
     }
 }

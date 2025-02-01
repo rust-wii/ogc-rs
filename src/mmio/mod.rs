@@ -1,9 +1,8 @@
-pub mod cp;
 pub mod di;
 pub mod dsp;
 pub mod mi;
 pub mod pe;
-pub mod pi;
+pub mod vi;
 
 /// Serial Interface Helper Types and MMIO
 ///
@@ -18,4 +17,8 @@ pub mod serial_interface;
 /// subsystem.
 pub mod command_processor;
 
-pub mod vi;
+/// Processor Interface Helper Types and MMIO
+///
+/// This is used to check up on and mask out all interrupts and provides an interface to the
+/// processor interface fifo
+pub mod processor_interface;
