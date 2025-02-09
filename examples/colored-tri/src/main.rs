@@ -1,5 +1,4 @@
 #![no_std]
-#![feature(start)]
 
 use core::mem::ManuallyDrop;
 
@@ -15,8 +14,8 @@ use ogc_rs::{
 
 extern crate alloc;
 
-#[start]
-fn main(_argc: isize, _argv: *const *const u8) -> isize {
+
+pub extern "C" fn main(_argc: isize, _argv: *const *const u8) -> isize {
     let vi = Video::init();
     let mut config = Video::get_preferred_mode();
 
