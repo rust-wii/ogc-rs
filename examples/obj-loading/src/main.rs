@@ -1,5 +1,4 @@
 #![no_std]
-#![feature(start)]
 
 mod obj;
 use core::f32::consts::PI;
@@ -28,8 +27,7 @@ const WHITE_BYTES: &[u8] = include_bytes!("../white.png");
 #[derive(Clone, Copy)]
 pub struct Align32<T>(pub T);
 
-#[start]
-fn main(_argc: isize, _argv: *const *const u8) -> isize {
+pub extern "C" fn main(_argc: isize, _argv: *const *const u8) -> isize {
     let Ok(obj) = obj::from_bytes(include_bytes!("./assets/untitled.obj")) else {
         panic!()
     };
