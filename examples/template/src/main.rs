@@ -1,13 +1,12 @@
 #![no_std]
-#![feature(start)]
 
 extern crate alloc;
 use core::mem::ManuallyDrop;
 
 use ogc_rs::{mp3player::MP3Player, prelude::*};
 
-#[start]
-fn main(_argc: isize, _argv: *const *const u8) -> isize {
+#[no_mangle]
+pub extern "C" fn main(_argc: isize, _argv: *const *const u8) -> isize {
     let mp3 = include_bytes!("../mp3.mp3");
 
     let video = Video::init();
