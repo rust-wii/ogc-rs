@@ -1,5 +1,4 @@
 #![no_std]
-#![feature(start)]
 
 use alloc::vec;
 use ogc_rs::{
@@ -9,8 +8,7 @@ use ogc_rs::{
 
 extern crate alloc;
 
-#[start]
-fn main(_argc: isize, _argv: *const *const u8) -> isize {
+pub extern "C" fn main(_argc: isize, _argv: *const *const u8) -> isize {
     // Try to open SYSCONF
     if let Ok(fd) = ios::open(c"/shared2/sys/SYSCONF", Mode::Read) {
         // Try to grab size or default to 0;
