@@ -8,6 +8,7 @@ use ogc_rs::{
 
 extern crate alloc;
 
+#[no_mangle]
 pub extern "C" fn main(_argc: isize, _argv: *const *const u8) -> isize {
     // Try to open SYSCONF
     if let Ok(fd) = ios::open(c"/shared2/sys/SYSCONF", Mode::Read) {

@@ -21,6 +21,7 @@ extern crate alloc;
 use alloc::vec;
 const WHITE_BYTES: &[u8] = include_bytes!("../white.png");
 
+#[no_mangle]
 pub extern "C" fn main(_argc: isize, _argv: *const *const u8) -> isize {
     let vi = Video::init();
     let mut config = Video::get_preferred_mode();
