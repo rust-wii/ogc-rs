@@ -1,5 +1,4 @@
 #![no_std]
-#![feature(start)]
 
 mod display;
 use crate::display::Display;
@@ -15,8 +14,7 @@ use embedded_graphics::{
 
 use ogc_rs::prelude::*;
 
-#[start]
-fn main(_argc: isize, _argv: *const *const u8) -> isize {
+pub extern "C" fn main(_argc: isize, _argv: *const *const u8) -> isize {
     let mut video = Video::init();
     Input::init(ControllerType::Gamecube);
     Input::init(ControllerType::Wii);
