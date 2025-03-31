@@ -1,11 +1,13 @@
 #![no_std]
-#![feature(start)]
-
+#![no_main]
 use core::mem::ManuallyDrop;
 
+use bit_field::BitField;
+use ogc_rs::ffi::GX_TEXMAP_NULL;
 use ogc_rs::{
     ffi::{
         GX_CLR_RGBA, GX_COLOR0A0, GX_PASSCLR, GX_POS_XYZ, GX_RGBA8, GX_S16, GX_TEXCOORDNULL,
+<<<<<<< Updated upstream
         GX_TEXMAP_NULL, GX_VA_CLR0, GX_VA_POS, TB_BUS_CLOCK,
     },
     gu::{Gu, RotationAxis},
@@ -13,14 +15,22 @@ use ogc_rs::{
         experimental::{enable_write_pipe, move_to_write_pipe_address, Fifo},
         types::VtxDest,
         CmpFn, Color, CullMode, Gx, Primitive, ProjectionType, VtxAttr,
+=======
+        GX_VA_CLR0, GX_VA_POS, TB_BUS_CLOCK,
+    },
+    gu::{Gu, RotationAxis},
+    gx::{
+        experimental::Fifo, types::VtxDest, CmpFn, Color, CullMode, Gx, Primitive, ProjectionType,
+        VtxAttr,
+>>>>>>> Stashed changes
     },
     video::Video,
 };
 
 extern crate alloc;
 
-#[start]
-fn main(_argc: isize, _argv: *const *const u8) -> isize {
+#[no_mangle]
+fn main() {
     let vi = Video::init();
     let mut config = Video::get_preferred_mode();
 
@@ -28,7 +38,65 @@ fn main(_argc: isize, _argv: *const *const u8) -> isize {
     unsafe { Video::set_next_framebuffer(vi.framebuffer) };
     Video::set_black(false);
     Video::flush();
+    //
+    // let fifo = ManuallyDrop::new(Gx::init(256 * 1024));
+    // // Set values to use when video is flipped / cleared
 
+    let mut fifo = ManuallyDrop::new(Fifo::new(256 * 1024).expect("Fifo building failed"));
+    fifo.init();
+
+    const TB_BUS_CLOCK: u32 = 243000000;
+    let res = TB_BUS_CLOCK / 500;
+
+    fifo.write_bp_register(0x0f, 0xff);
+    fifo.write_bp_register(0x69, *(res >> 11 & 0x00_FF_FF_FF).set_bit(10, true));
+
+    fifo.write_bp_register(0x0f, 0xff);
+    fifo.write_bp_register(0x46, *(res / 4224).set_bit(9, true));
+
+    for i in 0..8 {
+        fifo.write_cp_register(0x80 + i, 0x8000_0000);
+    }
+
+    fifo.write_xf_register(0x1000, 0x3f);
+    fifo.write_xf_register(0x1012, 0x1);
+    fifo.write_bp_register(0x58, 0x0f);
+
+    fifo.write_cp_register(0x20, 0x00);
+    fifo.write_xf_register(0x1006, 0x00);
+
+    fifo.write_bp_register(0x23, 0x00);
+    fifo.write_bp_register(0x24, 0x00);
+    fifo.write_bp_register(0x67, 0x00);
+
+    fifo.write_bp_register(0x0f, 0x00);
+
+    fifo.write_bp_register(0x8c, 0x0d8000);
+    fifo.write_bp_register(0x90, 0x0dc000);
+    fifo.write_bp_register(0x8d, 0x0d8800);
+    fifo.write_bp_register(0x91, 0x0dc800);
+    fifo.write_bp_register(0x8e, 0x0d9000);
+    fifo.write_bp_register(0x92, 0x0dd000);
+    fifo.write_bp_register(0x8f, 0x0d9800);
+    fifo.write_bp_register(0x93, 0x0dd800);
+
+    //  Set_TextureImage0-3, GXTexMapID=4-7 tmem_offset=00010000, cache_width=32 kb, cache_height=32 kb, image_type=cached
+    fifo.write_bp_register(0xac, 0x0da000);
+    fifo.write_bp_register(0xb0, 0x0dc400);
+    fifo.write_bp_register(0xad, 0x0da800);
+    fifo.write_bp_register(0xb1, 0x0dcc00);
+    fifo.write_bp_register(0xae, 0x0db000);
+    fifo.write_bp_register(0xb2, 0x0dd400);
+    fifo.write_bp_register(0xaf, 0x0db800);
+    fifo.write_bp_register(0xb3, 0x0ddc00);
+
+    fifo.set_copy_clear(Color::with_alpha(0x0, 0x0, 0x0, 0xff), 0x00_FF_FF_FF);
+
+    fifo.flush();
+
+    loop {}
+
+<<<<<<< Updated upstream
     //    let fifo = ManuallyDrop::new(Gx::init(256 * 1024));
     let mut fifo = ManuallyDrop::new(Fifo::<262144>::new().unwrap());
     fifo.set_as_cpu_fifo().unwrap();
@@ -91,6 +159,9 @@ fn main(_argc: isize, _argv: *const *const u8) -> isize {
         for index in 0xac..=0xaf {
             fifo.load_bp_reg(index, &default_tex_reg.to_be_bytes());
         }
+=======
+    Gx::set_copy_clear(Color::new(0x00, 0x00, 0x00), 0x00_FF_FF_FF);
+>>>>>>> Stashed changes
 
         for index in 0xb0..=0xb3 {
             fifo.load_bp_reg(index, &default_tex_reg.to_be_bytes());

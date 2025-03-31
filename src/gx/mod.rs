@@ -2368,6 +2368,7 @@ pub enum ColorChannel {
 }
 
 pub mod experimental {
+<<<<<<< Updated upstream
     use core::alloc::Layout;
 
     use aliasable::boxed::AliasableBox;
@@ -2623,3 +2624,392 @@ pub mod experimental {
         }
     }
 }
+=======
+    use core::{alloc::Layout, pin::Pin};
+
+    use ::alloc::boxed::Box;
+    use alloc::alloc;
+    use bit_field::BitField;
+
+    use crate::{
+        arch,
+        mmio::{
+            command_processor::{self, AlignedPhysPtr, Clear, Control},
+            processor_interface,
+        },
+    };
+
+    use super::Color;
+
+    pub struct Fifo {
+        buffer: Pin<Box<[u8]>>,
+        low_watermark_idx: usize,
+        high_watermark_idx: usize,
+        read_write_dist: usize,
+        read_idx: usize,
+        write_idx: usize,
+    }
+
+    #[derive(Debug)]
+    pub struct Error;
+
+    impl Fifo {
+        pub fn new(size: usize) -> Result<Self, Error> {
+            let size = size.next_multiple_of(32);
+            let layout = Layout::from_size_align(size, 32).map_err(|_| Error)?;
+            let ptr = unsafe { alloc::alloc(layout) };
+
+            if ptr.is_null() {
+                return Err(Error);
+            }
+
+            let buffer = unsafe {
+                Pin::new(Box::from_raw(core::ptr::slice_from_raw_parts_mut(
+                    ptr, size,
+                )))
+            };
+
+            Ok(Fifo {
+                buffer,
+                low_watermark_idx: size - 16384,
+                high_watermark_idx: size >> 1,
+                read_write_dist: 0,
+                read_idx: 0,
+                write_idx: 0,
+            })
+        }
+
+        pub fn init(&mut self) {
+            unsafe {
+                self.set_as_processor_interface_fifo();
+                self.set_as_command_processor_fifo();
+                self.link_fifo();
+
+                // Enable write gather pipe
+                let hid2: u32;
+                core::arch::asm!("mtspr 921, {WPAR}", WPAR = in(reg) 0x0C00_8000);
+                core::arch::asm!("mfspr {HID2}, 920", HID2 = out(reg) hid2);
+                core::arch::asm!("mtspr 920, {NEW_HID2}", NEW_HID2 = in(reg) hid2 | 0x4000_0000);
+            }
+        }
+
+        pub fn write_bp_register(&mut self, bp_reg_idx: u8, value: u32) {
+            let gather_pipe_u32: *mut u32 = core::ptr::with_exposed_provenance_mut(0xCC00_8000);
+            let gather_pipe_u8: *mut u8 = core::ptr::with_exposed_provenance_mut(0xCC00_8000);
+            let val = *0u32
+                .set_bits(24..=31, bp_reg_idx.into())
+                .set_bits(0..=23, value);
+
+            unsafe {
+                gather_pipe_u8.write_volatile(0x61);
+                gather_pipe_u32.write_volatile(val)
+            };
+        }
+
+        pub fn write_cp_register(&mut self, reg_idx: u8, value: u32) {
+            let gather_pipe_u32: *mut u32 = core::ptr::with_exposed_provenance_mut(0xCC00_8000);
+            let gather_pipe_u8: *mut u8 = core::ptr::with_exposed_provenance_mut(0xCC00_8000);
+
+            unsafe {
+                gather_pipe_u8.write_volatile(0x08);
+                gather_pipe_u8.write_volatile(reg_idx);
+                gather_pipe_u32.write_volatile(value)
+            };
+        }
+
+        pub fn write_xf_register(&mut self, reg_idx: u16, value: u32) {
+            let gather_pipe_u32: *mut u32 = core::ptr::with_exposed_provenance_mut(0xCC00_8000);
+            let gather_pipe_u8: *mut u8 = core::ptr::with_exposed_provenance_mut(0xCC00_8000);
+
+            unsafe {
+                gather_pipe_u8.write_volatile(0x10);
+                gather_pipe_u32.write_volatile(reg_idx.into());
+                gather_pipe_u32.write_volatile(value)
+            };
+        }
+
+        pub fn set_copy_clear(&mut self, color: Color, z_val: u32) {
+            self.write_bp_register(
+                0x4f,
+                *0u32
+                    .set_bits(0..8, color.0.r.into())
+                    .set_bits(8..16, color.0.a.into()),
+            );
+            self.write_bp_register(
+                0x59,
+                *0u32
+                    .set_bits(0..8, color.0.b.into())
+                    .set_bits(8..16, color.0.g.into()),
+            );
+            self.write_bp_register(0x51, z_val);
+        }
+
+        pub fn flush(&mut self) {
+            let gather_pipe_u32: *mut u32 = core::ptr::with_exposed_provenance_mut(0xCC00_8000);
+
+            for _ in 0..8 {
+                unsafe { gather_pipe_u32.write_volatile(0u32) };
+            }
+        }
+
+        pub fn set_as_processor_interface_fifo(&mut self) {
+            // TODO: Make sure to disable interrupts while handling mmio
+
+            arch::with_interrupts_disabled(|| {
+                // Disable command processor underflow and overflow interrupts
+                Control::read()
+                    .with_overflow_interrupt_enable(false)
+                    .with_underflow_interrupt_enable(false)
+                    .write();
+
+                let fifo_base = self.buffer.as_ptr().cast::<u8>();
+                let fifo_end = self
+                    .buffer
+                    .as_ptr()
+                    .cast::<u8>()
+                    .wrapping_add(self.buffer.len());
+
+                let fifo_write_ptr = self
+                    .buffer
+                    .as_mut_ptr()
+                    .cast::<u8>()
+                    .wrapping_add(self.write_idx);
+
+                unsafe {
+                    processor_interface::write_fifo_base(
+                        AlignedPhysPtr::try_from_ptr(fifo_base).unwrap(),
+                    );
+                    processor_interface::write_fifo_end(
+                        AlignedPhysPtr::try_from_ptr(fifo_end).unwrap(),
+                    );
+                    processor_interface::write_fifo_write_ptr(
+                        AlignedPhysPtr::new(fifo_write_ptr).unwrap(),
+                    );
+
+                    core::arch::asm!("sc");
+
+                    // TODO: and Reenable them
+                }
+            });
+        }
+
+        pub unsafe fn set_as_command_processor_fifo(&mut self) {
+            // TODO: Make sure to disable interrupts while handling mmio
+
+            arch::with_interrupts_disabled(|| {
+                // Disable Interrupts and Command Processor reading
+                Control::read()
+                    .with_read_enable(false)
+                    .with_overflow_interrupt_enable(false)
+                    .with_underflow_interrupt_enable(false)
+                    .write();
+
+                let fifo_base = self.buffer.as_mut().as_mut_ptr();
+
+                let fifo_end = self
+                    .buffer
+                    .as_mut()
+                    .as_mut_ptr()
+                    .wrapping_add(self.buffer.len());
+
+                let fifo_low_watermark = self
+                    .buffer
+                    .as_mut()
+                    .as_mut_ptr()
+                    .wrapping_add(self.low_watermark_idx);
+
+                let fifo_high_watermark = self
+                    .buffer
+                    .as_mut()
+                    .as_mut_ptr()
+                    .wrapping_add(self.low_watermark_idx);
+
+                let fifo_write_ptr = self
+                    .buffer
+                    .as_mut()
+                    .as_mut_ptr()
+                    .wrapping_add(self.write_idx);
+
+                let fifo_read_ptr = self
+                    .buffer
+                    .as_mut()
+                    .as_mut_ptr()
+                    .wrapping_add(self.read_idx);
+
+                command_processor::write_fifo_base(AlignedPhysPtr::new(fifo_base).unwrap());
+                command_processor::write_fifo_end(AlignedPhysPtr::new(fifo_end).unwrap());
+                command_processor::write_fifo_low_watermark(
+                    AlignedPhysPtr::new(fifo_low_watermark).unwrap(),
+                );
+                command_processor::write_fifo_high_watermark(
+                    AlignedPhysPtr::new(fifo_high_watermark).unwrap(),
+                );
+                command_processor::write_fifo_write_ptr(
+                    AlignedPhysPtr::new(fifo_write_ptr).unwrap(),
+                );
+                command_processor::write_fifo_read_ptr(AlignedPhysPtr::new(fifo_read_ptr).unwrap());
+
+                core::arch::asm!("sc");
+
+                // Clear any spurious overflow or underflows
+                Clear::read()
+                    .with_clear_overflow(true)
+                    .with_clear_underflow(true)
+                    .write();
+                // Reenable command processor reading
+                Control::read().with_read_enable(true).write();
+                // TODO: and Reenable them
+            });
+        }
+
+        pub unsafe fn link_fifo(&mut self) {
+            Control::read().with_link_enable(true).write();
+        }
+    }
+}
+
+#[repr(u8)]
+pub enum CompareFunction {
+    Never = 0,
+    Less = 1,
+    Equal = 2,
+    LessEqual = 3,
+    Greater = 4,
+    NotEqual = 5,
+    GreaterEqual = 6,
+    Always = 7,
+}
+
+impl CompareFunction {
+    pub const fn into_u32(self) -> u32 {
+        match self {
+            CompareFunction::Never => 0,
+            CompareFunction::Less => 1,
+            CompareFunction::Equal => 2,
+            CompareFunction::LessEqual => 3,
+            CompareFunction::Greater => 4,
+            CompareFunction::NotEqual => 5,
+            CompareFunction::GreaterEqual => 6,
+            CompareFunction::Always => 7,
+        }
+    }
+}
+
+pub fn create_pixel_engine_z_mode(
+    enable: bool,
+    function: CompareFunction,
+    update_enable: bool,
+) -> u32 {
+    *0u32
+        .set_bit(0, enable)
+        .set_bits(1..4, function.into_u32())
+        .set_bit(4, update_enable)
+        .set_bits(24..32, 64)
+}
+
+pub enum BlendFactor {
+    Zero = 0,
+    One = 1,
+    SourceColor = 2,
+    InverseSourceColor = 3,
+    SourceAlpha = 4,
+    InverseSourceAlpha = 5,
+    DestinationAlpha = 6,
+    InverseDestinationAlpha = 7,
+}
+
+impl BlendFactor {
+    pub const fn into_u32(self) -> u32 {
+        match self {
+            BlendFactor::Zero => 0,
+            BlendFactor::One => 1,
+            BlendFactor::SourceColor => 2,
+            BlendFactor::InverseSourceColor => 3,
+            BlendFactor::SourceAlpha => 4,
+            BlendFactor::InverseSourceAlpha => 5,
+            BlendFactor::DestinationAlpha => 6,
+            BlendFactor::InverseDestinationAlpha => 7,
+        }
+    }
+}
+
+pub enum BlendOperation {
+    Blend = 0,
+    Subtract = 1,
+}
+
+impl BlendOperation {
+    pub const fn into_bool(self) -> bool {
+        match self {
+            BlendOperation::Blend => false,
+            BlendOperation::Subtract => true,
+        }
+    }
+}
+
+pub enum LogicOperation {
+    Clear = 0,
+    And = 1,
+    ReverseAnd = 2,
+    Copy = 3,
+    InverseAnd = 4,
+    NoOperation = 5,
+    Xor = 6,
+    Or = 7,
+    NotOr = 8,
+    Equiv = 9, // ~(source ^ destination)
+    Inverse = 10,
+    ReverseOr = 11,
+    InverseCopy = 12,
+    InverseOr = 13,
+    NotAnd = 14,
+    Set = 15,
+}
+
+impl LogicOperation {
+    pub const fn into_u32(self) -> u32 {
+        match self {
+            Self::Clear => 0,
+            Self::And => 1,
+            Self::ReverseAnd => 2,
+            Self::Copy => 3,
+            Self::InverseAnd => 4,
+            Self::NoOperation => 5,
+            Self::Xor => 6,
+            Self::Or => 7,
+            Self::NotOr => 8,
+            Self::Equiv => 9, // ~(source ^ destination)
+            Self::Inverse => 10,
+            Self::ReverseOr => 11,
+            Self::InverseCopy => 12,
+            Self::InverseOr => 13,
+            Self::NotAnd => 14,
+            Self::Set => 15,
+        }
+    }
+}
+
+pub fn create_pixel_engine_c_mode_0(
+    blend_enable: bool,
+    logicop_enable: bool,
+    dither_enable: bool,
+    color_update: bool,
+    alpha_update: bool,
+    source_blend_factor: BlendFactor,
+    destination_blend_factor: BlendFactor,
+    blend_operation: BlendOperation,
+    logic_operation: LogicOperation,
+) -> u32 {
+    *0u32
+        .set_bit(0, blend_enable)
+        .set_bit(1, logicop_enable)
+        .set_bit(2, dither_enable)
+        .set_bit(4, color_update)
+        .set_bit(5, alpha_update)
+        .set_bits(5..8, destination_blend_factor.into_u32())
+        .set_bits(8..11, source_blend_factor.into_u32())
+        .set_bit(11, blend_operation.into_bool())
+        .set_bits(11..24, logic_operation.into_u32())
+        .set_bits(24..32, 65)
+}
+>>>>>>> Stashed changes

@@ -98,6 +98,8 @@ pub mod time;
 #[cfg(feature = "glam_compat")]
 pub mod glam_impl;
 
+pub mod sync;
+
 // FFI
 cfg_if::cfg_if! {
     if #[cfg(feature = "ffi")] {
@@ -116,6 +118,7 @@ cfg_if::cfg_if! {
     }
 }
 
+<<<<<<< Updated upstream
 mod interrupts {
     use bit_field::BitField;
 
@@ -176,14 +179,12 @@ mod sync {
         }
     }
 }
+=======
+pub mod arch;
+>>>>>>> Stashed changes
 
 ///Prelude
 pub mod prelude {
-    // alloc Export
-    pub use alloc::boxed::Box;
-    pub use alloc::string::{String, ToString};
-    pub use alloc::{vec, vec::Vec};
-
     // Export Services
     pub use crate::asnd::*;
     pub use crate::console::*;

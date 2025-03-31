@@ -9,5 +9,9 @@ dev = { panic = "abort" }
 release = { panic = "abort", lto = true, codegen-units = 1, strip = "symbols", opt-level = "s" }
 
 [dependencies]
+<<<<<<< Updated upstream
 bitfrob = "1.3.2"
+=======
+bit_field = { version = "0.10.2", default-features = false }
+>>>>>>> Stashed changes
 ogc-rs = { path = "../../", features = ["ffi"] } 
