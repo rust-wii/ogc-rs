@@ -1,5 +1,6 @@
 use core::cell::UnsafeCell;
 use core::fmt;
+use core::marker::PhantomData;
 
 //use lock_api::{RawMutex, GuardNoSend};
 
@@ -91,7 +92,10 @@ impl<T: ?Sized> Mutex<T> {
         if res < 0 {
             Err(LockError::Unknown)
         } else {
-            Ok(MutexGuard { lock: self })
+            Ok(MutexGuard {
+                lock: self,
+                phantom: PhantomData,
+            })
         }
     }
 
@@ -112,7 +116,10 @@ impl<T: ?Sized> Mutex<T> {
 
         // 0: lock acquired, 1: would deadlock
         match res {
-            0 => Ok(MutexGuard { lock: self }),
+            0 => Ok(MutexGuard {
+                lock: self,
+                phantom: PhantomData,
+            }),
             1 => Err(LockError::WouldBlock),
             _ => Err(LockError::Unknown),
         }
@@ -206,9 +213,9 @@ impl<T: ?Sized> Drop for Mutex<T> {
 #[must_use = "if unused, the Mutex will immediately unlock"]
 pub struct MutexGuard<'a, T: ?Sized + 'a> {
     lock: &'a Mutex<T>,
+    phantom: PhantomData<*mut ()>,
 }
 
-impl<T> !Send for MutexGuard<'_, T> {}
 unsafe impl<T: Sync> Sync for MutexGuard<'_, T> {}
 
 impl<T: ?Sized + fmt::Debug> fmt::Debug for MutexGuard<'_, T> {
