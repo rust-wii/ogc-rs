@@ -645,5 +645,19 @@ pub(crate) mod types {
         pub fn into_ptr(self) -> *mut T {
             self.0.as_ptr()
         }
+
+        pub fn try_from_ptr(value: *const T) -> Option<Self> {
+            unsafe { value.as_ref() }.and_then(|ptr| Self::try_from_ref(ptr))
+        }
+
+        pub fn try_from_mut(value: &mut T) -> Option<Self> {
+            let ptr = NonNull::from(value).as_ptr();
+            Self::new(ptr)
+        }
+
+        pub fn try_from_ref(value: &T) -> Option<Self> {
+            let ptr = NonNull::from(value).as_ptr();
+            Self::new(ptr)
+        }
     }
 }

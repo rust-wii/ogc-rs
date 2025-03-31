@@ -27,7 +27,7 @@ pub unsafe fn write_fifo_base(ptr: AlignedPhysPtr<u8>) {
 
 /// Read fifo base mmio register, returning the physical pointer
 pub unsafe fn read_fifo_base() -> AlignedPhysPtr<u8> {
-    AlignedPhysPtr::new(FIFO_BASE_ADDRESS.read().cast_mut()).unwrap()
+    AlignedPhysPtr::try_from_ptr(FIFO_BASE_ADDRESS.read()).unwrap()
 }
 
 /// Write `ptr` to the fifo end mmio register.
@@ -37,7 +37,7 @@ pub unsafe fn write_fifo_end(ptr: AlignedPhysPtr<u8>) {
 
 /// Read fifo end mmio register, returning the physical pointer
 pub unsafe fn read_fifo_end() -> AlignedPhysPtr<u8> {
-    AlignedPhysPtr::new(FIFO_END_ADDRESS.read().cast_mut()).unwrap()
+    AlignedPhysPtr::try_from_ptr(FIFO_END_ADDRESS.read()).unwrap()
 }
 
 /// Write `ptr` to the fifo write ptr mmio register.
