@@ -150,7 +150,7 @@ where
     let mut file_list_buf = [0u8; 13 * MAX_FILE_COUNT];
     let mut file_count_buf = [0u8; 4];
 
-    ios::ioctlv::<0, 2, 2>(
+    ios::ioctlv::<2, 2, 4>(
         filesystem,
         Ioctl::ReadDirectory,
         &[&path, &MAX_FILE_COUNT.to_be_bytes()],
@@ -296,7 +296,7 @@ pub fn get_usage(name: &str) -> Result<Usage, ios::Error> {
     let mut used_clusters_buf = [0u8; 4];
     let mut used_inodes_buf = [0u8; 4];
 
-    ios::ioctlv::<0, 1, 2>(
+    ios::ioctlv::<1, 2, 3>(
         filesystem,
         Ioctl::GetUsage,
         &[&in_buf],
