@@ -24,6 +24,7 @@
 #![feature(allocator_api)]
 #![feature(strict_provenance)]
 #![feature(asm_experimental_arch)]
+#![feature(generic_const_exprs)]
 
 extern crate alloc;
 
