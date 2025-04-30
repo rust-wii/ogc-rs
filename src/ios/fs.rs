@@ -181,7 +181,7 @@ where
     let filesystem = ios::open(c"/dev/fs", Mode::ReadWrite)?;
 
     let mut path = [0u8; 64];
-    let path_len = directory_path.as_bytes().len();
+    let path_len = directory_path.len();
     path[0..path_len].copy_from_slice(directory_path.as_bytes());
 
     let mut file_list_buf = [0u8; 13 * MAX_FILE_COUNT];
@@ -235,7 +235,7 @@ pub fn get_attributes(name: &str) -> Result<Attributes, ios::Error> {
     let filesystem = ios::open(c"/dev/fs", Mode::ReadWrite)?;
 
     let mut in_buf = [0u8; 64];
-    in_buf[0..name.as_bytes().len()].copy_from_slice(name.as_bytes());
+    in_buf[0..name.len()].copy_from_slice(name.as_bytes());
 
     let mut out_buf = [0u8; 74];
     ios::ioctl(filesystem, Ioctl::GetAttributes, &in_buf, &mut out_buf)?;
@@ -260,7 +260,7 @@ pub fn delete(name: &str) -> Result<(), ios::Error> {
     let filesystem = ios::open(c"/dev/fs", Mode::ReadWrite)?;
 
     let mut in_buf = [0u8; 64];
-    in_buf[0..name.as_bytes().len()].copy_from_slice(name.as_bytes());
+    in_buf[0..name.len()].copy_from_slice(name.as_bytes());
 
     ios::ioctl(filesystem, Ioctl::Delete, &in_buf, &mut [])?;
 
@@ -276,8 +276,8 @@ pub fn rename(source_name: &str, destination_name: &str) -> Result<(), ios::Erro
     let filesystem = ios::open(c"/dev/fs", Mode::ReadWrite)?;
 
     let mut in_buf = [0u8; 128];
-    in_buf[0..source_name.as_bytes().len()].copy_from_slice(source_name.as_bytes());
-    in_buf[64..64 + destination_name.as_bytes().len()].copy_from_slice(destination_name.as_bytes());
+    in_buf[0..source_name.len()].copy_from_slice(source_name.as_bytes());
+    in_buf[64..64 + destination_name.len()].copy_from_slice(destination_name.as_bytes());
 
     ios::ioctl(filesystem, Ioctl::Rename, &in_buf, &mut [])?;
     let _ = ios::close(filesystem);
@@ -320,8 +320,8 @@ pub fn read_file_stats(file_name: &str) -> Result<FileStats, ios::Error> {
     let filesystem = ios::open(c"/dev/fs", Mode::ReadWrite)?;
 
     let mut file_buf = [0u8; 64];
-    file_buf[0..file_name.as_bytes().len()].copy_from_slice(file_name.as_bytes());
-    let file_name = CStr::from_bytes_with_nul(&file_buf[0..file_name.len() + 1])
+    file_buf[0..file_name.len()].copy_from_slice(file_name.as_bytes());
+    let file_name = CStr::from_bytes_with_nul(&file_buf[0..=file_name.len()])
         .map_err(|_| ios::Error::Invalid)?;
 
     let file = ios::open(file_name, Mode::ReadWrite)?;
@@ -354,7 +354,7 @@ pub fn get_usage(name: &str) -> Result<Usage, ios::Error> {
     let filesystem = ios::open(c"/dev/fs", Mode::ReadWrite)?;
 
     let mut in_buf = [0u8; 64];
-    in_buf[0..name.as_bytes().len()].copy_from_slice(name.as_bytes());
+    in_buf[0..name.len()].copy_from_slice(name.as_bytes());
 
     let mut used_clusters_buf = [0u8; 4];
     let mut used_inodes_buf = [0u8; 4];
