@@ -113,13 +113,15 @@ pub fn get_nand_stats() -> Result<NandStats, ios::Error> {
     let _ = ios::close(filesystem);
 
     Ok(NandStats {
-        cluster_size: u32::from_be_bytes(buf[0..4].try_into().unwrap()),
-        free_clusters: u32::from_be_bytes(buf[4..8].try_into().unwrap()),
-        used_clusters: u32::from_be_bytes(buf[8..12].try_into().unwrap()),
-        bad_clusters: u32::from_be_bytes(buf[12..16].try_into().unwrap()),
-        reversed_clusters: u32::from_be_bytes(buf[16..20].try_into().unwrap()),
-        free_inodes: u32::from_be_bytes(buf[20..24].try_into().unwrap()),
-        used_inodes: u32::from_be_bytes(buf[24..28].try_into().unwrap()),
+        cluster_size: u32::from_be_bytes(buf[0..4].try_into().map_err(|_| ios::Error::Invalid)?),
+        free_clusters: u32::from_be_bytes(buf[4..8].try_into().map_err(|_| ios::Error::Invalid)?),
+        used_clusters: u32::from_be_bytes(buf[8..12].try_into().map_err(|_| ios::Error::Invalid)?),
+        bad_clusters: u32::from_be_bytes(buf[12..16].try_into().map_err(|_| ios::Error::Invalid)?),
+        reversed_clusters: u32::from_be_bytes(
+            buf[16..20].try_into().map_err(|_| ios::Error::Invalid)?,
+        ),
+        free_inodes: u32::from_be_bytes(buf[20..24].try_into().map_err(|_| ios::Error::Invalid)?),
+        used_inodes: u32::from_be_bytes(buf[24..28].try_into().map_err(|_| ios::Error::Invalid)?),
     })
 }
 
@@ -195,14 +197,15 @@ where
     let _ = ios::close(filesystem);
 
     let actual_file_count = u32::from_be_bytes(file_count_buf) * 13;
-    let file_list_buf = &file_list_buf[0..actual_file_count.try_into().unwrap()];
+    let file_list_buf = &file_list_buf[0..actual_file_count
+        .try_into()
+        .map_err(|_| ios::Error::Invalid)?];
 
     Ok(ReadDirectory {
         file_list_buf: file_list_buf.to_owned(),
         file_count: actual_file_count,
     })
 }
-
 /// Set Filesystem Attributes
 /// # Errors
 /// See [`ios::Error`]
@@ -240,12 +243,12 @@ pub fn get_attributes(name: &str) -> Result<Attributes, ios::Error> {
     let _ = ios::close(filesystem);
 
     Ok(Attributes {
-        uid: u32::from_be_bytes(out_buf[0..4].try_into().unwrap()),
-        gid: u16::from_be_bytes(out_buf[4..6].try_into().unwrap()),
-        path: out_buf[6..70].try_into().unwrap(),
-        owner_mode: out_buf[70].try_into().unwrap(),
-        group_mode: out_buf[71].try_into().unwrap(),
-        other_mode: out_buf[72].try_into().unwrap(),
+        uid: u32::from_be_bytes(out_buf[0..4].try_into().map_err(|_| ios::Error::Invalid)?),
+        gid: u16::from_be_bytes(out_buf[4..6].try_into().map_err(|_| ios::Error::Invalid)?),
+        path: out_buf[6..70].try_into().map_err(|_| ios::Error::Invalid)?,
+        owner_mode: out_buf[70].try_into().map_err(|()| ios::Error::Invalid)?,
+        group_mode: out_buf[71].try_into().map_err(|()| ios::Error::Invalid)?,
+        other_mode: out_buf[72].try_into().map_err(|()| ios::Error::Invalid)?,
         attribute: out_buf[73],
     })
 }
@@ -331,8 +334,10 @@ pub fn read_file_stats(file_name: &str) -> Result<FileStats, ios::Error> {
     let _ = ios::close(filesystem);
 
     Ok(FileStats {
-        file_size: u32::from_be_bytes(out_buf[0..4].try_into().unwrap()),
-        file_seek_position: u32::from_be_bytes(out_buf[4..8].try_into().unwrap()),
+        file_size: u32::from_be_bytes(out_buf[0..4].try_into().map_err(|_| ios::Error::Invalid)?),
+        file_seek_position: u32::from_be_bytes(
+            out_buf[4..8].try_into().map_err(|_| ios::Error::Invalid)?,
+        ),
     })
 }
 
