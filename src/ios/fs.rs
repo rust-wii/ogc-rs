@@ -6,18 +6,31 @@ use crate::ios::{self, Mode};
 
 /// Filesystem Supported Ioctls
 pub enum Ioctl {
+    /// Format the NAND
     Format,
+    /// Get Nand Stats
     GetStats,
+    /// Create a Directory
     CreateDirectory,
+    /// Read a Directory
     ReadDirectory,
+    /// Set File or Directory Attributes
     SetAttributes,
+    /// Get File or Directory Attributes
     GetAttributes,
+    /// Delete a File or Directory
     Delete,
+    /// Rename a File or Directory
     Rename,
+    /// Create a File
     CreateFile,
+    /// UNKNOWN
     SetFileVersionControl,
+    /// Get File Stats
     GetFileStats,
+    /// Get NAND usage
     GetUsage,
+    /// Shutdown `/dev/fs` IOS device
     Shutdown,
 }
 
@@ -62,6 +75,12 @@ pub enum Error {
     ShortRead,
 }
 
+/// Format the NAND.
+///
+/// You must be `uid` 0 for this to complete.
+/// **YOU SHOULD PROBABLY NOT DO THIS**
+/// # Errors
+/// See [`ios::Error`]
 pub fn format() -> Result<(), ios::Error> {
     let filesystem = ios::open(c"/dev/fs", Mode::ReadWrite)?;
 
@@ -71,6 +90,7 @@ pub fn format() -> Result<(), ios::Error> {
     Ok(())
 }
 
+/// Current NAND Statistics
 pub struct NandStats {
     cluster_size: u32,
     free_clusters: u32,
@@ -81,6 +101,9 @@ pub struct NandStats {
     used_inodes: u32,
 }
 
+/// Get current Nand Statistics
+/// # Errors
+/// See [`ios::Error`]
 pub fn get_nand_stats() -> Result<NandStats, ios::Error> {
     let filesystem = ios::open(c"/dev/fs", Mode::ReadWrite)?;
 
@@ -100,6 +123,9 @@ pub fn get_nand_stats() -> Result<NandStats, ios::Error> {
     })
 }
 
+/// Filesystem Attributes
+///
+/// These are the same on both directories and files.
 pub struct Attributes {
     uid: u32,
     gid: u16,
@@ -110,6 +136,9 @@ pub struct Attributes {
     attribute: u8,
 }
 
+/// Create a Directory using `params`
+/// # Errors
+/// See [`ios::Error`]
 pub fn create_directory(params: Attributes) -> Result<(), ios::Error> {
     let filesystem = ios::open(c"/dev/fs", Mode::ReadWrite)?;
 
@@ -129,12 +158,18 @@ pub fn create_directory(params: Attributes) -> Result<(), ios::Error> {
     Ok(())
 }
 
+/// [`read_directory`] return values
+///
+/// This contains a list of names and the directory file count
 pub struct ReadDirectory {
     file_list_buf: Vec<u8>,
     file_count: u32,
 }
 
 //TODO: Find a way to avoid allocation
+/// Read the directory specified by `directory_path` reading up to `MAX_FILE_COUNT` entries
+/// # Errors
+/// See [`ios::Error`]
 pub fn read_directory<const MAX_FILE_COUNT: usize>(
     directory_path: &str,
 ) -> Result<ReadDirectory, ios::Error>
@@ -168,6 +203,9 @@ where
     })
 }
 
+/// Set Filesystem Attributes
+/// # Errors
+/// See [`ios::Error`]
 pub fn set_attributes(attributes: Attributes) -> Result<(), ios::Error> {
     let filesystem = ios::open(c"/dev/fs", Mode::ReadWrite)?;
 
@@ -187,6 +225,9 @@ pub fn set_attributes(attributes: Attributes) -> Result<(), ios::Error> {
     Ok(())
 }
 
+/// Get Filesystem Attributes
+/// # Errors
+/// See [`ios::Error`]
 pub fn get_attributes(name: &str) -> Result<Attributes, ios::Error> {
     let filesystem = ios::open(c"/dev/fs", Mode::ReadWrite)?;
 
@@ -209,6 +250,9 @@ pub fn get_attributes(name: &str) -> Result<Attributes, ios::Error> {
     })
 }
 
+/// Delete Directory or File
+/// # Errors
+/// See [`ios::Error`]
 pub fn delete(name: &str) -> Result<(), ios::Error> {
     let filesystem = ios::open(c"/dev/fs", Mode::ReadWrite)?;
 
@@ -222,6 +266,9 @@ pub fn delete(name: &str) -> Result<(), ios::Error> {
     Ok(())
 }
 
+/// Rename Directory or File
+/// # Errors
+/// See [`ios::Error`]
 pub fn rename(source_name: &str, destination_name: &str) -> Result<(), ios::Error> {
     let filesystem = ios::open(c"/dev/fs", Mode::ReadWrite)?;
 
@@ -235,6 +282,9 @@ pub fn rename(source_name: &str, destination_name: &str) -> Result<(), ios::Erro
     Ok(())
 }
 
+/// Create File
+/// # Errors
+/// See [`ios::Error`]
 pub fn create_file(params: Attributes) -> Result<(), ios::Error> {
     let filesystem = ios::open(c"/dev/fs", Mode::ReadWrite)?;
 
@@ -254,11 +304,15 @@ pub fn create_file(params: Attributes) -> Result<(), ios::Error> {
     Ok(())
 }
 
+/// File Statistics
 pub struct FileStats {
     file_size: u32,
     file_seek_position: u32,
 }
 
+/// Read file statistics of `file_name`
+/// # Errors
+/// See [`ios::Error`]
 pub fn read_file_stats(file_name: &str) -> Result<FileStats, ios::Error> {
     let filesystem = ios::open(c"/dev/fs", Mode::ReadWrite)?;
 
@@ -282,11 +336,15 @@ pub fn read_file_stats(file_name: &str) -> Result<FileStats, ios::Error> {
     })
 }
 
+/// NAND Usage
 pub struct Usage {
     used_clusters: u32,
     used_inodes: u32,
 }
 
+/// Get current NAND usage
+/// # Errors
+/// See [`ios::Error`]
 pub fn get_usage(name: &str) -> Result<Usage, ios::Error> {
     let filesystem = ios::open(c"/dev/fs", Mode::ReadWrite)?;
 
@@ -309,4 +367,17 @@ pub fn get_usage(name: &str) -> Result<Usage, ios::Error> {
         used_clusters: u32::from_be_bytes(used_clusters_buf),
         used_inodes: u32::from_be_bytes(used_inodes_buf),
     })
+}
+
+/// Shutdown `/dev/fs` IOS device
+/// # Errors
+/// See [`ios::Error`]
+pub fn shutdown() -> Result<(), ios::Error> {
+    let filesystem = ios::open(c"/dev/fs", Mode::ReadWrite)?;
+
+    ios::ioctl(filesystem, Ioctl::Shutdown, &[], &mut [])?;
+
+    let _ = ios::close(filesystem);
+
+    Ok(())
 }
