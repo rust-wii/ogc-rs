@@ -54,6 +54,7 @@ impl From<Ioctl> for i32 {
     }
 }
 
+/*
 pub enum Error {
     Invalid,
     AccessDenied,
@@ -74,6 +75,7 @@ pub enum Error {
     UnknownError,
     ShortRead,
 }
+*/
 
 /// Format the NAND.
 ///
