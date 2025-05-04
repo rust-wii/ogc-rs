@@ -4,7 +4,7 @@ use alloc::{borrow::ToOwned, vec::Vec};
 
 use crate::ios::{self, Mode};
 
-static DEV_FS: &'static CStr = c"/dev/fs";
+static DEV_FS: &CStr = c"/dev/fs";
 
 /// Filesystem Supported Ioctls
 pub enum Ioctl {
