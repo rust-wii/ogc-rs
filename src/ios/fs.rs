@@ -4,6 +4,8 @@ use alloc::{borrow::ToOwned, vec::Vec};
 
 use crate::ios::{self, Mode};
 
+static DEV_FS: &'static CStr = c"/dev/fs";
+
 /// Filesystem Supported Ioctls
 pub enum Ioctl {
     /// Format the NAND
@@ -84,7 +86,7 @@ pub enum Error {
 /// # Errors
 /// See [`ios::Error`]
 pub fn format() -> Result<(), ios::Error> {
-    let filesystem = ios::open(c"/dev/fs", Mode::ReadWrite)?;
+    let filesystem = ios::open(DEV_FS, Mode::ReadWrite)?;
 
     ios::ioctl(filesystem, Ioctl::Format, &[], &mut [])?;
 
@@ -107,7 +109,7 @@ pub struct NandStats {
 /// # Errors
 /// See [`ios::Error`]
 pub fn get_nand_stats() -> Result<NandStats, ios::Error> {
-    let filesystem = ios::open(c"/dev/fs", Mode::ReadWrite)?;
+    let filesystem = ios::open(DEV_FS, Mode::ReadWrite)?;
 
     let mut buf = [0u8; 28];
     ios::ioctl(filesystem, Ioctl::GetStats, &[], &mut buf)?;
@@ -144,7 +146,7 @@ pub struct Attributes {
 /// # Errors
 /// See [`ios::Error`]
 pub fn create_directory(params: Attributes) -> Result<(), ios::Error> {
-    let filesystem = ios::open(c"/dev/fs", Mode::ReadWrite)?;
+    let filesystem = ios::open(DEV_FS, Mode::ReadWrite)?;
 
     let mut in_buf = [0u8; 74];
     in_buf[0..4].copy_from_slice(&params.uid.to_be_bytes());
@@ -180,7 +182,7 @@ pub fn read_directory<const MAX_FILE_COUNT: usize>(
 where
     [(); 13 * MAX_FILE_COUNT]:,
 {
-    let filesystem = ios::open(c"/dev/fs", Mode::ReadWrite)?;
+    let filesystem = ios::open(DEV_FS, Mode::ReadWrite)?;
 
     if directory_path.len() > 64 {
         return Err(ios::Error::Invalid);
@@ -216,7 +218,7 @@ where
 /// # Errors
 /// See [`ios::Error`]
 pub fn set_attributes(attributes: Attributes) -> Result<(), ios::Error> {
-    let filesystem = ios::open(c"/dev/fs", Mode::ReadWrite)?;
+    let filesystem = ios::open(DEV_FS, Mode::ReadWrite)?;
 
     let mut in_buf = [0u8; 74];
     in_buf[0..4].copy_from_slice(&attributes.uid.to_be_bytes());
@@ -238,7 +240,7 @@ pub fn set_attributes(attributes: Attributes) -> Result<(), ios::Error> {
 /// # Errors
 /// See [`ios::Error`]
 pub fn get_attributes(name: &str) -> Result<Attributes, ios::Error> {
-    let filesystem = ios::open(c"/dev/fs", Mode::ReadWrite)?;
+    let filesystem = ios::open(DEV_FS, Mode::ReadWrite)?;
 
     if name.len() > 64 {
         return Err(ios::Error::Invalid);
@@ -267,7 +269,7 @@ pub fn get_attributes(name: &str) -> Result<Attributes, ios::Error> {
 /// # Errors
 /// See [`ios::Error`]
 pub fn delete(name: &str) -> Result<(), ios::Error> {
-    let filesystem = ios::open(c"/dev/fs", Mode::ReadWrite)?;
+    let filesystem = ios::open(DEV_FS, Mode::ReadWrite)?;
 
     if name.len() > 64 {
         return Err(ios::Error::Invalid);
@@ -287,7 +289,7 @@ pub fn delete(name: &str) -> Result<(), ios::Error> {
 /// # Errors
 /// See [`ios::Error`]
 pub fn rename(source_name: &str, destination_name: &str) -> Result<(), ios::Error> {
-    let filesystem = ios::open(c"/dev/fs", Mode::ReadWrite)?;
+    let filesystem = ios::open(DEV_FS, Mode::ReadWrite)?;
 
     if source_name.len() > 64 {
         return Err(ios::Error::Invalid);
@@ -310,7 +312,7 @@ pub fn rename(source_name: &str, destination_name: &str) -> Result<(), ios::Erro
 /// # Errors
 /// See [`ios::Error`]
 pub fn create_file(params: Attributes) -> Result<(), ios::Error> {
-    let filesystem = ios::open(c"/dev/fs", Mode::ReadWrite)?;
+    let filesystem = ios::open(DEV_FS, Mode::ReadWrite)?;
 
     let mut in_buf = [0u8; 74];
     in_buf[0..4].copy_from_slice(&params.uid.to_be_bytes());
@@ -338,7 +340,7 @@ pub struct FileStats {
 /// # Errors
 /// See [`ios::Error`]
 pub fn read_file_stats(file_name: &str) -> Result<FileStats, ios::Error> {
-    let filesystem = ios::open(c"/dev/fs", Mode::ReadWrite)?;
+    let filesystem = ios::open(DEV_FS, Mode::ReadWrite)?;
 
     if file_name.len() > 64 {
         return Err(ios::Error::Invalid);
@@ -376,7 +378,7 @@ pub struct Usage {
 /// # Errors
 /// See [`ios::Error`]
 pub fn get_usage(name: &str) -> Result<Usage, ios::Error> {
-    let filesystem = ios::open(c"/dev/fs", Mode::ReadWrite)?;
+    let filesystem = ios::open(DEV_FS, Mode::ReadWrite)?;
 
     if name.len() > 64 {
         return Err(ios::Error::Invalid);
@@ -407,7 +409,7 @@ pub fn get_usage(name: &str) -> Result<Usage, ios::Error> {
 /// # Errors
 /// See [`ios::Error`]
 pub fn shutdown() -> Result<(), ios::Error> {
-    let filesystem = ios::open(c"/dev/fs", Mode::ReadWrite)?;
+    let filesystem = ios::open(DEV_FS, Mode::ReadWrite)?;
 
     ios::ioctl(filesystem, Ioctl::Shutdown, &[], &mut [])?;
 
