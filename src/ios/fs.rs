@@ -336,10 +336,26 @@ pub struct FileStats {
     file_seek_position: u32,
 }
 
+impl FileStats {
+    /// File size in bytes
+    #[must_use]
+    pub fn size(&self) -> usize {
+        debug_assert!(core::mem::size_of::<usize>() == core::mem::size_of::<u32>());
+        self.file_size as usize
+    }
+
+    /// File seek offset from start of file
+    #[must_use]
+    pub fn offset(&self) -> usize {
+        debug_assert!(core::mem::size_of::<usize>() == core::mem::size_of::<u32>());
+        self.file_seek_position as usize
+    }
+}
+
 /// Read file statistics of `file_name`
 /// # Errors
 /// See [`ios::Error`]
-pub fn read_file_stats(file_name: &str) -> Result<FileStats, ios::Error> {
+pub fn get_file_stats(file_name: &str) -> Result<FileStats, ios::Error> {
     let filesystem = ios::open(DEV_FS, Mode::ReadWrite)?;
 
     if file_name.len() > 64 {
