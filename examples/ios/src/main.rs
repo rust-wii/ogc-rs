@@ -3,15 +3,15 @@
 
 use alloc::vec;
 use ogc_rs::{
-    ios::{self, fs::get_file_stats, Mode, SeekMode},
+    ios::{self, Mode, SeekMode},
     print, println,
 };
 extern crate alloc;
 
 #[no_mangle]
 extern "C" fn main() {
-    if let Ok(metadata) = get_file_stats("/shared2/sys/SYSCONF") {
-        if let Ok(fd) = ios::open(c"/shared2/sys/SYSCONF", Mode::Read) {
+    if let Ok(fd) = ios::open(c"/shared2/sys/SYSCONF", Mode::Read) {
+        if let Ok(metadata) = ios::fs::get_file_stats_from_fd(fd) {
             if metadata.offset() != 0 {
                 let _ = ios::seek(fd, 0, SeekMode::Start);
             }
