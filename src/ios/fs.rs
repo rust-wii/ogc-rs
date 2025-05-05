@@ -4,6 +4,8 @@ use alloc::{borrow::ToOwned, vec::Vec};
 
 use crate::ios::{self, Mode};
 
+use super::FileDescriptor;
+
 static DEV_FS: &CStr = c"/dev/fs";
 
 /// Filesystem Supported Ioctls
@@ -369,12 +371,23 @@ pub fn get_file_stats(file_name: &str) -> Result<FileStats, ios::Error> {
 
     let file = ios::open(file_name, Mode::ReadWrite)?;
 
+    let file_stats = get_file_stats_from_fd(file);
+
+    // Make sure we close the files after reading
+    let _ = ios::close(file);
+    let _ = ios::close(filesystem);
+
+    file_stats
+}
+
+/// Read file statistics of `file` via the [`FileDescriptor`]
+/// **WARN** This function does not close the [`FileDescriptor`] provided
+/// # Errors
+/// See [`ios::Error`]
+pub fn get_file_stats_from_fd(file: FileDescriptor) -> Result<FileStats, ios::Error> {
     let mut out_buf = [0u8; 8];
 
     ios::ioctl(file, Ioctl::GetFileStats, &[], &mut out_buf)?;
-
-    let _ = ios::close(file);
-    let _ = ios::close(filesystem);
 
     Ok(FileStats {
         file_size: u32::from_be_bytes(out_buf[0..4].try_into().map_err(|_| ios::Error::Invalid)?),
