@@ -461,14 +461,12 @@ impl Fifo {
     /// The count is incorrect if an overflow has occurred (i.e. you have written more data than
     /// the size of the fifo), as the hardware cannot detect an overflow in general.
     pub fn cache_lines(&self) -> usize {
-        // TODO: remove conversions when upstream changes pass.
-        unsafe { ffi::GX_GetFifoCount(self as *const _ as *mut _) as usize }
+        unsafe { ffi::GX_GetFifoCount(&self.0) as usize }
     }
 
     /// Get the size of a given FIFO.
     pub fn len(&self) -> usize {
-        // TODO: remove conversions when upstream changes pass.
-        unsafe { ffi::GX_GetFifoSize(self as *const _ as *mut _) as usize }
+        unsafe { ffi::GX_GetFifoSize(&self.0) as usize }
     }
 
     pub fn is_empty(&self) -> bool {
@@ -486,7 +484,7 @@ impl Fifo {
     /// If the FIFO write pointer is not explicitly set to the base of the FIFO, you cannot rely on
     /// this function to detect overflows.
     pub fn get_wrap(&self) -> u8 {
-        unsafe { ffi::GX_GetFifoWrap(self as *const _ as *mut _) }
+        unsafe { ffi::GX_GetFifoWrap(&self.0) }
     }
 
     /// Returns the current value of the Graphics FIFO read and write pointers.
@@ -497,7 +495,7 @@ impl Fifo {
         let mut rd_ptr = core::ptr::null_mut();
         let mut wt_ptr = core::ptr::null_mut();
         unsafe {
-            ffi::GX_GetFifoPtrs(self as *const _ as *mut _, &mut rd_ptr, &mut wt_ptr);
+            ffi::GX_GetFifoPtrs(&self.0, &mut rd_ptr, &mut wt_ptr);
         }
         (rd_ptr as *const _, wt_ptr as *mut _)
     }
@@ -927,20 +925,17 @@ impl Texture<'_> {
 
     /// Returns the texture height.
     pub fn height(&self) -> u16 {
-        // TODO: remove conversions when upstream changes pass.
-        unsafe { ffi::GX_GetTexObjHeight(self as *const _ as *mut _) }
+        unsafe { ffi::GX_GetTexObjHeight(&self.0) }
     }
 
     /// Returns the texture width.
     pub fn width(&self) -> u16 {
-        // TODO: remove conversions when upstream changes pass.
-        unsafe { ffi::GX_GetTexObjWidth(self as *const _ as *mut _) }
+        unsafe { ffi::GX_GetTexObjWidth(&self.0) }
     }
 
     /// Returns `true` if the texture's mipmap flag is enabled.
     pub fn is_mipmapped(&self) -> bool {
-        // TODO: remove conversions when upstream changes pass.
-        unsafe { ffi::GX_GetTexObjMipMap(self as *const _ as *mut _) != 0 }
+        unsafe { ffi::GX_GetTexObjMipMap(&self.0) != 0 }
     }
 
     /// Enables bias clamping for texture LOD.
@@ -1216,8 +1211,8 @@ impl Gx {
     ///
     /// The break point mechanism can be used to force the FIFO to stop reading commands at a
     /// certain point; see [`Gx::enable_breakpt()`].
-    pub fn set_gp_fifo(fifo: Fifo) {
-        unsafe { ffi::GX_SetGPFifo((&fifo) as *const _ as *mut _) }
+    pub fn set_gp_fifo(fifo: &mut Fifo) {
+        unsafe { ffi::GX_SetGPFifo(&mut fifo.0) }
     }
 
     /// Attaches a FIFO to the CPU.
@@ -1226,8 +1221,8 @@ impl Gx {
     /// If the FIFO being attached is one already attached to the GP, the FIFO can be considered to
     /// be in immediate mode. If not, the CPU can write commands, and the GP will execute them when
     /// the GP attaches to this FIFO (multi-buffered mode).
-    pub fn set_cpu_fifo(fifo: Fifo) {
-        unsafe { ffi::GX_SetCPUFifo((&fifo) as *const _ as *mut _) }
+    pub fn set_cpu_fifo(fifo: &mut Fifo) {
+        unsafe { ffi::GX_SetCPUFifo(&mut fifo.0) }
     }
 
     /// Returns the current GX thread.
@@ -1387,7 +1382,7 @@ impl Gx {
     ///
     /// Another way to load a light object is with `Gx::load_light_idx()`.
     pub fn load_light(lit_obj: &Light, lit_id: u8) {
-        unsafe { ffi::GX_LoadLightObj(lit_obj as *const _ as *mut _, lit_id) }
+        unsafe { ffi::GX_LoadLightObj(&lit_obj.0, lit_id) }
     }
 
     /// Instructs the GP to fetch the light object at *litobjidx* from an array.
@@ -1789,7 +1784,7 @@ impl Gx {
     /// If the texture is a color-index texture, you **must** load the associated TLUT (using
     /// [`Gx::load_tlut()`]) before calling this function.
     pub fn load_texture(obj: &Texture, mapid: u8) {
-        unsafe { ffi::GX_LoadTexObj((&obj.0) as *const _ as *mut _, mapid) }
+        unsafe { ffi::GX_LoadTexObj(obj as *const _ as *mut _, mapid) }
     }
 
     /// Sets the projection matrix.
