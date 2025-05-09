@@ -9,6 +9,11 @@ use core::{ffi::CStr, fmt::Display};
 /// This is only on the system when running the Dolphin Emulator
 pub mod dolphin;
 
+/// Filesystem IOS Device
+///
+/// '/dev/fs'' device helper functions.
+pub mod fs;
+
 #[repr(u32)]
 /// Interprocess Control / IOS File Mode
 pub enum Mode {
@@ -31,6 +36,30 @@ impl From<Mode> for u32 {
             Mode::Read => 1,
             Mode::Write => 2,
             Mode::ReadWrite => 3,
+        }
+    }
+}
+
+impl From<Mode> for u8 {
+    fn from(value: Mode) -> Self {
+        match value {
+            Mode::None => 0,
+            Mode::Read => 1,
+            Mode::Write => 2,
+            Mode::ReadWrite => 3,
+        }
+    }
+}
+
+impl TryFrom<u8> for Mode {
+    type Error = ();
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(Mode::None),
+            1 => Ok(Mode::Read),
+            2 => Ok(Mode::Write),
+            3 => Ok(Mode::ReadWrite),
+            _ => Err(()),
         }
     }
 }
