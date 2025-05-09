@@ -2289,6 +2289,62 @@ impl Gx {
     pub fn end() {
         unsafe { ffi::GX_End() }
     }
+
+    pub fn preload_entire_texture() {
+        unimplemented!()
+    }
+
+    pub fn load_tlut() {
+        unimplemented!()
+    }
+
+    pub fn set_draw_sync() {
+        unimplemented!()
+    }
+
+    pub fn get_draw_sync() {
+        unimplemented!()
+    }
+
+    pub fn set_gp_metric() {
+        unimplemented!()
+    }
+
+    pub fn read_gp_metric() {
+        unimplemented!()
+    }
+
+    pub fn set_vcache_metric() {
+        unimplemented!()
+    }
+
+    pub fn read_vcache_metric() {
+        unimplemented!()
+    }
+
+    pub fn copy_tex() {
+        unimplemented!()
+    }
+
+    pub fn redirect_write_gather_pipe() {
+        unimplemented!()
+    }
+
+    pub fn set_draw_done_callback() {
+        unimplemented!()
+    }
+
+    pub fn set_tex_region_callback() {
+        unimplemented!()
+    }
+
+    pub fn set_tlut_region_callback() {
+        unimplemented!()
+    }
+
+    pub fn set_vtx_descv() {
+        unimplemented!()
+    }
 }
 
 //All the following data is found from
@@ -2361,3 +2417,4 @@ pub enum ColorChannel {
     Color0 = ffi::GX_COLOR0,
     Color1 = ffi::GX_COLOR1,
 }
+
