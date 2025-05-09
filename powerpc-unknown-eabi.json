@@ -11,6 +11,7 @@
     "linker": "powerpc-eabi-gcc",
     "linker-flavor": "gcc",
     "linker-is-gnu": true,
+    "max-atomic-width": 32,
     "os": "rvl-ios",
     "pre-link-args": {
         "gcc": [
@@ -30,4 +31,3 @@
     "target-pointer-width": "32",
     "vendor": "nintendo"
 }
-

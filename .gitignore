@@ -6,3 +6,6 @@
 **/*.rs.bk
 **/*.dol
 **/*.o
+
+# Temporary files created by editors
+**/*.swp
