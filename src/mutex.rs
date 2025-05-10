@@ -32,6 +32,10 @@ pub type LockResult<T> = Result<T, LockError>;
 /// it is protecting. The data can only be accessed through the RAII guards
 /// returned from [`lock`] and [`try_lock`], which guarantees that the data is
 /// only ever accessed when the mutex is locked.
+///
+/// [`new`]: Self::new
+/// [`lock`]: Self::lock
+/// [`try_lock`]: Self::try_lock
 pub struct Mutex<T: ?Sized> {
     inner: ffi::mutex_t,
     data: UnsafeCell<T>,
@@ -207,9 +211,12 @@ impl<T: ?Sized> Drop for Mutex<T> {
 /// dropped (falls out of scope), the lock will be unlocked.
 ///
 /// The data protected by the mutex can be accessed through this guard via its
-/// [`Deref`] and [`DerefMut`] implementations.
+/// `Deref` and `DerefMut` implementations.
 ///
 /// This structure is created by the [`lock`] and [`try_lock`] methods on Mutex.
+///
+/// [`lock`]: Mutex::lock
+/// [`try_lock`]: Mutex::try_lock
 #[must_use = "if unused, the Mutex will immediately unlock"]
 pub struct MutexGuard<'a, T: ?Sized + 'a> {
     lock: &'a Mutex<T>,

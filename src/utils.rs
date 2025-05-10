@@ -49,7 +49,7 @@ pub mod mem {
 mod console_printing {
     /// Prints to the console video output.
     ///
-    /// Equivalent to the [`println!`] macro except that a newline is not printed at
+    /// Equivalent to the `println!` macro except that a newline is not printed at
     /// the end of the message.
     #[macro_export]
     macro_rules! print {
