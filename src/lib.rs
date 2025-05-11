@@ -23,6 +23,7 @@
 #![feature(slice_ptr_get)]
 #![feature(allocator_api)]
 #![feature(asm_experimental_arch)]
+#![feature(generic_const_exprs)]
 
 extern crate alloc;
 
