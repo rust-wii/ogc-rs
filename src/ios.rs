@@ -11,8 +11,13 @@ pub mod dolphin;
 
 /// Filesystem IOS Device
 ///
-/// '/dev/fs'' device helper functions.
+/// '/dev/fs' device helper functions.
 pub mod fs;
+
+/// E-Ticket System IOS Device
+///
+/// `/dev/es` device hellper functions.
+pub mod es;
 
 #[repr(u32)]
 /// Interprocess Control / IOS File Mode
