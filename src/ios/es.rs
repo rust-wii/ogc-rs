@@ -152,6 +152,47 @@ use alloc::vec::Vec;
 
 use crate::ios;
 
+pub fn get_device_id() -> Result<u32, ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    let mut out_buf = [0u8; 4];
+    ios::ioctlv::<0, 1, 1>(es, Ioctl::GetDeviceId, &[], &mut [&mut out_buf])?;
+
+    let _ = ios::close(es);
+
+    Ok(u32::from_be_bytes(out_buf))
+}
+
+pub fn get_owned_title_count() -> Result<u32, ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    let mut out_buf = [0u8; 4];
+    ios::ioctlv::<0, 1, 1>(es, Ioctl::GetOwnedTitleCount, &[], &mut [&mut out_buf])?;
+
+    let _ = ios::close(es);
+
+    Ok(u32::from_be_bytes(out_buf))
+}
+
+pub fn get_owned_titles(title_count: u32) -> Result<Vec<u64>, ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    //TODO: Avoid allocation
+    let mut out_buf = alloc::vec![0u8; core::mem::size_of::<u64>() * title_count as usize];
+    ios::ioctlv::<1, 1, 2>(
+        es,
+        Ioctl::GetOwnedTitles,
+        &[&title_count.to_be_bytes()],
+        &mut [out_buf.as_mut_slice()],
+    )?;
+
+    // TODO: Avoid allocation
+    Ok(out_buf
+        .chunks_exact(core::mem::size_of::<u64>())
+        .map(|bytes| u64::from_be_bytes(bytes.try_into().expect("should fit")))
+        .collect())
+}
+
 pub fn get_title_count() -> Result<u32, ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
@@ -179,6 +220,78 @@ pub fn get_titles(title_count: u32) -> Result<Vec<u64>, ios::Error> {
         .chunks_exact(core::mem::size_of::<u64>())
         .map(|bytes| u64::from_be_bytes(bytes.try_into().expect("should fit")))
         .collect())
+}
+
+pub fn get_title_contents_count(title_id: u64) -> Result<u32, ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    let mut out_buf = [0u8; 4];
+    ios::ioctlv::<1, 1, 2>(
+        es,
+        Ioctl::GetTitleContentsCount,
+        &[&title_id.to_be_bytes()],
+        &mut [&mut out_buf],
+    )?;
+
+    let _ = ios::close(es);
+
+    Ok(u32::from_be_bytes(out_buf))
+}
+
+pub fn get_title_counts(title_id: u64, content_count: u32) -> Result<Vec<u32>, ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    //TODO: avoid allocation
+    let mut out_buf = alloc::vec![0u8; core::mem::size_of::<u32>() * content_count as usize];
+    ios::ioctlv::<2, 1, 3>(
+        es,
+        Ioctl::GetTitleContents,
+        &[&title_id.to_be_bytes(), &content_count.to_be_bytes()],
+        &mut [out_buf.as_mut_slice()],
+    )?;
+
+    let _ = ios::close(es);
+
+    //TODO: avoid allocation
+    Ok(out_buf
+        .chunks_exact(core::mem::size_of::<u32>())
+        .map(|bytes| u32::from_be_bytes(bytes.try_into().expect("should fit")))
+        .collect())
+}
+
+pub fn get_ticket_view_count(title_id: u64) -> Result<u32, ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    let mut out_buf = [0u8; 4];
+    ios::ioctlv::<1, 1, 2>(
+        es,
+        Ioctl::GetTicketViewCount,
+        &[&title_id.to_be_bytes()],
+        &mut [&mut out_buf],
+    )?;
+
+    let _ = ios::close(es);
+
+    Ok(u32::from_be_bytes(out_buf))
+}
+
+// TODO: actually returns a Vec<TicketView> but I haven't made teh `TicketView` struct yet and
+// don't want to do structs till the end of impling all these
+pub fn get_ticket_views(title_id: u64, view_count: u32) -> Result<Vec<u8>, ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    const TICKET_VIEW_SIZE: usize = 216; // 0xD8
+    let mut out_buf = alloc::vec![0u8; TICKET_VIEW_SIZE * view_count as usize];
+    ios::ioctlv::<2, 1, 3>(
+        es,
+        Ioctl::GetTicketViews,
+        &[&title_id.to_be_bytes(), &view_count.to_be_bytes()],
+        &mut [out_buf.as_mut_slice()],
+    )?;
+
+    let _ = ios::close(es);
+
+    Ok(out_buf)
 }
 
 pub fn get_stored_title_metadata_size(title_id: u64) -> Result<u32, ios::Error> {
