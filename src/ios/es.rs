@@ -17,10 +17,10 @@ pub enum Ioctl {
     GetTitles,
     GetTitleContentsCount,
     GetTitleContents,
-    GetViewCount,
-    GetViews,
     GetTicketViewCount,
     GetTicketViews,
+    GetTitleMetadataViewSize,
+    GetTitleMetadataView,
     GetConsumption,
     DeleteTitle,
     DeleteTicket,
@@ -90,12 +90,11 @@ impl From<Ioctl> for i32 {
             Ioctl::GetTitleCount => 14,
             Ioctl::GetTitles => 15,
             Ioctl::GetTitleContentsCount => 16,
-            Ioctl::GetTitleContents => 17,
-            Ioctl::GetViewCount => todo!(),
-            Ioctl::GetViews => todo!(),
-            Ioctl::GetTicketViewCount => todo!(),
-            Ioctl::GetTicketViews => todo!(),
-            Ioctl::GetConsumption => todo!(),
+            Ioctl::GetTicketViewCount => 17,
+            Ioctl::GetTicketViews => 18,
+            Ioctl::GetTitleMetadataViewSize => 20,
+            Ioctl::GetTitleMetadataView => 21,
+            Ioctl::GetConsumption => 22,
             Ioctl::DeleteTitle => todo!(),
             Ioctl::DeleteTicket => todo!(),
             Ioctl::DiskInterfaceGetTitleMetadataViewSize => todo!(),
@@ -140,6 +139,7 @@ impl From<Ioctl> for i32 {
             Ioctl::GetTicketSizeFromView => todo!(),
             Ioctl::GetTicketFromView => todo!(),
             Ioctl::CheckKoreaRegion => todo!(),
+            Ioctl::GetTitleContents => todo!(),
         }
     }
 }
@@ -292,6 +292,81 @@ pub fn get_ticket_views(title_id: u64, view_count: u32) -> Result<Vec<u8>, ios::
     let _ = ios::close(es);
 
     Ok(out_buf)
+}
+
+pub fn get_title_metadata_view_size(title_id: u64) -> Result<u32, ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    let title_id_in = title_id.to_be_bytes();
+    let mut out_buf = [0u8; 4];
+    ios::ioctlv::<1, 1, 2>(
+        es,
+        Ioctl::GetTitleMetadataViewSize,
+        &[&title_id_in],
+        &mut [&mut out_buf],
+    )?;
+
+    let _ = ios::close(es);
+    Ok(u32::from_be_bytes(out_buf))
+}
+
+//TODO: Return `TitleMetadataView` instead of owned allocation
+pub fn get_title_metadata_view(title_id: u64, size: u32) -> Result<Vec<u8>, ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    let title_id_in_buf = title_id.to_be_bytes();
+    let size_in_buf = size.to_be_bytes();
+
+    let size = usize::try_from(size).map_err(|_| ios::Error::Invalid)?;
+    let mut out_buf = alloc::vec![0u8; size];
+
+    ios::ioctlv::<2, 1, 3>(
+        es,
+        Ioctl::GetTitleMetadataView,
+        &[&title_id_in_buf, &size_in_buf],
+        &mut [out_buf.as_mut_slice()],
+    )?;
+
+    let _ = ios::close(es);
+
+    Ok(out_buf)
+}
+
+pub fn get_consumption_count(title_id: u64) -> Result<u32, ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    let title_id_in_buf = title_id.to_be_bytes();
+    let mut out_buf = [0u8; 4];
+    ios::ioctlv::<1, 2, 3>(
+        es,
+        Ioctl::GetConsumption,
+        &[&title_id_in_buf],
+        &mut [&mut [], &mut out_buf],
+    )?;
+
+    let _ = ios::close(es);
+
+    Ok(u32::from_be_bytes(out_buf))
+}
+
+pub fn get_consumption(title_id: u64, limit_count: u32) -> Result<Vec<u8>, ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    const TIKLIMIT_SIZE: usize = 8;
+    let limit_count = usize::try_from(limit_count).map_err(|_| ios::Error::Invalid)?;
+
+    let title_id_in_buf = title_id.to_be_bytes();
+    let mut limit_out_buf = alloc::vec![0u8; TIKLIMIT_SIZE * limit_count];
+    ios::ioctlv::<1, 2, 3>(
+        es,
+        Ioctl::GetConsumption,
+        &[&title_id_in_buf],
+        &mut [limit_out_buf.as_mut_slice(), &mut []],
+    )?;
+
+    let _ = ios::close(es);
+
+    Ok(limit_out_buf)
 }
 
 pub fn get_stored_title_metadata_size(title_id: u64) -> Result<u32, ios::Error> {
