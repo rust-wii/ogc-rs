@@ -74,7 +74,7 @@ pub enum Ioctl {
 impl From<Ioctl> for i32 {
     fn from(value: Ioctl) -> Self {
         match value {
-            Ioctl::AddTicket => todo!(),
+            Ioctl::AddTicket => 1,
             Ioctl::AddTitleStart => todo!(),
             Ioctl::AddContentStart => todo!(),
             Ioctl::AddContentData => todo!(),
@@ -151,6 +151,25 @@ use core::ffi::CStr;
 use alloc::vec::Vec;
 
 use crate::ios;
+
+pub fn add_ticket(
+    signed_ticket: &[u8],
+    signed_certs: &[u8],
+    signed_crl: &[u8],
+) -> Result<(), ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    ios::ioctlv::<3, 0, 3>(
+        es,
+        Ioctl::AddTicket,
+        &[signed_ticket, signed_certs, signed_crl],
+        &mut [],
+    )?;
+
+    let _ = ios::close(es);
+
+    Ok(())
+}
 
 pub fn get_device_id() -> Result<u32, ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
