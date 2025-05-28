@@ -75,10 +75,10 @@ impl From<Ioctl> for i32 {
     fn from(value: Ioctl) -> Self {
         match value {
             Ioctl::AddTicket => 1,
-            Ioctl::AddTitleStart => todo!(),
-            Ioctl::AddContentStart => todo!(),
-            Ioctl::AddContentData => todo!(),
-            Ioctl::AddContentFinish => todo!(),
+            Ioctl::AddTitleStart => 2,
+            Ioctl::AddContentStart => 3,
+            Ioctl::AddContentData => 4,
+            Ioctl::AddContentFinish => 5,
             Ioctl::AddTitleFinish => todo!(),
             Ioctl::GetDeviceId => 7,
             Ioctl::Launch => todo!(),
@@ -171,6 +171,85 @@ pub fn add_ticket(
     Ok(())
 }
 
+pub fn add_title_start(
+    signed_title_meta: &[u8],
+    signed_certs: &[u8],
+    signed_crl: &[u8],
+) -> Result<(), ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    ios::ioctlv::<4, 0, 4>(
+        es,
+        Ioctl::AddTitleStart,
+        &[
+            signed_title_meta,
+            signed_certs,
+            signed_crl,
+            &1u32.to_be_bytes(),
+        ],
+        &mut [],
+    )?;
+
+    let _ = ios::close(es);
+
+    Ok(())
+}
+
+pub fn add_content_start(title_id: u64, content_id: u32) -> Result<(), ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    ios::ioctlv::<2, 0, 2>(
+        es,
+        Ioctl::AddContentStart,
+        &[&title_id.to_be_bytes(), &content_id.to_be_bytes()],
+        &mut [],
+    )?;
+
+    let _ = ios::close(es);
+
+    Ok(())
+}
+
+pub fn add_content_data(content_fd: i32, data: &[u8]) -> Result<(), ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    ios::ioctlv::<2, 0, 2>(
+        es,
+        Ioctl::AddContentData,
+        &[&content_fd.to_be_bytes(), data],
+        &mut [],
+    )?;
+
+    let _ = ios::close(es);
+
+    Ok(())
+}
+
+pub fn add_content_finish(content_id: u32) -> Result<(), ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    ios::ioctlv::<1, 0, 1>(
+        es,
+        Ioctl::AddContentFinish,
+        &[&content_id.to_be_bytes()],
+        &mut [],
+    )?;
+
+    let _ = ios::close(es);
+
+    Ok(())
+}
+
+pub fn add_title_finish() -> Result<(), ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    ios::ioctlv::<0, 0, 0>(es, Ioctl::AddTitleFinish, &[], &mut [])?;
+
+    let _ = ios::close(es);
+
+    Ok(())
+}
+
 pub fn get_device_id() -> Result<u32, ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
@@ -181,6 +260,21 @@ pub fn get_device_id() -> Result<u32, ios::Error> {
 
     Ok(u32::from_be_bytes(out_buf))
 }
+
+pub fn launch_title(title_id: u64, ticket_view: &[u8]) -> Result<!, ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    ios::ioctlv_reboot::<2, 0, 2>(
+        es,
+        Ioctl::Launch,
+        &[&title_id.to_be_bytes(), ticket_view],
+        &mut [],
+    )?;
+
+    loop {}
+}
+
+pub fn open_active_title_content(content_idx: u32) -> Result<(), ios::Error> {}
 
 pub fn get_owned_title_count() -> Result<u32, ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
