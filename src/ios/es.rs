@@ -79,12 +79,12 @@ impl From<Ioctl> for i32 {
             Ioctl::AddContentStart => 3,
             Ioctl::AddContentData => 4,
             Ioctl::AddContentFinish => 5,
-            Ioctl::AddTitleFinish => todo!(),
+            Ioctl::AddTitleFinish => 6,
             Ioctl::GetDeviceId => 7,
-            Ioctl::Launch => todo!(),
-            Ioctl::OpenActiveTitleContent => todo!(),
-            Ioctl::ReadContent => todo!(),
-            Ioctl::CloseContent => todo!(),
+            Ioctl::Launch => 8,
+            Ioctl::OpenActiveTitleContent => 9,
+            Ioctl::ReadContent => 10,
+            Ioctl::CloseContent => 11,
             Ioctl::GetOwnedTitleCount => 12,
             Ioctl::GetOwnedTitles => 13,
             Ioctl::GetTitleCount => 14,
@@ -274,7 +274,44 @@ pub fn launch_title(title_id: u64, ticket_view: &[u8]) -> Result<!, ios::Error> 
     loop {}
 }
 
-pub fn open_active_title_content(content_idx: u32) -> Result<(), ios::Error> {}
+pub fn open_active_title_content(content_idx: u32) -> Result<(), ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    ios::ioctlv::<1, 0, 1>(
+        es,
+        Ioctl::OpenActiveTitleContent,
+        &[&content_idx.to_be_bytes()],
+        &mut [],
+    )?;
+
+    Ok(())
+}
+
+pub fn read_content(content_file_descriptor: i32, out_buf: &mut [u8]) -> Result<(), ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    ios::ioctlv::<1, 1, 2>(
+        es,
+        Ioctl::ReadContent,
+        &[&content_file_descriptor.to_be_bytes()],
+        &mut [out_buf],
+    )?;
+
+    Ok(())
+}
+
+pub fn close_content(content_file_descriptor: i32) -> Result<(), ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    ios::ioctlv::<1, 0, 1>(
+        es,
+        Ioctl::CloseContent,
+        &[&content_file_descriptor.to_be_bytes()],
+        &mut [],
+    )?;
+
+    Ok(())
+}
 
 pub fn get_owned_title_count() -> Result<u32, ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
