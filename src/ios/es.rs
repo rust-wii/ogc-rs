@@ -95,8 +95,8 @@ impl From<Ioctl> for i32 {
             Ioctl::GetTitleMetadataViewSize => 20,
             Ioctl::GetTitleMetadataView => 21,
             Ioctl::GetConsumption => 22,
-            Ioctl::DeleteTitle => todo!(),
-            Ioctl::DeleteTicket => todo!(),
+            Ioctl::DeleteTitle => 23,
+            Ioctl::DeleteTicket => 24,
             Ioctl::DiskInterfaceGetTitleMetadataViewSize => todo!(),
             Ioctl::DiskInterfaceGetTitleMetadataView => todo!(),
             Ioctl::DiskInterfaceGetTicketView => todo!(),
@@ -106,7 +106,7 @@ impl From<Ioctl> for i32 {
             Ioctl::ImportBoot => todo!(),
             Ioctl::GetTitleId => todo!(),
             Ioctl::SetUid => todo!(),
-            Ioctl::DeleteTitleContent => todo!(),
+            Ioctl::DeleteTitleContent => 34,
             Ioctl::SeekContent => todo!(),
             Ioctl::OpenContent => todo!(),
             Ioctl::LauchBackwardsCompatibility => todo!(),
@@ -128,7 +128,7 @@ impl From<Ioctl> for i32 {
             Ioctl::GetStoredTitleMetadata => todo!(),
             Ioctl::GetSharedContentCount => todo!(),
             Ioctl::GetSharedContents => todo!(),
-            Ioctl::DeleteSharedContents => todo!(),
+            Ioctl::DeleteSharedContents => 56,
             Ioctl::DiskInterfaceGetTitleMetadataSize => todo!(),
             Ioctl::DiskInterfaceGetTitleMetadata => todo!(),
             Ioctl::DiskInterfaceVerifyWithView => todo!(),
@@ -499,26 +499,6 @@ pub fn get_consumption_count(title_id: u64) -> Result<u32, ios::Error> {
     Ok(u32::from_be_bytes(out_buf))
 }
 
-pub fn get_consumption(title_id: u64, limit_count: u32) -> Result<Vec<u8>, ios::Error> {
-    let es = ios::open(DEV_ES, ios::Mode::None)?;
-
-    const TIKLIMIT_SIZE: usize = 8;
-    let limit_count = usize::try_from(limit_count).map_err(|_| ios::Error::Invalid)?;
-
-    let title_id_in_buf = title_id.to_be_bytes();
-    let mut limit_out_buf = alloc::vec![0u8; TIKLIMIT_SIZE * limit_count];
-    ios::ioctlv::<1, 2, 3>(
-        es,
-        Ioctl::GetConsumption,
-        &[&title_id_in_buf],
-        &mut [limit_out_buf.as_mut_slice(), &mut []],
-    )?;
-
-    let _ = ios::close(es);
-
-    Ok(limit_out_buf)
-}
-
 pub fn get_stored_title_metadata_size(title_id: u64) -> Result<u32, ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
@@ -557,4 +537,67 @@ pub fn get_stored_title_metadata(title_id: u64, size: u32) -> Result<Vec<u8>, io
     let _ = ios::close(es);
 
     Ok(out_buf)
+}
+
+pub fn get_consumption(title_id: u64, limit_count: u32) -> Result<Vec<u8>, ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    const TIKLIMIT_SIZE: usize = 8;
+    let limit_count = usize::try_from(limit_count).map_err(|_| ios::Error::Invalid)?;
+
+    let title_id_in_buf = title_id.to_be_bytes();
+    let mut limit_out_buf = alloc::vec![0u8; TIKLIMIT_SIZE * limit_count];
+    ios::ioctlv::<1, 2, 3>(
+        es,
+        Ioctl::GetConsumption,
+        &[&title_id_in_buf],
+        &mut [limit_out_buf.as_mut_slice(), &mut []],
+    )?;
+
+    let _ = ios::close(es);
+
+    Ok(limit_out_buf)
+}
+
+pub fn delete_title(title_id: u64) -> Result<(), ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    ios::ioctlv::<1, 0, 1>(es, Ioctl::DeleteTitle, &[&title_id.to_be_bytes()], &mut [])?;
+
+    let _ = ios::close(es);
+
+    Ok(())
+}
+
+pub fn delete_ticket(ticket_view: &[u8]) -> Result<(), ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    ios::ioctlv::<1, 0, 1>(es, Ioctl::DeleteTicket, &[ticket_view], &mut [])?;
+
+    let _ = ios::close(es);
+
+    Ok(())
+}
+
+pub fn delete_title_content(title_id: u64) -> Result<(), ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    ios::ioctlv::<1, 0, 1>(
+        es,
+        Ioctl::DeleteTitleContent,
+        &[&title_id.to_be_bytes()],
+        &mut [],
+    )?;
+
+    let _ = ios::close(es);
+
+    Ok(())
+}
+
+pub fn delete_shared_content(sha1_hash: &[u8; 20]) -> Result<(), ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    ios::ioctlv::<1, 0, 1>(es, Ioctl::DeleteSharedContents, &[sha1_hash], &mut [])?;
+
+    Ok(())
 }
