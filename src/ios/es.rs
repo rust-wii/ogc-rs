@@ -97,9 +97,9 @@ impl From<Ioctl> for i32 {
             Ioctl::GetConsumption => 22,
             Ioctl::DeleteTitle => 23,
             Ioctl::DeleteTicket => 24,
-            Ioctl::DiskInterfaceGetTitleMetadataViewSize => todo!(),
-            Ioctl::DiskInterfaceGetTitleMetadataView => todo!(),
-            Ioctl::DiskInterfaceGetTicketView => todo!(),
+            Ioctl::DiskInterfaceGetTitleMetadataViewSize => 25,
+            Ioctl::DiskInterfaceGetTitleMetadataView => 26,
+            Ioctl::DiskInterfaceGetTicketView => 27,
             Ioctl::DiskInterfaceVerify => todo!(),
             Ioctl::GetTitleDir => todo!(),
             Ioctl::GetDeviceCertificate => todo!(),
@@ -148,7 +148,7 @@ static DEV_ES: &CStr = c"/dev/es";
 
 use core::ffi::CStr;
 
-use alloc::vec::Vec;
+use alloc::{ffi::CString, vec::Vec};
 
 use crate::ios;
 
@@ -579,6 +579,119 @@ pub fn delete_ticket(ticket_view: &[u8]) -> Result<(), ios::Error> {
     Ok(())
 }
 
+pub fn disk_interface_get_title_metadata_view_size(
+    signed_title_meta: &[u8],
+) -> Result<u32, ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    let mut size_buf: [u8; 4] = [0u8; 4];
+
+    ios::ioctlv::<1, 1, 2>(
+        es,
+        Ioctl::DiskInterfaceGetTitleMetadataViewSize,
+        &[signed_title_meta],
+        &mut [&mut size_buf],
+    )?;
+
+    let _ = ios::close(es);
+
+    Ok(u32::from_be_bytes(size_buf))
+}
+
+pub fn disk_interface_get_title_metadata_view(
+    signed_title_meta: &[u8],
+    tmd_view_size: u32,
+) -> Result<Vec<u8>, ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    let mut out_buf = alloc::vec![0u8; tmd_view_size as usize];
+
+    ios::ioctlv::<2, 1, 3>(
+        es,
+        Ioctl::DiskInterfaceGetTitleMetadataView,
+        &[signed_title_meta, &tmd_view_size.to_be_bytes()],
+        &mut [out_buf.as_mut_slice()],
+    )?;
+
+    let _ = ios::close(es);
+
+    Ok(out_buf)
+}
+
+const TICKET_VIEW_SIZE: usize = 216; // 0xD8
+pub fn disk_interface_get_ticket_view(
+    signed_ticket: &[u8],
+) -> Result<[u8; TICKET_VIEW_SIZE], ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+    let mut out_buf = [0u8; TICKET_VIEW_SIZE];
+
+    ios::ioctlv::<1, 1, 2>(
+        es,
+        Ioctl::DiskInterfaceGetTicketView,
+        &[signed_ticket],
+        &mut [out_buf.as_mut_slice()],
+    )?;
+
+    let _ = ios::close(es);
+
+    Ok(out_buf)
+}
+
+/// pub fn disk_interface_verify
+
+pub fn get_data_directory(title_id: u64) -> Result<CString, ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    let mut out_buf = [0u8; 32];
+
+    ios::ioctlv::<1, 1, 2>(
+        es,
+        Ioctl::GetTitleDir,
+        &[&title_id.to_be_bytes()],
+        &mut [&mut out_buf],
+    )?;
+
+    CStr::from_bytes_until_nul(&out_buf)
+        .map(CString::from)
+        .map_err(|_| ios::Error::Invalid)
+}
+
+const DEVICE_CERT_SIZE: usize = 384;
+pub fn get_device_certificate() -> Result<[u8; DEVICE_CERT_SIZE], ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    let mut out_buf = [0u8; DEVICE_CERT_SIZE];
+
+    ios::ioctlv::<0, 1, 1>(es, Ioctl::GetDeviceCertificate, &[], &mut [&mut out_buf])?;
+
+    let _ = ios::close(es);
+
+    Ok(out_buf)
+}
+
+/// pub fn import_boot
+
+pub fn get_title_id() -> Result<u64, ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    let mut title_id = [0u8; 8];
+    ios::ioctlv::<0, 1, 1>(es, Ioctl::GetTitleId, &[], &mut [&mut title_id])?;
+
+    let _ = ios::close(es);
+
+    Ok(u64::from_be_bytes(title_id))
+}
+
+pub fn set_uid(uid: u64) -> Result<(), ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    ios::ioctlv::<1, 0, 1>(es, Ioctl::SetUid, &[&uid.to_be_bytes()], &mut [])?;
+
+    let _ = ios::close(es);
+
+    Ok(())
+}
+
 pub fn delete_title_content(title_id: u64) -> Result<(), ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
@@ -592,6 +705,13 @@ pub fn delete_title_content(title_id: u64) -> Result<(), ios::Error> {
     let _ = ios::close(es);
 
     Ok(())
+}
+
+pub fn seek_content(
+    content_file_descriptor: i32,
+    seek_mode: ios::SeekMode,
+    offset: i32,
+) -> Result<(), ios::Error> {
 }
 
 pub fn delete_shared_content(sha1_hash: &[u8; 20]) -> Result<(), ios::Error> {
