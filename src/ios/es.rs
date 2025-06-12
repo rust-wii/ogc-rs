@@ -712,6 +712,171 @@ pub fn seek_content(
     seek_mode: ios::SeekMode,
     offset: i32,
 ) -> Result<(), ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    ios::ioctlv::<3, 0, 3>(
+        es,
+        Ioctl::SeekContent,
+        &[
+            &content_file_descriptor.to_be_bytes(),
+            &offset.to_be_bytes(),
+            &i32::from(seek_mode).to_be_bytes(),
+        ],
+        &mut [],
+    )?;
+
+    let _ = ios::close(es);
+
+    Ok(())
+}
+
+pub fn open_title_content(
+    title_id: u64,
+    ticket_views: &[u8],
+    content_idx: u32,
+) -> Result<(), ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    ios::ioctlv::<3, 0, 3>(
+        es,
+        Ioctl::OpenContent,
+        &[
+            &title_id.to_be_bytes(),
+            ticket_views,
+            &content_idx.to_be_bytes(),
+        ],
+        &mut [],
+    )?;
+
+    let _ = ios::close(es);
+
+    Ok(())
+}
+
+//pub fn launch_backwards_compat() -> Result<!, ios::Error> {}
+
+pub fn export_title_init(title_id: u64, exported_tmd_buf: &mut [u8]) -> Result<(), ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    ios::ioctlv::<1, 1, 2>(
+        es,
+        Ioctl::ExportTitleInitalize,
+        &[&title_id.to_be_bytes()],
+        &mut [exported_tmd_buf],
+    )?;
+
+    let _ = ios::close(es);
+    Ok(())
+}
+
+pub fn export_content_begin(title_id: u64, content_id: u32) -> Result<(), ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    ios::ioctlv::<2, 0, 2>(
+        es,
+        Ioctl::ExportContentBegin,
+        &[&title_id.to_be_bytes(), &content_id.to_be_bytes()],
+        &mut [],
+    )?;
+
+    let _ = ios::close(es);
+
+    Ok(())
+}
+
+pub fn export_content_data(
+    content_file_descriptor: i32,
+    data: &mut [u8],
+) -> Result<(), ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    ios::ioctlv::<1, 1, 2>(
+        es,
+        Ioctl::ExportContentData,
+        &[&content_file_descriptor.to_be_bytes()],
+        &mut [data],
+    )?;
+
+    let _ = ios::close(es);
+
+    Ok(())
+}
+
+pub fn export_content_end(content_file_descriptor: i32) -> Result<(), ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    ios::ioctlv::<1, 0, 1>(
+        es,
+        Ioctl::ExportContentEnd,
+        &[&content_file_descriptor.to_be_bytes()],
+        &mut [],
+    )?;
+
+    let _ = ios::close(es);
+
+    Ok(())
+}
+
+pub fn export_title_done() -> Result<(), ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    ios::ioctlv::<0, 0, 0>(es, Ioctl::ExportTitleDone, &[], &mut [])?;
+
+    let _ = ios::close(es);
+
+    Ok(())
+}
+
+pub fn add_tmd(title_meta: &[u8]) -> Result<(), ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    ios::ioctlv::<1, 0, 1>(es, Ioctl::AddTitleMetadata, &[title_meta], &mut [])?;
+
+    let _ = ios::close(es);
+
+    Ok(())
+}
+
+pub fn encrypt(
+    keynum: u32,
+    iv: &mut [u8; 16],
+    source: &[u8],
+    destination: &mut [u8],
+) -> Result<(), ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+    let iv_copy = iv.clone();
+
+    ios::ioctlv::<3, 2, 5>(
+        es,
+        Ioctl::Encrypt,
+        &[&keynum.to_be_bytes(), &iv_copy, source],
+        &mut [iv, destination],
+    )?;
+
+    let _ = ios::close(es);
+
+    Ok(())
+}
+
+pub fn decrypt(
+    keynum: u32,
+    iv: &mut [u8; 16],
+    source: &[u8],
+    destination: &mut [u8],
+) -> Result<(), ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+    let iv_copy = iv.clone();
+
+    ios::ioctlv::<3, 2, 5>(
+        es,
+        Ioctl::Decrypt,
+        &[&keynum.to_be_bytes(), &iv_copy, source],
+        &mut [iv, destination],
+    )?;
+
+    let _ = ios::close(es);
+
+    Ok(())
 }
 
 pub fn delete_shared_content(sha1_hash: &[u8; 20]) -> Result<(), ios::Error> {
