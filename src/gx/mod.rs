@@ -1064,6 +1064,26 @@ pub enum TexOffset {
     ToOne = ffi::GX_TO_ONE,
 }
 
+
+impl From<u32> for TextureFormat {
+    fn from(x: u32) -> Self {
+        match x {
+            ffi::GX_TF_I4 => TextureFormat::I4,
+            ffi::GX_TF_I8 => TextureFormat::I8,
+            ffi::GX_TF_IA4 => TextureFormat::IA4,
+            ffi::GX_TF_IA8 => TextureFormat::IA8,
+            ffi::GX_TF_RGB565 => TextureFormat::RGB565,
+            ffi::GX_TF_RGB5A3 => TextureFormat::RGB5A3,
+            ffi::GX_TF_RGBA8 => TextureFormat::RGBA8,
+            ffi::GX_TF_CI4 => TextureFormat::CI4,
+            ffi::GX_TF_CI8 => TextureFormat::CI8,
+            ffi::GX_TF_CI14 => TextureFormat::CI14,
+            ffi::GX_TF_CMPR => TextureFormat::CMPR,
+            _ => panic!("invalid texture format"),
+	    }
+    }
+}
+
 /// Object containing information about a texture.
 #[derive(Debug)]
 pub struct Texture {
@@ -1240,6 +1260,22 @@ impl Texture {
     pub fn data(&self) -> &Buf32 {
         //unsafe { ffi::GX_GetTexObjData(&self.inner) }
         &self.img
+    }
+
+	/// Returns the minimum and maximum filter modes for the given texture.
+    pub fn get_filter_mode(&self) -> (TexFilter, TexFilter) {
+        let mut minfilt = 0;
+        let mut maxfilt = 0;
+        unsafe { ffi::GX_GetTexObjFilterMode(&self.inner, &mut minfilt, &mut maxfilt) }
+        (minfilt.into(), maxfilt.into())
+    }
+
+	/// Returns the minimum and maximum LOD values for the given texture.
+    pub fn get_lod(&self) -> (f32, f32) {
+        let mut minlod = 0.0;
+        let mut maxlod = 0.0;
+        unsafe { ffi::GX_GetTexObjLOD(&self.inner, &mut minlod, &mut maxlod) }
+        (minlod, maxlod)
     }
 
     /// Enables bias clamping for texture LOD.
