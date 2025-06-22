@@ -879,6 +879,89 @@ pub fn decrypt(
     Ok(())
 }
 
+pub fn get_boot_2_version() -> Result<u32, ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    let mut boot_version = [0u8; 4];
+    ios::ioctlv::<0, 1, 1>(es, Ioctl::GetBoot2Version, &[], &mut [&mut boot_version])?;
+
+    let _ = ios::close(es);
+
+    let boot_version = u32::from_be_bytes(boot_version);
+    Ok(boot_version)
+}
+
+pub fn cancel_add_title() -> Result<(), ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    ios::ioctlv::<0, 0, 0>(es, Ioctl::AddTitleCancel, &[], &mut [])?;
+
+    let _ = ios::close(es);
+
+    Ok(())
+}
+
+pub fn sign(data: &[u8]) -> Result<([u8; 60], [u8; 0x180]), ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    let mut cert = [0u8; 0x180];
+    let mut signature = [0u8; 60];
+    ios::ioctlv::<1, 2, 3>(es, Ioctl::Sign, &[data], &mut [&mut signature, &mut cert])?;
+
+    let _ = ios::close(es);
+    Ok((signature, cert))
+}
+
+pub fn verify_sign(data_sha1: &[u8], signature: &[u8], certs: &[u8]) -> Result<(), ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    ios::ioctlv::<3, 0, 3>(
+        es,
+        Ioctl::VerifySign,
+        &[data_sha1, signature, certs],
+        &mut [],
+    )?;
+
+    let _ = ios::close(es);
+    Ok(())
+}
+
+pub fn get_stored_contents_count(title_id: u64) -> Result<u32, ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    let mut title_count = [0u8; 4];
+    ios::ioctlv::<1, 1, 2>(
+        es,
+        Ioctl::GetStoredContentCount,
+        &[&title_id.to_be_bytes()],
+        &mut [&mut title_count],
+    )?;
+
+    let _ = ios::close(es);
+
+    let title_count = u32::from_be_bytes(title_count);
+    Ok(title_count)
+}
+
+pub fn get_stored_contents(title_id: u64, content_count: u32) -> Result<Vec<u32>, ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    let mut content_ids = alloc::vec![0u8; content_count as usize * core::mem::size_of::<u32>()];
+    ios::ioctlv::<1, 1, 2>(
+        es,
+        Ioctl::GetStoredContents,
+        &[&title_id.to_be_bytes()],
+        &mut [&mut content_ids],
+    )?;
+
+    let _ = ios::close(es);
+
+    Ok(content_ids
+        .chunks_exact(4)
+        .map(|bytes| u32::from_be_bytes(bytes.try_into().unwrap()))
+        .collect())
+}
+
 pub fn delete_shared_content(sha1_hash: &[u8; 20]) -> Result<(), ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
