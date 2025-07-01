@@ -499,46 +499,6 @@ pub fn get_consumption_count(title_id: u64) -> Result<u32, ios::Error> {
     Ok(u32::from_be_bytes(out_buf))
 }
 
-pub fn get_stored_title_metadata_size(title_id: u64) -> Result<u32, ios::Error> {
-    let es = ios::open(DEV_ES, ios::Mode::None)?;
-
-    let in_buf = title_id.to_be_bytes();
-    let mut out_buf = [0u8; 4];
-    ios::ioctlv::<1, 1, 2>(
-        es,
-        Ioctl::GetStoredTitleMetadataSize,
-        &[&in_buf],
-        &mut [&mut out_buf],
-    )?;
-
-    let _ = ios::close(es);
-
-    Ok(u32::from_be_bytes(
-        out_buf.try_into().map_err(|_| ios::Error::Invalid)?,
-    ))
-}
-
-// TODO: Proper enuming since there are different signature types and differing sizes for them
-pub fn get_stored_title_metadata(title_id: u64, size: u32) -> Result<Vec<u8>, ios::Error> {
-    let es = ios::open(DEV_ES, ios::Mode::None)?;
-
-    let title_buf = title_id.to_be_bytes();
-    let size_buf = size.to_be_bytes();
-    let size_usize: usize = usize::try_from(size).map_err(|_| ios::Error::Invalid)?;
-    // TODO: Avoid allocation
-    let mut out_buf = alloc::vec![0u8; size_usize];
-    ios::ioctlv::<2, 1, 3>(
-        es,
-        Ioctl::GetStoredTitleMetadata,
-        &[&title_buf, &size_buf],
-        &mut [&mut out_buf[..]],
-    )?;
-
-    let _ = ios::close(es);
-
-    Ok(out_buf)
-}
-
 pub fn get_consumption(title_id: u64, limit_count: u32) -> Result<Vec<u8>, ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
@@ -962,10 +922,225 @@ pub fn get_stored_contents(title_id: u64, content_count: u32) -> Result<Vec<u32>
         .collect())
 }
 
+pub fn get_stored_title_metadata_size(title_id: u64) -> Result<u32, ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    let in_buf = title_id.to_be_bytes();
+    let mut out_buf = [0u8; 4];
+    ios::ioctlv::<1, 1, 2>(
+        es,
+        Ioctl::GetStoredTitleMetadataSize,
+        &[&in_buf],
+        &mut [&mut out_buf],
+    )?;
+
+    let _ = ios::close(es);
+
+    Ok(u32::from_be_bytes(
+        out_buf.try_into().map_err(|_| ios::Error::Invalid)?,
+    ))
+}
+
+// TODO: Proper enuming since there are different signature types and differing sizes for them
+pub fn get_stored_title_metadata(title_id: u64, size: u32) -> Result<Vec<u8>, ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    let title_buf = title_id.to_be_bytes();
+    let size_buf = size.to_be_bytes();
+    let size_usize: usize = usize::try_from(size).map_err(|_| ios::Error::Invalid)?;
+    // TODO: Avoid allocation
+    let mut out_buf = alloc::vec![0u8; size_usize];
+    ios::ioctlv::<2, 1, 3>(
+        es,
+        Ioctl::GetStoredTitleMetadata,
+        &[&title_buf, &size_buf],
+        &mut [&mut out_buf[..]],
+    )?;
+
+    let _ = ios::close(es);
+
+    Ok(out_buf)
+}
+
+pub fn get_shared_contents_count() -> Result<u32, ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    let mut shared_contents_count: [u8; 4] = [0u8; 4];
+    ios::ioctlv::<0, 1, 1>(
+        es,
+        Ioctl::GetSharedContentCount,
+        &[],
+        &mut [&mut shared_contents_count],
+    )?;
+
+    let _ = ios::close(es);
+
+    let shared_contents_count = u32::from_be_bytes(shared_contents_count);
+    Ok(shared_contents_count)
+}
+
+pub fn get_shared_contents(shared_contents_count: u32) -> Result<Vec<u8>, ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    let mut sha1_hashes = alloc::vec![u8; 20 * shared_contents_count as usize];
+    ios::ioctlv::<1, 1, 2>(
+        es,
+        Ioctl::GetSharedContents,
+        &[&shared_contents_count.to_be_bytes()],
+        &mut [&mut sha1_hashes],
+    )?;
+
+    let _ = ios::close(es);
+
+    Ok(sha1_hashes)
+}
+
 pub fn delete_shared_content(sha1_hash: &[u8; 20]) -> Result<(), ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
     ios::ioctlv::<1, 0, 1>(es, Ioctl::DeleteSharedContents, &[sha1_hash], &mut [])?;
+
+    Ok(())
+}
+
+pub fn disk_interface_get_title_metadata_size() -> Result<u32, ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    let mut tmd_size: [u8; 4] = [0u8; 4];
+    ios::ioctlv::<0, 1, 1>(
+        es,
+        Ioctl::DiskInterfaceGetTitleMetadataSize,
+        &[],
+        &mut [&mut tmd_size],
+    )?;
+
+    let _ = ios::close(es);
+
+    let tmd_size = u32::from_be_bytes(tmd_size);
+    Ok(tmd_size)
+}
+
+pub fn disk_interface_get_title_metadata(size: u32) -> Result<Vec<u8>, ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    let mut tmd = alloc::vec![0u8; size as usize];
+    ios::ioctlv::<1, 1, 2>(
+        es,
+        Ioctl::DiskInterfaceGetTitleMetadata,
+        &[&size.to_be_bytes()],
+        &mut [&mut tmd],
+    )?;
+
+    let _ = ios::close(es);
+
+    Ok(tmd)
+}
+
+/// pub fn disk_interface_verify_with_view
+
+pub fn setup_stream_key(tik_view: &[u8], tmd: &[u8]) -> Result<u32, ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    let mut handle = [0u8; 4];
+    ios::ioctlv::<2, 1, 3>(
+        es,
+        Ioctl::SetupStreamKey,
+        &[&tik_view, &tmd],
+        &mut [&mut handle],
+    )?;
+
+    let _ = ios::close(es);
+
+    let handle = u32::from_be_bytes(handle);
+    Ok(handle)
+}
+
+pub fn delete_stream_key(handle: u32) -> Result<(), ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    ios::ioctlv::<1, 0, 1>(
+        es,
+        Ioctl::DeleteStreamKey,
+        &[&handle.to_be_bytes()],
+        &mut [],
+    )?;
+
+    let _ = ios::close(es);
+
+    Ok(())
+}
+
+pub fn delete_content(title_id: u64, content_id: u32) -> Result<(), ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    ios::ioctlv::<2, 0, 2>(
+        es,
+        Ioctl::DeleteContent,
+        &[&title_id.to_be_bytes(), &content_id.to_be_bytes()],
+        &mut [],
+    )?;
+
+    let _ = ios::close(es);
+
+    Ok(())
+}
+
+const TICKET_SIZE: usize = 0x2A4;
+pub fn get_version_0_ticket_from_view(tik_view: &[u8]) -> Result<[u8; TICKET_SIZE], ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    let mut ticket = [0u8; TICKET_SIZE];
+    ios::ioctlv::<1, 1, 2>(
+        es,
+        Ioctl::GetVersion0TicketFromView,
+        &[&tik_view],
+        &mut [&mut ticket],
+    )?;
+
+    let _ = ios::close(es);
+
+    Ok(ticket)
+}
+
+pub fn get_ticket_size_from_view(tik_view: &[u8]) -> Result<u32, ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    let mut size = [0u8; 4];
+    ios::ioctlv::<1, 1, 2>(
+        es,
+        Ioctl::GetTicketSizeFromView,
+        &[&tik_view],
+        &mut [&mut size],
+    )?;
+
+    let _ = ios::close(es);
+
+    let size = u32::from_be_bytes(size);
+    Ok(size)
+}
+
+pub fn get_ticket_from_view(tik_view: &[u8], size: u32) -> Result<Vec<u8>, ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    let mut ticket = alloc::vec![0u8; size as usize];
+    ios::ioctlv::<2, 1, 3>(
+        es,
+        Ioctl::GetTicketFromView,
+        &[&tik_view, &size.to_be_bytes()],
+        &mut [&mut ticket],
+    )?;
+
+    let _ = ios::close(es);
+
+    Ok(ticket)
+}
+
+pub fn check_korea_region() -> Result<(), ios::Error> {
+    let es = ios::open(DEV_ES, ios::Mode::None)?;
+
+    ios::ioctlv::<0, 0, 0>(es, Ioctl::CheckKoreaRegion, &[], &mut [])?;
+
+    let _ = ios::close(es);
 
     Ok(())
 }
