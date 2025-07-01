@@ -982,7 +982,7 @@ pub fn get_shared_contents_count() -> Result<u32, ios::Error> {
 pub fn get_shared_contents(shared_contents_count: u32) -> Result<Vec<u8>, ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
-    let mut sha1_hashes = alloc::vec![u8; 20 * shared_contents_count as usize];
+    let mut sha1_hashes = alloc::vec![0u8; 20 * shared_contents_count as usize];
     ios::ioctlv::<1, 1, 2>(
         es,
         Ioctl::GetSharedContents,
