@@ -217,8 +217,11 @@ use core::ffi::CStr;
 
 use alloc::{ffi::CString, vec::Vec};
 
-use crate::ios;
+use crate::ios::{self, FileDescriptor};
 
+/// [`Ioctl::AddTicket`]
+///
+/// Add ticket, certificates and certificate revoke list to system
 pub fn add_ticket(
     signed_ticket: &[u8],
     signed_certs: &[u8],
@@ -238,12 +241,16 @@ pub fn add_ticket(
     Ok(())
 }
 
+/// [`Ioctl::AddTitleStart`]
+///
+/// Add title metadata, certificates and certifacte revoke list to system
+/// Needs to be canceled with the same file descriptor that this function is called with
 pub fn add_title_start(
+    es: FileDescriptor
     signed_title_meta: &[u8],
     signed_certs: &[u8],
     signed_crl: &[u8],
 ) -> Result<(), ios::Error> {
-    let es = ios::open(DEV_ES, ios::Mode::None)?;
 
     ios::ioctlv::<4, 0, 4>(
         es,
@@ -257,13 +264,14 @@ pub fn add_title_start(
         &mut [],
     )?;
 
-    let _ = ios::close(es);
-
     Ok(())
 }
 
-pub fn add_content_start(title_id: u64, content_id: u32) -> Result<(), ios::Error> {
-    let es = ios::open(DEV_ES, ios::Mode::None)?;
+/// [`Ioctl::AddContentStart`] 
+///
+/// Return content file descriptor for `title_id` and `content_id`
+/// Needs to be finished with the same file descriptor that this function is called with 
+pub fn add_content_start(es: FileDescriptor, title_id: u64, content_id: u32) -> Result<(), ios::Error> {
 
     ios::ioctlv::<2, 0, 2>(
         es,
@@ -272,13 +280,14 @@ pub fn add_content_start(title_id: u64, content_id: u32) -> Result<(), ios::Erro
         &mut [],
     )?;
 
-    let _ = ios::close(es);
 
     Ok(())
 }
 
-pub fn add_content_data(content_fd: i32, data: &[u8]) -> Result<(), ios::Error> {
-    let es = ios::open(DEV_ES, ios::Mode::None)?;
+/// [`Ioctl::AddContentData`] 
+///
+/// Add data to content file descriptor 
+pub fn add_content_data(es: FileDescriptor, content_fd: i32, data: &[u8]) -> Result<(), ios::Error> {
 
     ios::ioctlv::<2, 0, 2>(
         es,
@@ -287,32 +296,30 @@ pub fn add_content_data(content_fd: i32, data: &[u8]) -> Result<(), ios::Error> 
         &mut [],
     )?;
 
-    let _ = ios::close(es);
-
     Ok(())
 }
 
-pub fn add_content_finish(content_id: u32) -> Result<(), ios::Error> {
-    let es = ios::open(DEV_ES, ios::Mode::None)?;
+/// [`Ioctl::AddContentFinish`] 
+///
+/// Finish adding content data to content file descriptor
+pub fn add_content_finish(es: FileDescriptor, content_fd: u32) -> Result<(), ios::Error> {
 
     ios::ioctlv::<1, 0, 1>(
         es,
         Ioctl::AddContentFinish,
-        &[&content_id.to_be_bytes()],
+        &[&content_fd.to_be_bytes()],
         &mut [],
     )?;
-
-    let _ = ios::close(es);
 
     Ok(())
 }
 
-pub fn add_title_finish() -> Result<(), ios::Error> {
-    let es = ios::open(DEV_ES, ios::Mode::None)?;
+/// [`Ioctl::AddTitleFinish`]
+///
+/// Finish adding title to system
+pub fn add_title_finish(es: FileDescriptor) -> Result<(), ios::Error> {
 
     ios::ioctlv::<0, 0, 0>(es, Ioctl::AddTitleFinish, &[], &mut [])?;
-
-    let _ = ios::close(es);
 
     Ok(())
 }
@@ -664,7 +671,7 @@ pub fn disk_interface_get_ticket_view(
     Ok(out_buf)
 }
 
-/// pub fn disk_interface_verify
+// pub fn disk_interface_verify
 
 pub fn get_data_directory(title_id: u64) -> Result<CString, ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
@@ -696,7 +703,7 @@ pub fn get_device_certificate() -> Result<[u8; DEVICE_CERT_SIZE], ios::Error> {
     Ok(out_buf)
 }
 
-/// pub fn import_boot
+// pub fn import_boot
 
 pub fn get_title_id() -> Result<u64, ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
@@ -1103,7 +1110,7 @@ pub fn disk_interface_get_title_metadata(size: u32) -> Result<Vec<u8>, ios::Erro
     Ok(tmd)
 }
 
-/// pub fn disk_interface_verify_with_view
+// pub fn disk_interface_verify_with_view
 
 pub fn setup_stream_key(tik_view: &[u8], tmd: &[u8]) -> Result<u32, ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
