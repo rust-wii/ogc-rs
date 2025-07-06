@@ -246,12 +246,11 @@ pub fn add_ticket(
 /// Add title metadata, certificates and certifacte revoke list to system
 /// Needs to be canceled with the same file descriptor that this function is called with
 pub fn add_title_start(
-    es: FileDescriptor
+    es: FileDescriptor,
     signed_title_meta: &[u8],
     signed_certs: &[u8],
     signed_crl: &[u8],
 ) -> Result<(), ios::Error> {
-
     ios::ioctlv::<4, 0, 4>(
         es,
         Ioctl::AddTitleStart,
@@ -267,12 +266,15 @@ pub fn add_title_start(
     Ok(())
 }
 
-/// [`Ioctl::AddContentStart`] 
+/// [`Ioctl::AddContentStart`]
 ///
 /// Return content file descriptor for `title_id` and `content_id`
-/// Needs to be finished with the same file descriptor that this function is called with 
-pub fn add_content_start(es: FileDescriptor, title_id: u64, content_id: u32) -> Result<(), ios::Error> {
-
+/// Needs to be finished with the same file descriptor that this function is called with
+pub fn add_content_start(
+    es: FileDescriptor,
+    title_id: u64,
+    content_id: u32,
+) -> Result<(), ios::Error> {
     ios::ioctlv::<2, 0, 2>(
         es,
         Ioctl::AddContentStart,
@@ -280,15 +282,17 @@ pub fn add_content_start(es: FileDescriptor, title_id: u64, content_id: u32) -> 
         &mut [],
     )?;
 
-
     Ok(())
 }
 
-/// [`Ioctl::AddContentData`] 
+/// [`Ioctl::AddContentData`]
 ///
-/// Add data to content file descriptor 
-pub fn add_content_data(es: FileDescriptor, content_fd: i32, data: &[u8]) -> Result<(), ios::Error> {
-
+/// Add data to content file descriptor
+pub fn add_content_data(
+    es: FileDescriptor,
+    content_fd: i32,
+    data: &[u8],
+) -> Result<(), ios::Error> {
     ios::ioctlv::<2, 0, 2>(
         es,
         Ioctl::AddContentData,
@@ -299,11 +303,10 @@ pub fn add_content_data(es: FileDescriptor, content_fd: i32, data: &[u8]) -> Res
     Ok(())
 }
 
-/// [`Ioctl::AddContentFinish`] 
+/// [`Ioctl::AddContentFinish`]
 ///
 /// Finish adding content data to content file descriptor
 pub fn add_content_finish(es: FileDescriptor, content_fd: u32) -> Result<(), ios::Error> {
-
     ios::ioctlv::<1, 0, 1>(
         es,
         Ioctl::AddContentFinish,
@@ -318,7 +321,6 @@ pub fn add_content_finish(es: FileDescriptor, content_fd: u32) -> Result<(), ios
 ///
 /// Finish adding title to system
 pub fn add_title_finish(es: FileDescriptor) -> Result<(), ios::Error> {
-
     ios::ioctlv::<0, 0, 0>(es, Ioctl::AddTitleFinish, &[], &mut [])?;
 
     Ok(())
