@@ -1,73 +1,140 @@
 /// E-Ticket System Supported Ioctls
 pub enum Ioctl {
+    /// Add Ticket to NAND
     AddTicket,
+    /// Add Title Start
     AddTitleStart,
+    /// Add Title Content Start
     AddContentStart,
+    /// Add Title Content Data
     AddContentData,
+    /// Add Title Content Finish
     AddContentFinish,
+    /// Add Title Finish
     AddTitleFinish,
+    /// Get Device ID
     GetDeviceId,
+    /// Launch Title
     Launch,
+    /// Open Active Title Content
     OpenActiveTitleContent,
+    /// Read Content
     ReadContent,
+    /// Close Content File Descriptor
     CloseContent,
+    /// Get Owned Title Count
     GetOwnedTitleCount,
+    /// Get Owned Title IDs
     GetOwnedTitles,
+    /// Get Title Count
     GetTitleCount,
+    /// Get Title IDs
     GetTitles,
+    /// Get Title Content Count
     GetTitleContentsCount,
+    /// Get Title Content IDs
     GetTitleContents,
+    /// Get Title Ticket View Count
     GetTicketViewCount,
+    // Get Title Ticket Views
     GetTicketViews,
+    /// Get Title Metadata View Size
     GetTitleMetadataViewSize,
+    /// Get Title Metadata View
     GetTitleMetadataView,
+    /// Get current `ES` context consumption
     GetConsumption,
+    /// Delete Title
     DeleteTitle,
+    /// Delete Ticket
     DeleteTicket,
+    /// Get Title Metadata View Size
     DiskInterfaceGetTitleMetadataViewSize,
+    /// Get Title Metadata View
     DiskInterfaceGetTitleMetadataView,
+    /// Get Ticket View
     DiskInterfaceGetTicketView,
+    /// Verify Title
     DiskInterfaceVerify,
+    /// Get Data Directory
     GetTitleDir,
+    /// Get Device Certificate
     GetDeviceCertificate,
+    /// Import Boot 2
     ImportBoot,
+    /// Get Current Title ID,
     GetTitleId,
+    /// Set `ES` context User ID
     SetUid,
+    /// Delete Title Content
     DeleteTitleContent,
+    /// Seek Title Content
     SeekContent,
+    /// Open Title Content
     OpenContent,
+    /// Launch Backwards Compatibility (Gamecube Mode)
     LauchBackwardsCompatibility,
+    /// Export Title Initialize
     ExportTitleInitalize,
+    /// Export Content Begin
     ExportContentBegin,
+    /// Export Content Data
     ExportContentData,
+    /// Export Content End
     ExportContentEnd,
+    /// Export  Title Done / Export Title End
     ExportTitleDone,
+    /// Add Title Metadata
     AddTitleMetadata,
+    /// Encrypt
     Encrypt,
+    /// Decrpyt
     Decrypt,
+    /// Get Boot 2 Version
     GetBoot2Version,
+    /// Add Title Cancel
     AddTitleCancel,
+    /// Sign
     Sign,
+    /// Verify Sign
     VerifySign,
+    /// Get Stored Contents Count
     GetStoredContentCount,
+    /// Get Stored Contents
     GetStoredContents,
+    /// Get Stored Title Metadata Size
     GetStoredTitleMetadataSize,
+    /// Get Stored Title Metadata
     GetStoredTitleMetadata,
+    /// Get Shared Contents Count
     GetSharedContentCount,
+    /// Get Shared Contents
     GetSharedContents,
+    /// Delete Shared Contents
     DeleteSharedContents,
+    /// Disk Interface Get Title Metadata Size
     DiskInterfaceGetTitleMetadataSize,
+
+    /// Disk Interface Get Title Metadata
     DiskInterfaceGetTitleMetadata,
+    /// Disk Interface Verify With View
     DiskInterfaceVerifyWithView,
+    /// Setup Stream Key
     SetupStreamKey,
+    /// Delete Stream Key
     DeleteStreamKey,
+    /// Delete Content
     DeleteContent,
     // Invalid3F
+    /// Get Version 0 Ticket From View
     GetVersion0TicketFromView,
     // Unknown41,
     // Unknown42,
+    /// Get Ticket Size From Ticket View
     GetTicketSizeFromView,
+    /// Get Ticket from Ticket View
     GetTicketFromView,
+    /// Check Korea Region
     CheckKoreaRegion,
 }
 
