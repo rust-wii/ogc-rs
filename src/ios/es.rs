@@ -326,6 +326,9 @@ pub fn add_title_finish(es: FileDescriptor) -> Result<(), ios::Error> {
     Ok(())
 }
 
+/// [`Ioctl::GetDeviceId`]
+///
+/// Get device id
 pub fn get_device_id() -> Result<u32, ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
@@ -337,6 +340,9 @@ pub fn get_device_id() -> Result<u32, ios::Error> {
     Ok(u32::from_be_bytes(out_buf))
 }
 
+/// [`Ioctl::Launch`]
+///
+/// Launch system title
 pub fn launch_title(title_id: u64, ticket_view: &[u8]) -> Result<!, ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
@@ -350,9 +356,10 @@ pub fn launch_title(title_id: u64, ticket_view: &[u8]) -> Result<!, ios::Error> 
     loop {}
 }
 
-pub fn open_active_title_content(content_idx: u32) -> Result<(), ios::Error> {
-    let es = ios::open(DEV_ES, ios::Mode::None)?;
-
+/// [`Ioctl::OpenActiveTitleContent`]
+///
+/// Open content from current title
+pub fn open_active_title_content(es: FileDescriptor, content_idx: u32) -> Result<(), ios::Error> {
     ios::ioctlv::<1, 0, 1>(
         es,
         Ioctl::OpenActiveTitleContent,
@@ -363,9 +370,14 @@ pub fn open_active_title_content(content_idx: u32) -> Result<(), ios::Error> {
     Ok(())
 }
 
-pub fn read_content(content_file_descriptor: i32, out_buf: &mut [u8]) -> Result<(), ios::Error> {
-    let es = ios::open(DEV_ES, ios::Mode::None)?;
-
+/// [`Ioctl::ReadContent`]
+///
+/// Read data provided from `content_file_descriptor` into `out_buf`
+pub fn read_content(
+    es: FileDescriptor,
+    content_file_descriptor: i32,
+    out_buf: &mut [u8],
+) -> Result<(), ios::Error> {
     ios::ioctlv::<1, 1, 2>(
         es,
         Ioctl::ReadContent,
@@ -375,10 +387,10 @@ pub fn read_content(content_file_descriptor: i32, out_buf: &mut [u8]) -> Result<
 
     Ok(())
 }
-
-pub fn close_content(content_file_descriptor: i32) -> Result<(), ios::Error> {
-    let es = ios::open(DEV_ES, ios::Mode::None)?;
-
+/// [`Ioctl::CloseContent`]
+///
+/// Close content
+pub fn close_content(es: FileDescriptor, content_file_descriptor: i32) -> Result<(), ios::Error> {
     ios::ioctlv::<1, 0, 1>(
         es,
         Ioctl::CloseContent,
@@ -389,6 +401,9 @@ pub fn close_content(content_file_descriptor: i32) -> Result<(), ios::Error> {
     Ok(())
 }
 
+/// [`Ioctl::GetOwnedTitleCount`]
+///
+/// Get owned title count
 pub fn get_owned_title_count() -> Result<u32, ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
@@ -399,7 +414,9 @@ pub fn get_owned_title_count() -> Result<u32, ios::Error> {
 
     Ok(u32::from_be_bytes(out_buf))
 }
-
+/// [`Ioctl::GetOwnedTitles`]
+///
+/// Get ids for owned titles
 pub fn get_owned_titles(title_count: u32) -> Result<Vec<u64>, ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
@@ -418,7 +435,9 @@ pub fn get_owned_titles(title_count: u32) -> Result<Vec<u64>, ios::Error> {
         .map(|bytes| u64::from_be_bytes(bytes.try_into().expect("should fit")))
         .collect())
 }
-
+/// [`Ioctl::GetTitleCount`]
+///
+/// Get title count
 pub fn get_title_count() -> Result<u32, ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
@@ -430,6 +449,9 @@ pub fn get_title_count() -> Result<u32, ios::Error> {
     Ok(u32::from_be_bytes(out_buf))
 }
 
+/// [`Ioctl::GetTitles`]
+///
+/// Get ids for all titles
 pub fn get_titles(title_count: u32) -> Result<Vec<u64>, ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
@@ -448,6 +470,9 @@ pub fn get_titles(title_count: u32) -> Result<Vec<u64>, ios::Error> {
         .collect())
 }
 
+/// [`Ioctl::GetTitleContentsCount`]
+///
+/// Get title contents count for `title_id`
 pub fn get_title_contents_count(title_id: u64) -> Result<u32, ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
@@ -463,7 +488,9 @@ pub fn get_title_contents_count(title_id: u64) -> Result<u32, ios::Error> {
 
     Ok(u32::from_be_bytes(out_buf))
 }
-
+/// [`Ioctl::GetTitleContents`]
+///
+/// Get content ids of title with `title_id`
 pub fn get_title_contents(title_id: u64, content_count: u32) -> Result<Vec<u32>, ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
@@ -485,6 +512,9 @@ pub fn get_title_contents(title_id: u64, content_count: u32) -> Result<Vec<u32>,
         .collect())
 }
 
+/// [`Ioctl::GetTicketViewCount`]
+///
+/// Get ticket view count of title with `title_id`
 pub fn get_ticket_view_count(title_id: u64) -> Result<u32, ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
@@ -503,6 +533,10 @@ pub fn get_ticket_view_count(title_id: u64) -> Result<u32, ios::Error> {
 
 // TODO: actually returns a Vec<TicketView> but I haven't made teh `TicketView` struct yet and
 // don't want to do structs till the end of impling all these
+//
+/// [`Ioctl::GetTicketViews`]
+///
+/// Get ticket views for title with `title_id`
 pub fn get_ticket_views(title_id: u64, view_count: u32) -> Result<Vec<u8>, ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
