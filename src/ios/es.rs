@@ -553,7 +553,9 @@ pub fn get_ticket_views(title_id: u64, view_count: u32) -> Result<Vec<u8>, ios::
 
     Ok(out_buf)
 }
-
+/// [`Ioctl::GetTitleMetadataViewSize`]
+///
+/// Get title metadata view size for  title with `title_id`
 pub fn get_title_metadata_view_size(title_id: u64) -> Result<u32, ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
@@ -571,6 +573,10 @@ pub fn get_title_metadata_view_size(title_id: u64) -> Result<u32, ios::Error> {
 }
 
 //TODO: Return `TitleMetadataView` instead of owned allocation
+//
+/// [`Ioctl::GetTitleMetadataView`]
+///
+/// Get title metadata view  for title with `title_id`
 pub fn get_title_metadata_view(title_id: u64, size: u32) -> Result<Vec<u8>, ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
@@ -592,6 +598,7 @@ pub fn get_title_metadata_view(title_id: u64, size: u32) -> Result<Vec<u8>, ios:
     Ok(out_buf)
 }
 
+/// Get tiklimit consumption count
 pub fn get_consumption_count(title_id: u64) -> Result<u32, ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
@@ -609,6 +616,9 @@ pub fn get_consumption_count(title_id: u64) -> Result<u32, ios::Error> {
     Ok(u32::from_be_bytes(out_buf))
 }
 
+/// [`Ioctl::GetConsumption`]
+///
+/// Get tiklimit consumption
 pub fn get_consumption(title_id: u64, limit_count: u32) -> Result<Vec<u8>, ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
@@ -629,6 +639,9 @@ pub fn get_consumption(title_id: u64, limit_count: u32) -> Result<Vec<u8>, ios::
     Ok(limit_out_buf)
 }
 
+/// [`Ioctl::DeleteTitle`]
+///
+/// Delete title from system
 pub fn delete_title(title_id: u64) -> Result<(), ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
@@ -639,6 +652,9 @@ pub fn delete_title(title_id: u64) -> Result<(), ios::Error> {
     Ok(())
 }
 
+/// [`Ioctl:::DeleteTicket`]
+///
+/// Delete ticket from system
 pub fn delete_ticket(ticket_view: &[u8]) -> Result<(), ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
