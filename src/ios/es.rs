@@ -665,6 +665,9 @@ pub fn delete_ticket(ticket_view: &[u8]) -> Result<(), ios::Error> {
     Ok(())
 }
 
+/// [`Ioctl::DiskInterfaceGetTitleMetadataViewSize`]
+///
+/// Get current disk's title metadata view size
 pub fn disk_interface_get_title_metadata_view_size(
     signed_title_meta: &[u8],
 ) -> Result<u32, ios::Error> {
@@ -684,6 +687,9 @@ pub fn disk_interface_get_title_metadata_view_size(
     Ok(u32::from_be_bytes(size_buf))
 }
 
+/// [`Ioctl::DiskInterfaceGetTitleMetadataView`]
+///
+/// Get current disk's title metadata view
 pub fn disk_interface_get_title_metadata_view(
     signed_title_meta: &[u8],
     tmd_view_size: u32,
@@ -705,6 +711,9 @@ pub fn disk_interface_get_title_metadata_view(
 }
 
 const TICKET_VIEW_SIZE: usize = 216; // 0xD8
+/// [`Ioctl::DiskInterfaceGetTicketView`]
+///
+/// Get current disk's ticket view
 pub fn disk_interface_get_ticket_view(
     signed_ticket: &[u8],
 ) -> Result<[u8; TICKET_VIEW_SIZE], ios::Error> {
@@ -725,6 +734,9 @@ pub fn disk_interface_get_ticket_view(
 
 // pub fn disk_interface_verify
 
+/// [`Ioctl::GetTitleDir`]
+///
+/// Get title with `title_id`'s data directory
 pub fn get_data_directory(title_id: u64) -> Result<CString, ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
@@ -743,6 +755,9 @@ pub fn get_data_directory(title_id: u64) -> Result<CString, ios::Error> {
 }
 
 const DEVICE_CERT_SIZE: usize = 384;
+/// [`Ioctl::GetDeviceCertificate`]
+///
+/// Get this device's certificate
 pub fn get_device_certificate() -> Result<[u8; DEVICE_CERT_SIZE], ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
@@ -756,7 +771,9 @@ pub fn get_device_certificate() -> Result<[u8; DEVICE_CERT_SIZE], ios::Error> {
 }
 
 // pub fn import_boot
-
+/// [`Ioctl::GetTitleId`]
+///
+/// Get currently running title's title_id
 pub fn get_title_id() -> Result<u64, ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
@@ -768,6 +785,9 @@ pub fn get_title_id() -> Result<u64, ios::Error> {
     Ok(u64::from_be_bytes(title_id))
 }
 
+/// [`Ioctl::SetUid`]
+///
+/// Set E-Ticket system user id
 pub fn set_uid(uid: u64) -> Result<(), ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
@@ -778,6 +798,9 @@ pub fn set_uid(uid: u64) -> Result<(), ios::Error> {
     Ok(())
 }
 
+/// [`Ioctl::DeleteTitleContent`]
+///
+/// Delete title with `title_id` contents
 pub fn delete_title_content(title_id: u64) -> Result<(), ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
@@ -793,6 +816,9 @@ pub fn delete_title_content(title_id: u64) -> Result<(), ios::Error> {
     Ok(())
 }
 
+/// [`Ioctl::SeekContent`]
+///
+/// Seek contents to `offset` using `seek_mode`
 pub fn seek_content(
     content_file_descriptor: i32,
     seek_mode: ios::SeekMode,
@@ -816,6 +842,9 @@ pub fn seek_content(
     Ok(())
 }
 
+/// [`Ioctl::OpenContent`]
+///
+/// Open title with `title_id` contents at `content_idx` using `ticket_views`
 pub fn open_title_content(
     title_id: u64,
     ticket_views: &[u8],
@@ -841,6 +870,9 @@ pub fn open_title_content(
 
 //pub fn launch_backwards_compat() -> Result<!, ios::Error> {}
 
+/// [`Ioctl::ExportTitleInitalize`]
+///
+/// Export title with `title_id` metadata into `export_tmd_buf`
 pub fn export_title_init(title_id: u64, exported_tmd_buf: &mut [u8]) -> Result<(), ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
@@ -855,6 +887,9 @@ pub fn export_title_init(title_id: u64, exported_tmd_buf: &mut [u8]) -> Result<(
     Ok(())
 }
 
+/// [`Ioctl::ExportContentBegin`]
+///
+/// Open title with `title_id`'s content with `content_id`
 pub fn export_content_begin(title_id: u64, content_id: u32) -> Result<(), ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
@@ -870,6 +905,10 @@ pub fn export_content_begin(title_id: u64, content_id: u32) -> Result<(), ios::E
     Ok(())
 }
 
+/// [`Ioctl::ExportContentData`]
+///
+/// Export content data into `data` using the `content_file_descriptor` provived by
+/// [`Ioctl::ExportContentBegin`]
 pub fn export_content_data(
     content_file_descriptor: i32,
     data: &mut [u8],
@@ -887,7 +926,9 @@ pub fn export_content_data(
 
     Ok(())
 }
-
+/// [`Ioctl::ExportContentEnd`]
+///
+/// Close `content_file_descriptor` provided by [`Ioctl::ExportContentBegin`]
 pub fn export_content_end(content_file_descriptor: i32) -> Result<(), ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
@@ -903,6 +944,7 @@ pub fn export_content_end(content_file_descriptor: i32) -> Result<(), ios::Error
     Ok(())
 }
 
+/// [`Ioctl::ExportTitleDone`]
 pub fn export_title_done() -> Result<(), ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
@@ -913,6 +955,9 @@ pub fn export_title_done() -> Result<(), ios::Error> {
     Ok(())
 }
 
+/// [`Ioctl::AddTitleMetadata`]
+///
+/// Add title metadata to system
 pub fn add_tmd(title_meta: &[u8]) -> Result<(), ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
