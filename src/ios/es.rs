@@ -36,7 +36,7 @@ pub enum Ioctl {
     GetTitleContents,
     /// Get Title Ticket View Count
     GetTicketViewCount,
-    // Get Title Ticket Views
+    /// Get Title Ticket Views
     GetTicketViews,
     /// Get Title Metadata View Size
     GetTitleMetadataViewSize,
@@ -968,8 +968,28 @@ pub fn add_tmd(title_meta: &[u8]) -> Result<(), ios::Error> {
     Ok(())
 }
 
+#[repr(u32)]
+/// Key used to encrypt and decrypt date
+///
+/// Usually called `keynum` in libogc
+pub enum Key {
+    /// NAND Key
+    NandFs = 2,
+    /// Common Key
+    Common = 4,
+    /// Backup Key
+    Backup = 5,
+    /// SD Card Contents Key
+    SdCard = 6,
+    /// Korean Key
+    Korean = 11,
+}
+
+/// [`Ioctl::Encrypt`]
+///
+/// Encrypt `source` with `iv` and `key` outputing to `destination`
 pub fn encrypt(
-    keynum: u32,
+    keynum: Key,
     iv: &mut [u8; 16],
     source: &[u8],
     destination: &mut [u8],
@@ -980,7 +1000,7 @@ pub fn encrypt(
     ios::ioctlv::<3, 2, 5>(
         es,
         Ioctl::Encrypt,
-        &[&keynum.to_be_bytes(), &iv_copy, source],
+        &[&(keynum as u32).to_be_bytes(), &iv_copy, source],
         &mut [iv, destination],
     )?;
 
@@ -989,8 +1009,11 @@ pub fn encrypt(
     Ok(())
 }
 
+/// [`Ioctl::Decrypt`]
+///
+/// Decrypt `source` with `iv` and `key` outputing to `destination`
 pub fn decrypt(
-    keynum: u32,
+    keynum: Key,
     iv: &mut [u8; 16],
     source: &[u8],
     destination: &mut [u8],
@@ -1001,7 +1024,7 @@ pub fn decrypt(
     ios::ioctlv::<3, 2, 5>(
         es,
         Ioctl::Decrypt,
-        &[&keynum.to_be_bytes(), &iv_copy, source],
+        &[&(keynum as u32).to_be_bytes(), &iv_copy, source],
         &mut [iv, destination],
     )?;
 
@@ -1010,6 +1033,9 @@ pub fn decrypt(
     Ok(())
 }
 
+/// [`Ioctl::GetBoot2Version`]
+///
+/// Get boot 2 version
 pub fn get_boot_2_version() -> Result<u32, ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
@@ -1022,6 +1048,9 @@ pub fn get_boot_2_version() -> Result<u32, ios::Error> {
     Ok(boot_version)
 }
 
+/// [`Ioctl::AddTitleCancel`]
+///
+/// Cancel add title to nand
 pub fn cancel_add_title() -> Result<(), ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
@@ -1032,6 +1061,9 @@ pub fn cancel_add_title() -> Result<(), ios::Error> {
     Ok(())
 }
 
+/// [`Ioctl::Sign`]
+///
+/// Sign provided `data` returning a signature and certificate
 pub fn sign(data: &[u8]) -> Result<([u8; 60], [u8; 0x180]), ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
@@ -1043,6 +1075,9 @@ pub fn sign(data: &[u8]) -> Result<([u8; 60], [u8; 0x180]), ios::Error> {
     Ok((signature, cert))
 }
 
+/// [`Ioctl::VerifySign`]
+///
+/// Taking in `data_sha1`, `signature` and `certs` verify if properly signed
 pub fn verify_sign(data_sha1: &[u8], signature: &[u8], certs: &[u8]) -> Result<(), ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
@@ -1057,6 +1092,9 @@ pub fn verify_sign(data_sha1: &[u8], signature: &[u8], certs: &[u8]) -> Result<(
     Ok(())
 }
 
+/// [`Ioctl::GetStoredContentCount`]
+///
+/// Get count of contents stored on the NAND
 pub fn get_stored_contents_count(title_id: u64) -> Result<u32, ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
@@ -1074,6 +1112,9 @@ pub fn get_stored_contents_count(title_id: u64) -> Result<u32, ios::Error> {
     Ok(title_count)
 }
 
+/// [`Ioctl::GetStoredContents`]
+///
+/// Get contents stored on the NAND
 pub fn get_stored_contents(title_id: u64, content_count: u32) -> Result<Vec<u32>, ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
@@ -1093,6 +1134,9 @@ pub fn get_stored_contents(title_id: u64, content_count: u32) -> Result<Vec<u32>
         .collect())
 }
 
+/// [`Ioctl::GetStoredTitleMetadataSize`]
+///
+/// Get stored title metadata size of `title_id` title
 pub fn get_stored_title_metadata_size(title_id: u64) -> Result<u32, ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
@@ -1113,6 +1157,10 @@ pub fn get_stored_title_metadata_size(title_id: u64) -> Result<u32, ios::Error> 
 }
 
 // TODO: Proper enuming since there are different signature types and differing sizes for them
+//
+/// [`Ioctl::GetStoredTitleMetadata`]
+///
+/// Get stored title metadata of `title_id` title
 pub fn get_stored_title_metadata(title_id: u64, size: u32) -> Result<Vec<u8>, ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
@@ -1133,6 +1181,9 @@ pub fn get_stored_title_metadata(title_id: u64, size: u32) -> Result<Vec<u8>, io
     Ok(out_buf)
 }
 
+/// [`Ioctl::GetSharedContentCount`]
+///
+/// Get shared contents count on NAND
 pub fn get_shared_contents_count() -> Result<u32, ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
@@ -1150,6 +1201,9 @@ pub fn get_shared_contents_count() -> Result<u32, ios::Error> {
     Ok(shared_contents_count)
 }
 
+/// [`Ioctl::GetSharedContents`]
+///
+/// Get shared contents sha1 hashes on NAND
 pub fn get_shared_contents(shared_contents_count: u32) -> Result<Vec<u8>, ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
@@ -1166,6 +1220,9 @@ pub fn get_shared_contents(shared_contents_count: u32) -> Result<Vec<u8>, ios::E
     Ok(sha1_hashes)
 }
 
+/// [`Ioctl::DeleteSharedContents`]
+///
+/// Delete shared content based on the provided `sha1_hash`
 pub fn delete_shared_content(sha1_hash: &[u8; 20]) -> Result<(), ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
@@ -1174,6 +1231,9 @@ pub fn delete_shared_content(sha1_hash: &[u8; 20]) -> Result<(), ios::Error> {
     Ok(())
 }
 
+/// [`Ioctl::DiskInterfaceGetTitleMetadataSize`]
+///
+/// Get disk title metadata size
 pub fn disk_interface_get_title_metadata_size() -> Result<u32, ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
@@ -1191,6 +1251,9 @@ pub fn disk_interface_get_title_metadata_size() -> Result<u32, ios::Error> {
     Ok(tmd_size)
 }
 
+/// [`Ioctl::DiskInterfaceGetTitleMetadata`]
+///
+/// Get disk title metadata
 pub fn disk_interface_get_title_metadata(size: u32) -> Result<Vec<u8>, ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
@@ -1209,6 +1272,9 @@ pub fn disk_interface_get_title_metadata(size: u32) -> Result<Vec<u8>, ios::Erro
 
 // pub fn disk_interface_verify_with_view
 
+/// [`Ioctl::SetupStreamKey`]
+///
+/// Setup stream key
 pub fn setup_stream_key(tik_view: &[u8], tmd: &[u8]) -> Result<u32, ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
@@ -1226,6 +1292,9 @@ pub fn setup_stream_key(tik_view: &[u8], tmd: &[u8]) -> Result<u32, ios::Error> 
     Ok(handle)
 }
 
+/// [`Ioctl::DeleteStreamKey`]
+///
+/// Delete stream key
 pub fn delete_stream_key(handle: u32) -> Result<(), ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
@@ -1241,6 +1310,9 @@ pub fn delete_stream_key(handle: u32) -> Result<(), ios::Error> {
     Ok(())
 }
 
+/// [`Ioctl::DeleteContent`]
+///
+/// Delete `title_id` title's content using `content_id`
 pub fn delete_content(title_id: u64, content_id: u32) -> Result<(), ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
@@ -1257,6 +1329,9 @@ pub fn delete_content(title_id: u64, content_id: u32) -> Result<(), ios::Error> 
 }
 
 const TICKET_SIZE: usize = 0x2A4;
+/// [`Ioctl::GetVersion0TicketFromView`]
+///
+/// Get version ticket from provided `tik_view`
 pub fn get_version_0_ticket_from_view(tik_view: &[u8]) -> Result<[u8; TICKET_SIZE], ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
@@ -1273,6 +1348,9 @@ pub fn get_version_0_ticket_from_view(tik_view: &[u8]) -> Result<[u8; TICKET_SIZ
     Ok(ticket)
 }
 
+/// [`Ioctl::GetTicketFromView`]
+///
+/// Get ticket size from provided `tik_view`
 pub fn get_ticket_size_from_view(tik_view: &[u8]) -> Result<u32, ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
@@ -1290,6 +1368,9 @@ pub fn get_ticket_size_from_view(tik_view: &[u8]) -> Result<u32, ios::Error> {
     Ok(size)
 }
 
+/// [`Ioctl::GetTicketFromView`]
+///
+/// Get ticket from provided `tik_view`
 pub fn get_ticket_from_view(tik_view: &[u8], size: u32) -> Result<Vec<u8>, ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
@@ -1306,6 +1387,9 @@ pub fn get_ticket_from_view(tik_view: &[u8], size: u32) -> Result<Vec<u8>, ios::
     Ok(ticket)
 }
 
+/// [`Ioctl::CheckKoreaRegion`]
+///
+/// Check if the console's region is Korea
 pub fn check_korea_region() -> Result<(), ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
