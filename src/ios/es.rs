@@ -274,15 +274,15 @@ pub fn add_content_start(
     es: FileDescriptor,
     title_id: u64,
     content_id: u32,
-) -> Result<(), ios::Error> {
-    ios::ioctlv::<2, 0, 2>(
+) -> Result<i32, ios::Error> {
+    let fd = ios::ioctlv::<2, 0, 2>(
         es,
         Ioctl::AddContentStart,
         &[&title_id.to_be_bytes(), &content_id.to_be_bytes()],
         &mut [],
     )?;
 
-    Ok(())
+    Ok(fd)
 }
 
 /// [`Ioctl::AddContentData`]
@@ -359,15 +359,15 @@ pub fn launch_title(title_id: u64, ticket_view: &[u8]) -> Result<!, ios::Error> 
 /// [`Ioctl::OpenActiveTitleContent`]
 ///
 /// Open content from current title
-pub fn open_active_title_content(es: FileDescriptor, content_idx: u32) -> Result<(), ios::Error> {
-    ios::ioctlv::<1, 0, 1>(
+pub fn open_active_title_content(es: FileDescriptor, content_idx: u32) -> Result<i32, ios::Error> {
+    let fd = ios::ioctlv::<1, 0, 1>(
         es,
         Ioctl::OpenActiveTitleContent,
         &[&content_idx.to_be_bytes()],
         &mut [],
     )?;
 
-    Ok(())
+    Ok(fd)
 }
 
 /// [`Ioctl::ReadContent`]
@@ -849,10 +849,10 @@ pub fn open_title_content(
     title_id: u64,
     ticket_views: &[u8],
     content_idx: u32,
-) -> Result<(), ios::Error> {
+) -> Result<i32, ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
-    ios::ioctlv::<3, 0, 3>(
+    let fd = ios::ioctlv::<3, 0, 3>(
         es,
         Ioctl::OpenContent,
         &[
@@ -865,7 +865,7 @@ pub fn open_title_content(
 
     let _ = ios::close(es);
 
-    Ok(())
+    Ok(fd)
 }
 
 //pub fn launch_backwards_compat() -> Result<!, ios::Error> {}
@@ -890,10 +890,10 @@ pub fn export_title_init(title_id: u64, exported_tmd_buf: &mut [u8]) -> Result<(
 /// [`Ioctl::ExportContentBegin`]
 ///
 /// Open title with `title_id`'s content with `content_id`
-pub fn export_content_begin(title_id: u64, content_id: u32) -> Result<(), ios::Error> {
+pub fn export_content_begin(title_id: u64, content_id: u32) -> Result<fd, ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
-    ios::ioctlv::<2, 0, 2>(
+    let fd = ios::ioctlv::<2, 0, 2>(
         es,
         Ioctl::ExportContentBegin,
         &[&title_id.to_be_bytes(), &content_id.to_be_bytes()],
@@ -902,7 +902,7 @@ pub fn export_content_begin(title_id: u64, content_id: u32) -> Result<(), ios::E
 
     let _ = ios::close(es);
 
-    Ok(())
+    Ok(fd)
 }
 
 /// [`Ioctl::ExportContentData`]
@@ -1227,7 +1227,6 @@ pub fn delete_shared_content(sha1_hash: &[u8; 20]) -> Result<(), ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
     ios::ioctlv::<1, 0, 1>(es, Ioctl::DeleteSharedContents, &[sha1_hash], &mut [])?;
-
     Ok(())
 }
 
