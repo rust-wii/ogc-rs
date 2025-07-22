@@ -319,7 +319,7 @@ pub fn ioctlv<
     ioctl: impl Into<i32>,
     buf_ins: &[&[u8]],
     buf_outs: &mut [&mut [u8]],
-) -> Result<(), Error> {
+) -> Result<i32, Error> {
     type Ioctlv = ogc_sys::_ioctlv;
     debug_assert!(buf_ins.len() == COUNT_IN);
     debug_assert!(buf_outs.len() == COUNT_OUT);
@@ -366,7 +366,7 @@ pub fn ioctlv<
         val if { val == -4 || val == -5 || val == -6 || val == -8 || val == -22 } => {
             Err(Error::try_from(val).map_err(|()| Error::UnknownErrorCode(val))?)
         }
-        val if { val >= 0 } => Ok(()),
+        val if { val >= 0 } => Ok(val),
         val => Err(Error::UnknownErrorCode(val)),
     }
 }
