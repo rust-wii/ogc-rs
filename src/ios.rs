@@ -11,8 +11,13 @@ pub mod dolphin;
 
 /// Filesystem IOS Device
 ///
-/// '/dev/fs'' device helper functions.
+/// '/dev/fs' device helper functions.
 pub mod fs;
+
+/// E-Ticket System IOS Device
+///
+/// `/dev/es` device hellper functions.
+pub mod es;
 
 #[repr(u32)]
 /// Interprocess Control / IOS File Mode
@@ -314,7 +319,7 @@ pub fn ioctlv<
     ioctl: impl Into<i32>,
     buf_ins: &[&[u8]],
     buf_outs: &mut [&mut [u8]],
-) -> Result<(), Error> {
+) -> Result<i32, Error> {
     type Ioctlv = ogc_sys::_ioctlv;
     debug_assert!(buf_ins.len() == COUNT_IN);
     debug_assert!(buf_outs.len() == COUNT_OUT);
@@ -347,6 +352,148 @@ pub fn ioctlv<
 
     match unsafe {
         ogc_sys::IOS_Ioctlv(
+            fd.0,
+            ioctl.into(),
+            COUNT_IN
+                .try_into()
+                .map_err(|_| Error::TooManyInputs(COUNT_IN))?,
+            COUNT_OUT
+                .try_into()
+                .map_err(|_| Error::TooManyOutputs(COUNT_OUT))?,
+            ioctls.as_ptr().cast_mut(),
+        )
+    } {
+        val if { val == -4 || val == -5 || val == -6 || val == -8 || val == -22 } => {
+            Err(Error::try_from(val).map_err(|()| Error::UnknownErrorCode(val))?)
+        }
+        val if { val >= 0 } => Ok(val),
+        val => Err(Error::UnknownErrorCode(val)),
+    }
+}
+
+/// Attempts to call ioctl using a file descriptor with multiple input and output buffers
+/// Reboots into a new `IOS` upon execution
+///
+/// Attempts to call `ioctl` using `fd` with `bufs_in` and `bufs_out`
+///
+/// # Errors
+/// See [`Error`]
+///
+pub fn ioctlv_reboot<
+    const COUNT_IN: usize,
+    const COUNT_OUT: usize,
+    //Invariant: This must be COUNT_IN + COUNT_OUT (waiting for `generic_const_exprs` to be
+    //stabilizied)
+    const COUNT_IN_OUT: usize,
+>(
+    fd: FileDescriptor,
+    ioctl: impl Into<i32>,
+    buf_ins: &[&[u8]],
+    buf_outs: &mut [&mut [u8]],
+) -> Result<(), Error> {
+    type Ioctlv = ogc_sys::_ioctlv;
+    debug_assert!(buf_ins.len() == COUNT_IN);
+    debug_assert!(buf_outs.len() == COUNT_OUT);
+    debug_assert!(COUNT_IN + COUNT_OUT == COUNT_IN_OUT);
+
+    let mut ioctls = [Ioctlv {
+        data: core::ptr::null_mut(),
+        len: 0,
+    }; COUNT_IN_OUT];
+    //SAFETY: I promise that i don't modify the contents of in buffers up to COUNT_IN
+    for (i, buf_in) in buf_ins.iter().enumerate() {
+        ioctls[i] = Ioctlv {
+            data: buf_in.as_ptr().cast_mut().cast(),
+            len: buf_in
+                .len()
+                .try_into()
+                .map_err(|_| Error::BufferTooLong(buf_in.len()))?,
+        }
+    }
+
+    for (i, buf_out) in buf_outs.iter_mut().enumerate() {
+        ioctls[COUNT_IN + i] = Ioctlv {
+            data: buf_out.as_mut_ptr().cast(),
+            len: buf_out
+                .len()
+                .try_into()
+                .map_err(|_| Error::BufferTooLong(buf_out.len()))?,
+        }
+    }
+
+    match unsafe {
+        ogc_sys::IOS_IoctlvReboot(
+            fd.0,
+            ioctl.into(),
+            COUNT_IN
+                .try_into()
+                .map_err(|_| Error::TooManyInputs(COUNT_IN))?,
+            COUNT_OUT
+                .try_into()
+                .map_err(|_| Error::TooManyOutputs(COUNT_OUT))?,
+            ioctls.as_ptr().cast_mut(),
+        )
+    } {
+        val if { val == -4 || val == -5 || val == -6 || val == -8 || val == -22 } => {
+            Err(Error::try_from(val).map_err(|()| Error::UnknownErrorCode(val))?)
+        }
+        val if { val >= 0 } => Ok(()),
+        val => Err(Error::UnknownErrorCode(val)),
+    }
+}
+
+/// Attempts to call ioctl using a file descriptor with multiple input and output buffers
+/// Restarts `IOS` in the background upon execution
+///
+/// Attempts to call `ioctl` using `fd` with `bufs_in` and `bufs_out`
+///
+/// # Errors
+/// See [`Error`]
+///
+pub fn ioctlv_reboot_background<
+    const COUNT_IN: usize,
+    const COUNT_OUT: usize,
+    //Invariant: This must be COUNT_IN + COUNT_OUT (waiting for `generic_const_exprs` to be
+    //stabilizied)
+    const COUNT_IN_OUT: usize,
+>(
+    fd: FileDescriptor,
+    ioctl: impl Into<i32>,
+    buf_ins: &[&[u8]],
+    buf_outs: &mut [&mut [u8]],
+) -> Result<(), Error> {
+    type Ioctlv = ogc_sys::_ioctlv;
+    debug_assert!(buf_ins.len() == COUNT_IN);
+    debug_assert!(buf_outs.len() == COUNT_OUT);
+    debug_assert!(COUNT_IN + COUNT_OUT == COUNT_IN_OUT);
+
+    let mut ioctls = [Ioctlv {
+        data: core::ptr::null_mut(),
+        len: 0,
+    }; COUNT_IN_OUT];
+    //SAFETY: I promise that i don't modify the contents of in buffers up to COUNT_IN
+    for (i, buf_in) in buf_ins.iter().enumerate() {
+        ioctls[i] = Ioctlv {
+            data: buf_in.as_ptr().cast_mut().cast(),
+            len: buf_in
+                .len()
+                .try_into()
+                .map_err(|_| Error::BufferTooLong(buf_in.len()))?,
+        }
+    }
+
+    for (i, buf_out) in buf_outs.iter_mut().enumerate() {
+        ioctls[COUNT_IN + i] = Ioctlv {
+            data: buf_out.as_mut_ptr().cast(),
+            len: buf_out
+                .len()
+                .try_into()
+                .map_err(|_| Error::BufferTooLong(buf_out.len()))?,
+        }
+    }
+
+    match unsafe {
+        ogc_sys::IOS_IoctlvRebootBackground(
             fd.0,
             ioctl.into(),
             COUNT_IN
