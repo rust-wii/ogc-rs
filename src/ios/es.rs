@@ -890,7 +890,7 @@ pub fn export_title_init(title_id: u64, exported_tmd_buf: &mut [u8]) -> Result<(
 /// [`Ioctl::ExportContentBegin`]
 ///
 /// Open title with `title_id`'s content with `content_id`
-pub fn export_content_begin(title_id: u64, content_id: u32) -> Result<fd, ios::Error> {
+pub fn export_content_begin(title_id: u64, content_id: u32) -> Result<i32, ios::Error> {
     let es = ios::open(DEV_ES, ios::Mode::None)?;
 
     let fd = ios::ioctlv::<2, 0, 2>(
