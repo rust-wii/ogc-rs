@@ -14,7 +14,7 @@ use ogc_rs::{
 
 extern crate alloc;
 
-#[no_mqngle]
+#[no_mangle]
 pub extern "C" fn main(_argc: isize, _argv: *const *const u8) -> isize {
     let vi = Video::init();
     let mut config = Video::get_preferred_mode();
