@@ -28,6 +28,6 @@
     "target-family": "unix",
     "target-mcount": "_mcount",
     "target-c-int-width": 32,
-    "target-pointer-width": 32,
+    "target-pointer-width": "32",
     "vendor": "nintendo"
 }
