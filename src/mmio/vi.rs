@@ -83,7 +83,7 @@ pub const SCALING_WIDTH_REGISTER: VolAddress<ScalingControl, Unsafe, Unsafe> =
 #[repr(transparent)]
 pub struct ScalingControl(u16);
 pub const HORIZONTAL_SCALING_REGISTER: VolAddress<ScalingControl, Unsafe, Unsafe> =
-    unsafe { VolAddress::new(0xCC00_204a) };
+    unsafe { VolAddress::new(0xCC00_204A) };
 
 #[repr(transparent)]
 pub struct FilterCoefficents(u32);

@@ -1,5 +1,6 @@
 #![warn(missing_docs)]
 #![warn(clippy::pedantic)]
+//#![allow(clippy::missing_errors_doc)]
 
 use core::{ffi::CStr, fmt::Display};
 

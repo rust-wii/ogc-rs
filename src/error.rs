@@ -17,10 +17,10 @@ pub enum OgcError {
 impl fmt::Debug for OgcError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            OgcError::Network(err) => write!(f, "[ OGC - Network ]: {}", err),
-            OgcError::Audio(err) => write!(f, "[ OGC - Audio ]: {}", err),
-            OgcError::Console(err) => write!(f, "[ OGC - Console ]: {}", err),
-            OgcError::System(err) => write!(f, "[ OGC - System ]: {}", err),
+            OgcError::Network(err) => write!(f, "[ OGC - Network ]: {err}"),
+            OgcError::Audio(err) => write!(f, "[ OGC - Audio ]: {err}"),
+            OgcError::Console(err) => write!(f, "[ OGC - Console ]: {err}"),
+            OgcError::System(err) => write!(f, "[ OGC - System ]: {err}"),
         }
     }
 }
@@ -28,10 +28,10 @@ impl fmt::Debug for OgcError {
 impl fmt::Display for OgcError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            OgcError::Network(err) => write!(f, "[ OGC - Network ]: {}", err),
-            OgcError::Audio(err) => write!(f, "[ OGC - Audio ]: {}", err),
-            OgcError::Console(err) => write!(f, "[ OGC - Console ]: {}", err),
-            OgcError::System(err) => write!(f, "[ OGC - System ]: {}", err),
+            OgcError::Network(err) => write!(f, "[ OGC - Network ]: {err}"),
+            OgcError::Audio(err) => write!(f, "[ OGC - Audio ]: {err}"),
+            OgcError::Console(err) => write!(f, "[ OGC - Console ]: {err}"),
+            OgcError::System(err) => write!(f, "[ OGC - System ]: {err}"),
         }
     }
 }
