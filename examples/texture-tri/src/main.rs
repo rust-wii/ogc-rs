@@ -1,7 +1,7 @@
 #![no_std]
-#![feature(start)]
+#![no_main]
 
-use core::{alloc::Layout, mem::ManuallyDrop};
+use core::mem::ManuallyDrop;
 
 use ogc_rs::{
     ffi::{
@@ -22,8 +22,8 @@ extern crate alloc;
 use alloc::vec;
 const WHITE_BYTES: &[u8] = include_bytes!("../white.png");
 
-#[start]
-fn main(_argc: isize, _argv: *const *const u8) -> isize {
+#[no_mangle]
+extern "C" fn main(_argc: isize, _argv: *const *const u8) -> isize {
     let vi = Video::init();
     let mut config = Video::get_preferred_mode();
 
