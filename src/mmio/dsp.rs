@@ -15,7 +15,7 @@ pub const CPU_MAILBOX_LO: VolAddress<MailBoxVal, Safe, Safe> =
 #[repr(transparent)]
 pub struct DSPControlStatus(u16);
 pub const DSP_CONTROL_STATUS_REGISTER: VolAddress<DSPControlStatus, Unsafe, Safe> =
-    unsafe { VolAddress::new(0xCC00_500a) };
+    unsafe { VolAddress::new(0xCC00_500A) };
 
 pub const AR_SIZE: VolAddress<u16, Unsafe, Unsafe> = unsafe { VolAddress::new(0xCC00_5012) };
 pub const AR_MODE: VolAddress<u16, Unsafe, Unsafe> = unsafe { VolAddress::new(0xCC00_5016) };

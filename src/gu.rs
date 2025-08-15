@@ -418,7 +418,7 @@ impl Mat4 {
                 0.0,
                 -(top + bottom) * top_bottom_aspect,
             ],
-            [0.0, 0.0, -(1.0) * plane, -(z_far) * plane],
+            [0.0, 0.0, -plane, -(z_far) * plane],
             [0.0, 0.0, 0.0, 1.0],
         ])
     }

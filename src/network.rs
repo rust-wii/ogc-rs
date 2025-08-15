@@ -239,7 +239,7 @@ pub fn dot_to_net_addr(dot: &str, addr: &mut IPV4Address) -> Result<()> {
     let r = unsafe { ffi::inet_aton(dot.as_ptr(), &mut addr.into()) };
 
     if r < 0 {
-        Err(OgcError::Network(format!("network dot_to_net_addr: {}", r)))
+        Err(OgcError::Network(format!("network dot_to_net_addr: {r}")))
     } else {
         Ok(())
     }
@@ -313,7 +313,7 @@ impl Network {
         let r = unsafe { ffi::net_init() };
 
         if r < 0 {
-            Err(OgcError::Network(format!("network init: {}", r)))
+            Err(OgcError::Network(format!("network init: {r}")))
         } else {
             Ok(Self)
         }
@@ -324,7 +324,7 @@ impl Network {
         let r = unsafe { ffi::net_socket(domain.into(), socket_type.into(), 0) };
 
         if r == INVALID_SOCKET {
-            Err(OgcError::Network(format!("network socket creation: {}", r)))
+            Err(OgcError::Network(format!("network socket creation: {r}")))
         } else {
             Ok(Socket(r))
         }
@@ -343,7 +343,7 @@ impl Socket {
         let r = unsafe { ffi::net_connect(self.0, socket_addr.into(), address_length) };
 
         if r < 0 {
-            Err(OgcError::Network(format!("network socket connect: {}", r)))
+            Err(OgcError::Network(format!("network socket connect: {r}")))
         } else {
             Ok(())
         }
@@ -354,7 +354,7 @@ impl Socket {
         let r = unsafe { ffi::net_bind(self.0, socket_addr.into(), address_length) };
 
         if r < 0 {
-            Err(OgcError::Network(format!("network socket bind: {}", r)))
+            Err(OgcError::Network(format!("network socket bind: {r}")))
         } else {
             Ok(())
         }
@@ -365,7 +365,7 @@ impl Socket {
         let r = unsafe { ffi::net_listen(self.0, backlog) };
 
         if r < 0 {
-            Err(OgcError::Network(format!("network socket listen: {}", r)))
+            Err(OgcError::Network(format!("network socket listen: {r}")))
         } else {
             Ok(())
         }
@@ -377,7 +377,7 @@ impl Socket {
         let r = unsafe { ffi::net_accept(self.0, socket_addr.into(), address_length) };
 
         if r < 0 {
-            Err(OgcError::Network(format!("network socket accept: {}", r)))
+            Err(OgcError::Network(format!("network socket accept: {r}")))
         } else {
             Ok(r)
         }
@@ -388,7 +388,7 @@ impl Socket {
         let r = unsafe { ffi::net_write(descriptor, buffer.as_ptr() as *const c_void, count) };
 
         if r < 0 {
-            Err(OgcError::Network(format!("network writing failure: {}", r)))
+            Err(OgcError::Network(format!("network writing failure: {r}")))
         } else {
             Ok(r)
         }
@@ -400,7 +400,7 @@ impl Socket {
             unsafe { ffi::net_send(descriptor, buffer.as_ptr() as *const c_void, length, flags) };
 
         if r < 0 {
-            Err(OgcError::Network(format!("network sending failure: {}", r)))
+            Err(OgcError::Network(format!("network sending failure: {r}")))
         } else {
             Ok(r)
         }
@@ -411,7 +411,7 @@ impl Socket {
         let r = unsafe { ffi::net_read(descriptor, buffer.as_ptr() as *mut c_void, count) };
 
         if r < 0 {
-            Err(OgcError::Network(format!("network reading failure: {}", r)))
+            Err(OgcError::Network(format!("network reading failure: {r}")))
         } else {
             Ok(r)
         }
@@ -422,7 +422,7 @@ impl Socket {
         let r = unsafe { ffi::net_recv(descriptor, buffer.as_ptr() as *mut c_void, length, flags) };
 
         if r < 0 {
-            Err(OgcError::Network(format!("network recieve failure: {}", r)))
+            Err(OgcError::Network(format!("network recieve failure: {r}")))
         } else {
             Ok(r)
         }

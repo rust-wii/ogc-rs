@@ -59,9 +59,11 @@ impl Aesnd {
         unsafe { ffi::AESND_GetDSPProcessUsage() }
     }
 
-    pub fn register_audio_callback<F>(callback: Option<unsafe extern "C" fn(*mut c_void, u32, *mut c_void)>) {
+    pub fn register_audio_callback<F>(
+        callback: Option<unsafe extern "C" fn(*mut c_void, u32, *mut c_void)>,
+    ) {
         unsafe {
-           ffi::AESND_RegisterAudioCallbackWithArg(callback, core::ptr::null_mut());
+            ffi::AESND_RegisterAudioCallbackWithArg(callback, core::ptr::null_mut());
         }
     }
 
@@ -119,7 +121,7 @@ impl Aesnd {
 
     pub fn set_voice_buffer(play_state: &mut AESNDPB, buffer: &[u8]) {
         //if already aligned just use the buffer.
-        if buffer.as_ptr().align_offset(32) == 0 && buffer.len() % 32 == 0 {
+        if buffer.as_ptr().align_offset(32) == 0 && buffer.len().is_multiple_of(32) {
             unsafe {
                 ffi::AESND_SetVoiceBuffer(
                     play_state,
@@ -131,7 +133,7 @@ impl Aesnd {
             // othersize copy and allocate a buffer for AESND :)
             let align_buf = crate::utils::alloc_aligned_buffer(buffer);
             assert!(
-                align_buf.len() % 32 == 0,
+                align_buf.len().is_multiple_of(32),
                 "Buffer is not padded to 32 bytes"
             );
             unsafe {
@@ -152,7 +154,7 @@ impl Aesnd {
         delay: u32,
         loop_: bool,
     ) {
-        if buffer.as_ptr().align_offset(32) == 0 && buffer.len() % 32 == 0 {
+        if buffer.as_ptr().align_offset(32) == 0 && buffer.len().is_multiple_of(32) {
             unsafe {
                 ffi::AESND_PlayVoice(
                     play_state,
@@ -167,7 +169,7 @@ impl Aesnd {
         } else {
             let align_buf = crate::utils::alloc_aligned_buffer(buffer);
             assert!(
-                align_buf.len() % 32 == 0,
+                align_buf.len().is_multiple_of(32),
                 "Buffer is not padded to 32 bytes"
             );
             unsafe {

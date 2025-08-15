@@ -863,17 +863,17 @@ pub enum WrapMode {
 #[repr(transparent)]
 pub struct Texture<'img>(ffi::GXTexObj, PhantomData<&'img [u8]>);
 
-impl Texture<'_> {
+impl<'a> Texture<'a> {
     /// Used to initialize or change a texture object for non-color index textures.
     pub fn new(
-        img: &[u8],
+        img: &'a [u8],
         width: u16,
         height: u16,
         format: u8,
         wrap_s: WrapMode,
         wrap_t: WrapMode,
         mipmap: bool,
-    ) -> Texture {
+    ) -> Texture<'a> {
         let texture = core::mem::MaybeUninit::zeroed();
         assert_eq!(0, img.as_ptr().align_offset(32));
         assert!(width <= 1024, "max width for texture is 1024");
@@ -895,14 +895,14 @@ impl Texture<'_> {
 
     /// Used to initialize or change a texture object when the texture is color index format.
     pub fn with_color_idx(
-        img: &[u8],
+        img: &'a [u8],
         width: u16,
         height: u16,
         format: u8,
         wrap: (WrapMode, WrapMode),
         mipmap: bool,
         tlut_name: u32,
-    ) -> Texture {
+    ) -> Texture<'a> {
         let texture = core::mem::MaybeUninit::zeroed();
         assert_eq!(0, img.as_ptr().align_offset(32));
         assert!(width <= 1024, "max width for texture is 1024");
@@ -1984,8 +1984,8 @@ impl Gx {
     /// Allows the CPU to write color directly to the Embedded Frame Buffer (EFB) at position x, y.
     /// See [GX_PokeARGB](https://libogc.devkitpro.org/gx_8h.html#a5038d2f65e7959d64c68dcb1855353d8) for more.
     pub fn poke_argb(x: u16, y: u16, color: Color) {
-        assert!(x < 640, "x must be less than 640, currently {}", x);
-        assert!(y < 528, "y must be less than 527, currently {}", y);
+        assert!(x < 640, "x must be less than 640, currently {x}");
+        assert!(y < 528, "y must be less than 527, currently {y}");
         unsafe {
             ffi::GX_PokeARGB(x, y, color.0);
         }
@@ -2359,7 +2359,7 @@ fn call_display_list(display_list: &[u8]) {
         "The display list is not correctly 32 byte aligned."
     );
     assert!(
-        display_list.len() % 32 == 0,
+        display_list.len().is_multiple_of(32),
         "The display list is not correctly padded to 32 bytes. Please pad with GPCommand::Nop"
     );
 
@@ -2417,4 +2417,3 @@ pub enum ColorChannel {
     Color0 = ffi::GX_COLOR0,
     Color1 = ffi::GX_COLOR1,
 }
-

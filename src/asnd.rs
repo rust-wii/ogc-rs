@@ -61,7 +61,7 @@ impl VoiceOptions {
     /// Voice slot to use for this sound. Valid values are `0..16` non-inclusive.
     #[must_use]
     pub fn voice(mut self, voice: u32) -> Self {
-        assert!(voice < 16, "Voice index {} is >= 16", voice);
+        assert!(voice < 16, "Voice index {voice} is >= 16");
         self.voice = voice;
         self
     }
@@ -259,7 +259,7 @@ impl Asnd {
     /// `Asnd::set_voice()`, which must return `Ok()`.
     /// The buffer MUST be aligned and padded to 32 bytes.
     fn add_voice(voice: u32, sound_buffer: &mut [u8]) -> Result<()> {
-        assert!(voice < 16, "Voice index {} is >= 16", voice);
+        assert!(voice < 16, "Voice index {voice} is >= 16");
         Self::validate_buffer(sound_buffer);
 
         let err = unsafe {
@@ -276,21 +276,21 @@ impl Asnd {
     /// Stops the selected voice. If the voice is used in song mode, you need to
     /// assign the samples with `Asnd::set_song_sample_voice()`.
     pub fn stop_voice(voice: u32) -> Result<()> {
-        assert!(voice < 16, "Voice index {} is >= 16", voice);
+        assert!(voice < 16, "Voice index {voice} is >= 16");
         let err = unsafe { ffi::ASND_StopVoice(voice as i32) };
         if_not!(SND_OK => "Asnd::stop_voice() failed with error {}", err)
     }
 
     /// Pauses the selected voice. Can also be used to resume voice.
     pub fn pause_voice(voice: u32, pause: bool) -> Result<()> {
-        assert!(voice < 16, "Voice index {} is >= 16", voice);
+        assert!(voice < 16, "Voice index {voice} is >= 16");
         let err = unsafe { ffi::ASND_PauseVoice(voice as i32, pause as i32) };
         if_not!(SND_OK => "Asnd::pause_voice() failed with error {}", err)
     }
 
     /// Returns the state of the selected voice.
     pub fn status_voice(voice: u32) -> Result<()> {
-        assert!(voice < 16, "Voice index {} is >= 16", voice);
+        assert!(voice < 16, "Voice index {voice} is >= 16");
         let err = unsafe { ffi::ASND_StatusVoice(voice as i32) };
         if_not!(SND_WORKING => "Asnd::status_voice() failed with error {}", err)
     }
@@ -301,8 +301,7 @@ impl Asnd {
         match err {
             x if x < 16 => Ok(x as u32),
             _ => Err(OgcError::Audio(format!(
-                "Asnd::get_first_unused_voice() failed with error {}",
-                err
+                "Asnd::get_first_unused_voice() failed with error {err}",
             ))),
         }
     }
@@ -310,7 +309,7 @@ impl Asnd {
     /// Changes the voice-pitch in real time. This function can be used to
     /// create audio effects such as Doppler effect simulation.
     pub fn change_pitch_voice(voice: u32, pitch: u32) -> Result<()> {
-        assert!(voice < 16, "Voice index {} is >= 16", voice);
+        assert!(voice < 16, "Voice index {voice} is >= 16");
         let err = unsafe { ffi::ASND_ChangePitchVoice(voice as i32, pitch as i32) };
         if_not!(SND_OK => "Asnd::change_pitch_voice() failed with error {}", err)
     }
@@ -318,7 +317,7 @@ impl Asnd {
     /// Changes the voice volume in real time. This function can be used to create
     /// audio effects like distance attenuation.
     pub fn change_volume_voice(voice: u32, volume_left: u8, volume_right: u8) -> Result<()> {
-        assert!(voice < 16, "Voice index {} is >= 16", voice);
+        assert!(voice < 16, "Voice index {voice} is >= 16");
         let err = unsafe {
             ffi::ASND_ChangeVolumeVoice(voice as i32, volume_left as i32, volume_right as i32)
         };
@@ -329,14 +328,14 @@ impl Asnd {
     /// since this voice started to play, sans delay time. If the lib is initialized with
     /// `INIT_RATE=48000`, a return value of 24000 is equal to 0.5 seconds.
     pub fn get_tick_counter_voice(voice: u32) -> u32 {
-        assert!(voice < 16, "Voice index {} is >= 16", voice);
+        assert!(voice < 16, "Voice index {voice} is >= 16");
         unsafe { ffi::ASND_GetTickCounterVoice(voice as i32) }
     }
 
     /// Returns the voice playback time. This value represents the time in milliseconds
     /// since this voice started playing.
     pub fn get_timer_voice(voice: u32) -> u32 {
-        assert!(voice < 16, "Voice index {} is >= 16", voice);
+        assert!(voice < 16, "Voice index {voice} is >= 16");
         unsafe { ffi::ASND_GetTimerVoice(voice as i32) }
     }
 
@@ -346,14 +345,14 @@ impl Asnd {
     /// Returns 1 if the pointer is used as a buffer.
     /// Returns `ogc_sys::SND_INVALID` if invalid.
     pub fn test_pointer<T>(voice: u32, pointer: *mut T) -> i32 {
-        assert!(voice < 16, "Voice index {} is >= 16", voice);
+        assert!(voice < 16, "Voice index {voice} is >= 16");
         unsafe { ffi::ASND_TestPointer(voice as i32, pointer as *mut _) }
     }
 
     /// Tests to determine if the voice is ready to receive a new buffer sample
     /// with `Asnd::add_voice()`. Returns true if voice is ready.
     pub fn test_voice_buffer_ready(voice: u32) -> bool {
-        assert!(voice < 16, "Voice index {} is >= 16", voice);
+        assert!(voice < 16, "Voice index {voice} is >= 16");
         unsafe { ffi::ASND_TestVoiceBufferReady(voice as i32) > 0 }
     }
 
@@ -373,9 +372,8 @@ impl Asnd {
             sound_buffer.as_ptr().align_offset(32),
             "Data is not aligned correctly."
         );
-        assert_eq!(
-            0,
-            sound_buffer.len() % 32,
+        assert!(
+            sound_buffer.len().is_multiple_of(32),
             "Data length is not a multiple of 32."
         );
     }
