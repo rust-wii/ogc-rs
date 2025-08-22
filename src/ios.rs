@@ -17,8 +17,12 @@ pub mod fs;
 
 /// E-Ticket System IOS Device
 ///
-/// `/dev/es` device hellper functions.
+/// `/dev/es` device helper functions.
 pub mod es;
+
+/// SDIO IOS Device
+/// `/dev/sdio/slot0` device helper functions
+pub mod sdio;
 
 #[repr(u32)]
 /// Interprocess Control / IOS File Mode
