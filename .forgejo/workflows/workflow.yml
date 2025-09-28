@@ -1,0 +1,44 @@
+name: CI
+on: push
+jobs:
+  check:
+    runs-on: docker
+    container:
+      image: "devkitpro/devkitppc"
+    steps:
+      - name: Install required packages
+        run: |
+          apt-get update
+          apt-get install -y gcc libc6-dev nodejs clang
+      - name: Checkout source
+        uses: actions/checkout@v5 
+      - name: Install nightly toolchain
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --default-toolchain none -y
+          . $HOME/.cargo/env
+          rustup toolchain install nightly --profile minimal --component rust-src
+      - name: Cargo check
+        run: | 
+          . $HOME/.cargo/env
+          cargo check
+  clippy:
+    runs-on: docker
+    container:
+      image: "devkitpro/devkitppc"
+    steps:
+      - name: Install required packages
+        run: |
+          apt-get update
+          apt-get install -y gcc libc6-dev nodejs clang
+      - name: Checkout source
+        uses: actions/checkout@v5 
+      - name: Install nightly toolchain
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --default-toolchain none -y
+          . $HOME/.cargo/env
+          rustup toolchain install nightly --profile minimal --component rust-src
+          rustup component add clippy
+      - name: Cargo clippy
+        run: | 
+          . $HOME/.cargo/env
+          cargo clippy
