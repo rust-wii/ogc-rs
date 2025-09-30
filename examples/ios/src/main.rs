@@ -11,6 +11,53 @@ use ogc_rs::{
     print, println,
 };
 extern crate alloc;
+use embedded_sdmmc::{
+    blockdevice::{Block, BlockCount, BlockIdx},
+    BlockDevice, TimeSource, Timestamp, VolumeIdx, VolumeManager,
+};
+
+pub struct SdCardDevice(Device);
+pub struct DummyTimesource;
+impl BlockDevice for SdCardDevice {
+    type Error = ();
+
+    fn read(&self, blocks: &mut [Block], start_block_idx: BlockIdx) -> Result<(), Self::Error> {
+        if blocks.len() == 1 {
+            let mut block = [0u8; 512];
+            let res = self
+                .0
+                .read_sectors(core::slice::from_mut(&mut block), start_block_idx.0 as _)
+                .map_err(|_| ());
+
+            blocks[0].contents = block;
+            res
+        } else {
+            todo!("read is not currently implemented")
+        }
+    }
+
+    fn write(&self, blocks: &[Block], start_block_idx: BlockIdx) -> Result<(), Self::Error> {
+        if blocks.len() == 1 {
+            let block = blocks[0].contents;
+            let res = self
+                .0
+                .write_sectors(core::slice::from_ref(&block), start_block_idx.0 as _)
+                .map_err(|_| ());
+            res
+        } else {
+            todo!("write is not currently implemented")
+        }
+    }
+
+    fn num_blocks(&self) -> Result<BlockCount, Self::Error> {
+        todo!("num_blocks is not currently implemented")
+    }
+}
+impl TimeSource for DummyTimesource {
+    fn get_timestamp(&self) -> Timestamp {
+        todo!()
+    }
+}
 
 #[no_mangle]
 extern "C" fn main() {
@@ -33,27 +80,41 @@ extern "C" fn main() {
 
     let (is_sdhc, mut device) = try_init_sd();
 
-    let mut block = [0u8; 512];
+    // let mut block = [0u8; 512];
+    //
+    // //read_sectors(blocks: &mut [[0u8; 512]], offset: usize]) -> Result<(), ios::Error>;
+    // device
+    //     .read_sectors(core::slice::from_mut(&mut block), 0)
+    //     .unwrap();
+    //
+    // let bpb = BPB::from_bytes(block[0x00B..].try_into().unwrap());
+    //
+    // let mut info_block = [0u8; 512];
+    // device
+    //     .read_sectors(
+    //         core::slice::from_mut(&mut info_block),
+    //         bpb.fs_info_sector as usize,
+    //     )
+    //     .unwrap();
+    //
+    // let info = FSInfo::from_bytes(&info_block);
+    //
+    // println!("{:?}", bpb);
+    // println!("{:?}", info);
+    //
+    let volmgr = VolumeManager::new(SdCardDevice(device), DummyTimesource);
+    let volume = unsafe {
+        volmgr
+            .open_special(0x0C, BlockIdx(0), BlockCount(67108864))
+            .unwrap()
+    };
+    let root_dir = volume.open_root_dir().unwrap();
 
-    //read_sectors(blocks: &mut [[0u8; 512]], offset: usize]) -> Result<(), ios::Error>;
-    device
-        .read_sectors(core::slice::from_mut(&mut block), 0)
-        .unwrap();
+    let func = |entry: &embedded_sdmmc::DirEntry| {
+        println!("{:?}", entry.name);
+    };
 
-    let bpb = BPB::from_bytes(block[0x00B..].try_into().unwrap());
-
-    let mut info_block = [0u8; 512];
-    device
-        .read_sectors(
-            core::slice::from_mut(&mut info_block),
-            bpb.fs_info_sector as usize,
-        )
-        .unwrap();
-
-    let info = FSInfo::from_bytes(&info_block);
-
-    println!("{:?}", bpb);
-    println!("{:?}", info);
+    root_dir.iterate_dir(func).unwrap();
 
     loop {
         core::hint::spin_loop();
@@ -83,7 +144,7 @@ impl SDCard {
 
 impl DeviceExt for Device {
     fn read_sectors(
-        &mut self,
+        &self,
         sectors: &mut [[u8; 512]],
         offset: usize,
     ) -> Result<(), ogc_rs::ios::Error> {
@@ -120,14 +181,54 @@ impl DeviceExt for Device {
 
         Ok(())
     }
+
+    fn write_sectors(
+        &self,
+        sectors: &[[u8; 512]],
+        offset: usize,
+    ) -> Result<(), ogc_rs::ios::Error> {
+        let resp_rca = self.send_command(&Request::SEND_RCA)?;
+        let rca = resp_rca.rsp_field0;
+
+        self.send_command(&Request::select(rca))?;
+
+        const SDIO_CMD_WRITEMULTIBLOCK: u32 = 0x19;
+        const SDIO_CMD_TYPE_AC: u32 = 3;
+        const SDIO_RESPONSE_TYPE_R1: u32 = 1;
+
+        // SDIO requires 32 byte alignment
+        // On hardware this probably needs to be in the IPC memory space :shrug:
+        let mut aligned_buffer = ogc_rs::utils::alloc_aligned_buffer(sectors.as_flattened());
+
+        self.send_command(&Request::new(
+            SDIO_CMD_WRITEMULTIBLOCK,
+            SDIO_CMD_TYPE_AC,
+            SDIO_RESPONSE_TYPE_R1,
+            offset as u32,
+            sectors.len() as u32,
+            512,
+            aligned_buffer.as_mut_ptr(),
+        ))?;
+
+        self.send_command(&Request::DE_SELECT)?;
+
+        // sectors
+        //     .as_flattened_mut()
+        //     .copy_from_slice(&mut aligned_buffer);
+        //
+        Ok(())
+    }
 }
 
 trait DeviceExt {
     fn read_sectors(
-        &mut self,
+        &self,
         sectors: &mut [[u8; 512]],
         offset: usize,
     ) -> Result<(), ogc_rs::ios::Error>;
+
+    fn write_sectors(&self, sectors: &[[u8; 512]], offset: usize)
+        -> Result<(), ogc_rs::ios::Error>;
 }
 
 pub fn try_init_sd() -> (bool, Device) {
@@ -161,6 +262,15 @@ pub fn try_init_sd() -> (bool, Device) {
     //
     let mut device = Device::open().unwrap();
 
+    const SOFTWARE_RESET_REGISTER: u8 = 0x2F;
+    bitflags::bitflags! {
+        pub struct SoftwareResetRegister: u8 {
+            const RESET_ALL = 0b1;
+            const RESET_CMD = 0b10;
+            const RESET_DATA = 0b100;
+        }
+    }
+
     // Reset
     let mut rca = device.reset().unwrap();
     let status = device.get_status().unwrap();
@@ -177,57 +287,188 @@ pub fn try_init_sd() -> (bool, Device) {
         let mut device = Device::open().unwrap();
 
         // Reset host controller using device
+        let reset = SoftwareResetRegister::RESET_ALL
+            | SoftwareResetRegister::RESET_CMD
+            | SoftwareResetRegister::RESET_DATA;
+
         device
-            .write_to_host_controller_register(HOST_CONTROLLER_REG_SOFT_RESET, 1, 7)
+            .write_to_host_controller_register(
+                SOFTWARE_RESET_REGISTER,
+                core::mem::size_of::<u8>().try_into().unwrap(),
+                reset.bits().into(),
+            )
             .unwrap();
 
-        let software_reset = 7;
-        // Wait until properly reset
-        while software_reset
-            == device
-                .read_from_host_controller_register(HOST_CONTROLLER_REG_SOFT_RESET, 1)
-                .unwrap()
+        // Wait until all bits are 0
+        while device
+            .read_from_host_controller_register(SOFTWARE_RESET_REGISTER, 1)
+            .unwrap()
+            != 0
         {
             core::hint::spin_loop();
         }
 
-        let _ = device.write_to_host_controller_register(0x34, 4, 0x13f00c3);
-        let _ = device.write_to_host_controller_register(0x38, 4, 0x13f00c3);
+        bitflags::bitflags! {
+            pub struct NormalInterruptStatusEnableRegister: u16 {
+                const COMMAND_COMPLETE_STATUS_ENABLE =   0b1;
+                const TRANSFER_COMPLETE_STATUS_ENABLE =  0b10;
+                const BLOCK_GAP_EVENT_STATUS_ENABLE =    0b100;
+                const DMA_INTERRUPT_STATUS_ENABLE =      0b1000;
+                const BUFFER_WRITE_READY_STATUS_ENABLE = 0b10000;
+                const BUFFER_READ_READY_STATUS_ENABLE =  0b100000;
+                const CARD_INSERTION_STATUS_ENABLE =     0b1000000;
+                const CARD_REMOVAL_STATUS_ENABLE =       0b10000000;
+                const CARD_INTERRUPT_STATUS_ENABLE =     0b100000000;
+                const INT_A_STATUS_ENABLE =              0b1000000000;
+                const INT_B_STATUS_ENABLE =              0b10000000000;
+                const INT_C_STATUS_ENABLE =              0b100000000000;
+                const RETUNING_EVENT_STATUS_ENABLE =     0b1000000000000;
+                const FX_EVENT_STATUS_ENABLE =           0b10000000000000;
+            }
+        }
+
+        bitflags::bitflags! {
+            pub struct ErrorInterruptStatusEnableRegister: u16 {
+                const COMMAND_TIMEOUT_ERROR_STATUS_ENABLE = 0b1;
+                const COMMAND_CRC_ERROR_STATUS_ENABLE =     0b10;
+                const COMMAND_END_BIT_ERROR_STATUS_ENABLE = 0b100;
+                const COMMAND_INDEX_ERROR_STATUS_ENABLE =   0b1000;
+                const DATA_TIMEOUT_ERROR_STATUS_ENABLE =    0b10000;
+                const DATA_CRC_ERROR_STATUS_ENABLE =        0b100000;
+                const DATA_END_BIT_ERROR_STATUS_ENABLE =    0b1000000;
+                const CURRENT_LIMIT_ERROR_STATUS_ENABLE =   0b10000000;
+                const AUTO_CMD_ERROR_STATUS_ENABLE =        0b100000000;
+                const ADMA_ERROR_STATUS_ENABLE =            0b1000000000;
+                const TUNING_STATUS_ERROR_STATUS_ENABLE =   0b10000000000;
+                const REPSONSE_ERROR_STATUS_ENABLE =        0b100000000000;
+            }
+        }
+
+        let normal_interrupt_status =
+            NormalInterruptStatusEnableRegister::COMMAND_COMPLETE_STATUS_ENABLE
+                | NormalInterruptStatusEnableRegister::TRANSFER_COMPLETE_STATUS_ENABLE
+                | NormalInterruptStatusEnableRegister::BLOCK_GAP_EVENT_STATUS_ENABLE
+                | NormalInterruptStatusEnableRegister::DMA_INTERRUPT_STATUS_ENABLE
+                | NormalInterruptStatusEnableRegister::BUFFER_WRITE_READY_STATUS_ENABLE
+                | NormalInterruptStatusEnableRegister::BUFFER_READ_READY_STATUS_ENABLE
+                | NormalInterruptStatusEnableRegister::CARD_INTERRUPT_STATUS_ENABLE;
+
+        let error_interrupt_status =
+            ErrorInterruptStatusEnableRegister::COMMAND_TIMEOUT_ERROR_STATUS_ENABLE
+                | ErrorInterruptStatusEnableRegister::COMMAND_CRC_ERROR_STATUS_ENABLE
+                | ErrorInterruptStatusEnableRegister::DATA_END_BIT_ERROR_STATUS_ENABLE
+                | ErrorInterruptStatusEnableRegister::CURRENT_LIMIT_ERROR_STATUS_ENABLE;
+
+        let status: u32 = u32::from(normal_interrupt_status.bits()) << 16
+            | u32::from(error_interrupt_status.bits());
+
+        const NORMAL_INTERRUPT_STATUS_REGISTER: u8 = 0x34;
+        //const ERROR_INTERRUPT_STATUS_REGISTER: u8 = 0x36;
+
+        const NORMAL_INTERRUPT_SIGNAL_STATUS_REGISTER: u8 = 0x38;
+        //const ERROR_INTERRUPT_SIGNAL_STATUS_REGISTER: u8 = 0x3A;
+
+        // This writes to `NORMAL_INTERRUPT_STATUS_REGISTER` and `ERROR_INTERRUPT_STATUS_REGISTER` as
+        // one call
+        let _ =
+            device.write_to_host_controller_register(NORMAL_INTERRUPT_STATUS_REGISTER, 4, status);
+
+        // This writes to both `NORMAL_INTERRUPT_SIGNAL_STATUS_REGISTER` and
+        // `ERROR_INTERRUPT_STATUS_REGISTER` as one call
+        let _ = device.write_to_host_controller_register(
+            NORMAL_INTERRUPT_SIGNAL_STATUS_REGISTER,
+            4,
+            status,
+        );
+
+        bitflags::bitflags! {
+            pub struct PowerControlRegister: u8 {
+                const SD_BUS_POWER_VDD1 = 0b1;
+                const SD_BUS_VOLTAGE_SELECT_18V =  0b1010;
+                const SD_BUS_VOLTAGE_SELECT_3V =   0b1100;
+                const SD_BUS_VOLTAGE_SELECT_33V =  0b1110;
+            }
+        }
+
+        let select = PowerControlRegister::SD_BUS_VOLTAGE_SELECT_33V;
 
         // Set power
         device
-            .write_to_host_controller_register(HOST_CONTROLLER_REG_PWR_CTRL, 1, 14)
+            .write_to_host_controller_register(
+                HOST_CONTROLLER_REG_PWR_CTRL,
+                1,
+                select.bits().into(),
+            )
             .unwrap();
         device
-            .write_to_host_controller_register(HOST_CONTROLLER_REG_PWR_CTRL, 1, 15)
+            .write_to_host_controller_register(
+                HOST_CONTROLLER_REG_PWR_CTRL,
+                1,
+                (select | PowerControlRegister::SD_BUS_POWER_VDD1)
+                    .bits()
+                    .into(),
+            )
             .unwrap();
+
+        bitflags::bitflags! {
+            pub struct ClockControlRegister: u16 {
+                const INTERNAL_CLOCK_ENABLE = 0b1;
+                const INTERNAL_CLOCK_STABLE = 0b10;
+                const SD_CLOCK_ENABLE =       0b100;
+                const PLL_ENABLE =            0b1000;
+                const CLK_DIV_BY_2 =          0b100000000;
+                const CLK_DIV_BY_4 =          0b1000000000;
+                const CLK_DIV_BY_8 =          0b10000000000;
+                const CLK_DIV_BY_16 =         0b100000000000;
+                const CLK_DIV_BY_32 =         0b1000000000000;
+                const CLK_DIV_BY_64 =         0b10000000000000;
+                const CLK_DIV_BY_128 =        0b100000000000000;
+                const CLK_DIV_BY_256 =        0b1000000000000000;
+            }
+        }
 
         // Clock
         device
             .write_to_host_controller_register(HOST_CONTROLLER_REG_CLK_CTRL, 2, 0)
             .unwrap();
+
+        let clock =
+            ClockControlRegister::INTERNAL_CLOCK_ENABLE | ClockControlRegister::CLK_DIV_BY_2;
+
         device
-            .write_to_host_controller_register(HOST_CONTROLLER_REG_CLK_CTRL, 2, 0x101)
+            .write_to_host_controller_register(HOST_CONTROLLER_REG_CLK_CTRL, 2, clock.bits().into())
             .unwrap();
 
-        let clk_ctrl = 0x101;
-
-        while clk_ctrl
-            == device
-                .read_from_host_controller_register(HOST_CONTROLLER_REG_CLK_CTRL, 2)
-                .unwrap()
+        while device
+            .read_from_host_controller_register(HOST_CONTROLLER_REG_CLK_CTRL, 2)
+            .unwrap()
+            & u32::from(ClockControlRegister::INTERNAL_CLOCK_STABLE.bits())
+            != u32::from(ClockControlRegister::INTERNAL_CLOCK_STABLE.bits())
         {
             core::hint::spin_loop();
         }
 
         device
-            .write_to_host_controller_register(HOST_CONTROLLER_REG_CLK_CTRL, 2, 0x107)
+            .write_to_host_controller_register(
+                HOST_CONTROLLER_REG_CLK_CTRL,
+                2,
+                (clock
+                    | ClockControlRegister::INTERNAL_CLOCK_STABLE
+                    | ClockControlRegister::SD_CLOCK_ENABLE)
+                    .bits()
+                    .into(),
+            )
             .unwrap();
+
+        //max timeout for stand sd cards not sdxc
+        //CLK x 2^27
+        const TIMEOUT_CLOCK: u32 = 0b1110;
 
         // Timeout
         device
-            .write_to_host_controller_register(HOST_CONTROLLER_REG_TIMEOUT_CTRL, 1, 14)
+            .write_to_host_controller_register(HOST_CONTROLLER_REG_TIMEOUT_CTRL, 1, TIMEOUT_CLOCK)
             .unwrap();
+
         let _ = device.send_command(&Request::GO_IDLE).unwrap();
         let resp = device.send_command(&Request::SEND_IF_COND).unwrap();
 

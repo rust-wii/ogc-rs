@@ -378,7 +378,7 @@ mod dev {
         }
 
         /// Send SDIO command
-        pub fn send_command(&mut self, request: &Request) -> Result<Response, ios::Error> {
+        pub fn send_command(&self, request: &Request) -> Result<Response, ios::Error> {
             let mut in_buf: [u8; _] = [0u8; core::mem::size_of::<Request>()];
             in_buf[0..4].copy_from_slice(&request.command.to_be_bytes());
             in_buf[4..8].copy_from_slice(&request.command_type.to_be_bytes());
@@ -415,7 +415,6 @@ mod dev {
                     &mut out_buf,
                 )?;
             }
-
             let resp = Response {
                 rsp_field0: u32::from_be_bytes(
                     out_buf[0..4].try_into().map_err(|_| ios::Error::Invalid)?,
