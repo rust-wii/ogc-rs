@@ -132,7 +132,7 @@ impl SDCard {
         let (is_sdhc, mut device) = try_init_sd();
 
         let resp_rca = device.send_command(&Request::SEND_RCA).ok()?;
-        let rca = resp_rca.rsp_field0;
+        let rca = u32::from_be_bytes(resp_rca.bytes()[0..4].try_into().unwrap());
 
         Some(Self {
             rca,
@@ -149,8 +149,7 @@ impl DeviceExt for Device {
         offset: usize,
     ) -> Result<(), ogc_rs::ios::Error> {
         let resp_rca = self.send_command(&Request::SEND_RCA)?;
-        let rca = resp_rca.rsp_field0;
-
+        let rca = u32::from_be_bytes(resp_rca.bytes()[0..4].try_into().unwrap());
         self.send_command(&Request::select(rca))?;
 
         const SDIO_CMD_READMULTIBLOCK: u32 = 0x12;
@@ -188,8 +187,7 @@ impl DeviceExt for Device {
         offset: usize,
     ) -> Result<(), ogc_rs::ios::Error> {
         let resp_rca = self.send_command(&Request::SEND_RCA)?;
-        let rca = resp_rca.rsp_field0;
-
+        let rca = u32::from_be_bytes(resp_rca.bytes()[0..4].try_into().unwrap());
         self.send_command(&Request::select(rca))?;
 
         const SDIO_CMD_WRITEMULTIBLOCK: u32 = 0x19;
@@ -472,15 +470,17 @@ pub fn try_init_sd() -> (bool, Device) {
         let _ = device.send_command(&Request::GO_IDLE).unwrap();
         let resp = device.send_command(&Request::SEND_IF_COND).unwrap();
 
-        if resp.rsp_field0 & 0xFF != 0xAA {
-            println!("Response from IF_COND: {}", resp.rsp_field0);
+        let resp_bytes = u32::from_be_bytes(resp.bytes()[0..4].try_into().unwrap());
+        if resp_bytes & 0xFF != 0xAA {
+            println!("Response from IF_COND: {}", resp_bytes);
         }
 
         let is_sdhc = loop {
             let _ = device.send_command(&Request::APP_CMD).unwrap();
             let resp = device.send_command(&Request::SEND_OP_COND).unwrap();
-            if resp.rsp_field0 & 1 << 31 == 1 << 31 {
-                break resp.rsp_field0 & 1 << 30 == 1 << 30;
+            let resp_bytes = u32::from_be_bytes(resp.bytes()[0..4].try_into().unwrap());
+            if resp_bytes & 1 << 31 == 1 << 31 {
+                break resp_bytes & 1 << 30 == 1 << 30;
             }
         };
 
@@ -489,7 +489,7 @@ pub fn try_init_sd() -> (bool, Device) {
 
         let resp_rca = device.send_command(&Request::SEND_RCA).unwrap();
         println!("{:?}", resp_rca);
-        rca = resp_rca.rsp_field0;
+        rca = u32::from_be_bytes(resp_rca.bytes()[0..4].try_into().unwrap());
 
         let mut host_ctrl = device
             .read_from_host_controller_register(HOST_CONTROLLER_REG_HOST_CTRL, 1)
