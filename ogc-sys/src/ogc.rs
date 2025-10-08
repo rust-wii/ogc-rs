@@ -77,13 +77,13 @@ pub const true_: u32 = 1;
 pub const false_: u32 = 0;
 pub const __bool_true_false_are_defined: u32 = 1;
 pub const _NEWLIB_VERSION_H__: u32 = 1;
-pub const _NEWLIB_VERSION: &[u8; 6] = b"4.4.0\0";
+pub const _NEWLIB_VERSION: &[u8; 6] = b"4.5.0\0";
 pub const __NEWLIB__: u32 = 4;
-pub const __NEWLIB_MINOR__: u32 = 4;
+pub const __NEWLIB_MINOR__: u32 = 5;
 pub const __NEWLIB_PATCHLEVEL__: u32 = 0;
 pub const _DEFAULT_SOURCE: u32 = 1;
 pub const _POSIX_SOURCE: u32 = 1;
-pub const _POSIX_C_SOURCE: u32 = 200809;
+pub const _POSIX_C_SOURCE: u32 = 202405;
 pub const _ATFILE_SOURCE: u32 = 1;
 pub const __ATFILE_VISIBLE: u32 = 1;
 pub const __BSD_VISIBLE: u32 = 1;
@@ -91,7 +91,7 @@ pub const __GNU_VISIBLE: u32 = 0;
 pub const __ISO_C_VISIBLE: u32 = 2011;
 pub const __LARGEFILE_VISIBLE: u32 = 0;
 pub const __MISC_VISIBLE: u32 = 1;
-pub const __POSIX_VISIBLE: u32 = 200809;
+pub const __POSIX_VISIBLE: u32 = 202405;
 pub const __SVID_VISIBLE: u32 = 1;
 pub const __XSI_VISIBLE: u32 = 0;
 pub const __SSP_FORTIFY_LEVEL: u32 = 0;
@@ -242,6 +242,14 @@ pub const COLOR_MONEYGREEN: u32 = 3279471478;
 pub const COLOR_SKYBLUE: u32 = 3096885357;
 pub const COLOR_CREAM: u32 = 3900434563;
 pub const COLOR_MEDGRAY: u32 = 2592250496;
+pub const CONSOLE_COLOR_BLACK: u32 = 0;
+pub const CONSOLE_COLOR_RED: u32 = 1;
+pub const CONSOLE_COLOR_GREEN: u32 = 2;
+pub const CONSOLE_COLOR_YELLOW: u32 = 3;
+pub const CONSOLE_COLOR_BLUE: u32 = 4;
+pub const CONSOLE_COLOR_MAGENTA: u32 = 5;
+pub const CONSOLE_COLOR_CYAN: u32 = 6;
+pub const CONSOLE_COLOR_WHITE: u32 = 7;
 pub const FEATURE_MEDIUM_CANREAD: u32 = 1;
 pub const FEATURE_MEDIUM_CANWRITE: u32 = 2;
 pub const FEATURE_GAMECUBE_SLOTA: u32 = 16;
@@ -1129,6 +1137,7 @@ pub const _REENT_CHECK_VERIFY: u32 = 1;
 pub const _UNBUF_STREAM_OPT: u32 = 1;
 pub const _WANT_IO_C99_FORMATS: u32 = 1;
 pub const _WANT_IO_LONG_LONG: u32 = 1;
+pub const _WANT_IO_POS_ARGS: u32 = 1;
 pub const _WANT_REGISTER_FINI: u32 = 1;
 pub const _WANT_USE_GDTOA: u32 = 1;
 pub const _WIDE_ORIENT: u32 = 1;
@@ -1243,6 +1252,8 @@ pub const CLOCK_DISABLED: u32 = 0;
 pub const CLOCK_ALLOWED: u32 = 1;
 pub const CLOCK_DISALLOWED: u32 = 0;
 pub const TIMER_ABSTIME: u32 = 4;
+pub const CLOCK_REALTIME: u32 = 1;
+pub const CLOCK_MONOTONIC: u32 = 4;
 pub const SYS_BASE_CACHED: u32 = 2147483648;
 pub const SYS_BASE_UNCACHED: u32 = 3221225472;
 pub const SYS_WD_NULL: u32 = 4294967295;
@@ -1297,6 +1308,8 @@ pub const VI_MAX_WIDTH_MPAL: u32 = 720;
 pub const VI_MAX_HEIGHT_MPAL: u32 = 480;
 pub const VI_MAX_WIDTH_EURGB60: u32 = 720;
 pub const VI_MAX_HEIGHT_EURGB60: u32 = 480;
+pub const VI_MAX_WIDTH_DEBUG: u32 = 720;
+pub const VI_MAX_HEIGHT_DEBUG: u32 = 480;
 pub const HW_IPC_PPCBASE: u32 = 3439329280;
 pub const HW_IPC_PPC_SEND: u32 = 1;
 pub const HW_IPC_PPC_MSG_ACK: u32 = 2;
@@ -1326,8 +1339,11 @@ pub const ES_SIG_ECDSA: u32 = 65538;
 pub const ES_CERT_RSA4096: u32 = 0;
 pub const ES_CERT_RSA2048: u32 = 1;
 pub const ES_CERT_ECDSA: u32 = 2;
+pub const ES_KEY_NANDFS: u32 = 2;
 pub const ES_KEY_COMMON: u32 = 4;
+pub const ES_KEY_BACKUP: u32 = 5;
 pub const ES_KEY_SDCARD: u32 = 6;
+pub const ES_KEY_KOREAN: u32 = 11;
 pub const MAX_NUM_TMD_CONTENTS: u32 = 512;
 pub const STM_EVENT_RESET: u32 = 131072;
 pub const STM_EVENT_POWER: u32 = 2048;
@@ -2653,6 +2669,110 @@ extern "C" {
 extern "C" {
     #[doc = "CON_EnableGecko(int channel, int safe)\n Enable or disable the USB gecko console.\n\n # Arguments\n\n* `channel` (direction in) - EXI channel, or -1 �to disable the gecko console\n * `safe` (direction in) - If true, use safe mode (wait for peer)\n\n # Returns\n\nnone"]
     pub fn CON_EnableGecko(channel: ::libc::c_int, safe: ::libc::c_int);
+}
+#[doc = "A callback for printing a character."]
+pub type ConsolePrint = ::core::option::Option<
+    unsafe extern "C" fn(con: *mut ::libc::c_void, c: ::libc::c_int) -> bool,
+>;
+#[doc = "A font struct for the console."]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct ConsoleFont {
+    #[doc = "< A pointer to the font graphics"]
+    pub gfx: *mut u8_,
+    #[doc = "< Offset to the first valid character in the font table"]
+    pub asciiOffset: u16_,
+    #[doc = "< Number of characters in the font graphics"]
+    pub numChars: u16_,
+}
+#[doc = "Console structure used to store the state of a console render context.\n\n Default values from consoleGetDefault();\n PrintConsole defaultConsole =\n {\n \t//Font:\n \t{\n \t\t(u8*)default_font_bin, //font gfx\n \t\t0, //first ascii character in the set\n \t\t128, //number of characters in the font set\n\t},\n\t0,0, //cursorX cursorY\n\t0,0, //prevcursorX prevcursorY\n\t40, //console width\n\t30, //console height\n\t0, //window x\n\t0, //window y\n\t32, //window width\n\t24, //window height\n\t3, //tab size\n\t0, //font character offset\n\t0, //print callback\n\tfalse //console initialized\n };\n "]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct PrintConsole {
+    #[doc = "< Font of the console"]
+    pub font: ConsoleFont,
+    #[doc = "< Framebuffer address"]
+    pub destbuffer: *mut ::libc::c_void,
+    pub con_xres: ::libc::c_int,
+    pub con_yres: ::libc::c_int,
+    pub con_stride: ::libc::c_int,
+    pub target_x: ::libc::c_int,
+    pub target_y: ::libc::c_int,
+    pub tgt_stride: ::libc::c_int,
+    #[doc = "< Current X location of the cursor (as a tile offset by default)"]
+    pub cursorX: ::libc::c_int,
+    #[doc = "< Current Y location of the cursor (as a tile offset by default)"]
+    pub cursorY: ::libc::c_int,
+    #[doc = "< Internal state"]
+    pub prevCursorX: ::libc::c_int,
+    #[doc = "< Internal state"]
+    pub prevCursorY: ::libc::c_int,
+    #[doc = "< Width of the console hardware layer in characters"]
+    pub con_cols: ::libc::c_int,
+    #[doc = "< Height of the console hardware layer in characters"]
+    pub con_rows: ::libc::c_int,
+    #[doc = "< Window X location in characters (not implemented)"]
+    pub windowX: ::libc::c_int,
+    #[doc = "< Window Y location in characters (not implemented)"]
+    pub windowY: ::libc::c_int,
+    #[doc = "< Window width in characters (not implemented)"]
+    pub windowWidth: ::libc::c_int,
+    #[doc = "< Window height in characters (not implemented)"]
+    pub windowHeight: ::libc::c_int,
+    #[doc = "< Size of a tab"]
+    pub tabSize: ::libc::c_int,
+    #[doc = "< Foreground color"]
+    pub fg: ::libc::c_uint,
+    #[doc = "< Background color"]
+    pub bg: ::libc::c_uint,
+    #[doc = "< Attribute flags"]
+    pub flags: ::libc::c_uint,
+    #[doc = "< Callback for printing a character. Should return true if it has handled rendering the graphics (else the print engine will attempt to render via tiles)."]
+    pub PrintChar: ConsolePrint,
+    #[doc = "< True if the console is initialized"]
+    pub consoleInitialised: bool,
+}
+#[doc = "< Swallows prints to stderr"]
+pub const debugDevice_NULL: debugDevice = 0;
+#[doc = "< Outputs stderr debug statements using exi uart"]
+pub const debugDevice_EXI: debugDevice = 1;
+#[doc = "< Directs stderr debug statements to console window"]
+pub const debugDevice_CONSOLE: debugDevice = 2;
+#[doc = "Console debug devices supported by libogc."]
+pub type debugDevice = ::libc::c_uint;
+extern "C" {
+    #[doc = "Loads the font into the console.\n # Arguments\n\n* `console` - Pointer to the console to update, if NULL it will update the current console.\n * `font` - The font to load."]
+    pub fn consoleSetFont(console: *mut PrintConsole, font: *mut ConsoleFont);
+}
+extern "C" {
+    #[doc = "Sets the print window.\n # Arguments\n\n* `console` - Console to set, if NULL it will set the current console window.\n * `x` - X location of the window.\n * `y` - Y location of the window.\n * `width` - Width of the window.\n * `height` - Height of the window."]
+    pub fn consoleSetWindow(
+        console: *mut PrintConsole,
+        x: ::libc::c_uint,
+        y: ::libc::c_uint,
+        width: ::libc::c_uint,
+        height: ::libc::c_uint,
+    );
+}
+extern "C" {
+    #[doc = "Gets a pointer to the console with the default values.\n This should only be used when using a single console or without changing the console that is returned, otherwise use consoleInit().\n # Returns\n\nA pointer to the console with the default values."]
+    pub fn consoleGetDefault() -> *mut PrintConsole;
+}
+extern "C" {
+    #[doc = "Make the specified console the render target.\n # Arguments\n\n* `console` - A pointer to the console struct (must have been initialized with consoleInit(PrintConsole* console)).\n # Returns\n\nA pointer to the previous console."]
+    pub fn consoleSelect(console: *mut PrintConsole) -> *mut PrintConsole;
+}
+extern "C" {
+    #[doc = "Initialise the console.\n # Arguments\n\n* `console` - A pointer to the console data to initialize (if it's NULL, the default console will be used).\n # Returns\n\nA pointer to the current console."]
+    pub fn consoleInit(console: *mut PrintConsole) -> *mut PrintConsole;
+}
+extern "C" {
+    #[doc = "Initializes debug console output on stderr to the specified device.\n # Arguments\n\n* `device` - The debug device (or devices) to output debug print statements to."]
+    pub fn consoleDebugInit(device: debugDevice);
+}
+extern "C" {
+    #[doc = "Clears the screen by using iprintf(\""]
+    pub fn consoleClear();
 }
 pub type sec_t = u32;
 pub type FN_MEDIUM_STARTUP = ::core::option::Option<unsafe extern "C" fn() -> bool>;
@@ -4678,6 +4798,8 @@ extern "C" {
 extern "C" {
     pub fn TPL_CloseTPLFile(tdf: *mut TPLFile);
 }
+pub type __gnuc_va_list = __builtin_va_list;
+pub type va_list = __gnuc_va_list;
 pub type wchar_t = ::libc::c_int;
 #[repr(C)]
 #[repr(align(16))]
@@ -4772,13 +4894,6 @@ pub type _flock_t = _LOCK_RECURSIVE_T;
 #[derive(Debug, Copy, Clone)]
 pub struct __locale_t {
     _unused: [u8; 0],
-}
-extern "C" {
-    pub fn memset(
-        arg1: *mut ::libc::c_void,
-        arg2: ::libc::c_int,
-        arg3: ::libc::c_ulong,
-    ) -> *mut ::libc::c_void;
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -4922,7 +5037,7 @@ pub struct _reent {
 #[derive(Debug, Copy, Clone)]
 pub struct _reent__bindgen_ty_1 {
     pub _reent: __BindgenUnionField<_reent__bindgen_ty_1__bindgen_ty_1>,
-    pub bindgen_union_field: [u64; 25usize],
+    pub bindgen_union_field: [u64; 29usize],
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -4945,6 +5060,7 @@ pub struct _reent__bindgen_ty_1__bindgen_ty_1 {
     pub _wcrtomb_state: _mbstate_t,
     pub _wcsrtombs_state: _mbstate_t,
     pub _h_errno: ::libc::c_int,
+    pub _getlocalename_l_buf: [::libc::c_char; 32usize],
 }
 extern "C" {
     pub static mut _impure_ptr: *mut _reent;
@@ -5616,7 +5732,15 @@ extern "C" {
 extern "C" {
     pub fn SYS_Time() -> u64_;
 }
+#[doc = "Printing callback used by dietPrint.\n> **Note:** The incoming `buf` may be NULL, in which case the callback is\nexpected to output the number of space characters given by `size.`"]
+pub type DietPrintFn =
+    ::core::option::Option<unsafe extern "C" fn(buf: *const ::libc::c_char, size: usize)>;
 extern "C" {
+    #[doc = "! Prints the specified formatted text (works like vprintf)."]
+    pub fn dietPrintV(fmt: *const ::libc::c_char, va: *mut [u32; 3usize]);
+}
+extern "C" {
+    #[doc = "! Prints the specified formatted text (works like printf)."]
     pub fn kprintf(str_: *const ::libc::c_char, ...);
 }
 extern "C" {
@@ -5760,6 +5884,16 @@ extern "C" {
 }
 extern "C" {
     pub static mut TVEurgb60Hz480ProgAa: GXRModeObj;
+}
+extern "C" {
+    #[doc = "< Video and render mode configuration for 480 lines,progressive,singlefield RGB mode"]
+    pub static mut TVRgb480Prog: GXRModeObj;
+}
+extern "C" {
+    pub static mut TVRgb480ProgSoft: GXRModeObj;
+}
+extern "C" {
+    pub static mut TVRgb480ProgAa: GXRModeObj;
 }
 #[doc = "void (*VIRetraceCallback)(u32 retraceCnt)\n function pointer typedef for the user's retrace callback\n # Arguments\n\n* `retraceCnt` (direction in) - current retrace count"]
 pub type VIRetraceCallback = ::core::option::Option<unsafe extern "C" fn(retraceCnt: u32_)>;
@@ -6393,13 +6527,37 @@ extern "C" {
     pub fn ES_GetTitleContentsCount(titleID: u64_, num: *mut u32_) -> s32;
 }
 extern "C" {
-    pub fn ES_GetTitleContents(titleID: u64_, data: *mut u8_, size: u32_) -> s32;
+    pub fn ES_GetTitleContents(titleID: u64_, contents: *mut u32_, num: u32_) -> s32;
 }
 extern "C" {
     pub fn ES_GetTMDViewSize(titleID: u64_, size: *mut u32_) -> s32;
 }
 extern "C" {
-    pub fn ES_GetTMDView(titleID: u64_, data: *mut u8_, size: u32_) -> s32;
+    pub fn ES_GetTMDView(titleID: u64_, view: *mut tmd_view, size: u32_) -> s32;
+}
+extern "C" {
+    pub fn ES_GetConsumptionCount(ticketID: u64_, n_limits: *mut u32_) -> s32;
+}
+extern "C" {
+    pub fn ES_GetConsumption(ticketID: u64_, limits: *mut tiklimit, n_limits: u32_) -> s32;
+}
+extern "C" {
+    pub fn ES_DiGetTMDViewSize(
+        s_tmd: *const signed_blob,
+        tmd_size: u32_,
+        view_size: *mut u32_,
+    ) -> s32;
+}
+extern "C" {
+    pub fn ES_DiGetTMDView(
+        s_tmd: *const signed_blob,
+        tmd_size: u32_,
+        view: *mut tmd_view,
+        view_size: u32_,
+    ) -> s32;
+}
+extern "C" {
+    pub fn ES_DiGetTicketView(s_tik: *const signed_blob, view: *mut tikview) -> s32;
 }
 extern "C" {
     pub fn ES_GetNumSharedContents(cnt: *mut u32_) -> s32;
@@ -6425,6 +6583,16 @@ extern "C" {
     ) -> s32;
 }
 extern "C" {
+    pub fn ES_DiVerifyWithTicketView(
+        certificates: *const signed_blob,
+        certificates_size: u32_,
+        s_tmd: *const signed_blob,
+        tmd_size: u32_,
+        ticket_view: *const tikview,
+        keynum: *mut u32_,
+    ) -> s32;
+}
+extern "C" {
     pub fn ES_AddTicket(
         tik: *const signed_blob,
         tik_size: u32_,
@@ -6438,7 +6606,22 @@ extern "C" {
     pub fn ES_DeleteTicket(view: *const tikview) -> s32;
 }
 extern "C" {
-    pub fn ES_AddTitleTMD(tmd: *const signed_blob, tmd_size: u32_) -> s32;
+    pub fn ES_ExportTitleInit(titleID: u64_, tmd_out: *mut signed_blob, tmd_size: u32_) -> s32;
+}
+extern "C" {
+    pub fn ES_ExportContentBegin(titleID: u64_, cid: u32_) -> s32;
+}
+extern "C" {
+    pub fn ES_ExportContentData(cfd: s32, data: *mut ::libc::c_void, data_size: u32_) -> s32;
+}
+extern "C" {
+    pub fn ES_ExportContentEnd(cfd: s32) -> s32;
+}
+extern "C" {
+    pub fn ES_ExportTitleDone() -> s32;
+}
+extern "C" {
+    pub fn ES_ReimportTitleInit(tmd: *const signed_blob, tmd_size: u32_) -> s32;
 }
 extern "C" {
     pub fn ES_AddTitleStart(
@@ -6454,7 +6637,7 @@ extern "C" {
     pub fn ES_AddContentStart(titleID: u64_, cid: u32_) -> s32;
 }
 extern "C" {
-    pub fn ES_AddContentData(cid: s32, data: *mut u8_, data_size: u32_) -> s32;
+    pub fn ES_AddContentData(cid: s32, data: *const ::libc::c_void, data_size: u32_) -> s32;
 }
 extern "C" {
     pub fn ES_AddContentFinish(cid: u32_) -> s32;
@@ -6483,10 +6666,10 @@ extern "C" {
     pub fn ES_OpenContent(index: u16_) -> s32;
 }
 extern "C" {
-    pub fn ES_OpenTitleContent(titleID: u64_, views: *mut tikview, index: u16_) -> s32;
+    pub fn ES_OpenTitleContent(titleID: u64_, views: *const tikview, index: u16_) -> s32;
 }
 extern "C" {
-    pub fn ES_ReadContent(cfd: s32, data: *mut u8_, data_size: u32_) -> s32;
+    pub fn ES_ReadContent(cfd: s32, data: *mut ::libc::c_void, data_size: u32_) -> s32;
 }
 extern "C" {
     pub fn ES_SeekContent(cfd: s32, where_: s32, whence: s32) -> s32;
@@ -6503,23 +6686,37 @@ extern "C" {
 extern "C" {
     pub fn ES_Encrypt(
         keynum: u32_,
-        iv: *mut u8_,
-        source: *mut u8_,
+        iv: *mut u32_,
+        source: *const ::libc::c_void,
         size: u32_,
-        dest: *mut u8_,
+        dest: *mut ::libc::c_void,
     ) -> s32;
 }
 extern "C" {
     pub fn ES_Decrypt(
         keynum: u32_,
-        iv: *mut u8_,
-        source: *mut u8_,
+        iv: *mut u32_,
+        source: *const ::libc::c_void,
         size: u32_,
-        dest: *mut u8_,
+        dest: *mut ::libc::c_void,
     ) -> s32;
 }
 extern "C" {
-    pub fn ES_Sign(source: *mut u8_, size: u32_, sig: *mut u8_, certs: *mut u8_) -> s32;
+    pub fn ES_Sign(
+        source: *const ::libc::c_void,
+        size: u32_,
+        ap_signature: *mut u8_,
+        ap_certificate: *mut signed_blob,
+    ) -> s32;
+}
+extern "C" {
+    pub fn ES_VerifySign(
+        source: *const ::libc::c_void,
+        size: u32_,
+        ap_signature: *const u8_,
+        certificates: *const signed_blob,
+        certificates_size: u32_,
+    ) -> s32;
 }
 extern "C" {
     pub fn ES_GetDeviceCert(outbuf: *mut u8_) -> s32;
@@ -6531,7 +6728,10 @@ extern "C" {
     pub fn ES_GetBoot2Version(version: *mut u32_) -> s32;
 }
 extern "C" {
-    pub fn ES_NextCert(certs: *const signed_blob) -> *mut signed_blob;
+    pub fn ES_CheckHasKoreanKey() -> s32;
+}
+extern "C" {
+    pub fn ES_NextCert(certs: *const signed_blob) -> *const signed_blob;
 }
 pub type stmcallback = ::core::option::Option<unsafe extern "C" fn(event: u32_)>;
 extern "C" {
@@ -7430,6 +7630,9 @@ extern "C" {
 }
 extern "C" {
     pub static mut __io_usbstorage: DISC_INTERFACE;
+}
+extern "C" {
+    pub static mut __io_usbstorage_sector_size: u32_;
 }
 extern "C" {
     pub fn WII_Initialize() -> s32;

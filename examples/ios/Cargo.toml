@@ -9,4 +9,6 @@ dev = { panic = "abort" }
 release = { panic = "abort", lto = true, codegen-units = 1, strip = "symbols", opt-level = "s" }
 
 [dependencies]
+bitflags = "2.9.4"
+embedded-sdmmc = {path = "./embedded-sdmmc" }
 ogc-rs = { path = "../../" } 
