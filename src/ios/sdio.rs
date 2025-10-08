@@ -1,5 +1,3 @@
-use crate::ios;
-
 /// SDIO supported Ioctls
 pub enum Ioctl {
     /// Write to a SD host controller register
@@ -84,11 +82,11 @@ impl Request {
     const SDIO_RESPONSE_TYPE_R1B: u32 = 2;
     const SDIO_RESPONSE_TYPE_R3: u32 = 4;
 
-    /// SDIO_CMD_GO_IDLE
+    /// `SDIO_CMD_GO_IDLE`
     pub const GO_IDLE: Request =
         Request::new(Self::SDIO_CMD_GO_IDLE, 0, 0, 0, 0, 0, core::ptr::null_mut());
 
-    /// SDIO_CMD_SEND_IF_COND
+    /// `SDIO_CMD_SEND_IF_COND`
     pub const SEND_IF_COND: Request = Request::new(
         Self::SDIO_CMD_SEND_IF_COND,
         0,
@@ -99,7 +97,7 @@ impl Request {
         core::ptr::null_mut(),
     );
 
-    /// SDIO_CMD_APPCMD
+    /// `SDIO_CMD_APPCMD`
     pub const APP_CMD: Request = Request::new(
         Self::SDIO_CMD_APPCMD,
         Self::SDIO_CMD_TYPE_AC,
@@ -110,18 +108,18 @@ impl Request {
         core::ptr::null_mut(),
     );
 
-    /// SDIO_CMD_APPCMD_SEND_OP_COND
+    /// `SDIO_CMD_APPCMD_SEND_OP_COND`
     pub const SEND_OP_COND: Request = Request::new(
         Self::SDIO_APPCMD_SENDOPCOND,
         0,
         Self::SDIO_RESPONSE_TYPE_R3,
-        0x40300000,
+        0x4030_0000,
         0,
         0,
         core::ptr::null_mut(),
     );
 
-    /// SDIO_CMD_DESELECT
+    /// `SDIO_CMD_DESELECT`
     pub const DE_SELECT: Request = Request::new(
         Self::SDIO_CMD_SELECT,
         Self::SDIO_CMD_TYPE_AC,
@@ -132,7 +130,7 @@ impl Request {
         core::ptr::null_mut(),
     );
 
-    /// SDIO_CMD_SENDRCA
+    /// `SDIO_CMD_SENDRCA`
     pub const SEND_RCA: Request = Request::new(
         Self::SDIO_CMD_SEND_RCA,
         0,
@@ -143,7 +141,8 @@ impl Request {
         core::ptr::null_mut(),
     );
 
-    /// SDIO_CMD_APPCMD_SET_BUS_WIDTH
+    /// `SDIO_CMD_APPCMD_SET_BUS_WIDTH`
+    #[must_use]
     pub const fn set_bus_width(width: u32) -> Request {
         Request::new(
             Self::SDIO_APPCMD_SET_BUS_WIDTH,
@@ -156,7 +155,8 @@ impl Request {
         )
     }
 
-    /// SDIO_CMD_SEND_CID
+    /// `SDIO_CMD_SEND_CID`
+    #[must_use]
     pub const fn send_cid(rca: u32) -> Request {
         Request::new(
             Self::SDIO_CMD_SEND_CID,
@@ -169,7 +169,8 @@ impl Request {
         )
     }
 
-    /// SDIO_CMD_SET_BLOCK_LENGTH
+    /// `SDIO_CMD_SET_BLOCK_LENGTH`
+    #[must_use]
     pub const fn set_block_length(length: u32) -> Request {
         Request::new(
             Self::SDIO_CMD_SET_BLOCK_LENGTH,
@@ -181,6 +182,9 @@ impl Request {
             core::ptr::null_mut(),
         )
     }
+
+    /// Select the SD Card with `rca`
+    #[must_use]
     pub const fn select(rca: u32) -> Request {
         Request::new(
             Self::SDIO_CMD_SELECT,
@@ -193,6 +197,8 @@ impl Request {
         )
     }
 
+    /// Build a APPCMD with RCA as the arg
+    #[must_use]
     pub const fn appcmd_with_rca(rca: u32) -> Request {
         Request::new(
             Self::SDIO_CMD_APPCMD,
@@ -206,6 +212,7 @@ impl Request {
     }
 
     /// Create a new `Request` for the SDIO device
+    #[must_use]
     pub const fn new(
         command: u32,
         command_type: u32,
@@ -230,14 +237,23 @@ impl Request {
     }
 }
 
-//#[repr(C, align(32))]
 /// SDIO response
-#[derive(Debug)]
 pub struct Response {
-    pub rsp_field0: u32,
-    pub rsp_field1: u32,
-    pub rsp_field2: u32,
-    pub acmd12_response: u32,
+    buf: [u8; 16],
+}
+
+impl Response {
+    /// Create a response from a byte buffer
+    #[must_use]
+    pub fn from_bytes(bytes: &[u8; 16]) -> Self {
+        Self { buf: *bytes }
+    }
+
+    /// Get bytes of response
+    #[must_use]
+    pub fn bytes(&self) -> &[u8; 16] {
+        &self.buf
+    }
 }
 
 pub use dev::Device;
@@ -304,6 +320,8 @@ mod dev {
 
     impl Device {
         /// Try to open `/dev/sdio/slot0`
+        /// # Errors
+        /// See [`ios::Error`]
         pub fn open() -> Result<Self, ios::Error> {
             let sdio = ios::open(c"/dev/sdio/slot0", ios::Mode::Read)?;
             let fd = unsafe { OwnedFd::from_raw_fd(sdio.0) }.ok_or(ios::Error::Invalid)?;
@@ -311,6 +329,8 @@ mod dev {
         }
 
         /// Write to a SD host controller register
+        /// # Errors
+        /// See [`ios::Error`]
         pub fn write_to_host_controller_register(
             &mut self,
             register: u8,
@@ -333,6 +353,8 @@ mod dev {
         }
 
         /// Read from a SD host controller register
+        /// # Errors
+        /// See [`ios::Error`]
         pub fn read_from_host_controller_register(
             &mut self,
             register: u8,
@@ -353,6 +375,8 @@ mod dev {
             Ok(u32::from_be_bytes(value))
         }
         /// Reset SD card
+        /// # Errors
+        /// See [`ios::Error`]
         pub fn reset(&mut self) -> Result<u32, ios::Error> {
             let mut buffer = [0u8; 4];
             ios::ioctl(
@@ -366,6 +390,8 @@ mod dev {
         }
 
         /// Enable SD card clock
+        /// # Errors
+        /// See [`ios::Error`]
         pub fn enable_clock(&mut self, enable: bool) -> Result<(), ios::Error> {
             ios::ioctl(
                 self.fd.as_file_descriptor(),
@@ -378,6 +404,8 @@ mod dev {
         }
 
         /// Send SDIO command
+        /// # Errors
+        /// See [`ios::Error`]
         pub fn send_command(&self, request: &Request) -> Result<Response, ios::Error> {
             let mut in_buf: [u8; _] = [0u8; core::mem::size_of::<Request>()];
             in_buf[0..4].copy_from_slice(&request.command.to_be_bytes());
@@ -390,7 +418,7 @@ mod dev {
             in_buf[28..32].copy_from_slice(&request.is_dma.to_be_bytes());
             //in_buf[32..36].copy_from_slice(&request.pad0.to_be_bytes());
 
-            let mut out_buf: [u8; _] = [0u8; core::mem::size_of::<Response>()];
+            let mut out_buf: [u8; 16] = [0u8; 16];
 
             if !request.dma_addr.is_null() && request.is_dma != 0 {
                 let dma_bytes = unsafe {
@@ -415,27 +443,13 @@ mod dev {
                     &mut out_buf,
                 )?;
             }
-            let resp = Response {
-                rsp_field0: u32::from_be_bytes(
-                    out_buf[0..4].try_into().map_err(|_| ios::Error::Invalid)?,
-                ),
-                rsp_field1: u32::from_be_bytes(
-                    out_buf[4..8].try_into().map_err(|_| ios::Error::Invalid)?,
-                ),
-                rsp_field2: u32::from_be_bytes(
-                    out_buf[8..12].try_into().map_err(|_| ios::Error::Invalid)?,
-                ),
-                acmd12_response: u32::from_be_bytes(
-                    out_buf[12..16]
-                        .try_into()
-                        .map_err(|_| ios::Error::Invalid)?,
-                ),
-            };
-
+            let resp = Response::from_bytes(&out_buf);
             Ok(resp)
         }
 
         /// Read SD card status returning the relative card address
+        /// # Errors
+        /// See [`ios::Error`]
         pub fn get_status(&mut self) -> Result<u32, ios::Error> {
             let mut buffer = [0u8; 4];
             ios::ioctl(
@@ -451,6 +465,8 @@ mod dev {
         }
 
         /// Get operation conditions register
+        /// # Errors
+        /// See [`ios::Error`]
         pub fn get_operating_conditions_register(&mut self) -> Result<u32, ios::Error> {
             let mut buffer = [0u8; 4];
             ios::ioctl(
