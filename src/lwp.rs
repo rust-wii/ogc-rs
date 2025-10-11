@@ -50,9 +50,18 @@ impl Thread {
         }
     }
 
-    /// Set the priority of this thread.
-    pub fn set_priority(&self, prio: u8) {
-        unsafe { ffi::LWP_SetThreadPriority(self.handle, prio as u32) }
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "libogc2")] {
+            /// Set the priority of this thread.
+            pub fn set_priority(&self, prio: u8) -> i32 {
+                unsafe { ffi::LWP_SetThreadPriority(self.handle, prio) }
+            }
+        } else if #[cfg(feature = "libogc")] {
+            /// Set the priority of this thread.
+            pub fn set_priority(&self, prio: u8) {
+                unsafe { ffi::LWP_SetThreadPriority(self.handle, prio as u32) }
+            }
+        }
     }
 
     /// Join this thread.
@@ -167,23 +176,52 @@ impl Queue {
         }
     }
 
-    /// Removes all blocked threads from the thread synchronization queue and sets them back to
-    /// running state.
-    pub fn broadcast(&self) {
-        unsafe { ffi::LWP_ThreadBroadcast(self.handle) }
-    }
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "libogc2")] {
+            /// Removes all blocked threads from the thread synchronization queue and sets them back to
+            /// running state.
+            pub fn broadcast(&self) -> i32 {
+                unsafe { ffi::LWP_ThreadBroadcast(self.handle) }
+            }
 
-    /// Signals one thread to be revmoved from the thread synchronization queue and sets it back to
-    /// running state.
-    pub fn signal(&self) {
-        unsafe { ffi::LWP_ThreadSignal(self.handle) }
+            /// Signals one thread to be revmoved from the thread synchronization queue and sets it back to
+            /// running state.
+            pub fn signal(&self) -> i32 {
+                unsafe { ffi::LWP_ThreadSignal(self.handle) }
+            }
+        } else if #[cfg(feature = "libogc")] {
+            /// Removes all blocked threads from the thread synchronization queue and sets them back to
+            /// running state.
+            pub fn broadcast(&self) {
+                unsafe { ffi::LWP_ThreadBroadcast(self.handle) }
+            }
+
+            /// Signals one thread to be revmoved from the thread synchronization queue and sets it back to
+            /// running state.
+            pub fn signal(&self) {
+                unsafe { ffi::LWP_ThreadSignal(self.handle) }
+            }
+        }
     }
 }
 
 impl Drop for Queue {
-    /// Close the thread synchronization queue and release the handle.
-    fn drop(&mut self) {
-        unsafe { ffi::LWP_CloseQueue(self.handle) }
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "libogc2")] {
+            /// Close the thread synchronization queue and release the handle.
+            fn drop(&mut self) {
+                unsafe { ffi::LWP_CloseQueue(self.handle); }
+            }
+        } else if #[cfg(feature = "libogc")] {
+            /// Close the thread synchronization queue and release the handle.
+            fn drop(&mut self) {
+                unsafe { ffi::LWP_CloseQueue(self.handle) }
+            }
+        } else {
+            fn drop(&mut self) {
+                unimplemented!()
+            }
+        }
     }
 }
 
@@ -198,14 +236,28 @@ pub fn yield_now() {
     unsafe { ffi::LWP_YieldThread() }
 }
 
-/// Set the priority of the current thread.
-pub fn set_priority(prio: u8) {
-    unsafe { ffi::LWP_SetThreadPriority(ffi::LWP_THREAD_NULL, prio as u32) }
-}
+cfg_if::cfg_if! {
+    if #[cfg(feature = "libogc2")] {
+        /// Set the priority of the current thread.
+        pub fn set_priority(prio: u8) -> i32 {
+            unsafe { ffi::LWP_SetThreadPriority(ffi::LWP_THREAD_NULL, prio) }
+        }
 
-/// Reschedule all threads running at the given priority.
-pub fn reschedule(prio: u8) {
-    unsafe { ffi::LWP_Reschedule(prio as u32) }
+        /// Reschedule all threads running at the given priority.
+        pub fn reschedule(prio: u8) {
+            unsafe { ffi::LWP_Reschedule(prio) }
+        }
+    } else if #[cfg(feature = "libogc")] {
+        /// Set the priority of the current thread.
+        pub fn set_priority(prio: u8) {
+            unsafe { ffi::LWP_SetThreadPriority(ffi::LWP_THREAD_NULL, prio as u32) }
+        }
+
+        /// Reschedule all threads running at the given priority.
+        pub fn reschedule(prio: u8) {
+            unsafe { ffi::LWP_Reschedule(prio as u32) }
+        }
+    }
 }
 
 /// Pushes the current thread onto the given thread synchronization queue and sets the thread state

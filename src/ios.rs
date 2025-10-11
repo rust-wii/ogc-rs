@@ -2,6 +2,7 @@
 #![warn(clippy::pedantic)]
 //#![allow(clippy::missing_errors_doc)]
 
+use crate::ffi;
 use core::{ffi::CStr, fmt::Display};
 
 /// Dolphin IOS Device
@@ -155,7 +156,7 @@ pub fn open(file_path: &CStr, file_mode: Mode) -> Result<FileDescriptor, Error> 
         return Err(Error::FilePathLengthTooLong);
     }
 
-    match unsafe { ogc_sys::IOS_Open(file_path.as_ptr().cast(), file_mode.into()) } {
+    match unsafe { ffi::IOS_Open(file_path.as_ptr().cast(), file_mode.into()) } {
         val if { val == -4 || val == -5 || val == -6 || val == -8 || val == -22 } => {
             Err(Error::try_from(val).map_err(|()| Error::UnknownErrorCode(val))?)
         }
@@ -169,7 +170,7 @@ pub fn open(file_path: &CStr, file_mode: Mode) -> Result<FileDescriptor, Error> 
 /// See [`Error`]
 ///
 pub fn close(fd: FileDescriptor) -> Result<(), Error> {
-    match unsafe { ogc_sys::IOS_Close(fd.0) } {
+    match unsafe { ffi::IOS_Close(fd.0) } {
         val if { val == -4 || val == -5 || val == -6 || val == -8 || val == -22 } => {
             Err(Error::try_from(val).map_err(|()| Error::UnknownErrorCode(val))?)
         }
@@ -188,7 +189,7 @@ pub fn close(fd: FileDescriptor) -> Result<(), Error> {
 pub fn read(fd: FileDescriptor, buf: &mut [u8]) -> Result<i32, Error> {
     let (ptr, len) = (buf.as_mut_ptr(), buf.len());
     match unsafe {
-        ogc_sys::IOS_Read(
+        ffi::IOS_Read(
             fd.0,
             ptr.cast(),
             len.try_into().map_err(|_| Error::BufferTooLong(len))?,
@@ -212,7 +213,7 @@ pub fn read(fd: FileDescriptor, buf: &mut [u8]) -> Result<i32, Error> {
 pub fn write(fd: FileDescriptor, buf: &[u8]) -> Result<i32, Error> {
     let (ptr, len) = (buf.as_ptr(), buf.len());
     match unsafe {
-        ogc_sys::IOS_Write(
+        ffi::IOS_Write(
             fd.0,
             ptr.cast(),
             len.try_into().map_err(|_| Error::BufferTooLong(len))?,
@@ -254,7 +255,7 @@ impl From<SeekMode> for i32 {
 /// See [`Error`]
 ///
 pub fn seek(fd: FileDescriptor, offset: i32, mode: SeekMode) -> Result<(), Error> {
-    match unsafe { ogc_sys::IOS_Seek(fd.0, offset, mode.into()) } {
+    match unsafe { ffi::IOS_Seek(fd.0, offset, mode.into()) } {
         val if { val == -4 || val == -5 || val == -6 || val == -8 || val == -22 } => {
             Err(Error::try_from(val).map_err(|()| Error::UnknownErrorCode(val))?)
         }
@@ -281,7 +282,7 @@ pub fn ioctl<IOCTL: Into<i32>>(
     let (out_ptr, out_len) = (buf_out.as_mut_ptr(), buf_out.len());
     // SAFETY: I promise in_buf does not get modified
     match unsafe {
-        ogc_sys::IOS_Ioctl(
+        ffi::IOS_Ioctl(
             fd.0,
             io_s32,
             in_ptr.cast_mut().cast(),
@@ -321,7 +322,7 @@ pub fn ioctlv<
     buf_ins: &[&[u8]],
     buf_outs: &mut [&mut [u8]],
 ) -> Result<i32, Error> {
-    type Ioctlv = ogc_sys::_ioctlv;
+    type Ioctlv = ffi::_ioctlv;
     debug_assert!(buf_ins.len() == COUNT_IN);
     debug_assert!(buf_outs.len() == COUNT_OUT);
     debug_assert!(COUNT_IN + COUNT_OUT == COUNT_IN_OUT);
@@ -352,7 +353,7 @@ pub fn ioctlv<
     }
 
     match unsafe {
-        ogc_sys::IOS_Ioctlv(
+        ffi::IOS_Ioctlv(
             fd.0,
             ioctl.into(),
             COUNT_IN
@@ -392,7 +393,7 @@ pub fn ioctlv_reboot<
     buf_ins: &[&[u8]],
     buf_outs: &mut [&mut [u8]],
 ) -> Result<(), Error> {
-    type Ioctlv = ogc_sys::_ioctlv;
+    type Ioctlv = ffi::_ioctlv;
     debug_assert!(buf_ins.len() == COUNT_IN);
     debug_assert!(buf_outs.len() == COUNT_OUT);
     debug_assert!(COUNT_IN + COUNT_OUT == COUNT_IN_OUT);
@@ -423,7 +424,7 @@ pub fn ioctlv_reboot<
     }
 
     match unsafe {
-        ogc_sys::IOS_IoctlvReboot(
+        ffi::IOS_IoctlvReboot(
             fd.0,
             ioctl.into(),
             COUNT_IN
@@ -463,7 +464,7 @@ pub fn ioctlv_reboot_background<
     buf_ins: &[&[u8]],
     buf_outs: &mut [&mut [u8]],
 ) -> Result<(), Error> {
-    type Ioctlv = ogc_sys::_ioctlv;
+    type Ioctlv = ffi::_ioctlv;
     debug_assert!(buf_ins.len() == COUNT_IN);
     debug_assert!(buf_outs.len() == COUNT_OUT);
     debug_assert!(COUNT_IN + COUNT_OUT == COUNT_IN_OUT);
@@ -494,7 +495,7 @@ pub fn ioctlv_reboot_background<
     }
 
     match unsafe {
-        ogc_sys::IOS_IoctlvRebootBackground(
+        ffi::IOS_IoctlvRebootBackground(
             fd.0,
             ioctl.into(),
             COUNT_IN

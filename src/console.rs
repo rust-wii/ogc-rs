@@ -50,10 +50,21 @@ impl Console {
         }
     }
 
-    /// Enable or disable the USB gecko console.
-    pub fn enable_gecko(channel: i32, safe: i32) {
-        unsafe {
-            ffi::CON_EnableGecko(channel, safe);
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "libogc2")] {
+            /// Enable or disable the USB gecko console.
+            pub fn enable_gecko(channel: i32, safe: bool) {
+                unsafe {
+                    ffi::CON_EnableGecko(channel, safe);
+                }
+            }
+        } else if #[cfg(feature = "libogc")] {
+            /// Enable or disable the USB gecko console.
+            pub fn enable_gecko(channel: i32, safe: i32) {
+                unsafe {
+                    ffi::CON_EnableGecko(channel, safe);
+                }
+            }
         }
     }
 

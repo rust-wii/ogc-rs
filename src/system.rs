@@ -65,45 +65,68 @@ pub struct FontHeader {
     pub sheet_fullsize: u32,
 }
 
-impl From<&mut FontHeader> for *mut ffi::sys_fontheader {
-    fn from(head: &mut FontHeader) -> *mut ffi::sys_fontheader {
-        Box::into_raw(Box::new(ffi::sys_fontheader {
-            font_type: head.font_type,
-            first_char: head.first_char,
-            last_char: head.last_char,
-            inval_char: head.inval_char,
-            asc: head.asc,
-            desc: head.desc,
-            width: head.width,
-            leading: head.leading,
-            cell_width: head.cell_dimensions.0,
-            cell_height: head.cell_dimensions.1,
-            sheet_size: head.sheet_size,
-            sheet_format: head.sheet_format,
-            sheet_column: head.sheet_colrow.0,
-            sheet_row: head.sheet_colrow.1,
-            sheet_width: head.sheet_dimensions.0,
-            sheet_height: head.sheet_dimensions.1,
-            width_table: head.width_table,
-            sheet_image: head.sheet_image,
-            sheet_fullsize: head.sheet_fullsize,
+impl FontHeader {
+    fn to_sys_fontheader(&self) -> ffi::sys_fontheader {
+        ffi::sys_fontheader {
+            font_type: self.font_type,
+            first_char: self.first_char,
+            last_char: self.last_char,
+            inval_char: self.inval_char,
+            asc: self.asc,
+            desc: self.desc,
+            width: self.width,
+            leading: self.leading,
+            cell_width: self.cell_dimensions.0,
+            cell_height: self.cell_dimensions.1,
+            sheet_size: self.sheet_size,
+            sheet_format: self.sheet_format,
+            sheet_column: self.sheet_colrow.0,
+            sheet_row: self.sheet_colrow.1,
+            sheet_width: self.sheet_dimensions.0,
+            sheet_height: self.sheet_dimensions.1,
+            width_table: self.width_table,
+            sheet_image: self.sheet_image,
+            sheet_fullsize: self.sheet_fullsize,
             c0: 0,
             c1: 0,
             c2: 0,
             c3: 0,
-        }))
+        }
+    }
+}
+
+impl From<&mut FontHeader> for *mut ffi::sys_fontheader {
+    fn from(head: &mut FontHeader) -> *mut ffi::sys_fontheader {
+        Box::into_raw(Box::new(head.to_sys_fontheader()))
     }
 }
 
 /// Implementation of the system service.
 impl System {
-    /// Allocate cacheline aligned memory for the external
-    /// framebuffer based on the rendermode object.
-    ///
-    /// This function returns a pointer to the framebuffer's startaddress which
-    /// is aligned to a 32 byte boundary.
-    pub fn allocate_framebuffer(render_mode: &RenderConfig) -> *mut c_void {
-        unsafe { ffi::SYS_AllocateFramebuffer(render_mode.into()) }
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "libogc")] {
+            /// Allocate cacheline aligned memory for the external
+            /// framebuffer based on the rendermode object.
+            ///
+            /// This function returns a pointer to the framebuffer's startaddress which
+            /// is aligned to a 32 byte boundary.
+            pub fn allocate_framebuffer(render_mode: &RenderConfig) -> *mut c_void {
+                unsafe { ffi::SYS_AllocateFramebuffer(render_mode.into()) }
+            }
+        } else if #[cfg(feature = "libogc2")] {
+            /// Allocate cacheline aligned memory for the external
+            /// framebuffer based on the rendermode object.
+            ///
+            /// This function returns a pointer to the framebuffer's startaddress which
+            /// is aligned to a 32 byte boundary.
+            pub fn allocate_framebuffer(render_mode: &RenderConfig) -> *mut c_void {
+                unsafe { ffi::SYS_AllocateFramebuffer(render_mode.into()) }
+            }
+        } else {
+            pub fn allocate_framebuffer(render_mode: &RenderConfig) -> *mut c_void {
+                unimplemented!()
+            }
+        }
     }
 
     /// Create and initialize sysalarm structure.
@@ -263,9 +286,18 @@ impl System {
         ffi::SYS_GetFontTexture(c, image, xpos, ypos, width);
     }
 
-    /// Get Font Encoding
-    pub fn get_font_encoding() -> u32 {
-        unsafe { ffi::SYS_GetFontEncoding() }
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "libogc2")] {
+            /// Get Font Encoding
+            pub fn get_font_encoding() -> u16 {
+                unsafe { ffi::SYS_GetFontEncoding() }
+            }
+        } else if #[cfg(feature = "libogc")] {
+            /// Get Font Encoding
+            pub fn get_font_encoding() -> u32 {
+                unsafe { ffi::SYS_GetFontEncoding() }
+            }
+        }
     }
 
     /// Get Arena 1 Lo
@@ -390,14 +422,26 @@ impl System {
         unsafe { ffi::SYS_ResetButtonDown() }
     }
 
-    /// Set Reset Callback
-    ///
-    /// Note: `ctx` is always null in the current version of libogc,
-    /// but is still a required parameter.
-    pub fn set_reset_callback(callback: extern "C" fn(irq: u32, ctx: *mut c_void)) {
-        unsafe {
-            // TODO: Do something with the returned callback.
-            let _ = ffi::SYS_SetResetCallback(Some(callback));
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "libogc2")] {
+            /// Set Reset Callback
+            pub fn set_reset_callback(callback: extern "C" fn()) {
+                unsafe {
+                    // TODO: Do something with the returned callback.
+                    let _ = ffi::SYS_SetResetCallback(Some(callback));
+                }
+            }
+        } else if #[cfg(feature = "libogc")] {
+            /// Set Reset Callback
+            ///
+            /// Note: `ctx` is always null in the current version of libogc,
+            /// but is still a required parameter.
+            pub fn set_reset_callback(callback: extern "C" fn(irq: u32, ctx: *mut c_void)) {
+                unsafe {
+                    // TODO: Do something with the returned callback.
+                    let _ = ffi::SYS_SetResetCallback(Some(callback));
+                }
+            }
         }
     }
 
@@ -439,6 +483,7 @@ impl System {
     }
 
     /// Get system time.
+    #[cfg(all(feature = "libogc", not(feature = "libogc2")))]
     pub fn system_time() -> u64 {
         unsafe { ffi::SYS_Time() }
     }

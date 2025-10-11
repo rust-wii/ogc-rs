@@ -159,16 +159,30 @@ impl Audio {
         }
     }
 
-    /// Set the sampling rate for the DSP interface.
-    fn set_dsp_samplerate(samplerate: SampleRate) {
-        // TODO: Check implementation.
-        let sample_rate: u32 = samplerate.into();
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "libogc2")] {
+            /// Set the sampling rate for the DSP interface.
+            fn set_dsp_samplerate(samplerate: SampleRate) {
+                // TODO: Check implementation.
+                let sample_rate: u32 = samplerate.into();
 
-        unsafe {
-            ffi::AUDIO_SetDSPSampleRate(sample_rate as u8);
+                unsafe {
+                    ffi::AUDIO_SetDSPSampleRate(sample_rate);
+                }
+            }
+        } else if #[cfg(feature = "libogc")] {
+            /// Set the sampling rate for the DSP interface.
+            fn set_dsp_samplerate(samplerate: SampleRate) {
+                // TODO: Check implementation.
+                let sample_rate: u32 = samplerate.into();
+
+                unsafe {
+                    ffi::AUDIO_SetDSPSampleRate(sample_rate as u8);
+                }
+            }
         }
     }
-
+    
     /// Get the play state from the streaming audio interface.
     fn get_playstate() -> PlayState {
         let r = unsafe { ffi::AUDIO_GetStreamPlayState() };

@@ -25,23 +25,35 @@ pub struct RenderConfig {
     pub v_filter: [u8; 7usize],
 }
 
+impl RenderConfig {
+    fn to_gxrmodeobj(self) -> ffi::GXRModeObj {
+        ffi::GXRModeObj {
+            viTVMode: self.tv_type,
+            fbWidth: self.framebuffer_width,
+            efbHeight: self.embed_framebuffer_height,
+            xfbHeight: self.extern_framebuffer_height,
+            viXOrigin: self.vi_x_origin,
+            viYOrigin: self.vi_y_origin,
+            viWidth: self.vi_width,
+            viHeight: self.vi_height,
+            xfbMode: self.extern_framebuffer_mode,
+            field_rendering: self.field_rendering,
+            aa: self.anti_aliasing,
+            sample_pattern: self.sample_pattern,
+            vfilter: self.v_filter,
+        }
+    }
+}
+
 impl From<&RenderConfig> for *mut ffi::GXRModeObj {
     fn from(cfg: &RenderConfig) -> *mut ffi::GXRModeObj {
-        Box::into_raw(Box::new(ffi::GXRModeObj {
-            viTVMode: cfg.tv_type,
-            fbWidth: cfg.framebuffer_width,
-            efbHeight: cfg.embed_framebuffer_height,
-            xfbHeight: cfg.extern_framebuffer_height,
-            viXOrigin: cfg.vi_x_origin,
-            viYOrigin: cfg.vi_y_origin,
-            viWidth: cfg.vi_width,
-            viHeight: cfg.vi_height,
-            xfbMode: cfg.extern_framebuffer_mode,
-            field_rendering: cfg.field_rendering,
-            aa: cfg.anti_aliasing,
-            sample_pattern: cfg.sample_pattern,
-            vfilter: cfg.v_filter,
-        }))
+        Box::into_raw(Box::new(cfg.to_gxrmodeobj()))
+    }
+}
+
+impl From<&RenderConfig> for *const ffi::GXRModeObj {
+    fn from(cfg: &RenderConfig) -> *const ffi::GXRModeObj {
+        Box::into_raw(Box::new(cfg.to_gxrmodeobj()))
     }
 }
 
@@ -172,7 +184,7 @@ impl Video {
 
     /// # Safety
     ///
-    /// The user must ensure this pointer to to valid framebuffer data
+    /// The user must ensure this pointer to a valid framebuffer data
     pub unsafe fn set_next_framebuffer(framebuffer: *mut c_void) {
         ffi::VIDEO_SetNextFramebuffer(framebuffer);
     }
