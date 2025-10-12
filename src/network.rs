@@ -383,48 +383,97 @@ impl Socket {
         }
     }
 
-    /// Write to the file descriptor, in this case the socket.
-    pub fn write(descriptor: i32, buffer: &[u8], count: i32) -> Result<i32> {
-        let r = unsafe { ffi::net_write(descriptor, buffer.as_ptr() as *const c_void, count) };
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "libogc2")] {
+            /// Write to the file descriptor, in this case the socket.
+            pub fn write(descriptor: i32, buffer: &[u8], count: usize) -> Result<i32> {
+                let r = unsafe { ffi::net_write(descriptor, buffer.as_ptr() as *const c_void, count) };
 
-        if r < 0 {
-            Err(OgcError::Network(format!("network writing failure: {r}")))
-        } else {
-            Ok(r)
-        }
-    }
+                if r < 0 {
+                    Err(OgcError::Network(format!("network writing failure: {r}")))
+                } else {
+                    Ok(r)
+                }
+            }
 
-    /// Send data over stream sockets or CONNECTED datagram sockets.
-    pub fn send(descriptor: i32, buffer: &[u8], length: i32, flags: u32) -> Result<i32> {
-        let r =
-            unsafe { ffi::net_send(descriptor, buffer.as_ptr() as *const c_void, length, flags) };
+            /// Send data over stream sockets or CONNECTED datagram sockets.
+            pub fn send(descriptor: i32, buffer: &[u8], length: usize, flags: u32) -> Result<i32> {
+                let r =
+                    unsafe { ffi::net_send(descriptor, buffer.as_ptr() as *const c_void, length, flags) };
 
-        if r < 0 {
-            Err(OgcError::Network(format!("network sending failure: {r}")))
-        } else {
-            Ok(r)
-        }
-    }
+                if r < 0 {
+                    Err(OgcError::Network(format!("network sending failure: {r}")))
+                } else {
+                    Ok(r)
+                }
+            }
 
-    /// Read from the file descriptor, in this case the socket.
-    pub fn read(descriptor: i32, buffer: &mut [u8], count: i32) -> Result<i32> {
-        let r = unsafe { ffi::net_read(descriptor, buffer.as_ptr() as *mut c_void, count) };
+            /// Read from the file descriptor, in this case the socket.
+            pub fn read(descriptor: i32, buffer: &mut [u8], count: usize) -> Result<i32> {
+                let r = unsafe { ffi::net_read(descriptor, buffer.as_ptr() as *mut c_void, count) };
 
-        if r < 0 {
-            Err(OgcError::Network(format!("network reading failure: {r}")))
-        } else {
-            Ok(r)
-        }
-    }
+                if r < 0 {
+                    Err(OgcError::Network(format!("network reading failure: {r}")))
+                } else {
+                    Ok(r)
+                }
+            }
 
-    /// Receive data over stream sockets or CONNECTED datagram sockets.
-    pub fn recieve(descriptor: i32, buffer: &mut [u8], length: i32, flags: u32) -> Result<i32> {
-        let r = unsafe { ffi::net_recv(descriptor, buffer.as_ptr() as *mut c_void, length, flags) };
+            /// Receive data over stream sockets or CONNECTED datagram sockets.
+            pub fn recieve(descriptor: i32, buffer: &mut [u8], length: usize, flags: u32) -> Result<i32> {
+                let r = unsafe { ffi::net_recv(descriptor, buffer.as_ptr() as *mut c_void, length, flags) };
 
-        if r < 0 {
-            Err(OgcError::Network(format!("network recieve failure: {r}")))
-        } else {
-            Ok(r)
+                if r < 0 {
+                    Err(OgcError::Network(format!("network receive failure: {r}")))
+                } else {
+                    Ok(r)
+                }
+            }
+        } else if #[cfg(feature = "libogc")] {
+            /// Write to the file descriptor, in this case the socket.
+            pub fn write(descriptor: i32, buffer: &[u8], count: i32) -> Result<i32> {
+                let r = unsafe { ffi::net_write(descriptor, buffer.as_ptr() as *const c_void, count) };
+
+                if r < 0 {
+                    Err(OgcError::Network(format!("network writing failure: {r}")))
+                } else {
+                    Ok(r)
+                }
+            }
+
+            /// Send data over stream sockets or CONNECTED datagram sockets.
+            pub fn send(descriptor: i32, buffer: &[u8], length: i32, flags: u32) -> Result<i32> {
+                let r =
+                    unsafe { ffi::net_send(descriptor, buffer.as_ptr() as *const c_void, length, flags) };
+
+                if r < 0 {
+                    Err(OgcError::Network(format!("network sending failure: {r}")))
+                } else {
+                    Ok(r)
+                }
+            }
+
+            /// Read from the file descriptor, in this case the socket.
+            pub fn read(descriptor: i32, buffer: &mut [u8], count: i32) -> Result<i32> {
+                let r = unsafe { ffi::net_read(descriptor, buffer.as_ptr() as *mut c_void, count) };
+
+                if r < 0 {
+                    Err(OgcError::Network(format!("network reading failure: {r}")))
+                } else {
+                    Ok(r)
+                }
+            }
+
+            /// Receive data over stream sockets or CONNECTED datagram sockets.
+            pub fn recieve(descriptor: i32, buffer: &mut [u8], length: i32, flags: u32) -> Result<i32> {
+                let r = unsafe { ffi::net_recv(descriptor, buffer.as_ptr() as *mut c_void, length, flags) };
+
+                if r < 0 {
+                    Err(OgcError::Network(format!("network receive failure: {r}")))
+                } else {
+                    Ok(r)
+                }
+            }
         }
     }
 }

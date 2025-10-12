@@ -1,0 +1,20 @@
+[package]
+name = "ogc2-sys"
+version = "0.1.0"
+authors = ["rust-wii"]
+edition = "2021"
+license = "MIT"
+readme = "README.md"
+description = "Rust bindings for Extrems's fork of libogc"
+documentation = "https://docs.rs/ogc2-sys/"
+homepage = "https://github.com/rust-wii/ogc-rs"
+repository = "https://github.com/rust-wii/ogc-rs"
+keywords = ["wii", "embedded", "no-std"]
+
+[dependencies]
+libc = "0.2"
+
+[build-dependencies]
+bindgen = "0.72.1"
+doxygen-rs = "0.4"
+regex = "1.5"

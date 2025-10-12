@@ -614,7 +614,7 @@ impl Light {
     /// vector set by [`Light::specular_dir()`].
     pub fn attn(&mut self, a0: f32, a1: f32, a2: f32, k0: f32, k1: f32, k2: f32) -> &mut Self {
         unsafe {
-            ogc_sys::GX_InitLightAttn(&mut self.0, a0, a1, a2, k0, k1, k2);
+            ffi::GX_InitLightAttn(&mut self.0, a0, a1, a2, k0, k1, k2);
         }
         self
     }

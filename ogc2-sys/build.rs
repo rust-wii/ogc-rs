@@ -1,5 +1,3 @@
-extern crate bindgen;
-
 use bindgen::callbacks::ParseCallbacks;
 use regex::Regex;
 use std::env;
@@ -55,7 +53,6 @@ fn get_clang_version() -> String {
         };
 
         // Parse the version string using Regex.
-
         let regex = Regex::new(r"(?m)\d+(?:\.\d+)+").unwrap();
         let result = regex.captures(first_line).unwrap().get(0); // Attempt to join together the version string.
 
@@ -76,7 +73,7 @@ fn get_clang_version() -> String {
 
 fn main() {
     // docs.rs and CI don't require linking or updating ogc.rs (and will always fail if we try to)
-    if env::var("DOCS_RS").is_ok() || env::var("CI").is_ok() {
+    if std::env::var("DOCS_RS").is_ok() || std::env::var("CI").is_ok() {
         return;
     }
 
@@ -85,7 +82,11 @@ fn main() {
         "cargo:rustc-link-search=native={}/devkitPPC/powerpc-eabi/lib",
         dkp_path
     );
-    println!("cargo:rustc-link-search=native={}/libogc/lib/wii", dkp_path);
+    println!(
+        "cargo:rustc-link-search=native={}/portlibs/ppc/lib",
+        dkp_path
+    );
+    println!("cargo:rustc-link-search=native={}/libogc2/lib/wii", dkp_path);
 
     println!("cargo:rustc-link-lib=static=c");
     println!("cargo:rustc-link-lib=static=sysbase");
@@ -124,7 +125,7 @@ fn main() {
 
     let mut bindings = bindgen::Builder::default()
         .header("wrapper.h")
-        .rust_target(bindgen::RustTarget::Nightly)
+        .rust_target(bindgen::RustTarget::nightly())
         .use_core()
         .trust_clang_mangling(false)
         .layout_tests(false)
@@ -151,7 +152,8 @@ fn main() {
     });
 
     let bindings = bindings
-        .clang_arg(format!("-I{}/libogc/include", dkp_path))
+        .clang_arg(format!("-I{}/portlibs/ppc/include", dkp_path))
+        .clang_arg(format!("-I{}/libogc2/include", dkp_path))
         .clang_arg("-mfloat-abi=hard")
         .clang_arg("-nostdinc")
         .clang_arg("-Wno-macro-redefined")

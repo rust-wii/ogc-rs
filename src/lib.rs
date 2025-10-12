@@ -91,6 +91,7 @@ pub mod mutex;
 pub mod cache;
 
 // TPL implementation
+#[cfg(all(feature = "libogc", not(feature = "libogc2")))]
 pub mod tpl;
 
 pub mod time;
@@ -99,11 +100,20 @@ pub mod time;
 pub mod glam_impl;
 
 // FFI
+#[cfg(all(feature = "libogc", feature = "libogc2"))]
+compile_error!("Features `libogc` and `libogc2` cannot be enabled at the same time.");
+
 cfg_if::cfg_if! {
-    if #[cfg(feature = "ffi")] {
+    if #[cfg(all(feature = "libogc2", feature = "ffi"))] {
+        pub use ogc2_sys as ffi;
+    } else if #[cfg(all(feature = "libogc", feature = "ffi"))] {
         pub use ogc_sys as ffi;
-    } else {
+    } else if #[cfg(feature = "libogc2")] {
+        use ogc2_sys as ffi;
+    } else if #[cfg(feature = "libogc")] {
         use ogc_sys as ffi;
+    } else {
+        compile_error!("Either feature \"libogc\" or \"libogc2\" must be enabled for this crate.");
     }
 }
 

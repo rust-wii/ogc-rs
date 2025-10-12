@@ -59,11 +59,23 @@ impl Aesnd {
         unsafe { ffi::AESND_GetDSPProcessUsage() }
     }
 
-    pub fn register_audio_callback<F>(
-        callback: Option<unsafe extern "C" fn(*mut c_void, u32, *mut c_void)>,
-    ) {
-        unsafe {
-            ffi::AESND_RegisterAudioCallbackWithArg(callback, core::ptr::null_mut());
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "libogc2")] {
+            pub fn register_audio_callback<F>(
+                callback: Option<unsafe extern "C" fn(*mut c_void, u32)>,
+            ) {
+                unsafe {
+                    ffi::AESND_RegisterAudioCallback(callback);
+                }
+            }
+        } else if #[cfg(feature = "libogc")] {
+            pub fn register_audio_callback<F>(
+                callback: Option<unsafe extern "C" fn(*mut c_void, u32, *mut c_void)>,
+            ) {
+                unsafe {
+                    ffi::AESND_RegisterAudioCallbackWithArg(callback, core::ptr::null_mut());
+                }
+            }
         }
     }
 
@@ -97,12 +109,22 @@ impl Aesnd {
         }
     }
 
-    pub fn set_voice_frequency(play_state: &mut AESNDPB, frequency: f32) {
-        unsafe {
-            ffi::AESND_SetVoiceFrequency(play_state, frequency);
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "libogc2")] {
+            pub fn set_voice_frequency(play_state: &mut AESNDPB, frequency: u32) {
+                unsafe {
+                    ffi::AESND_SetVoiceFrequency(play_state, frequency);
+                }
+            }
+        } else if #[cfg(feature = "libogc")] {
+            pub fn set_voice_frequency(play_state: &mut AESNDPB, frequency: f32) {
+                unsafe {
+                    ffi::AESND_SetVoiceFrequency(play_state, frequency);
+                }
+            }
         }
     }
-
+    
     pub fn set_voice_volume(play_state: &mut AESNDPB, volume: (f32, f32)) {
         unsafe {
             ffi::AESND_SetVoiceVolume(
@@ -146,56 +168,113 @@ impl Aesnd {
         }
     }
 
-    pub fn play_voice(
-        play_state: &mut AESNDPB,
-        format: AudioFormat,
-        buffer: &[u8],
-        frequency: f32,
-        delay: u32,
-        loop_: bool,
-    ) {
-        if buffer.as_ptr().align_offset(32) == 0 && buffer.len().is_multiple_of(32) {
-            unsafe {
-                ffi::AESND_PlayVoice(
-                    play_state,
-                    format as u32,
-                    buffer.as_ptr() as *const c_void,
-                    buffer.len().try_into().unwrap(),
-                    frequency,
-                    delay,
-                    loop_,
-                );
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "libogc2")] {
+            pub fn play_voice(
+                play_state: &mut AESNDPB,
+                format: AudioFormat,
+                buffer: &[u8],
+                frequency: u32,
+                delay: u32,
+                loop_: bool,
+            ) {
+                if buffer.as_ptr().align_offset(32) == 0 && buffer.len().is_multiple_of(32) {
+                    unsafe {
+                        ffi::AESND_PlayVoice(
+                            play_state,
+                            format as u32,
+                            buffer.as_ptr() as *const c_void,
+                            buffer.len().try_into().unwrap(),
+                            frequency,
+                            delay,
+                            loop_,
+                        );
+                    }
+                } else {
+                    let align_buf = crate::utils::alloc_aligned_buffer(buffer);
+                    assert!(
+                        align_buf.len().is_multiple_of(32),
+                        "Buffer is not padded to 32 bytes"
+                    );
+                    unsafe {
+                        ffi::AESND_PlayVoice(
+                            play_state,
+                            format as u32,
+                            align_buf.as_ptr() as *const c_void,
+                            align_buf.len().try_into().unwrap(),
+                            frequency,
+                            delay,
+                            loop_,
+                        );
+                    }
+                }
             }
-        } else {
-            let align_buf = crate::utils::alloc_aligned_buffer(buffer);
-            assert!(
-                align_buf.len().is_multiple_of(32),
-                "Buffer is not padded to 32 bytes"
-            );
-            unsafe {
-                ffi::AESND_PlayVoice(
-                    play_state,
-                    format as u32,
-                    align_buf.as_ptr() as *const c_void,
-                    align_buf.len().try_into().unwrap(),
-                    frequency,
-                    delay,
-                    loop_,
-                );
+
+            pub fn register_voice_callback(
+                play_state: &mut AESNDPB,
+                callback: Option<unsafe extern "C" fn(*mut AESNDPB, u32)>,
+            ) {
+                unsafe {
+                    ffi::AESND_RegisterVoiceCallback(play_state, callback);
+                }
+            }
+
+            pub fn new_playstate() -> AESNDPB {
+                unsafe { *ffi::AESND_AllocateVoice(None) }
+            }
+        } else if #[cfg(feature = "libogc")] {
+            pub fn play_voice(
+                play_state: &mut AESNDPB,
+                format: AudioFormat,
+                buffer: &[u8],
+                frequency: f32,
+                delay: u32,
+                loop_: bool,
+            ) {
+                if buffer.as_ptr().align_offset(32) == 0 && buffer.len().is_multiple_of(32) {
+                    unsafe {
+                        ffi::AESND_PlayVoice(
+                            play_state,
+                            format as u32,
+                            buffer.as_ptr() as *const c_void,
+                            buffer.len().try_into().unwrap(),
+                            frequency,
+                            delay,
+                            loop_,
+                        );
+                    }
+                } else {
+                    let align_buf = crate::utils::alloc_aligned_buffer(buffer);
+                    assert!(
+                        align_buf.len().is_multiple_of(32),
+                        "Buffer is not padded to 32 bytes"
+                    );
+                    unsafe {
+                        ffi::AESND_PlayVoice(
+                            play_state,
+                            format as u32,
+                            align_buf.as_ptr() as *const c_void,
+                            align_buf.len().try_into().unwrap(),
+                            frequency,
+                            delay,
+                            loop_,
+                        );
+                    }
+                }
+            }
+
+            pub fn register_voice_callback(
+                play_state: &mut AESNDPB,
+                callback: Option<unsafe extern "C" fn(*mut AESNDPB, u32, *mut c_void)>,
+            ) {
+                unsafe {
+                    ffi::AESND_RegisterVoiceCallbackWithArg(play_state, callback, core::ptr::null_mut());
+                }
+            }
+
+            pub fn new_playstate() -> AESNDPB {
+                unsafe { *ffi::AESND_AllocateVoiceWithArg(None, core::ptr::null_mut()) }
             }
         }
-    }
-
-    pub fn register_voice_callback(
-        play_state: &mut AESNDPB,
-        callback: Option<unsafe extern "C" fn(*mut AESNDPB, u32, *mut c_void)>,
-    ) {
-        unsafe {
-            ffi::AESND_RegisterVoiceCallbackWithArg(play_state, callback, core::ptr::null_mut());
-        }
-    }
-
-    pub fn new_playstate() -> AESNDPB {
-        unsafe { *ffi::AESND_AllocateVoiceWithArg(None, core::ptr::null_mut()) }
     }
 }

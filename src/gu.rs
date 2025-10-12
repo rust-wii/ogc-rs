@@ -41,8 +41,16 @@ impl Gu {
         unsafe { ffi::c_guVecScale(src, dest, scale) }
     }
 
-    pub fn vec_normalize(vector: &mut guVector) {
-        unsafe { ffi::c_guVecNormalize(vector) }
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "libogc2")] {
+            pub fn vec_normalize(vector: &mut guVector, unit: &mut guVector) {
+                unsafe { ffi::c_guVecNormalize(vector, unit) }
+            }
+        } else if #[cfg(feature = "libogc")] {
+            pub fn vec_normalize(vector: &mut guVector) {
+                unsafe { ffi::c_guVecNormalize(vector) }
+            }
+        }
     }
 
     pub fn vec_mult(mat: &mut Mtx34, src: &mut guVector, dest: &mut guVector) {
