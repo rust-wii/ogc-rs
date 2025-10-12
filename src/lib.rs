@@ -104,7 +104,11 @@ pub mod glam_impl;
 compile_error!("Features `libogc` and `libogc2` cannot be enabled at the same time.");
 
 cfg_if::cfg_if! {
-    if #[cfg(feature = "libogc2")] {
+    if #[cfg(all(feature = "libogc2", feature = "ffi"))] {
+        pub use ogc2_sys as ffi;
+    } else if #[cfg(all(feature = "libogc", feature = "ffi"))] {
+        pub use ogc_sys as ffi;
+    } else if #[cfg(feature = "libogc2")] {
         use ogc2_sys as ffi;
     } else if #[cfg(feature = "libogc")] {
         use ogc_sys as ffi;
