@@ -29,6 +29,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: check
+          args: -Zjson-target-spec
 
   lints:
     name: Lints
@@ -55,3 +56,4 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: clippy
+          args: -Zjson-target-spec
