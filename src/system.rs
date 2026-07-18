@@ -141,11 +141,11 @@ impl System {
 
     /// Set the alarm parameters for a one-shot alarm, add to the list of alarms and start.
     pub fn set_alarm<T>(
-        context: u32, 
-        fire_time: Duration, 
-        callback: extern "C" fn(alarm: u32, cb_arg: Option<&'static T>), 
-        cb_arg: Option<&'static T>
-    ) -> Result<()>{
+        context: u32,
+        fire_time: Duration,
+        callback: extern "C" fn(alarm: u32, cb_arg: Option<&'static T>),
+        cb_arg: Option<&'static T>,
+    ) -> Result<()> {
         // Convert Duration to timespec
         let timespec: *const ffi::timespec = &ffi::timespec {
             tv_sec: fire_time.as_secs() as i64,
@@ -156,20 +156,20 @@ impl System {
         // *mut T is ABI compatible with *mut U
         // if <T as Pointee>::Metadata == <U as Pointee>::Metadata.
         // For all Sized types, <T as Pointee>::Metadata = ().
-        let callback = unsafe { 
+        let callback = unsafe {
             mem::transmute::<
                 extern "C" fn(alarm: u32, cb_arg: Option<&'static T>),
-                extern "C" fn(alarm: u32, cb_arg: *mut c_void)
+                extern "C" fn(alarm: u32, cb_arg: *mut c_void),
             >(callback)
         };
-        let r = unsafe { ffi::SYS_SetAlarm(
-            context, 
-            timespec, 
-            Some(callback), 
-            cb_arg.map_or(ptr::null(), ptr::from_ref)
-                .cast_mut()
-                .cast()
-        ) };
+        let r = unsafe {
+            ffi::SYS_SetAlarm(
+                context,
+                timespec,
+                Some(callback),
+                cb_arg.map_or(ptr::null(), ptr::from_ref).cast_mut().cast(),
+            )
+        };
 
         if r < 0 {
             Err(OgcError::System("system failed to set alarm".into()))
@@ -186,44 +186,44 @@ impl System {
         time_period: Duration,
         callback: extern "C" fn(alarm: u32, cb_arg: Option<&'static T>),
         callback_data: Option<&'static T>,
-    ) -> Result<()>
-    {
-            // Convert Duration to timespec
-            let timespec_start: *const ffi::timespec = &ffi::timespec {
-                tv_sec: time_start.as_secs() as i64,
-                tv_nsec: time_start.as_nanos() as i32,
-            };
+    ) -> Result<()> {
+        // Convert Duration to timespec
+        let timespec_start: *const ffi::timespec = &ffi::timespec {
+            tv_sec: time_start.as_secs() as i64,
+            tv_nsec: time_start.as_nanos() as i32,
+        };
 
-            let timespec_period: *const ffi::timespec = &ffi::timespec {
-                tv_sec: time_period.as_secs() as i64,
-                tv_nsec: time_period.as_nanos() as i32,
-            };
-            // See set_alarm for safety explanation.
-            let callback = unsafe { 
-                mem::transmute::<
-                    extern "C" fn(alarm: u32, cb_arg: Option<&'static T>),
-                    extern "C" fn(alarm: u32, cb_arg: *mut c_void)
-                >(callback)
-            };
-            let r = unsafe {
-                ffi::SYS_SetPeriodicAlarm(
-                    context,
-                    timespec_start,
-                    timespec_period,
-                    Some(callback),
-                    callback_data.map_or(ptr::null(), ptr::from_ref)
-                        .cast_mut()
-                        .cast(),
-                )
-            };
+        let timespec_period: *const ffi::timespec = &ffi::timespec {
+            tv_sec: time_period.as_secs() as i64,
+            tv_nsec: time_period.as_nanos() as i32,
+        };
+        // See set_alarm for safety explanation.
+        let callback = unsafe {
+            mem::transmute::<
+                extern "C" fn(alarm: u32, cb_arg: Option<&'static T>),
+                extern "C" fn(alarm: u32, cb_arg: *mut c_void),
+            >(callback)
+        };
+        let r = unsafe {
+            ffi::SYS_SetPeriodicAlarm(
+                context,
+                timespec_start,
+                timespec_period,
+                Some(callback),
+                callback_data
+                    .map_or(ptr::null(), ptr::from_ref)
+                    .cast_mut()
+                    .cast(),
+            )
+        };
 
-            if r < 0 {
-                Err(OgcError::System(
-                    "system failed to set periodic alarm".into(),
-                ))
-            } else {
-                Ok(())
-            }
+        if r < 0 {
+            Err(OgcError::System(
+                "system failed to set periodic alarm".into(),
+            ))
+        } else {
+            Ok(())
+        }
     }
 
     /// Init Font
@@ -423,13 +423,6 @@ impl System {
                 bytes,
                 control.into(),
             );
-        }
-    }
-
-    /// Switch Fiber
-    pub fn switch_fiber(arg0: u32, arg1: u32, arg2: u32, arg3: u32, pc: u32, newsp: u32) {
-        unsafe {
-            ffi::SYS_SwitchFiber(arg0, arg1, arg2, arg3, pc, newsp);
         }
     }
 

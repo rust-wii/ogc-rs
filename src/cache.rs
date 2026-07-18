@@ -83,11 +83,3 @@ pub fn ic_freeze() {
 pub fn ic_unfreeze() {
     unsafe { ffi::ICUnfreeze() }
 }
-
-/// Performs an instruction cache synchronization.
-///
-/// This ensures that all instructions preceding this instruction have completed
-/// before this instruction completes.
-pub fn ic_sync() {
-    unsafe { ffi::ICSync() }
-}
