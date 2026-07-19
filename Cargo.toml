@@ -13,10 +13,6 @@ keywords = ["wii", "embedded", "no-std"]
 
 [lib]
 crate-type = ["rlib"]
-test = false
-bench = false
-doctest = false
-
 
 [features]
 default = ["default_alloc_handler", "default_panic_handler"]
