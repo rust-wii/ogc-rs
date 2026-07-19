@@ -2,7 +2,7 @@
 //!
 //! This module implements a safe wrapper around the OS functions found in ``system.h``.
 
-use crate::{ffi, video::RenderConfig, OgcError, Result};
+use crate::{OgcError, Result, ffi, video::RenderConfig};
 use alloc::boxed::Box;
 use core::{ffi::c_void, mem, ptr, time::Duration};
 use num_enum::IntoPrimitive;
@@ -245,7 +245,9 @@ impl System {
         stride: i32,
         width: &mut i32,
     ) {
-        ffi::SYS_GetFontTexel(c, image, position, stride, width);
+        unsafe {
+            ffi::SYS_GetFontTexel(c, image, position, stride, width);
+        }
     }
 
     /// Get Font Texture
@@ -260,7 +262,9 @@ impl System {
         ypos: &mut i32,
         width: &mut i32,
     ) {
-        ffi::SYS_GetFontTexture(c, image, xpos, ypos, width);
+        unsafe {
+            ffi::SYS_GetFontTexture(c, image, xpos, ypos, width);
+        }
     }
 
     /// Get Font Encoding
@@ -280,7 +284,7 @@ impl System {
     /// The user must ensure this point into the memory is valid and the arena doesn't go out
     /// memory
     pub unsafe fn set_arena_1_lo(new_lo: *mut c_void) {
-        ffi::SYS_SetArena1Lo(new_lo)
+        unsafe { ffi::SYS_SetArena1Lo(new_lo) }
     }
 
     /// Get Arena 1 Hi
@@ -295,7 +299,7 @@ impl System {
     /// The user must ensure this point into the memory is valid and the arena doesn't go out
     /// memory
     pub unsafe fn set_arena_1_hi(new_hi: *mut c_void) {
-        ffi::SYS_SetArena1Hi(new_hi)
+        unsafe { ffi::SYS_SetArena1Hi(new_hi) }
     }
 
     /// Get Arena 1 Size
@@ -315,7 +319,7 @@ impl System {
     /// The user must ensure this point into the memory is valid and the arena doesn't go out
     /// memory
     pub unsafe fn set_arena_2_lo(new_lo: *mut c_void) {
-        ffi::SYS_SetArena2Lo(new_lo)
+        unsafe { ffi::SYS_SetArena2Lo(new_lo) }
     }
 
     /// Get Arena 2 Hi
@@ -330,7 +334,7 @@ impl System {
     /// The user must ensure this point into the memory is valid and the arena doesn't go out
     /// memory
     pub unsafe fn set_arena_2_hi(new_hi: *mut c_void) {
-        ffi::SYS_SetArena2Hi(new_hi)
+        unsafe { ffi::SYS_SetArena2Hi(new_hi) }
     }
 
     /// Get Arena 2 Size

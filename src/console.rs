@@ -2,7 +2,7 @@
 //!
 //! This module implements a safe wrapper around the console functions.
 
-use crate::{ffi, video::Video, OgcError, Result};
+use crate::{OgcError, Result, ffi, video::Video};
 use alloc::string::String;
 use core::ptr;
 

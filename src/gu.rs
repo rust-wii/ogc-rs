@@ -9,7 +9,7 @@ use ffi::guQuaternion;
 use num_traits::Float;
 
 use crate::{
-    ffi::{self, guVector, Mtx as Mtx34, Mtx44},
+    ffi::{self, Mtx as Mtx34, Mtx44, guVector},
     gx::{self, Gx},
 };
 

@@ -1274,7 +1274,7 @@ impl Gx {
     /// # Safety
     /// This function resets CPU accessible counters, so it should **not** be used in a display list.
     pub unsafe fn clear_gp_metric() {
-        ffi::GX_ClearGPMetric()
+        unsafe { ffi::GX_ClearGPMetric() }
     }
 
     /// Clears the Vertex Cache performance counter.
@@ -1325,7 +1325,7 @@ impl Gx {
     pub unsafe fn set_breakpt_callback(
         cb: Option<unsafe extern "C" fn()>,
     ) -> Option<unsafe extern "C" fn()> {
-        ffi::GX_SetBreakPtCallback(cb)
+        unsafe { ffi::GX_SetBreakPtCallback(cb) }
     }
 
     /// Allows reads from the FIFO currently attached to the Graphics Processor (GP) to resume.
@@ -1345,7 +1345,7 @@ impl Gx {
     /// # Safety
     /// This function should be avoided; use the GP performance metric functions instead.
     pub unsafe fn init_xf_ras_metric() {
-        ffi::GX_InitXfRasMetric()
+        unsafe { ffi::GX_InitXfRasMetric() }
     }
 
     /// Reads the current status of the GP.
@@ -1425,7 +1425,7 @@ impl Gx {
     /// # Safety
     /// This function must be called between successive calls to [`Gx::redirect_write_gather_pipe()`].
     pub unsafe fn restore_write_gather_pipe() {
-        ffi::GX_RestoreWriteGatherPipe()
+        unsafe { ffi::GX_RestoreWriteGatherPipe() }
     }
 
     /// Sends a DrawDone command to the GP.
@@ -1705,7 +1705,7 @@ impl Gx {
     ///
     /// See [GX_CopyDisp](https://libogc.devkitpro.org/gx_8h.html#a9ed0ae3f900abb6af2e930dff7a6bc28) for more.
     pub unsafe fn copy_disp(dest: *mut c_void, clear: bool) {
-        ffi::GX_CopyDisp(dest, clear as u8)
+        unsafe { ffi::GX_CopyDisp(dest, clear as u8) }
     }
 
     /// Sets the gamma correction applied to pixels during EFB to XFB copy operation.

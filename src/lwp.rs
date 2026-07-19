@@ -120,10 +120,7 @@ impl Builder {
         self
     }
 
-    pub fn spawn(
-        self,
-        entry: EntryFn,
-    ) -> Result<Thread, i32> {
+    pub fn spawn(self, entry: EntryFn) -> Result<Thread, i32> {
         let mut thread = core::mem::MaybeUninit::uninit();
         unsafe {
             let res = ffi::LWP_CreateThread(

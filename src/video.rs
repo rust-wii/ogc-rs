@@ -2,8 +2,8 @@
 //!
 //! This module implements a safe wrapper around video functions.
 
-use crate::{ffi, system::System};
 use crate::utils::mem::to_uncached;
+use crate::{ffi, system::System};
 use alloc::boxed::Box;
 use core::{convert::TryFrom, ffi::c_void, mem, ptr};
 use num_enum::{IntoPrimitive, TryFromPrimitive};
@@ -107,10 +107,7 @@ impl Video {
 
             Self {
                 render_config: r_mode,
-                framebuffer:
-                    (System::allocate_framebuffer(
-                        &Self::get_preferred_mode()
-                    ) as *mut u8)
+                framebuffer: (System::allocate_framebuffer(&Self::get_preferred_mode()) as *mut u8)
                     .map_addr(to_uncached) as *mut c_void,
             }
         }
@@ -174,14 +171,18 @@ impl Video {
     ///
     /// The user must ensure this pointer to to valid framebuffer data
     pub unsafe fn set_next_framebuffer(framebuffer: *mut c_void) {
-        ffi::VIDEO_SetNextFramebuffer(framebuffer);
+        unsafe {
+            ffi::VIDEO_SetNextFramebuffer(framebuffer);
+        }
     }
 
     /// # Safety
     ///
     /// The user must ensure this pointer to to valid framebuffer data
     pub unsafe fn set_next_right_framebuffer(framebuffer: *mut c_void) {
-        ffi::VIDEO_SetNextRightFramebuffer(framebuffer);
+        unsafe {
+            ffi::VIDEO_SetNextRightFramebuffer(framebuffer);
+        }
     }
 
     pub fn register_post_retrace_callback<F>(callback: Box<F>)

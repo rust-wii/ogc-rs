@@ -21,18 +21,22 @@ pub struct OGCAllocator;
 
 unsafe impl GlobalAlloc for OGCAllocator {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        if layout.size() > 1024 * 1024 * 16 {
-            panic!(
-                "Attempted to allocate >16MB (asked for {} bytes)",
-                layout.size()
-            );
-        } else {
-            libc::memalign(layout.align().max(8), layout.size()).cast::<u8>()
+        unsafe {
+            if layout.size() > 1024 * 1024 * 16 {
+                panic!(
+                    "Attempted to allocate >16MB (asked for {} bytes)",
+                    layout.size()
+                );
+            } else {
+                libc::memalign(layout.align().max(8), layout.size()).cast::<u8>()
+            }
         }
     }
 
     unsafe fn dealloc(&self, ptr: *mut u8, _layout: Layout) {
-        libc::free(ptr.cast::<libc::c_void>());
+        unsafe {
+            libc::free(ptr.cast::<libc::c_void>());
+        }
     }
 }
 

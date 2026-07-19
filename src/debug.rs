@@ -5,12 +5,12 @@
 use crate::ffi;
 
 /// Default EXI channel for use in [`debug_init()`]. Channel can be 0 or 1.
-/// 
+///
 /// **Note**: Used for device type USBGecko
 pub const DEF_EXICHAN: u32 = ffi::GDBSTUB_DEF_CHANNEL;
 
 /// Default TCP port for use in [`debug_init()`].
-/// 
+///
 /// **Note**: Used for device type TCP.
 pub const DEF_TCPPORT: u32 = ffi::GDBSTUB_DEF_TCPPORT;
 

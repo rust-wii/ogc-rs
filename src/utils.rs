@@ -63,8 +63,8 @@ mod console_printing {
     #[macro_export]
     macro_rules! println {
         () => (print!("\n"));
-        ($fmt:expr) => (print!(concat!($fmt, "\n")));
-        ($fmt:expr, $($arg:tt)*) => (print!(concat!($fmt, "\n"), $($arg)*));
+        ($fmt:expr_2021) => (print!(concat!($fmt, "\n")));
+        ($fmt:expr_2021, $($arg:tt)*) => (print!(concat!($fmt, "\n"), $($arg)*));
     }
 }
 
