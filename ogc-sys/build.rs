@@ -79,6 +79,7 @@ fn main() {
 	println!("cargo:rustc-link-lib=static=c");
 	println!("cargo:rustc-link-lib=static=sysbase");
 	println!("cargo:rustc-link-lib=static=m");
+	println!("cargo:rustc-link-lib=static=db");
 	println!("cargo:rustc-link-lib=static=ogc");
 	println!("cargo:rustc-link-lib=static=asnd");
 	println!("cargo:rustc-link-lib=static=mad");
