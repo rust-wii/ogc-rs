@@ -2,12 +2,12 @@
 //!
 //! This module implements a safe wrapper around the audio functions found in ``asndlib.h``.
 
-use crate::{ffi, OgcError, Result};
+use crate::{OgcError, Result, ffi};
 use alloc::format;
 use core::time::Duration;
 
 macro_rules! if_not {
-    ($valid:ident => $error_output:expr, $var:ident $(,)*) => {
+    ($valid:ident => $error_output:expr_2021, $var:ident $(,)*) => {
         if $var == ffi::$valid as _ {
             Ok(())
         } else {

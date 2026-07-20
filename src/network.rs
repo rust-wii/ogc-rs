@@ -4,7 +4,7 @@
 
 #![allow(clippy::bad_bit_mask)]
 
-use crate::{ffi, OgcError, Result};
+use crate::{OgcError, Result, ffi};
 use alloc::{
     boxed::Box,
     format,
@@ -14,7 +14,7 @@ use alloc::{
 
 use bitflags::bitflags;
 use core::{
-    ffi::{c_void, CStr},
+    ffi::{CStr, c_void},
     slice,
 };
 use num_enum::IntoPrimitive;
