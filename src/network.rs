@@ -210,9 +210,9 @@ pub struct HostInformation {
     /// A NULL-terminated array of alternate names.
     pub aliases: Vec<String>,
     /// The type of address being returned.
-    pub address_type: i32,
+    pub address_type: i16,
     /// The length, in bytes, of each address.
-    pub length: i32,
+    pub length: i16,
     /// A NULL-terminated list of addresses for the host.
     pub address_list: Vec<String>,
 }
