@@ -1265,6 +1265,7 @@ pub const PAD_CHAN0_BIT: u32 = 2147483648;
 pub const PAD_CHAN1_BIT: u32 = 1073741824;
 pub const PAD_CHAN2_BIT: u32 = 536870912;
 pub const PAD_CHAN3_BIT: u32 = 268435456;
+pub const __GNUC_VA_LIST: u32 = 1;
 pub const __NEWLIB_H__: u32 = 1;
 pub const _ATEXIT_DYNAMIC_ALLOC: u32 = 1;
 pub const _FSEEK_OPTIMIZATION: u32 = 1;
@@ -2459,9 +2460,9 @@ pub type wchar_t = ::libc::c_int;
 #[repr(align(16))]
 #[derive(Debug, Copy, Clone)]
 pub struct max_align_t {
-    pub __max_align_ll: ::libc::c_longlong,
+    pub __clang_max_align_nonce1: ::libc::c_longlong,
     pub __bindgen_padding_0: u64,
-    pub __max_align_ld: u128,
+    pub __clang_max_align_nonce2: u128,
 }
 #[doc = "Integer types\nTraditional shorthand form of integer types defined in `stdint.h`.\n# "]
 pub type u8_ = u8;
@@ -5469,8 +5470,8 @@ extern "C" {
 extern "C" {
     pub fn TPL_CloseTPLFile(tdf: *mut TPLFile);
 }
+pub type va_list = __builtin_va_list;
 pub type __gnuc_va_list = __builtin_va_list;
-pub type va_list = __gnuc_va_list;
 pub type wint_t = ::libc::c_int;
 pub type _off_t = __int64_t;
 pub type _fpos_t = __int64_t;
@@ -8867,8 +8868,8 @@ extern "C" {
 pub struct hostent {
     pub h_name: *mut ::libc::c_char,
     pub h_aliases: *mut *mut ::libc::c_char,
-    pub h_addrtype: ::libc::c_int,
-    pub h_length: ::libc::c_int,
+    pub h_addrtype: ::libc::c_short,
+    pub h_length: ::libc::c_short,
     pub h_addr_list: *mut *mut ::libc::c_char,
 }
 #[repr(C)]
