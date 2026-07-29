@@ -4,6 +4,7 @@ use bindgen::callbacks::ParseCallbacks;
 use regex::Regex;
 use std::env;
 use std::process::Command;
+use std::path::Path;
 
 fn get_include_path(dkp_path: String) -> Vec<String>{
 	let mut include = Vec::new();
@@ -167,8 +168,15 @@ fn main() {
 			bindings = bindings.clone().clang_arg(format!("-I{}", include));
 		});
 
+		// libogc is not always installed with the devkitPro toolchain,
+		// so check for it before generating bindings to avoid confusing build failures.
+		let libogc_include = Path::new(&dkp_path).join("libogc/include");
 
-		let bindings = bindings.clang_arg(format!("-I{}/libogc/include", dkp_path))
+		if !libogc_include.exists() {
+			panic!("libogc is not installed.");
+		}
+		
+		let bindings = bindings.clang_arg(format!("-I{}", libogc_include.display()))
 		.clang_arg("-mfloat-abi=hard")
 		.clang_arg("-nostdinc")
 		.clang_arg("-Wno-macro-redefined")
