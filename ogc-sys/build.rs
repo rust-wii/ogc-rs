@@ -4,6 +4,7 @@ use bindgen::callbacks::ParseCallbacks;
 use regex::Regex;
 use std::env;
 use std::process::Command;
+use std::path::Path;
 
 fn get_include_path(dkp_path: String) -> Vec<String>{
 	let mut include = Vec::new();
@@ -69,10 +70,40 @@ fn main() {
 	if std::env::var("DOCS_RS").is_ok() || std::env::var("CI").is_ok() {
 		return;
 	}
-	let dkp_path = env::var("DEVKITPRO").expect("devkitPro is needed to use this crate");
+	let dkp_path = env::var("DEVKITPRO").expect("The devkitPRO toolchain is required to use this crate; please verify that your environment variables are correctly configured");
+	let dkppc_path = env::var("DEVKITPPC").expect("The devkitPPC toolchain is required to use this crate; please verify that your environment variables are correctly configured");
+	
+	// DEVKITPPC may contain a Windows path (D:/devkitPro/devkitPPC), but MSYS2
+	// PATH uses Unix-style drive paths (/d/devkitPro/devkitPPC/bin). Using the
+	// wrong format can make powerpc-eabi-gcc unavailable even if installed.
+	//
+	// Convert only the displayed fix; DEVKITPPC remains unchanged for compiler,
+	// include, and linker paths. This check belongs here because ogc-rs is the
+	// first build step that directly requires devkitPPC to generate bindings.
+	let path_hint = if dkppc_path.len() > 2 && dkppc_path.as_bytes()[1] == b':' {
+		format!("/{}/{}", dkppc_path[..1].to_lowercase(), &dkppc_path[3..])
+	} else {
+		dkppc_path.clone()
+	};
+
+	if Command::new("powerpc-eabi-gcc").arg("--version").output().is_err() {
+		panic!(
+			"powerpc-eabi-gcc was not found.\n\
+			devkitPPC's executables are required to be available in PATH.\n\
+			$DEVKITPPC is set, but the compiler cannot be found.\n\
+			This usually means the PATH entry is missing.\n\
+			\n\
+			Add this to a startup configuration file like ~/.bashrc:\n\
+			export PATH=\"{}/bin:$PATH\"\n\
+			\n\
+			\n\
+			After changing the PATH, restart your terminal or reload your shell.",
+			path_hint
+		);
+	}
 	println!(
-		"cargo:rustc-link-search=native={}/devkitPPC/powerpc-eabi/lib",
-		dkp_path
+		"cargo:rustc-link-search=native={}/powerpc-eabi/lib",
+		dkppc_path
 	);
 	println!("cargo:rustc-link-search=native={}/libogc/lib/wii", dkp_path);
 
@@ -122,10 +153,10 @@ fn main() {
 		.blocklist_type("i(8|16|32|64|128)")
 		.blocklist_type("f(32|64)")
 		.clang_arg("--target=powerpc-none-eabi")
-		.clang_arg(format!("--sysroot={}/devkitPPC/powerpc-eabi", dkp_path))
+		.clang_arg(format!("--sysroot={}/powerpc-eabi", dkppc_path))
 		.clang_arg(format!(
-			"-isystem{}/devkitPPC/powerpc-eabi/include",
-			dkp_path
+			"-isystem{}/powerpc-eabi/include",
+			dkppc_path
 		))
 		.clang_arg(format!(
 			"-isystem/usr/lib/clang/{}/include",
@@ -137,8 +168,15 @@ fn main() {
 			bindings = bindings.clone().clang_arg(format!("-I{}", include));
 		});
 
+		// libogc is not always installed with the devkitPro toolchain,
+		// so check for it before generating bindings to avoid confusing build failures.
+		let libogc_include = Path::new(&dkp_path).join("libogc/include");
 
-		let bindings = bindings.clang_arg(format!("-I{}/libogc/include", dkp_path))
+		if !libogc_include.exists() {
+			panic!("libogc is not installed.");
+		}
+		
+		let bindings = bindings.clang_arg(format!("-I{}", libogc_include.display()))
 		.clang_arg("-mfloat-abi=hard")
 		.clang_arg("-nostdinc")
 		.clang_arg("-Wno-macro-redefined")
