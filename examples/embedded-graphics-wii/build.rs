@@ -15,7 +15,7 @@ fn main() {
 	};
 	let output = libgcc_location.stdout;
 	let parsed_output =
-		String::from_utf8(output).expect("powerpc-eabi-gcc command output returned a non-utf8 string.").replace("\n", "");
+		String::from_utf8(output).expect("powerpc-eabi-gcc command output returned a non-utf8 string.").replace(&['\r', '\n'], "");
 		
 	let _ = match Command::new("powerpc-eabi-ar").arg("x").arg(parsed_output).arg("crtresxfpr.o").arg("crtresxgpr.o").output() {
 		Ok(output) => output,
