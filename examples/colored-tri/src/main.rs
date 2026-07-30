@@ -1,5 +1,5 @@
 #![no_std]
-#![no_mangle]
+#![no_main]
 
 use core::mem::ManuallyDrop;
 
