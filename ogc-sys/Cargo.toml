@@ -15,6 +15,6 @@ keywords = ["wii", "embedded", "no-std"]
 libc = "0.2"
 
 [build-dependencies]
-bindgen = "0.69.4"
+bindgen = "0.72.1"
 doxygen-rs = "0.4"
 regex = "1.5"
