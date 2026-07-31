@@ -83,3 +83,17 @@ pub fn ic_freeze() {
 pub fn ic_unfreeze() {
     unsafe { ffi::ICUnfreeze() }
 }
+
+/// Flushes `T` to memory from the data cache.
+pub unsafe fn data_cache_flush<T: ?Sized>(ptr: *const T) {
+    let mut addr = ptr.addr() - (ptr.addr() % 32);
+    let size = core::mem::size_of_val(unsafe { ptr.as_ref().unwrap() }).next_multiple_of(32) / 32;
+
+    for i in 0..size {
+        unsafe {
+            core::arch::asm!("dcbf  0, {}", in(reg) addr);
+            addr += 32;
+        }
+    }
+    unsafe { core::arch::asm!("sync") }
+}

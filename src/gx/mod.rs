@@ -15,8 +15,8 @@ use num_traits::Float;
 
 use crate::ffi::{self, Mtx as Mtx34, Mtx44};
 use crate::gx::regs::BPReg;
-use crate::lwp;
 use crate::utils::mem;
+use crate::{cache, lwp};
 
 use self::regs::XFReg;
 use self::types::{Gamma, PixelEngineControl, PixelFormat, VtxDest, ZFormat};
@@ -1950,6 +1950,9 @@ impl Gx {
     /// Sets the array base pointer and stride for a single attribute.
     /// See [GX_SetArray](https://libogc.devkitpro.org/gx_8h.html#a5164fc6aa2a678d792af80d94bfa1ec2) for more.
     pub fn set_array<T>(attr: u32, array: &[T], stride: u8) {
+        unsafe {
+            cache::data_cache_flush(array);
+        }
         unsafe { ffi::GX_SetArray(attr, array.as_ptr() as *mut c_void, stride) }
     }
 
