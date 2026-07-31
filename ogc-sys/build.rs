@@ -76,8 +76,8 @@ fn main() {
 	);
 	println!("cargo:rustc-link-search=native={}/libogc/lib/wii", dkp_path);
 
-	println!("cargo:rustc-link-lib=static=c");
 	println!("cargo:rustc-link-lib=static=sysbase");
+	println!("cargo:rustc-link-lib=static=c");
 	println!("cargo:rustc-link-lib=static=m");
 	println!("cargo:rustc-link-lib=static=ogc");
 	println!("cargo:rustc-link-lib=static=asnd");
