@@ -6,10 +6,10 @@ use std::env;
 use std::process::Command;
 use std::path::{Path, PathBuf};
 
-fn get_include_path(dkp_path: String) -> Vec<String>{
+fn get_include_path(dkp_path: &str, dkppc_path: &str) -> Vec<String>{
 	let mut include = Vec::new();
 	//powerpc-eabi-gcc -xc -E -v /dev/null
-	let gcc_output = match Command::new("powerpc-eabi-gcc")
+	let gcc_output = match Command::new(format!("{dkppc_path}/bin/powerpc-eabi-gcc"))
 		.arg("-xc")
 		.arg("-E")
 		.arg("-v")
@@ -21,7 +21,7 @@ fn get_include_path(dkp_path: String) -> Vec<String>{
 	
 	let parsed_output =
 		String::from_utf8(output).expect("gcc command output returned a non-utf8 string.");
-	parsed_output.split("\n").filter(|line| line.trim().starts_with(&dkp_path) && line.contains("include")).for_each(|line| {
+	parsed_output.split("\n").filter(|line| line.trim().starts_with(dkp_path) && line.contains("include")).for_each(|line| {
 		include.push(line.trim().to_string());
 	});
 	include
@@ -66,10 +66,6 @@ fn get_clang_version() -> String {
 }
 
 fn main() {
-	// docs.rs and CI don't require linking or updating ogc.rs (and will always fail if we try to)
-	if std::env::var("DOCS_RS").is_ok() || std::env::var("CI").is_ok() {
-		return;
-	}
 	let dkp_path = env::var("DEVKITPRO").expect("The devkitPRO toolchain is required to use this crate; please verify that your environment variables are correctly configured");
 	let dkppc_path = env::var("DEVKITPPC").expect("The devkitPPC toolchain is required to use this crate; please verify that your environment variables are correctly configured");
 	
@@ -86,7 +82,7 @@ fn main() {
 		dkppc_path.clone()
 	};
 
-	if Command::new("powerpc-eabi-gcc").arg("--version").output().is_err() {
+	if Command::new(format!("{dkppc_path}/bin/powerpc-eabi-gcc")).arg("--version").output().is_err() {
 		panic!(
 			"powerpc-eabi-gcc was not found.\n\
 			devkitPPC's executables are required to be available in PATH.\n\
@@ -163,7 +159,7 @@ fn main() {
 			get_clang_version()
 		));
 
-		let includes = get_include_path(dkp_path.clone());
+		let includes = get_include_path(&dkp_path, &dkppc_path);
 		includes.iter().for_each(|include| {
 			bindings = bindings.clone().clang_arg(format!("-I{}", include));
 		});
