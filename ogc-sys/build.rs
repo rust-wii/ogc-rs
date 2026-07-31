@@ -4,7 +4,7 @@ use bindgen::callbacks::ParseCallbacks;
 use regex::Regex;
 use std::env;
 use std::process::Command;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 fn get_include_path(dkp_path: String) -> Vec<String>{
 	let mut include = Vec::new();
@@ -142,7 +142,7 @@ fn main() {
 	}
 	let mut bindings = bindgen::Builder::default()
 		.header("wrapper.h")
-		.rust_target(bindgen::RustTarget::Nightly)
+		.rust_target(bindgen::RustTarget::nightly())
 		.use_core()
 		.trust_clang_mangling(false)
 		.layout_tests(false)
@@ -186,7 +186,8 @@ fn main() {
 		.generate()
 		.expect("Unable to generate bindings");
 
+	let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
 	bindings
-		.write_to_file("./src/ogc.rs")
+		.write_to_file(out_path.join("bindings.rs"))
 		.expect("Unable to write bindings to file");
 }
