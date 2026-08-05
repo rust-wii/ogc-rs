@@ -94,8 +94,15 @@ extern "C" fn main(_argc: isize, _argv: *const *const u8) -> isize {
     let mut work_buf = vec![0u8; header.required_bytes_rgba8bpc()];
     let mut rgba_bytes = minipng::decode_png(WHITE_BYTES, &mut work_buf).unwrap();
     rgba_bytes.convert_to_rgba8bpc().unwrap();
-    let texture_bytes = gctex::encode(
+    let tex_size = gctex::compute_image_size(
         gctex::TextureFormat::CMPR,
+        header.width(),
+        header.height(),
+    ) as usize;
+    let mut texture_bytes = ogc_rs::utils::Buf32::new(tex_size);
+    gctex::encode_into(
+        gctex::TextureFormat::CMPR,
+        &mut texture_bytes,
         rgba_bytes.pixels(),
         header.width(),
         header.height(),
