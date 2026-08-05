@@ -879,6 +879,9 @@ impl<'a> Texture<'a> {
         assert!(width <= 1024, "max width for texture is 1024");
         assert!(height <= 1024, "max height for texture is 1024");
         unsafe {
+            cache::data_cache_flush(img);
+        }
+        unsafe {
             ffi::GX_InitTexObj(
                 texture.as_ptr() as *mut _,
                 img.as_ptr() as *mut _,
@@ -907,6 +910,9 @@ impl<'a> Texture<'a> {
         assert_eq!(0, img.as_ptr().align_offset(32));
         assert!(width <= 1024, "max width for texture is 1024");
         assert!(height <= 1024, "max height for texture is 1024");
+        unsafe {
+            cache::data_cache_flush(img);
+        }
         unsafe {
             ffi::GX_InitTexObjCI(
                 texture.as_ptr() as *mut _,
