@@ -1502,8 +1502,8 @@ impl Gx {
         BPReg::PE_CLEAR_GB.load(u32::from_be_bytes([
             0u8,
             0u8,
-            background.0.b,
             background.0.g,
+            background.0.b,
         ]));
 
         BPReg::PE_CLEAR_Z.load(z_value);
