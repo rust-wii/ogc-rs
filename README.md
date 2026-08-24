@@ -11,6 +11,19 @@ To get started, you'll first need to install the following dependencies on your 
   * or from [LLVM themselves](https://clang.llvm.org/get_started.html)
 * [devkitPro toolchain](https://devkitpro.org/wiki/Getting_Started)
 
+### Nix (optional)
+
+If you use [Nix](https://nixos.org/) with flakes enabled:
+
+```sh
+$ nix develop
+```
+
+This provides a nightly Rust toolchain (with `rust-src`), Clang/libclang for bindgen,
+and common host build tools. Cross-compiling for the Wii still requires the
+devkitPro toolchain as documented below; the flake covers the host-side Rust
+environment only.
+
 Then you'll need to fork this repo and `git clone` your fork into your local machine.
 
 When that's done, do the following:
