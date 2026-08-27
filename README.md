@@ -13,16 +13,21 @@ To get started, you'll first need to install the following dependencies on your 
 
 ### Nix (optional)
 
-If you use [Nix](https://nixos.org/) with flakes enabled:
+If you use [Nix](https://nixos.org/) with flakes enabled (primarily **Linux x86_64**):
 
 ```sh
 $ nix develop
 ```
 
-This provides a nightly Rust toolchain (with `rust-src`), Clang/libclang for bindgen,
-and common host build tools. Cross-compiling for the Wii still requires the
-devkitPro toolchain as documented below; the flake covers the host-side Rust
-environment only.
+This provides:
+
+* a nightly Rust toolchain (with `rust-src`, `rustfmt`, `clippy`)
+* Clang/libclang for bindgen
+* the **devkitPPC** toolchain and **libogc** via [devkitNix](https://github.com/bandithedoge/devkitNix)
+  (`DEVKITPRO` / `DEVKITPPC` are set automatically)
+
+devkitNix unpacks the official devkitPro Docker image, so the first `nix develop`
+download is large and currently targets Linux hosts.
 
 Then you'll need to fork this repo and `git clone` your fork into your local machine.
 
