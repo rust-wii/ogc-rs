@@ -2698,15 +2698,19 @@ pub fn set_point_size(width: u8, fmt: TexOffset) {
 /// See [GX_BeginDispList](https://libogc.devkitpro.org/gx_8h.html#a0b7122421171545256ccb2992dccc546) for more.
 pub fn begin_display_list(list: &mut Buf32) {
     if ! IN_DISPLAY_LIST.swap(true, Ordering::AcqRel) {
+        // TODO: we should not be allowing write access from the application to the Buf32
+        // when libogc will also be writing to it.
         unsafe { ffi::GX_BeginDispList(list.as_mut_ptr() as *mut _, list.len() as u32) }
     }
 }
 
 /// Ends a display list and resumes writing graphics commands to the CPU FIFO.
 ///
-/// When not in a display list, this returns `None`.
+/// When not in a display list, this returns `None`. Otherwise, it returns the final size
+/// of the display list, which is passed to libogc when calling the display list with
+/// [`call_display_list()`].
 ///
-/// See [GX_BeginDispList](https://libogc.devkitpro.org/gx_8h.html#a0b7122421171545256ccb2992dccc546) for more.
+/// See [GX_EndDispList](https://libogc.devkitpro.org/gx_8h.html#ad7103a02cdffe078062879185a094d5f) for more.
 pub fn end_display_list() -> Option<u32> {
     if IN_DISPLAY_LIST.swap(false, Ordering::AcqRel) {
         Some(unsafe { ffi::GX_EndDispList() })
@@ -2719,7 +2723,7 @@ pub fn end_display_list() -> Option<u32> {
 ///
 /// When already in a display list, this is a no-op.
 ///
-/// See [GX_BeginDispList](https://libogc.devkitpro.org/gx_8h.html#a0b7122421171545256ccb2992dccc546) for more.
+/// See [GX_CallDispList](https://libogc.devkitpro.org/gx_8h.html#a20cac24818fa79957c4c8616ecc87cbe) for more.
 pub fn call_display_list(list: &Buf32, size: u32) {
     if ! IN_DISPLAY_LIST.load(Ordering::Acquire) {
         unsafe { ffi::GX_CallDispList(list.as_ptr() as *const _ as *mut _, size) }
