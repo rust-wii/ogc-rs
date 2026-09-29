@@ -128,6 +128,31 @@ impl Buf32 {
         Buf32(block)
     }
 
+    pub(crate) unsafe fn from_ptr_len_unchecked(ptr: *mut u8, len: usize) -> Self {
+        let nonnull_ptr = unsafe { NonNull::new_unchecked(ptr) };
+        Self(NonNull::slice_from_raw_parts(nonnull_ptr, len))
+    }
+
+    /// Forms a `Buf32` slice from a pointer and a length if both are considered valid.
+    ///
+    /// In general:
+    /// * `ptr` must be:
+    ///   * allocated,
+    ///   * non-null,
+    ///   * aligned to a 32-byte boundary.
+    /// * `len` must be:
+    ///   * a multiple of 32 bytes,
+    ///   * less than the allocator's maximum size.
+    pub fn from_ptr_len(ptr: *mut u8, len: usize) -> Option<Self> {
+        if !ptr.is_null()
+        && ptr.is_aligned_to(32)
+        && len % 32 == 0 {
+            Some(unsafe { Self::from_ptr_len_unchecked(ptr, len) })
+        } else {
+            None
+        }
+    }
+
     /// Extracts a slice of the entire buffer.
     pub fn as_slice(&self) -> &[u8] {
         // SAFETY: `self.0` is aligned, dereferenceable, initialized, and

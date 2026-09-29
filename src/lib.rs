@@ -19,12 +19,10 @@
 #![no_std]
 #![allow(dead_code)]
 #![feature(alloc_error_handler)]
-#![feature(negative_impls)]
-#![feature(slice_ptr_get)]
 #![feature(allocator_api)]
-#![feature(asm_experimental_arch)]
 #![feature(generic_const_exprs)]
-#![feature(never_type)]
+#![feature(pointer_is_aligned_to)]
+#![feature(slice_ptr_get)]
 
 extern crate alloc;
 
