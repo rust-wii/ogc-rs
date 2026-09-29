@@ -143,6 +143,7 @@ impl Buf32 {
     /// * `len` must be:
     ///   * a multiple of 32 bytes,
     ///   * less than the allocator's maximum size.
+    #[allow(clippy::not_unsafe_ptr_arg_deref)]
     pub fn from_ptr_len(ptr: *mut u8, len: usize) -> Option<Self> {
         if !ptr.is_null()
         && ptr.is_aligned_to(32)
