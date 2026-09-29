@@ -10,7 +10,7 @@ use core::sync::atomic::{AtomicBool, AtomicPtr, Ordering};
 use alloc::vec::Vec;
 use bit_field::BitField;
 use ffi::GXTexObj;
-use ogc_sys::{GXRModeObj, GXTexReg, GXTexRegion, GXVtxDesc};
+use ogc_sys::GXRModeObj;
 use voladdress::{Safe, VolAddress};
 
 use num_traits::Float;
@@ -1536,14 +1536,14 @@ impl Gx {
     /// Attaches a FIFO to the CPU.
     ///
     /// See [GX_SetGPFifo](https://libogc.devkitpro.org/gx_8h.html#af98b3858d1d04a4bbe620b0a45d94c8c) for more.
-    pub fn set_gp_fifo(fifo: Fifo) {
+    pub fn set_gp_fifo(_fifo: Fifo) {
         unimplemented!()
     }
 
     /// Copies the given FIFO into the CPU FIFO.
     ///
     /// See [GX_SetCPUFifo](https://libogc.devkitpro.org/gx_8h.html#a69852ae8a9b982556a3a37a450af30d8) for more.
-    pub fn set_cpu_fifo(fifo: &Fifo) {
+    pub fn set_cpu_fifo(_fifo: &Fifo) {
         unimplemented!()
     }
 
@@ -2671,7 +2671,7 @@ impl Gx {
     /// Sets the type of multiple attributes.
     ///
     /// See [GX_SetVtxDescv](https://libogc.devkitpro.org/gx_8h.html#a159810efe8391da35ea9b625c5fc70bd) for more.
-    pub fn set_vtx_descv(attr_list: &[VtxDesc]) {
+    pub fn set_vtx_descv(_attr_list: &[VtxDesc]) {
         unimplemented!()
     }
 }
