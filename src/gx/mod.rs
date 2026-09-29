@@ -2222,10 +2222,9 @@ impl Gx {
 
     /// Sends a DrawDone command to the GP and stalls until its subsequent execution.
     ///
-    /// # Note
-    /// This function is equivalent to calling [`Gx::set_draw_done()`] then
-    /// [`Gx::wait_draw_done()`].
+    /// See [GX_DrawDone](https://libogc.devkitpro.org/gx_8h.html#a00f07b60ae2124fe027a82d7d9ae64b0) for more.
     pub fn draw_done() {
+        /*
         //This should work :shrug:
         BPReg::PE_DONE.load(2);
 
@@ -2235,6 +2234,8 @@ impl Gx {
                 GX_PIPE.write(bytes);
             }
         }
+        */
+        unsafe { ffi::GX_DrawDone(); }
     }
 
     /// Sets the Z-buffer compare mode.
@@ -2595,15 +2596,13 @@ impl Gx {
     ///
     /// See [GX_SetDrawSync](https://libogc.devkitpro.org/gx_8h.html#a537fee417b3018a0c8920770652ec813) for more.
     pub fn set_draw_sync(token: u16) {
-        unimplemented!()
+        unsafe { ffi::GX_SetDrawSync(token); }
     }
 
     /// Returns the value of the token register, which is written using the
     /// [`Gx::set_draw_sync()`] function.
-    ///
-    /// Returns the value of the token register.
     pub fn get_draw_sync() -> u16 {
-        unimplemented!()
+        unsafe { ffi::GX_GetDrawSync() }
     }
 
     /// Sets two performance metrics to measure in the GP.
@@ -2728,6 +2727,16 @@ pub fn call_display_list(list: &Buf32, size: u32) {
     if ! IN_DISPLAY_LIST.load(Ordering::Acquire) {
         unsafe { ffi::GX_CallDispList(list.as_ptr() as *const _ as *mut _, size) }
     }
+}
+
+/// Enables a special texture offset feature for points and lines.
+///
+/// For `coord`, libogc will use the lowest 3 bits for the texture slot, so its value
+/// should be between 0 and 7 inclusive.
+///
+/// See [GX_EnableTexOffsets](https://libogc.devkitpro.org/gx_8h.html#ab94bf9e5a37a3f2c374e70e0d238d3d8) for more.
+pub fn enable_tex_offsets(coord: u8, line_enable: bool, point_enable: bool) {
+    unsafe { ffi::GX_EnableTexOffsets(coord, line_enable as u8, point_enable as u8) }
 }
 
 //All the following data is found from
