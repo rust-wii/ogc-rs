@@ -1072,12 +1072,17 @@ pub struct Texture {
 }
 
 impl Texture {
-    /// Returns the amount of memory in bytes needed to store a texture of the given size and fmt.
+    /// Returns the amount of memory in bytes needed to store a texture of the given size
+    /// and format.
+    ///
+    /// See [GX_GetTexBufferSize](https://libogc.devkitpro.org/gx_8h.html#a6fe8373aae06bd72cb9974c2990f8223) for more.
     pub fn get_buffer_size(wd: u16, ht: u16, fmt: u32, mipmap: bool, maxlod: u8) -> usize {
         unsafe { ffi::GX_GetTexBufferSize(wd, ht, fmt, mipmap as u8, maxlod) as usize }
     }
 
     /// Used to initialize or change a texture object for non-color index textures.
+    ///
+    /// See [GX_InitTexObj](https://libogc.devkitpro.org/gx_8h.html#ab2813004d1e23965b1b64f77c954656e) for more.
     pub fn new(
         img: &[u8],
         width: u16,
@@ -1127,6 +1132,8 @@ impl Texture {
     }
 
     /// Used to initialize or change a texture object when the texture is color index format.
+    ///
+    /// See [GX_InitTexObjCI](https://libogc.devkitpro.org/gx_8h.html#ab2813004d1e23965b1b64f77c954656e) for more.
     pub fn with_color_idx(
         img: &[u8],
         width: u16,
@@ -1205,7 +1212,7 @@ impl Texture {
     }
 
     /// Returns the wrap modes (horizontal and vertical) for this texture.
-    pub fn get_wrap(&self) -> (WrapMode, WrapMode) {
+    pub fn wrap_mode(&self) -> (WrapMode, WrapMode) {
         unsafe {
             let wrap_s = ffi::GX_GetTexObjWrapS(&self.inner).into();
             let wrap_t = ffi::GX_GetTexObjWrapT(&self.inner).into();
@@ -1214,7 +1221,7 @@ impl Texture {
     }
 
 	/// Returns the minimum and maximum filter modes for the given texture.
-    pub fn get_filter_mode(&self) -> (TexFilter, TexFilter) {
+    pub fn filter_mode(&self) -> (TexFilter, TexFilter) {
         let mut minfilt = 0;
         let mut maxfilt = 0;
         unsafe { ffi::GX_GetTexObjFilterMode(&self.inner, &mut minfilt, &mut maxfilt) }
@@ -1222,11 +1229,17 @@ impl Texture {
     }
 
 	/// Returns the minimum and maximum LOD values for the given texture.
-    pub fn get_lod(&self) -> (f32, f32) {
+    pub fn lod(&self) -> (f32, f32) {
         let mut minlod = 0.0;
         let mut maxlod = 0.0;
         unsafe { ffi::GX_GetTexObjLOD(&self.inner, &mut minlod, &mut maxlod) }
         (minlod, maxlod)
+    }
+
+    /// Returns a reference to the texture data.
+    pub fn data(&self) -> &Buf32 {
+        //unsafe { ffi::GX_GetTexObjData(&self.inner) }
+        &self.img
     }
 
     /// Enables bias clamping for texture LOD.
