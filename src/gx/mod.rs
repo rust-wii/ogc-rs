@@ -2917,6 +2917,13 @@ pub fn get_overflow_count() -> u32 {
     unsafe { ffi::GX_GetOverflowCount() }
 }
 
+/// Loads the state describing a preloaded texture into one of eight hardware register sets.
+///
+/// See [GX_LoadTexObjPreloaded](https://libogc.devkitpro.org/gx_8h.html#a1ec8217de396e4e06e5cbeca560abbc0) for more.
+pub fn load_texture_preloaded(obj: &mut Texture, region: &mut TexRegion, mapid: u8) {
+    unsafe { ffi::GX_LoadTexObjPreloaded(&mut obj.inner, &mut region.inner, mapid) }
+}
+
 //All the following data is found from
 // http://hitmen.c02.at/files/yagcd/yagcd/chap5.html#sec5.3
 
