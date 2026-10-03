@@ -4,7 +4,7 @@
 //! in `gx.h`.
 
 use core::ffi::c_void;
-use core::mem::ManuallyDrop;
+use core::mem::{ManuallyDrop, MaybeUninit};
 use core::sync::atomic::{AtomicBool, AtomicPtr, Ordering};
 
 use alloc::vec::Vec;
@@ -1401,8 +1401,91 @@ pub enum TexCacheSize {
     None = ffi::GX_TEXCACHE_NONE,
 }
 
-#[repr(transparent)]
-pub struct TexRegion(ffi::GXTexRegion);
+pub struct TexRegion {
+    inner: ffi::GXTexRegion,
+    buf_even: Buf32,
+    buf_odd: Buf32,
+}
+
+impl TexRegion {
+    /// Initializes a texture memory (TMEM) region object for cache.
+    ///
+    /// See [GX_InitTexCacheRegion](https://libogc.devkitpro.org/gx_8h.html#aebc5bbd189eb6a366877b64622c750fa) for more.
+    pub fn new(size_even: TexCacheSize, size_odd: TexCacheSize, is_32b_mipmap: bool) -> Self {
+        // libogc doesn't initialize all fields
+        let mut gxtexregion = MaybeUninit::zeroed();
+        let mut buf_even = Buf32::new(match size_even {
+            TexCacheSize::Large => 512 * 1024,
+            TexCacheSize::Medium => 128 * 1024,
+            _ => 32 * 1024,
+        });
+        let mut buf_odd = Buf32::new(match size_odd {
+            TexCacheSize::Large => 512 * 1024,
+            TexCacheSize::Medium => 128 * 1024,
+            _ => 32 * 1024,
+        });
+        unsafe {
+            ffi::GX_InitTexCacheRegion(
+                gxtexregion.as_mut_ptr(),
+                is_32b_mipmap as u8,
+                buf_even.as_mut_ptr() as u32,
+                size_even as _,
+                buf_odd.as_mut_ptr() as u32,
+                size_odd as _,
+            );
+
+            TexRegion {
+                inner: gxtexregion.assume_init(),
+                buf_even,
+                buf_odd,
+            }
+        }
+    }
+
+    /// Initializes a Texture Memory (TMEM) region object for preloading.
+    ///
+    /// See [GX_InitTexPreloadRegion](https://libogc.devkitpro.org/gx_8h.html#a31bd62d5243c4c207ea06a5d60d7865e) for more.
+    pub fn new_preloaded(size_even: TexCacheSize, size_odd: TexCacheSize) -> Self {
+        // libogc doesn't initialize all fields
+        let mut gxtexregion = MaybeUninit::zeroed();
+        let mut buf_even = Buf32::new(match size_even {
+            TexCacheSize::Large => 512 * 1024,
+            TexCacheSize::Medium => 128 * 1024,
+            _ => 32 * 1024,
+        });
+        let mut buf_odd = Buf32::new(match size_odd {
+            TexCacheSize::Large => 512 * 1024,
+            TexCacheSize::Medium => 128 * 1024,
+            _ => 32 * 1024,
+        });
+        unsafe {
+            ffi::GX_InitTexPreloadRegion(
+                gxtexregion.as_mut_ptr(),
+                buf_even.as_mut_ptr() as u32,
+                size_even as _,
+                buf_odd.as_mut_ptr() as u32,
+                size_odd as _,
+            );
+
+            TexRegion {
+                inner: gxtexregion.assume_init(),
+                buf_even,
+                buf_odd,
+            }
+        }
+    }
+
+    /// Invalidates the texture cache in Texture Memory (TMEM) described by region.
+    ///
+    /// See [GX_InvalidateTexRegion](https://libogc.devkitpro.org/gx_8h.html#a2d4ce1648e0b44b6a0958e943aedcb76) for more.
+    pub fn invalidate(&mut self) {
+        unsafe { ffi::GX_InvalidateTexRegion(&mut self.inner) }
+    }
+
+    pub fn into_inner(self) -> ffi::GXTexRegion {
+        self.inner
+    }
+}
 
 #[repr(u32)]
 pub enum TlutFormat {
@@ -2657,7 +2740,7 @@ impl Gx {
     ///
     /// See [GX_PreloadEntireTexture](https://libogc.devkitpro.org/gx_8h.html#a7b6d8f9cffffaf8001d12548644d7ddd) for more.
     pub fn preload_entire_texture(obj: &Texture, region: &mut TexRegion) {
-        unsafe { ffi::GX_PreloadEntireTexture(obj as *const _ as *mut _, &mut region.0) }
+        unsafe { ffi::GX_PreloadEntireTexture(obj as *const _ as *mut _, &mut region.inner) }
     }
 
     /// Copies a Texture Look-Up Table (TLUT) from main memory to Texture Memory (TMEM).
