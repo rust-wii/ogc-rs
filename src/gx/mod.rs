@@ -951,7 +951,7 @@ impl From<u8> for WrapMode {
 /// For more information, see [https://wiki.tockdom.com/wiki/Image_Formats](https://wiki.tockdom.com/wiki/Image_Formats)
 #[derive(Copy, Clone, Debug)]
 #[repr(u32)]
-pub enum TextureFormat {
+pub enum TexFormat {
     /// 4 bpp: 4-bit intensity; 8x8 block
     I4 = ffi::GX_TF_I4,
     /// 8 bpp: 8-bit intensity; 8x4 block
@@ -962,6 +962,7 @@ pub enum TextureFormat {
     /// 16 bpp: 8-bit alpha, 8-bit intensity; 4x4 block
     /// `AAAAAAAA IIIIIIII`
     IA8 = ffi::GX_TF_IA8,
+
     /// 16 bpp: 5-bit red, 6-bit green, 5-bit blue; 4x4 block
     /// `RRRRRGGG GGGBBBBB`
     RGB565 = ffi::GX_TF_RGB565,
@@ -977,6 +978,7 @@ pub enum TextureFormat {
     /// GGGGGGGG BBBBBBBB, GGGGGGGG BBBBBBBB, ...
     /// ```
     RGBA8 = ffi::GX_TF_RGBA8,
+
     /// 4 bpp: 4-bit color index; 8x8 block, indices only; palletes: IA8, RGB565, RGB5A3
     CI4 = ffi::GX_TF_CI4,
     /// 8 bpp: 8-bit color index; 8x4 block, indices only; palletes: IA8, RGB565, RGB5A3
@@ -984,25 +986,68 @@ pub enum TextureFormat {
     /// 16 bpp, 8x4 block, indices only; palletes: IA8, RGB565, RGB5A3
     /// `XXCCCCCC CCCCCCCC`: 2-bit unused, 14-bit color index
     CI14 = ffi::GX_TF_CI14,
-    /// Compressed form
+
+    /// [DXT1-compressed](https://en.wikipedia.org/wiki/S3_Texture_Compression#DXT1) form
     CMPR = ffi::GX_TF_CMPR,
+
+    /// For copying 4 bits from red
+    CR4 = ffi::GX_CTF_R4,
+    /// For copying 4 bits from red, 4 bits from alpha
+    CRA4 = ffi::GX_CTF_RA4,
+    /// For copying 8 bits from red, 8 bits from alpha
+    CRA8 = ffi::GX_CTF_RA8,
+    CYUVA8 = ffi::GX_CTF_YUVA8,
+    /// For copying 8 bits from alpha
+    CA8 = ffi::GX_CTF_A8,
+    /// For copying 8 bits from red
+    CR8 = ffi::GX_CTF_R8,
+    /// For copying 8 bits from green
+    CG8 = ffi::GX_CTF_G8,
+    /// For copying 8 bits from blue
+    CB8 = ffi::GX_CTF_B8,
+    /// For copying 8 bits from red, 8 bits from green
+    CRG8 = ffi::GX_CTF_RG8,
+    /// For copying 8 bits from green, 8 bits from blue
+    CGB8 = ffi::GX_CTF_GB8,
+    /// For copying 4 upper bits from Z
+    CZ4 = ffi::GX_CTF_Z4,
+    /// For copying the middle 8 bits of Z
+    CZ8M = ffi::GX_CTF_Z8M,
+    /// For copying the lower 8 bits of Z
+    CZ8L = ffi::GX_CTF_Z8L,
+    /// For copying the lower 16 bits of Z
+    CZ16L = ffi::GX_CTF_Z16L,
 }
 
 
-impl From<u32> for TextureFormat {
+impl From<u32> for TexFormat {
     fn from(x: u32) -> Self {
         match x {
-            ffi::GX_TF_I4 => TextureFormat::I4,
-            ffi::GX_TF_I8 => TextureFormat::I8,
-            ffi::GX_TF_IA4 => TextureFormat::IA4,
-            ffi::GX_TF_IA8 => TextureFormat::IA8,
-            ffi::GX_TF_RGB565 => TextureFormat::RGB565,
-            ffi::GX_TF_RGB5A3 => TextureFormat::RGB5A3,
-            ffi::GX_TF_RGBA8 => TextureFormat::RGBA8,
-            ffi::GX_TF_CI4 => TextureFormat::CI4,
-            ffi::GX_TF_CI8 => TextureFormat::CI8,
-            ffi::GX_TF_CI14 => TextureFormat::CI14,
-            ffi::GX_TF_CMPR => TextureFormat::CMPR,
+            ffi::GX_TF_I4 => TexFormat::I4,
+            ffi::GX_TF_I8 => TexFormat::I8,
+            ffi::GX_TF_IA4 => TexFormat::IA4,
+            ffi::GX_TF_IA8 => TexFormat::IA8,
+            ffi::GX_TF_RGB565 => TexFormat::RGB565,
+            ffi::GX_TF_RGB5A3 => TexFormat::RGB5A3,
+            ffi::GX_TF_RGBA8 => TexFormat::RGBA8,
+            ffi::GX_TF_CI4 => TexFormat::CI4,
+            ffi::GX_TF_CI8 => TexFormat::CI8,
+            ffi::GX_TF_CI14 => TexFormat::CI14,
+            ffi::GX_TF_CMPR => TexFormat::CMPR,
+            ffi::GX_CTF_R4 => TexFormat::CR4,
+            ffi::GX_CTF_RA4 => TexFormat::CRA4,
+            ffi::GX_CTF_RA8 => TexFormat::CRA8,
+            ffi::GX_CTF_YUVA8 => TexFormat::CYUVA8,
+            ffi::GX_CTF_A8 => TexFormat::CA8,
+            ffi::GX_CTF_R8 => TexFormat::CR8,
+            ffi::GX_CTF_G8 => TexFormat::CG8,
+            ffi::GX_CTF_B8 => TexFormat::CB8,
+            ffi::GX_CTF_RG8 => TexFormat::CRG8,
+            ffi::GX_CTF_GB8 => TexFormat::CGB8,
+            ffi::GX_CTF_Z4 => TexFormat::CZ4,
+            ffi::GX_CTF_Z8M => TexFormat::CZ8M,
+            ffi::GX_CTF_Z8L => TexFormat::CZ8L,
+            ffi::GX_CTF_Z16L => TexFormat::CZ16L,
             _ => panic!("invalid texture format"),
 	    }
     }
@@ -1037,7 +1082,7 @@ impl Texture {
         img: &[u8],
         width: u16,
         height: u16,
-        format: u8,
+        format: TexFormat,
         wrap: (WrapMode, WrapMode),
         mipmap: bool,
     ) -> Texture {
@@ -1068,7 +1113,7 @@ impl Texture {
                 img_data.as_mut_ptr() as *mut _,
                 width,
                 height,
-                format,
+                format as u8,
                 wrap.0 as u8,
                 wrap.1 as u8,
                 mipmap as u8,
@@ -1086,7 +1131,7 @@ impl Texture {
         img: &[u8],
         width: u16,
         height: u16,
-        format: u8,
+        format: TexFormat,
         wrap: (WrapMode, WrapMode),
         mipmap: bool,
         tlut_name: u32,
@@ -1125,7 +1170,7 @@ impl Texture {
                 img_data.as_mut_ptr() as *mut _,
                 width,
                 height,
-                format,
+                format as u8,
                 wrap.0 as u8,
                 wrap.1 as u8,
                 mipmap as u8,
@@ -1155,7 +1200,7 @@ impl Texture {
     }
 
     /// Returns the pixel format for the given texture.
-    pub fn get_format(&self) -> TextureFormat {
+    pub fn format(&self) -> TexFormat {
         unsafe { ffi::GX_GetTexObjFmt(&self.inner).into() }
     }
 
