@@ -1622,7 +1622,6 @@ impl RenderMode {
 
 /// Fog equation control
 #[repr(u32)]
-#[non_exhaustive]
 pub enum FogType {
     None = ffi::GX_FOG_NONE,
     PerspLin = ffi::GX_FOG_PERSP_LIN,
