@@ -1537,6 +1537,23 @@ impl RenderMode {
     }
 }
 
+/// Fog equation control
+#[repr(u32)]
+#[non_exhaustive]
+pub enum FogType {
+    None = ffi::GX_FOG_NONE,
+    PerspLin = ffi::GX_FOG_PERSP_LIN,
+    PerspExp = ffi::GX_FOG_PERSP_EXP,
+    PerspExp2 = ffi::GX_FOG_PERSP_EXP2,
+    PerspRevExp = ffi::GX_FOG_PERSP_REVEXP,
+    PerspRevExp2 = ffi::GX_FOG_PERSP_REVEXP2,
+    OrthoLin = ffi::GX_FOG_ORTHO_LIN,
+    OrthoExp = ffi::GX_FOG_ORTHO_EXP,
+    OrthoExp2 = ffi::GX_FOG_ORTHO_EXP2,
+    OrthoRevExp = ffi::GX_FOG_ORTHO_REVEXP,
+    OrthoRevExp2 = ffi::GX_FOG_ORTHO_REVEXP2,
+}
+
 /// Represents the GX service.
 pub struct Gx;
 
@@ -2748,6 +2765,22 @@ pub fn set_point_size(width: u8, fmt: TexOffset) {
     unsafe { ffi::GX_SetPointSize(width, fmt as _); }
 }
 
+/// Sets the fog color.
+///
+/// See [GX_SetFogColor](https://libogc.devkitpro.org/gx_8h.html#ad95ca1b8adaafba7142ed8492869cfc8) for more.
+pub fn set_fog_color(color: Color) {
+    unsafe { ffi::GX_SetFogColor(color.0); }
+}
+
+/// Enables fog.
+///
+/// See [GX_SetFog](https://libogc.devkitpro.org/gx_8h.html#a16018e87043cea657379c7370c0a79d5) for more.
+pub fn set_fog(ft: FogType, startz: f32, endz: f32, nearz: f32, farz: f32, col: Color) {
+    unsafe {
+        ffi::GX_SetFog(ft as _, startz, endz, nearz, farz, col.0);
+    }
+}
+
 /// Begins a display list and disables writes to the FIFO currently attached to the CPU.
 ///
 /// When already in a display list, this is a no-op.
@@ -2795,6 +2828,10 @@ pub fn call_display_list(list: &Buf32, size: u32) {
 /// See [GX_EnableTexOffsets](https://libogc.devkitpro.org/gx_8h.html#ab94bf9e5a37a3f2c374e70e0d238d3d8) for more.
 pub fn enable_tex_offsets(coord: u8, line_enable: bool, point_enable: bool) {
     unsafe { ffi::GX_EnableTexOffsets(coord, line_enable as u8, point_enable as u8) }
+}
+
+pub fn get_overflow_count() -> u32 {
+    unsafe { ffi::GX_GetOverflowCount() }
 }
 
 //All the following data is found from
