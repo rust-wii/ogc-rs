@@ -12,7 +12,7 @@ repository = "https://github.com/rust-wii/ogc-rs"
 keywords = ["wii", "embedded", "no-std"]
 
 [dependencies]
-libc = "0.2"
+libc = "=0.2.189" # see #169
 
 [build-dependencies]
 bindgen = "0.72.1"
