@@ -1683,14 +1683,10 @@ impl Gx {
     /// the calling thread is the one responsible for generating graphics data. This thread will be
     /// the thread to be suspended when the FIFO gets too full. The current GX thread can be
     /// changed by calling [`Gx::set_current_gx_thread()`].
-    pub fn init(mut size: usize) -> AtomicPtr<Fifo> {
-        if size < Fifo::MIN_SIZE {
-            size = Fifo::MIN_SIZE;
-        }
-
+    pub fn init(size: usize) -> AtomicPtr<Fifo> {
         // keep buf around with ManuallyDrop, otherwise it will be deallocated
         // by the end of the function.
-        let mut buf = ManuallyDrop::new(crate::utils::Buf32::new(size));
+        let mut buf = ManuallyDrop::new(Buf32::new(size.max(Fifo::MIN_SIZE)));
 
         // SAFETY: all safety is ensured by Buf32.
         let gxfifo = unsafe {
@@ -1707,7 +1703,7 @@ impl Gx {
         }
 
         // Mark GX as initialized.
-        GX_IS_INIT.store(true, Ordering::Relaxed);
+        GX_IS_INIT.store(true, Ordering::Release);
         AtomicPtr::new(gxfifo as *mut Fifo)
     }
 
