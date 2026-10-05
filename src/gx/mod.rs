@@ -2482,16 +2482,6 @@ impl Gx {
         Gx::set_clip_mode(ffi::GX_CLIP_DISABLE as u8);
     }
 
-    /// Allows the CPU to write color directly to the Embedded Frame Buffer (EFB) at position x, y.
-    /// See [GX_PokeARGB](https://libogc.devkitpro.org/gx_8h.html#a5038d2f65e7959d64c68dcb1855353d8) for more.
-    pub fn poke_argb(x: u16, y: u16, color: Color) {
-        assert!(x < 640, "x must be less than 640, currently {x}");
-        assert!(y < 528, "y must be less than 527, currently {y}");
-        unsafe {
-            ffi::GX_PokeARGB(x, y, color.0);
-        }
-    }
-
     #[inline]
     pub fn position_3f32(x: f32, y: f32, z: f32) {
         let bytes = x.to_be_bytes()
@@ -2938,6 +2928,298 @@ pub fn get_overflow_count() -> u32 {
 /// See [GX_LoadTexObjPreloaded](https://libogc.devkitpro.org/gx_8h.html#a1ec8217de396e4e06e5cbeca560abbc0) for more.
 pub fn load_texture_preloaded(obj: &mut Texture, region: &mut TexRegion, mapid: u8) {
     unsafe { ffi::GX_LoadTexObjPreloaded(&mut obj.inner, &mut region.inner, mapid) }
+}
+
+/// Invalidates the vertex cache.
+///
+/// See [GX_InvVtxCache](https://libogc.devkitpro.org/gx_8h.html#a188bc7f388f971bc845dded41a24d1dc) for more.
+pub fn inv_vtx_cache() {
+    unsafe { ffi::GX_InvVtxCache() }
+}
+
+/// Allows the CPU to read a color value directly from the Embedded Frame Buffer (EFB) at position (x, y).
+///
+/// See [GX_PeekARGB](https://libogc.devkitpro.org/gx_8h.html#abd456222add9a17d48007664aaba2a84) for more.
+pub fn peek_argb(x: u16, y: u16) -> Color {
+    let mut color = MaybeUninit::uninit();
+    unsafe {
+        ffi::GX_PeekARGB(x, y, color.as_mut_ptr());
+        Color(color.assume_init())
+    }
+}
+
+/// Allows the CPU to read a z value directly from the Embedded Frame Buffer (EFB) at position (x, y).
+///
+/// See [GX_PeekZ](https://libogc.devkitpro.org/gx_8h.html#ab8116b7bcee951bbea04235e6448d725) for more.
+pub fn peek_z(x: u16, y: u16) -> u32 {
+    let mut z = MaybeUninit::uninit();
+    unsafe {
+        ffi::GX_PeekZ(x, y, z.as_mut_ptr());
+        z.assume_init()
+    }
+}
+
+/// Sets a threshold which is compared to the alpha of pixels written to the Embedded Frame
+/// Buffer (EFB) using the `gx::poke_*()` functions.
+///
+/// See [GX_PokeAlphaMode](https://libogc.devkitpro.org/gx_8h.html#ae14875170e444f9b331f3f51e517931e) for more.
+pub fn poke_alpha_mode(func: CmpFn, threshold: u8) {
+    unsafe { ffi::GX_PokeAlphaMode(func as u8, threshold) }
+}
+
+/// Determines value of alpha read from a frame buffer with no alpha channel
+#[repr(u32)]
+pub enum AlphaReadMode {
+    /// Always read 0x00.
+    Zero = ffi::GX_READ_00,
+    /// Always read 0xFF.
+    Max = ffi::GX_READ_FF,
+    /// Always read the real alpha value.
+    None = ffi::GX_READ_NONE,
+}
+
+/// Determines what value of alpha will be read from the Embedded Frame Buffer (EFB).
+///
+/// See [GX_PokeAlphaRead](https://libogc.devkitpro.org/gx_8h.html#a6a00dd9456e10f909a0151e3fc97e3da) for more.
+pub fn poke_alpha_read(mode: AlphaReadMode) {
+    unsafe { ffi::GX_PokeAlphaRead(mode as u8) }
+}
+
+/// Enables or disables alpha-buffer updates for `gx::poke_*()` functions.
+///
+/// See [GX_PokeAlphaUpdate](https://libogc.devkitpro.org/gx_8h.html#a716251f902a16f7701a71178338c30f6) for more.
+pub fn poke_alpha_update(enable: bool) {
+    unsafe { ffi::GX_PokeAlphaUpdate(enable as u8) }
+}
+
+/// Allows the CPU to write color directly to the Embedded Frame Buffer (EFB) at position (x, y).
+///
+/// See [GX_PokeARGB](https://libogc.devkitpro.org/gx_8h.html#a5038d2f65e7959d64c68dcb1855353d8) for more.
+pub fn poke_argb(x: u16, y: u16, color: Color) {
+    debug_assert!(x <= 640, "x must be less than 640, currently {x}");
+    debug_assert!(y <= 528, "y must be less than 528, currently {y}");
+    unsafe { ffi::GX_PokeARGB(x, y, color.0) }
+}
+
+/// Determines how the source image, is blended with the current Embedded Frame Buffer (EFB).
+///
+/// See [GX_PokeBlendMode](https://libogc.devkitpro.org/gx_8h.html#a24a9888bf4d97023577ed7e3ab178f6a) for more.
+pub fn poke_blend_mode(mode: BlendMode, src_fact: BlendCtrl, dst_fact: BlendCtrl, op: LogicOp) {
+    unsafe { ffi::GX_PokeBlendMode(mode as u8, src_fact as u8, dst_fact as u8, op as u8) }
+}
+
+/// Enables or disables color-buffer updates when writing the Embedded Frame Buffer (EFB) using the
+/// `gx::poke_*()` functions.
+///
+/// See [GX_PokeColorUpdate](https://libogc.devkitpro.org/gx_8h.html#a6c6f72b0b3c47a1e20a8456460fa83fd) for more.
+pub fn poke_color_update(enable: bool) {
+    unsafe { ffi::GX_PokeColorUpdate(enable as u8) }
+}
+
+/// Enables dithering when writing the Embedded Frame Buffer (EFB) using `gx::poke_*()` functions.
+///
+/// See [GX_PokeDither](https://libogc.devkitpro.org/gx_8h.html#a410ec93f6733856bd2e658eee088a88b) for more.
+pub fn poke_dither(enable: bool) {
+    unsafe { ffi::GX_PokeDither(enable as u8) }
+}
+
+/// Sets a constant alpha value for writing to the Embedded Frame Buffer (EFB).
+///
+/// See [GX_PokeDstAlpha](https://libogc.devkitpro.org/gx_8h.html#a62f70019a5ff3740cb077db69fea7f98) for more.
+pub fn poke_dst_alpha(enable: bool, a: u8) {
+    unsafe { ffi::GX_PokeDstAlpha(enable as u8, a) }
+}
+
+/// Allows the CPU to write a z value directly to the Embedded Frame Buffer (EFB) at position (x, y).
+///
+/// See [GX_PokeZ](https://libogc.devkitpro.org/gx_8h.html#a653e731d863deab2faae1594d15137a2) for more.
+pub fn poke_z(x: u16, y: u16, z: u32) {
+    debug_assert!(x <= 640, "x must be less than 640, currently {x}");
+    debug_assert!(y <= 528, "y must be less than 528, currently {y}");
+    unsafe { ffi::GX_PokeZ(x, y, z) }
+}
+
+/// Sets the Z-buffer compare mode when writing the Embedded Frame Buffer (EFB).
+///
+/// See [GX_PokeZMode](https://libogc.devkitpro.org/gx_8h.html#a3b3802cd88dcd0d3eeb241f9b45a1fd5) for more.
+pub fn poke_z_mode(enable_cmp: bool, cmp: CmpFn, enable_update: bool) {
+    unsafe { ffi::GX_PokeZMode(enable_cmp as u8, cmp as u8, enable_update as u8) }
+}
+
+/// Returns the bounding box of pixel coordinates that are drawn in the Embedded Framebuffer (EFB).
+///
+/// Returns a tuple `(top, bottom, left, right)` corresponding to each line.
+///
+/// See [GX_ReadBoundingBox](https://libogc.devkitpro.org/gx_8h.html#a4a51c85c25a25f1876c715a4e7913736) for more.
+pub fn read_bounding_box() -> (u16, u16, u16, u16) {
+    let (mut top, mut bottom, mut left, mut right) = (0, 0, 0, 0);
+    unsafe {
+        ffi::GX_ReadBoundingBox(&mut top, &mut bottom, &mut left, &mut right);
+    }
+    (top, bottom, left, right)
+}
+
+pub fn read_clks_per_vtx() -> u32 {
+    unsafe { ffi::GX_ReadClksPerVtx() }
+}
+
+/// Read performance metric values from the XF and RAS units.
+///
+/// See [GX_ReadXfRasMetric](https://libogc.devkitpro.org/gx_8h.html#a9018fdb77372e23f2b98157b5af6220a) for more.
+pub fn read_xf_ras_metric() -> (u32, u32, u32, u32) {
+    let (mut xfwaitin, mut xfwaitout, mut rasbusy, mut clks) = (0, 0, 0, 0);
+    unsafe { ffi::GX_ReadXfRasMetric(&mut xfwaitin, &mut xfwaitout, &mut rasbusy, &mut clks); }
+    (xfwaitin, xfwaitout, rasbusy, clks)
+}
+
+pub fn reset_overflow_count() -> u32 {
+    unsafe { ffi::GX_ResetOverflowCount() }
+}
+
+/// Sets the ambient color register for the color channel.
+///
+/// See [GX_SetChanAmbColor](https://libogc.devkitpro.org/gx_8h.html#a5097c9cfead421e0f7e492620446bcca) for more.
+pub fn set_chan_amb_color(channel: i32, color: Color) {
+    unsafe { ffi::GX_SetChanAmbColor(channel, color.0) }
+}
+
+/// Sets the material color register for the color channel.
+///
+/// See [GX_SetChanMatColor](https://libogc.devkitpro.org/gx_8h.html#a477a92781b0379250c56afcfda9b603b) for more.
+pub fn set_chan_mat_color(channel: i32, color: Color) {
+    unsafe { ffi::GX_SetChanMatColor(channel, color.0) }
+}
+
+/// Enables or disables coplanar triangle processing.
+///
+/// See [GX_SetCoPlanar](https://libogc.devkitpro.org/gx_8h.html#adf77d3b200df79928936301923c6805d) for more.
+pub fn set_coplanar(enable: bool) {
+    unsafe { ffi::GX_SetCoPlanar(enable as u8) }
+}
+
+bitflags::bitflags! {
+    /// XFB clamp mode flags. Use `ClampMode::empty()` for no clamping.
+    pub struct ClampMode: u32 {
+        //const NONE = ffi::GX_CLAMP_NONE; // use ClampMode::empty() instead
+        const TOP = ffi::GX_CLAMP_TOP;
+        const BOTTOM = ffi::GX_CLAMP_BOTTOM;
+    }
+}
+
+/// Sets the vertical clamping mode to use during the EFB to XFB or texture copy.
+///
+/// See [GX_SetCopyClamp](https://libogc.devkitpro.org/gx_8h.html#ac711ece8e164383667909d1dd50f002e) for more.
+pub fn set_copy_clamp(clamp: ClampMode) {
+    unsafe { ffi::GX_SetCopyClamp(clamp.bits() as u8) }
+}
+
+/// Selects a specific matrix to use for transformations.
+///
+/// See [GX_SetCurrentMtx](https://libogc.devkitpro.org/gx_8h.html#a0596dc11a15a8b039f552051b3d1b9f5) for more.
+pub fn set_current_mtx(mtx: u32) {
+    unsafe { ffi::GX_SetCurrentMtx((mtx * 3).min(ffi::GX_PNMTX9)) }
+}
+
+/// Controls whether all lines, only even lines, or only odd lines are copied from the EFB.
+#[repr(u32)]
+pub enum CopyMode {
+    Progressive = ffi::GX_COPY_PROGRESSIVE,
+    InterlacedEven = ffi::GX_COPY_INTLC_EVEN,
+    InterlacedOdd = ffi::GX_COPY_INTLC_ODD,
+}
+
+/// Determines which lines are read from the Embedded Frame Buffer (EFB) when using [`gx::copy_disp()`].
+///
+/// See [GX_SetDispCopyFrame2Field](https://libogc.devkitpro.org/gx_8h.html#a6d14fcad867bfdefc68c72f482eaa7a0) for more.
+pub fn set_disp_copy_frame_to_field(mode: CopyMode) {
+    unsafe { ffi::GX_SetDispCopyFrame2Field(mode as u8) }
+}
+
+/// Sets a constant alpha value for writing to the Embedded Frame Buffer (EFB).
+///
+/// See [GX_SetDstAlpha](https://libogc.devkitpro.org/gx_8h.html#a2c95bb677a05186ef2fc46a1b2965553) for more.
+pub fn set_dst_alpha(enable: bool, a: u8) {
+    unsafe { ffi::GX_SetDstAlpha(enable as u8, a) }
+}
+
+/// Selectively enables and disables interlacing of the frame buffer image.
+///
+/// See [GX_SetFieldMask](https://libogc.devkitpro.org/gx_8h.html#add6da60ca9cdf70f436f2c6f0264afad) for more.
+pub fn set_field_mask(even_mask: bool, odd_mask: bool) {
+    unsafe { ffi::GX_SetFieldMask(even_mask as u8, odd_mask as u8) }
+}
+
+#[repr(u32)]
+#[non_exhaustive]
+pub enum MiscToken {
+    /// External framebuffer flush?
+    XfFlush = ffi::GX_MT_XF_FLUSH,
+    /// Display list save context?
+    DlSaveCtx = ffi::GX_MT_DL_SAVE_CTX,
+}
+
+/// Sets miscellanous settings in the GP.
+///
+/// See [GX_SetMisc](https://libogc.devkitpro.org/gx_8h.html#a18a14de6b142222f7aea6c7b6c3a0a16) for more.
+pub fn set_misc(token: MiscToken, value: u32) {
+    unsafe { ffi::GX_SetMisc(token as u32, value) }
+}
+
+/// Used to set how many indirect lookups will take place.
+///
+/// See [GX_SetNumIndStages](https://libogc.devkitpro.org/gx_8h.html#a8ff9cccc4cfb803a9d924eafa108c55d) for more.
+pub fn set_num_ind_stages(nstages: u8) {
+    debug_assert!(nstages <= 4, "There are only 4 indirect stages; got {nstages}");
+    unsafe { ffi::GX_SetNumIndStages(nstages) }
+}
+
+/// Enables a consecutive number of TEV stages.
+///
+/// See [GX_SetNumTevStages](https://libogc.devkitpro.org/gx_8h.html#a408612e8fdbd9e0ff0fd78edce13e386) for more.
+pub fn set_num_tev_stages(num: u8) {
+    debug_assert!(num <= 16, "There are only 16 TEV stages; got {num}");
+    unsafe { ffi::GX_SetNumTevStages(num) }
+}
+
+/// Repositions the scissorbox rectangle within the Embedded Frame Buffer (EFB) memory space.
+///
+/// See [GX_SetScissorBoxOffset](https://libogc.devkitpro.org/gx_8h.html#a7c2c2c3f16c7c24a44ae91235278e3a9) for more.
+pub fn set_scissor_box_offset(xoffset: i32, yoffset: i32) {
+    debug_assert!(
+        (-342..=382).contains(&xoffset),
+        "x offset should be between -342 and 382 inclusive; got {xoffset}"
+    );
+    debug_assert!(
+        (-342..=494).contains(&yoffset),
+        "y offset should be between -342 and 382 inclusive; got {yoffset}"
+    );
+    unsafe { ffi::GX_SetScissorBoxOffset(xoffset, yoffset) }
+}
+
+/// Sets the viewport and adjusts the viewport's line offset for interlaced field rendering.
+///
+/// See [GX_SetViewportJitter](https://libogc.devkitpro.org/gx_8h.html#a96c5c40d63c7797d22800e6a31d6c798) for more.
+pub fn set_viewport_jitter(x_orig: f32, y_orig: f32, wd: f32, ht: f32, near_z: f32, far_z: f32, odd: bool) {
+    unsafe { ffi::GX_SetViewportJitter(x_orig, y_orig, wd, ht, near_z, far_z, odd as u32) }
+}
+
+/// Z texture operation
+#[repr(u32)]
+pub enum ZTexOp {
+    Disable = ffi::GX_ZT_DISABLE,
+    /// Add a Z texel to reference Z
+    Add = ffi::GX_ZT_ADD,
+    /// Replace reference Z with Z texel
+    Replace = ffi::GX_ZT_REPLACE,
+}
+
+/// Controls Z texture operations.
+///
+/// `fmt` should be one of the Z texture variants.
+///
+/// See [GX_SetZTexture](https://libogc.devkitpro.org/gx_8h.html#a05054d31fda1f7f2975375ad49a734d7) for more.
+pub fn set_z_texture(op: ZTexOp, fmt: TexFormat, bias: u32) {
+    unsafe { ffi::GX_SetZTexture(op as u8, fmt as u8, bias) }
 }
 
 //All the following data is found from
