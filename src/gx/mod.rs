@@ -2262,6 +2262,20 @@ impl Gx {
         unsafe { ffi::GX_SetTevOrder(tevstage, texcoord, texmap, color) }
     }
 
+    /// Simplified function to set various TEV parameters for this tevstage based on a predefined combiner mode.
+    ///
+    /// See [GX_SetTevOp](https://libogc.devkitpro.org/gx_8h.html#a68554713cdde7b45ae4d5ce156239cf8) for more.
+    pub fn set_tev_op(tevstage: u8, mode: u8) {
+        unsafe { ffi::GX_SetTevOp(tevstage, mode) }
+    }
+
+    /// Specifies the texture and rasterized color that will be available as inputs to this TEV tevstage.
+    ///
+    /// See [GX_SetTevOrder](https://libogc.devkitpro.org/gx_8h.html#ae64799e52298de39efc74bf989fc57f5) for more.
+    pub fn set_tev_order(tevstage: u8, texcoord: u8, texmap: u32, color: u8) {
+        unsafe { ffi::GX_SetTevOrder(tevstage, texcoord, texmap, color) }
+    }
+
     /// Specifies how texture coordinates are generated.
     /// See [GX_SetTexCoordGen](https://libogc.devkitpro.org/gx_8h.html#a7d3139b693ace5587c3224e7df2d8245) for more.
     pub fn set_tex_coord_gen(texcoord: u16, tgen_typ: u32, tgen_src: u32, mtxsrc: u32) {
