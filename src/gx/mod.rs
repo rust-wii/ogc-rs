@@ -1064,26 +1064,6 @@ pub enum TexOffset {
     ToOne = ffi::GX_TO_ONE,
 }
 
-
-impl From<u32> for TextureFormat {
-    fn from(x: u32) -> Self {
-        match x {
-            ffi::GX_TF_I4 => TextureFormat::I4,
-            ffi::GX_TF_I8 => TextureFormat::I8,
-            ffi::GX_TF_IA4 => TextureFormat::IA4,
-            ffi::GX_TF_IA8 => TextureFormat::IA8,
-            ffi::GX_TF_RGB565 => TextureFormat::RGB565,
-            ffi::GX_TF_RGB5A3 => TextureFormat::RGB5A3,
-            ffi::GX_TF_RGBA8 => TextureFormat::RGBA8,
-            ffi::GX_TF_CI4 => TextureFormat::CI4,
-            ffi::GX_TF_CI8 => TextureFormat::CI8,
-            ffi::GX_TF_CI14 => TextureFormat::CI14,
-            ffi::GX_TF_CMPR => TextureFormat::CMPR,
-            _ => panic!("invalid texture format"),
-	    }
-    }
-}
-
 /// Object containing information about a texture.
 #[derive(Debug)]
 pub struct Texture {
@@ -1522,7 +1502,7 @@ impl TexRegion {
         self.inner
     }
 }
-*/
+
 
 #[repr(u32)]
 pub enum TlutFormat {
@@ -2257,20 +2237,6 @@ impl Gx {
     }
 
     /// Specifies the texture and rasterized color that will be available as inputs to this TEV tevstage.
-    /// See [GX_SetTevOrder](https://libogc.devkitpro.org/gx_8h.html#ae64799e52298de39efc74bf989fc57f5) for more.
-    pub fn set_tev_order(tevstage: u8, texcoord: u8, texmap: u32, color: u8) {
-        unsafe { ffi::GX_SetTevOrder(tevstage, texcoord, texmap, color) }
-    }
-
-    /// Simplified function to set various TEV parameters for this tevstage based on a predefined combiner mode.
-    ///
-    /// See [GX_SetTevOp](https://libogc.devkitpro.org/gx_8h.html#a68554713cdde7b45ae4d5ce156239cf8) for more.
-    pub fn set_tev_op(tevstage: u8, mode: u8) {
-        unsafe { ffi::GX_SetTevOp(tevstage, mode) }
-    }
-
-    /// Specifies the texture and rasterized color that will be available as inputs to this TEV tevstage.
-    ///
     /// See [GX_SetTevOrder](https://libogc.devkitpro.org/gx_8h.html#ae64799e52298de39efc74bf989fc57f5) for more.
     pub fn set_tev_order(tevstage: u8, texcoord: u8, texmap: u32, color: u8) {
         unsafe { ffi::GX_SetTevOrder(tevstage, texcoord, texmap, color) }
