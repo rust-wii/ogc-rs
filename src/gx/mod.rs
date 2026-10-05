@@ -5,6 +5,7 @@
 
 use core::ffi::c_void;
 use core::mem::{ManuallyDrop, MaybeUninit};
+use core::ptr;
 use core::sync::atomic::{AtomicBool, AtomicPtr, Ordering};
 
 use alloc::vec::Vec;
@@ -51,6 +52,10 @@ pub const F32: u32 = ffi::GX_F32;
 
 static GX_IS_INIT: AtomicBool = AtomicBool::new(false);
 static IN_DISPLAY_LIST: AtomicBool = AtomicBool::new(false);
+
+static BREAKPT_CB: AtomicPtr<unsafe fn()> = AtomicPtr::null();
+static DRAW_DONE_CB: AtomicPtr<fn()> = AtomicPtr::null();
+static DRAW_SYNC_CB: AtomicPtr<fn(u16)> = AtomicPtr::null();
 
 mod regs;
 pub mod types;
@@ -1695,6 +1700,12 @@ impl Gx {
             )
         };
 
+        unsafe {
+            ffi::GX_SetBreakPtCallback(Some(breakpt_callback_stub));
+            ffi::GX_SetDrawDoneCallback(Some(draw_done_callback_stub));
+            ffi::GX_SetDrawSyncCallback(Some(draw_sync_callback_stub));
+        }
+
         // Mark GX as initialized.
         GX_IS_INIT.store(true, Ordering::Relaxed);
         AtomicPtr::new(gxfifo as *mut Fifo)
@@ -3279,4 +3290,83 @@ pub enum GPDrawCommand {
     DrawLines = 0xA8,
     DrawLineStrip = 0xB0,
     DrawPoints = 0xBB,
+}
+
+unsafe extern "C" fn breakpt_callback_stub() {
+    let cb_ptr = BREAKPT_CB.load(Ordering::Acquire);
+    if ! cb_ptr.is_null() {
+        unsafe { (*cb_ptr)(); }
+    }
+}
+
+/// Registers `cb` as a function to be invoked when a break point is encountered.
+///
+/// `cb` is an `unsafe fn()` due to being run when interrupts are disabled.
+///
+/// See [GX_SetBreakPtCallback](https://libogc.devkitpro.org/gx_8h.html#a58d6aafb813095b05aa40675a9f83ed8) for more.
+pub fn set_breakpt_callback(cb: Option<unsafe fn()>) -> Option<unsafe fn()> {
+    let cb_ptr = match cb {
+        None => ptr::null_mut(),
+        Some(mut f) => (&mut f) as *mut unsafe fn(),
+    };
+
+    let prev_cb_ptr = BREAKPT_CB.swap(cb_ptr, Ordering::AcqRel);
+
+    if prev_cb_ptr.is_null() {
+        None
+    } else {
+        // only we set the pointer (above), so it will always be valid
+        Some(unsafe { *prev_cb_ptr })
+    }
+}
+
+
+unsafe extern "C" fn draw_done_callback_stub() {
+    let cb_ptr = DRAW_DONE_CB.load(Ordering::Acquire);
+    if ! cb_ptr.is_null() {
+        unsafe { (*cb_ptr)(); }
+    }
+}
+
+/// Installs a callback that is invoked whenever a DrawDone command is encountered by the GP.
+///
+/// See [GX_SetDrawDoneCallback](https://libogc.devkitpro.org/gx_8h.html#a0a39520decc53fdd2a687ab8d5a46ff2) for more.
+pub fn set_draw_done_callback(cb: Option<fn()>) -> Option<fn()> {
+    let cb_ptr = match cb {
+        None => ptr::null_mut(),
+        Some(mut f) => (&mut f) as *mut fn(),
+    };
+
+    let prev_cb_ptr = DRAW_DONE_CB.swap(cb_ptr, Ordering::AcqRel);
+
+    if prev_cb_ptr.is_null() {
+        None
+    } else {
+        // only we set the pointer (above), so it will always be valid
+        Some(unsafe { *prev_cb_ptr })
+    }
+}
+
+
+unsafe extern "C" fn draw_sync_callback_stub(token: u16) {
+    let cb_ptr = DRAW_SYNC_CB.load(Ordering::Acquire);
+    if ! cb_ptr.is_null() {
+        unsafe { (*cb_ptr)(token); }
+    }
+}
+
+pub fn set_draw_sync_callback(cb: Option<fn(u16)>) -> Option<fn(u16)> {
+    let cb_ptr = match cb {
+        None => ptr::null_mut(),
+        Some(mut f) => (&mut f) as *mut fn(u16),
+    };
+
+    let prev_cb_ptr = DRAW_SYNC_CB.swap(cb_ptr, Ordering::AcqRel);
+
+    if prev_cb_ptr.is_null() {
+        None
+    } else {
+        // only we set the pointer (above), so it will always be valid
+        Some(unsafe { *prev_cb_ptr })
+    }
 }
