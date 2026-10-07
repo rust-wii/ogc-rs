@@ -9,22 +9,18 @@ use core::ops::{Deref, DerefMut};
 use core::ptr;
 use core::sync::atomic::{AtomicBool, AtomicPtr, Ordering};
 
-use alloc::vec::Vec;
-use bit_field::BitField;
 use ogc_sys::GXRModeObj;
 use voladdress::{Safe, VolAddress};
 
-use num_traits::Float;
-
 use crate::ffi::{self, Mtx as Mtx34, Mtx44};
-use crate::gx::regs::BPReg;
 use crate::{cache, lwp};
 use crate::utils::{Buf32, mem};
 
-use self::regs::XFReg;
-use self::types::{Gamma, PixelEngineControl, PixelFormat, VtxDest, ZFormat};
+use self::types::{Gamma, VtxDest};
 
-pub const GX_PIPE: VolAddress<u8, (), Safe> = unsafe { VolAddress::new(0xCC00_8000) };
+pub use crate::ffi::WGPipe;
+
+pub const WGPIPE: VolAddress<WGPipe, (), Safe> = unsafe { VolAddress::new(0xCC00_8000) };
 
 // Number of components in an attribute
 pub const CLR_RGB: u32 = ffi::GX_CLR_RGB;
@@ -398,7 +394,7 @@ pub enum BlendCtrl {
 /// See [`Gx::set_pixel_fmt()`] for details.
 #[derive(Copy, Clone, Debug)]
 #[repr(u32)]
-pub enum ZCompress {
+pub enum ZFormat {
     Linear = ffi::GX_ZC_LINEAR,
     Near = ffi::GX_ZC_NEAR,
     Mid = ffi::GX_ZC_MID,
@@ -2016,22 +2012,7 @@ impl Gx {
     /// Sets color and Z value to clear the EFB to during copy operations.
     /// See [GX_SetCopyClear](https://libogc.devkitpro.org/gx_8h.html#a17265aefd7e64820de53abd9113334bc) for more.
     pub fn set_copy_clear(background: Color, z_value: u32) {
-        BPReg::PE_CLEAR_AR.load(u32::from_be_bytes([
-            0u8,
-            0u8,
-            background.0.a,
-            background.0.r,
-        ]));
-
-        BPReg::PE_CLEAR_GB.load(u32::from_be_bytes([
-            0u8,
-            0u8,
-            background.0.g,
-            background.0.b,
-        ]));
-
-        BPReg::PE_CLEAR_Z.load(z_value);
-        //unsafe { ffi::GX_SetCopyClear(background.0, z_value) };
+        unsafe { ffi::GX_SetCopyClear(background.0, z_value) };
     }
 
     /// Sets the viewport rectangle in screen coordinates.
@@ -2061,32 +2042,13 @@ impl Gx {
     /// Sets the source parameters for the EFB to XFB copy operation.
     /// See [GX_SetDispCopySrc](https://libogc.devkitpro.org/gx_8h.html#a979d8db7abbbc2e9a267f5d1710ac588) for more.
     pub fn set_disp_copy_src(left: u16, top: u16, wd: u16, hd: u16) {
-        assert_eq!(0, left % 2);
-        assert_eq!(0, top % 2);
-        assert_eq!(0, wd % 2);
-        assert_eq!(0, hd % 2);
-        //unsafe { ffi::GX_SetDispCopySrc(left, top, wd, hd) }
-
-        let mut top_left = 0u32;
-        top_left.set_bits(..10, left.into());
-        top_left.set_bits(10.., top.into());
-
-        let mut width_height = 0u32;
-        width_height.set_bits(..10, (wd - 1).into());
-        width_height.set_bits(10.., (hd - 1).into());
-
-        BPReg::EFB_ADDR_TOP_LEFT.load(top_left);
-        BPReg::EFB_ADDR_DIMENSIONS.load(width_height);
+        unsafe { ffi::GX_SetDispCopySrc(left, top, wd, hd) }
     }
 
     /// Sets the witth and height of the display buffer in pixels.
     /// See [GX_SetDispCopyDst](https://libogc.devkitpro.org/gx_8h.html#ab6f639059b750e57af4c593ba92982c5) for more.
-    pub fn set_disp_copy_dst(width: u16, _height: u16) {
-        assert!(width <= 0x3FF, "width isn't a valid value");
-
-        BPReg::MIPMAP_STRIDE.load(width.into());
-
-        //unsafe { ffi::GX_SetDispCopyDst(width, height) }
+    pub fn set_disp_copy_dst(width: u16, height: u16) {
+        unsafe { ffi::GX_SetDispCopyDst(width, height) }
     }
 
     /// Sets the subpixel sample patterns and vertical filter coefficients used to filter subpixels into pixels.
@@ -2097,62 +2059,7 @@ impl Gx {
         vf: bool,
         v_filter: &mut [u8; 7],
     ) {
-        let mut disp_copy_0 = 0x666666u32;
-        let mut disp_copy_1 = 0x666666u32;
-        let mut disp_copy_2 = 0x666666u32;
-        let mut disp_copy_3 = 0x666666u32;
-
-        let mut trgt_copy_0 = 0x595000u32;
-        let mut trgt_copy_1 = 0x000015u32;
-
-        if aa {
-            disp_copy_0.set_bits(0..4, sample_pattern[0][0].into());
-            disp_copy_0.set_bits(4..8, sample_pattern[0][1].into());
-            disp_copy_0.set_bits(8..12, sample_pattern[1][0].into());
-            disp_copy_0.set_bits(12..16, sample_pattern[1][1].into());
-            disp_copy_0.set_bits(16..20, sample_pattern[2][0].into());
-            disp_copy_0.set_bits(20..24, sample_pattern[2][1].into());
-
-            disp_copy_1.set_bits(0..4, sample_pattern[3][0].into());
-            disp_copy_1.set_bits(4..8, sample_pattern[3][1].into());
-            disp_copy_1.set_bits(8..12, sample_pattern[4][0].into());
-            disp_copy_1.set_bits(12..16, sample_pattern[4][1].into());
-            disp_copy_1.set_bits(16..20, sample_pattern[5][0].into());
-            disp_copy_1.set_bits(20..24, sample_pattern[5][1].into());
-
-            disp_copy_2.set_bits(0..4, sample_pattern[6][0].into());
-            disp_copy_2.set_bits(4..8, sample_pattern[6][1].into());
-            disp_copy_2.set_bits(8..12, sample_pattern[7][0].into());
-            disp_copy_2.set_bits(12..16, sample_pattern[7][1].into());
-            disp_copy_2.set_bits(16..20, sample_pattern[8][0].into());
-            disp_copy_2.set_bits(20..24, sample_pattern[8][1].into());
-
-            disp_copy_3.set_bits(0..4, sample_pattern[9][0].into());
-            disp_copy_3.set_bits(4..8, sample_pattern[9][1].into());
-            disp_copy_3.set_bits(8..12, sample_pattern[10][0].into());
-            disp_copy_3.set_bits(12..16, sample_pattern[10][1].into());
-            disp_copy_3.set_bits(16..20, sample_pattern[11][0].into());
-            disp_copy_3.set_bits(20..24, sample_pattern[11][1].into());
-        }
-
-        if vf {
-            trgt_copy_0.set_bits(0..6, v_filter[0].into());
-            trgt_copy_0.set_bits(6..12, v_filter[1].into());
-            trgt_copy_0.set_bits(12..18, v_filter[2].into());
-            trgt_copy_0.set_bits(18..24, v_filter[3].into());
-
-            trgt_copy_1.set_bits(0..6, v_filter[4].into());
-            trgt_copy_1.set_bits(6..12, v_filter[5].into());
-            trgt_copy_1.set_bits(12..18, v_filter[6].into());
-        }
-
-        BPReg::DISP_COPY_FILT0.load(disp_copy_0);
-        BPReg::DISP_COPY_FILT1.load(disp_copy_1);
-        BPReg::DISP_COPY_FILT2.load(disp_copy_2);
-        BPReg::DISP_COPY_FILT3.load(disp_copy_3);
-
-        BPReg::TRGT_COPY_FILT0.load(trgt_copy_0);
-        BPReg::TRGT_COPY_FILT1.load(trgt_copy_1);
+        unsafe { ffi::GX_SetCopyFilter(aa as u8, sample_pattern.as_mut_ptr(), vf as u8, v_filter.as_mut_ptr()) }
     }
 
     /// Sets the lighting controls for a particular color channel.
@@ -2187,11 +2094,7 @@ impl Gx {
     /// Sets the format of pixels in the Embedded Frame Buffer (EFB).
     /// See [GX_SetPixelFmt](https://libogc.devkitpro.org/gx_8h.html#a018d9b0359f9689ac41f44f0b2374ffb) for more.
     pub fn set_pixel_fmt(pix_fmt: PixelFormat, z_fmt: ZFormat) {
-        let pe_ctrl = PixelEngineControl::new()
-            .pixel_format(pix_fmt)
-            .z_format(z_fmt);
-
-        BPReg::PE_CTRL.load(pe_ctrl.to_u32());
+        unsafe { ffi::GX_SetPixelFmt(pix_fmt as u8, z_fmt as u8) }
     }
 
     /// Enables or disables culling of geometry based on its orientation to the viewer.
@@ -2340,57 +2243,7 @@ impl Gx {
     /// Sets the projection matrix.
     /// See [GX_LoadProjectionMtx](https://libogc.devkitpro.org/gx_8h.html#a241a1301f006ed04b7895c051959f64e) for more.
     pub fn load_projection_mtx(matrix: &Mtx44, projection: ProjectionType) {
-        let mut values: [f32; 6] = [0.0; 6];
-        values[0] = matrix[0][0];
-        values[2] = matrix[1][1];
-        values[4] = matrix[2][2];
-        values[5] = matrix[2][3];
-
-        match projection {
-            ProjectionType::Perspective => {
-                values[1] = matrix[0][2];
-                values[3] = matrix[1][2];
-            }
-            ProjectionType::Orthographic => {
-                values[1] = matrix[0][3];
-                values[3] = matrix[1][3];
-            }
-        }
-
-        let mut vals = values
-            .iter()
-            .map(|val| val.to_be_bytes())
-            .collect::<Vec<[u8; 4]>>();
-        vals.push((projection as u32).to_be_bytes());
-        XFReg::PROJ_PRM_A.load_multi(7, &vals)
-    }
-
-    ///Sets global material color 1 or 0 in gx regs.
-    pub fn set_global_mat_color(color_channel: ColorChannel, color: Color) {
-        match color_channel {
-            ColorChannel::Color0 => XFReg::MATERIAL0.load(u32::from_be_bytes([
-                color.0.a, color.0.b, color.0.g, color.0.r,
-            ])),
-            ColorChannel::Color1 => XFReg::MATERIAL1.load(u32::from_be_bytes([
-                color.0.a, color.0.b, color.0.g, color.0.r,
-            ])),
-            _ => todo!()
-        }
-        Gx::color_color(color);
-    }
-
-    ///Sets global ambient color 1 or 0 in gx regs.
-    pub fn set_global_ambient_color(color_channel: ColorChannel, color: Color) {
-        match color_channel {
-            ColorChannel::Color0 => XFReg::AMBIENT0.load(u32::from_be_bytes([
-                color.0.a, color.0.b, color.0.g, color.0.r,
-            ])),
-            ColorChannel::Color1 => XFReg::AMBIENT1.load(u32::from_be_bytes([
-                color.0.a, color.0.b, color.0.g, color.0.r,
-            ])),
-            _ => todo!()
-        }
-        Gx::color_color(color);
+        unsafe { ffi::GX_LoadProjectionMtx(matrix.as_ptr().cast_mut(), projection as u8) }
     }
 
     /// Invalidates the vertex cache.
@@ -2406,7 +2259,7 @@ impl Gx {
     /// is indexed. Direct data bypasses the vertex cache. Direct data is any attribute that is set
     /// to `GX_DIRECT` in the current vertex descriptor.
     pub fn inv_vtx_cache() {
-        GX_PIPE.write(GPCommand::InvalidateVertexCache as u8);
+        unsafe { ffi::GX_InvVtxCache() }
     }
 
     /// Clears all vertex attributes of the current vertex descriptor to `GX_NONE`.
@@ -2543,178 +2396,85 @@ impl Gx {
 
     #[inline]
     pub fn position_3f32(x: f32, y: f32, z: f32) {
-        let bytes = x.to_be_bytes()
-            .into_iter()
-            .chain(y.to_be_bytes())
-            .chain(z.to_be_bytes());
-        for byte in bytes {
-            GX_PIPE.write(byte);
-        }
+        Gx::position_2f32(x, y);
+        WGPIPE.write(WGPipe { F32: z });
     }
 
     #[inline]
     pub fn position_3u16(x: u16, y: u16, z: u16) {
-        let x_bytes = x.to_be_bytes();
-        let y_bytes = y.to_be_bytes();
-        let z_bytes = z.to_be_bytes();
-        for byte in x_bytes {
-            GX_PIPE.write(byte);
-        }
-        for byte in y_bytes {
-            GX_PIPE.write(byte);
-        }
-
-        for byte in z_bytes {
-            GX_PIPE.write(byte);
-        }
+        Gx::position_2u16(x, y);
+        WGPIPE.write(WGPipe { U16: z });
     }
 
     #[inline]
     pub fn position_3i16(x: i16, y: i16, z: i16) {
-        let x_bytes = x.to_be_bytes();
-        let y_bytes = y.to_be_bytes();
-        let z_bytes = z.to_be_bytes();
-        for byte in x_bytes {
-            GX_PIPE.write(byte);
-        }
-        for byte in y_bytes {
-            GX_PIPE.write(byte);
-        }
-
-        for byte in z_bytes {
-            GX_PIPE.write(byte);
-        }
+        Gx::position_2i16(x, y);
+        WGPIPE.write(WGPipe { S16: z });
     }
 
     #[inline]
     pub fn position_3u8(x: u8, y: u8, z: u8) {
-        let x_bytes = x.to_be_bytes();
-        let y_bytes = y.to_be_bytes();
-        let z_bytes = z.to_be_bytes();
-        for byte in x_bytes {
-            GX_PIPE.write(byte);
-        }
-        for byte in y_bytes {
-            GX_PIPE.write(byte);
-        }
-
-        for byte in z_bytes {
-            GX_PIPE.write(byte);
-        }
+        Gx::position_2u8(x, y);
+        WGPIPE.write(WGPipe { U8: z });
     }
 
     #[inline]
     pub fn position_3i8(x: i8, y: i8, z: i8) {
-        let x_bytes = x.to_be_bytes();
-        let y_bytes = y.to_be_bytes();
-        let z_bytes = z.to_be_bytes();
-        for byte in x_bytes {
-            GX_PIPE.write(byte);
-        }
-        for byte in y_bytes {
-            GX_PIPE.write(byte);
-        }
-
-        for byte in z_bytes {
-            GX_PIPE.write(byte);
-        }
+        Gx::position_2i8(x, y);
+        WGPIPE.write(WGPipe { S8: z });
     }
 
     #[inline]
     pub fn position_2f32(x: f32, y: f32) {
-        let x_bytes = x.to_be_bytes();
-        let y_bytes = y.to_be_bytes();
-
-        for byte in x_bytes {
-            GX_PIPE.write(byte);
-        }
-
-        for byte in y_bytes {
-            GX_PIPE.write(byte);
-        }
+        WGPIPE.write(WGPipe { F32: x });
+        WGPIPE.write(WGPipe { F32: y });
     }
 
     #[inline]
     pub fn position_2u16(x: u16, y: u16) {
-        let x_bytes = x.to_be_bytes();
-        let y_bytes = y.to_be_bytes();
-
-        for byte in x_bytes {
-            GX_PIPE.write(byte);
-        }
-
-        for byte in y_bytes {
-            GX_PIPE.write(byte);
-        }
+        WGPIPE.write(WGPipe { U16: x });
+        WGPIPE.write(WGPipe { U16: y });
     }
 
     #[inline]
     pub fn position_2i16(x: i16, y: i16) {
-        let x_bytes = x.to_be_bytes();
-        let y_bytes = y.to_be_bytes();
-
-        for byte in x_bytes {
-            GX_PIPE.write(byte);
-        }
-
-        for byte in y_bytes {
-            GX_PIPE.write(byte);
-        }
+        WGPIPE.write(WGPipe { S16: x });
+        WGPIPE.write(WGPipe { S16: y });
     }
 
     #[inline]
     pub fn position_2u8(x: u8, y: u8) {
-        let x_bytes = x.to_be_bytes();
-        let y_bytes = y.to_be_bytes();
-
-        for byte in x_bytes {
-            GX_PIPE.write(byte);
-        }
-
-        for byte in y_bytes {
-            GX_PIPE.write(byte);
-        }
+        WGPIPE.write(WGPipe { U8: x });
+        WGPIPE.write(WGPipe { U8: y });
     }
 
     #[inline]
     pub fn position_2i8(x: i8, y: i8) {
-        let x_bytes = x.to_be_bytes();
-        let y_bytes = y.to_be_bytes();
-
-        for byte in x_bytes {
-            GX_PIPE.write(byte);
-        }
-
-        for byte in y_bytes {
-            GX_PIPE.write(byte);
-        }
+        WGPIPE.write(WGPipe { S8: x });
+        WGPIPE.write(WGPipe { S8: y });
     }
 
     #[inline]
     pub fn position1x8(index: u8) {
-        GX_PIPE.write(index);
+        WGPIPE.write(WGPipe { U8: index });
     }
 
     #[inline]
     pub fn position1x16(index: u16) {
-        for byte in index.to_be_bytes() {
-            GX_PIPE.write(byte);
-        }
+        WGPIPE.write(WGPipe { U16: index });
     }
 
     #[inline]
     pub fn color_4u8(r: u8, g: u8, b: u8, a: u8) {
-        GX_PIPE.write(r);
-        GX_PIPE.write(g);
-        GX_PIPE.write(b);
-        GX_PIPE.write(a);
+        Gx::color_3u8(r, g, b);
+        WGPIPE.write(WGPipe { U8: a });
     }
 
     #[inline]
     pub fn color_3u8(r: u8, g: u8, b: u8) {
-        GX_PIPE.write(r);
-        GX_PIPE.write(g);
-        GX_PIPE.write(b);
+        WGPIPE.write(WGPipe { U8: r });
+        WGPIPE.write(WGPipe { U8: g });
+        WGPIPE.write(WGPipe { U8: b });
     }
 
     #[inline]
@@ -2723,54 +2483,37 @@ impl Gx {
         debug_assert!((0.0..=1.0).contains(&g));
         debug_assert!((0.0..=1.0).contains(&b));
 
-        let r: u8 = (r * 255.0).round() as u8;
-        let g: u8 = (g * 255.0).round() as u8;
-        let b: u8 = (b * 255.0).round() as u8;
-
-        GX_PIPE.write(r);
-        GX_PIPE.write(g);
-        GX_PIPE.write(b);
+        WGPIPE.write(WGPipe { U8: (r * 255.0) as u8 });
+        WGPIPE.write(WGPipe { U8: (g * 255.0) as u8 });
+        WGPIPE.write(WGPipe { U8: (b * 255.0) as u8 });
     }
 
     #[inline]
     pub fn color_4f32(r: f32, g: f32, b: f32, a: f32) {
         debug_assert!((0.0..=1.0).contains(&a));
 
-        let a = (a * 255.0).round() as u8;
-
         Gx::color_3f32(r, g, b);
-        GX_PIPE.write(a);
+        WGPIPE.write(WGPipe { U8: (a * 255.0) as u8 });
     }
 
     #[inline]
     pub fn color_1u32(clr: u32) {
-        for byte in clr.to_be_bytes() {
-            GX_PIPE.write(byte);
-        }
+        WGPIPE.write(WGPipe { U32: clr });
     }
 
     #[inline]
     pub fn color_1u16(clr: u16) {
-        let clr_bytes = clr.to_be_bytes();
-        for byte in clr_bytes {
-            GX_PIPE.write(byte);
-        }
+        WGPIPE.write(WGPipe { U16: clr });
     }
 
     #[inline]
     pub fn color1x8(index: u8) {
-        let idx_bytes = index.to_be_bytes();
-        for byte in idx_bytes {
-            GX_PIPE.write(byte);
-        }
+        WGPIPE.write(WGPipe { U8: index });
     }
 
     #[inline]
     pub fn color1x16(index: u16) {
-        let idx_bytes = index.to_be_bytes();
-        for byte in idx_bytes {
-            GX_PIPE.write(byte);
-        }
+        WGPIPE.write(WGPipe { U16: index });
     }
 
     ///Helper functions to just pass in a color object
@@ -2780,16 +2523,8 @@ impl Gx {
 
     #[inline]
     pub fn tex_coord_2f32(s: f32, t: f32) {
-        let s_bytes = s.to_be_bytes();
-        let t_bytes = t.to_be_bytes();
-
-        for byte in s_bytes {
-            GX_PIPE.write(byte);
-        }
-
-        for byte in t_bytes {
-            GX_PIPE.write(byte);
-        }
+        WGPIPE.write(WGPipe { F32: s });
+        WGPIPE.write(WGPipe { F32: t });
     }
 
     pub fn flush() {
@@ -3303,6 +3038,7 @@ fn call_display_list(display_list: &[u8]) {
 */
 
 //Currently doesnt check dirty state
+/*
 fn draw_begin(command: GPDrawCommand, vertex_format: u8, vertex_count: u16) {
     assert!(vertex_format <= 7, "Incorrect vertex format");
     let gp_cmd = (command as u8) | (vertex_format & 7);
@@ -3312,6 +3048,7 @@ fn draw_begin(command: GPDrawCommand, vertex_format: u8, vertex_count: u16) {
         GX_PIPE.write(byte);
     }
 }
+*/
 
 #[derive(Copy, Clone)]
 #[repr(u8)]
@@ -3417,4 +3154,17 @@ pub fn set_draw_sync_callback(cb: Option<fn(u16)>) -> Option<fn(u16)> {
         // only we set the pointer (above), so it will always be valid
         Some(unsafe { *prev_cb_ptr })
     }
+}
+
+
+#[repr(u32)]
+pub enum PixelFormat {
+    Rgb8Z24 = ffi::GX_PF_RGB8_Z24,
+    Rgba6Z24 = ffi::GX_PF_RGBA6_Z24,
+    Rgb565Z16 = ffi::GX_PF_RGB565_Z16,
+    Z24 = ffi::GX_PF_Z24,
+    Y8 = ffi::GX_PF_Y8,
+    U8 = ffi::GX_PF_U8,
+    V8 = ffi::GX_PF_V8,
+    Yuv420 = ffi::GX_PF_YUV420,
 }

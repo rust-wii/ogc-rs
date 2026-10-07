@@ -1,5 +1,3 @@
-use super::{GPCommand, GX_PIPE};
-
 #[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[repr(transparent)]
 pub struct BPReg(u8);
@@ -224,17 +222,6 @@ impl BPReg {
     pub const TEV_KSEL_7: Self = Self(0xFD);
     pub const SS_MASK: Self = Self(0xFE);
     // 0xFF
-
-    //Loads and write a specific value `val` to self,
-    pub fn load(&self, val: u32) {
-        assert!(val <= 0xFFFFFF);
-        GX_PIPE.write(GPCommand::LoadBPReg as u8);
-        GX_PIPE.write(self.0);
-        //We only want the bottom 24 bits so we only grab the bottom 3 bytes
-        for byte in &val.to_be_bytes()[1..=3] {
-            GX_PIPE.write(*byte);
-        }
-    }
 }
 
 #[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Ord, PartialOrd, Hash)]
@@ -316,16 +303,6 @@ impl CPReg {
     pub const IDXB_SIZE: Self = Self(0xBD);
     pub const IDXC_SIZE: Self = Self(0xBE);
     pub const IDXD_SIZE: Self = Self(0xBF);
-
-    //Loads and write a specific value `val` to self,
-    pub fn load(&self, val: u32) {
-        GX_PIPE.write(GPCommand::LoadCPReg as u8);
-        GX_PIPE.write(self.0);
-
-        for byte in val.to_be_bytes() {
-            GX_PIPE.write(byte);
-        }
-    }
 }
 
 #[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Ord, PartialOrd, Hash)]
@@ -384,42 +361,4 @@ impl XFReg {
     pub const DUALTEX5: Self = Self(0x1055);
     pub const DUALTEX6: Self = Self(0x1056);
     pub const DUALTEX7: Self = Self(0x1057);
-
-    //Loads and write a specific value `val` to self
-    pub fn load(&self, val: u32) {
-        GX_PIPE.write(GPCommand::LoadXFReg as u8);
-
-        for byte in 0u16.to_be_bytes() {
-            GX_PIPE.write(byte);
-        }
-
-        for byte in self.0.to_be_bytes() {
-            GX_PIPE.write(byte);
-        }
-
-        for byte in val.to_be_bytes() {
-            GX_PIPE.write(byte);
-        }
-    }
-
-    // Using self as the base load multiple registers and write `vals` to them
-    // vals need to have the same legth as the `length`
-    pub fn load_multi(&self, length: u16, vals: &[[u8; 4]]) {
-        assert!(vals.len() == length.into());
-
-        GX_PIPE.write(GPCommand::LoadXFReg as u8);
-        for byte in (length - 1).to_be_bytes() {
-            GX_PIPE.write(byte);
-        }
-
-        for byte in self.0.to_be_bytes() {
-            GX_PIPE.write(byte);
-        }
-
-        for val in vals {
-            for byte in val {
-                GX_PIPE.write(*byte);
-            }
-        }
-    }
 }
