@@ -2200,26 +2200,6 @@ impl Gx {
         unsafe { ffi::GX_InvalidateTexAll() }
     }
 
-    /// Invalidates the current caches of the Texture Memory (TMEM).
-    ///
-    /// It takes about 512 GP clocks to invalidate all the texture caches.
-    ///
-    /// # Note
-    /// Preloaded textures (see [`Gx::preload_entire_texture()`]) are not affected.
-    pub fn invalidate_tex_all() {
-        unsafe { ffi::GX_InvalidateTexAll() }
-    }
-
-    /// Invalidates the current caches of the Texture Memory (TMEM).
-    ///
-    /// It takes about 512 GP clocks to invalidate all the texture caches.
-    ///
-    /// # Note
-    /// Preloaded textures (see [`Gx::preload_entire_texture()`]) are not affected.
-    pub fn invalidate_tex_all() {
-        unsafe { ffi::GX_InvalidateTexAll() }
-    }
-
     /// Loads the state describing a texture into one of eight hardware register sets.
     ///
     /// Before this happens, the texture object *obj* should be initialized using
