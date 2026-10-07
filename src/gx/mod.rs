@@ -5,12 +5,12 @@
 
 use core::ffi::c_void;
 use core::mem::{ManuallyDrop, MaybeUninit};
+use core::ops::{Deref, DerefMut};
 use core::ptr;
 use core::sync::atomic::{AtomicBool, AtomicPtr, Ordering};
 
 use alloc::vec::Vec;
 use bit_field::BitField;
-use ffi::GXTexObj;
 use ogc_sys::GXRModeObj;
 use voladdress::{Safe, VolAddress};
 
@@ -1069,10 +1069,21 @@ pub enum TexOffset {
     ToOne = ffi::GX_TO_ONE,
 }
 
-/// Object containing information about a texture.
-#[derive(Debug)]
+/// Texture without a managed buffer.
+#[derive(Debug, Clone)]
+#[repr(transparent)]
+pub struct RawTexture {
+    pub inner: ffi::GXTexObj,
+}
+
+/// Texture with an internal image data buffer.
+///
+/// This implements `Deref` and `DerefMut` for [`RawTexture`], which means a `Texture` may
+/// be used anywhere a `RawTexture` is referenced. This is similar to using a `&Vec<u8>`
+/// in place of a `&[u8]`, for example.
+#[derive(Debug, Clone)]
 pub struct Texture {
-    inner: ffi::GXTexObj,
+    inner: RawTexture,
     img: Buf32,
 }
 
@@ -1196,6 +1207,42 @@ impl Texture {
         }
     }
 
+    /// Returns a reference to the texture data.
+    pub fn buf(&self) -> &Buf32 {
+        //unsafe { ffi::GX_GetTexObjData(&self.inner) }
+        &self.img
+    }
+
+    /// Returns a mutable reference to the texture data.
+    ///
+    /// Make sure to flush the cache after modifying the data by calling
+    /// [`TexRegion::invalidate()`] on the corresponding region for this texture, or
+    /// [`gx::invalidate_tex_all()`] to invalidate all texture caches.
+    pub fn buf_mut(&mut self) -> &mut Buf32 {
+        &mut self.img
+    }
+}
+
+impl Deref for Texture {
+    type Target = RawTexture;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+impl DerefMut for Texture {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.inner
+    }
+}
+
+impl RawTexture {
+    /// Returns a physical pointer to the texture data.
+    pub fn data_ptr(&self) -> *const u8 {
+        unsafe { ffi::GX_GetTexObjData(&self.inner).cast() }
+    }
+
     /// Returns the texture height.
     pub fn height(&self) -> u16 {
         unsafe { ffi::GX_GetTexObjHeight(&self.inner) }
@@ -1241,26 +1288,15 @@ impl Texture {
         (minlod, maxlod)
     }
 
-    /// Returns a reference to the texture data.
-    pub fn data(&self) -> &Buf32 {
-        //unsafe { ffi::GX_GetTexObjData(&self.inner) }
-        &self.img
-    }
-
-	/// Returns the minimum and maximum filter modes for the given texture.
-    pub fn get_filter_mode(&self) -> (TexFilter, TexFilter) {
-        let mut minfilt = 0;
-        let mut maxfilt = 0;
-        unsafe { ffi::GX_GetTexObjFilterMode(&self.inner, &mut minfilt, &mut maxfilt) }
-        (minfilt.into(), maxfilt.into())
-    }
-
-	/// Returns the minimum and maximum LOD values for the given texture.
-    pub fn get_lod(&self) -> (f32, f32) {
-        let mut minlod = 0.0;
-        let mut maxlod = 0.0;
-        unsafe { ffi::GX_GetTexObjLOD(&self.inner, &mut minlod, &mut maxlod) }
-        (minlod, maxlod)
+    /// Allows one to modify the image data pointer for an existing texture object.
+    ///
+    /// # Safety
+    /// * This should not be called from a `Texture`, as it already uses an internal
+    ///   buffer to manage image data.
+    /// * The size and format of the new data must agree with those of this texture.
+    /// * `img_ptr` must be 32-byte aligned.
+    pub unsafe fn set_data_ptr(&mut self, img_ptr: *const u8) {
+        unsafe { ffi::GX_InitTexObjData(&mut self.inner, img_ptr.cast_mut().cast()) }
     }
 
     /// Enables bias clamping for texture LOD.
@@ -1398,16 +1434,12 @@ impl Texture {
         unsafe { ffi::GX_InitTexObjWrapMode(&mut self.inner, wrap_s as u8, wrap_t as u8) }
     }
 
-    pub fn as_gxtexobj(&self) -> &GXTexObj {
-        &self.inner
+    pub(crate) fn as_ptr(&self) -> *const RawTexture {
+        self as *const _
     }
 
-    pub fn as_mut_gxtexobj(&mut self) -> &mut GXTexObj {
-        &mut self.inner
-    }
-
-    pub fn into_inner(self) -> GXTexObj {
-    	self.inner
+    pub(crate) fn as_mut_ptr(&mut self) -> *mut RawTexture {
+        self as *mut _
     }
 }
 
@@ -2265,6 +2297,26 @@ impl Gx {
         unsafe { ffi::GX_InvalidateTexAll() }
     }
 
+    /// Invalidates the current caches of the Texture Memory (TMEM).
+    ///
+    /// It takes about 512 GP clocks to invalidate all the texture caches.
+    ///
+    /// # Note
+    /// Preloaded textures (see [`Gx::preload_entire_texture()`]) are not affected.
+    pub fn invalidate_tex_all() {
+        unsafe { ffi::GX_InvalidateTexAll() }
+    }
+
+    /// Invalidates the current caches of the Texture Memory (TMEM).
+    ///
+    /// It takes about 512 GP clocks to invalidate all the texture caches.
+    ///
+    /// # Note
+    /// Preloaded textures (see [`Gx::preload_entire_texture()`]) are not affected.
+    pub fn invalidate_tex_all() {
+        unsafe { ffi::GX_InvalidateTexAll() }
+    }
+
     /// Loads the state describing a texture into one of eight hardware register sets.
     ///
     /// Before this happens, the texture object *obj* should be initialized using
@@ -2281,7 +2333,7 @@ impl Gx {
     /// # Safety
     /// If the texture is a color-index texture, you **must** load the associated TLUT (using
     /// [`Gx::load_tlut()`]) before calling this function.
-    pub fn load_texture(obj: &mut Texture, mapid: u8) {
+    pub fn load_texture(obj: &mut RawTexture, mapid: u8) {
         unsafe { ffi::GX_LoadTexObj(&mut obj.inner, mapid) }
     }
 
@@ -2752,8 +2804,8 @@ impl Gx {
     /// Loads a given texture from DRAM into the texture memory.
     ///
     /// See [GX_PreloadEntireTexture](https://libogc.devkitpro.org/gx_8h.html#a7b6d8f9cffffaf8001d12548644d7ddd) for more.
-    pub fn preload_entire_texture(obj: &Texture, region: &mut TexRegion) {
-        unsafe { ffi::GX_PreloadEntireTexture(obj as *const _ as *mut _, &mut region.inner) }
+    pub fn preload_entire_texture(obj: &RawTexture, region: &mut TexRegion) {
+        unsafe { ffi::GX_PreloadEntireTexture(&obj.inner as *const _ as *mut _, &mut region.inner) }
     }
 
     /// Copies a Texture Look-Up Table (TLUT) from main memory to Texture Memory (TMEM).
@@ -2933,7 +2985,7 @@ pub fn get_overflow_count() -> u32 {
 /// Loads the state describing a preloaded texture into one of eight hardware register sets.
 ///
 /// See [GX_LoadTexObjPreloaded](https://libogc.devkitpro.org/gx_8h.html#a1ec8217de396e4e06e5cbeca560abbc0) for more.
-pub fn load_texture_preloaded(obj: &mut Texture, region: &mut TexRegion, mapid: u8) {
+pub fn load_texture_preloaded(obj: &mut RawTexture, region: &mut TexRegion, mapid: u8) {
     unsafe { ffi::GX_LoadTexObjPreloaded(&mut obj.inner, &mut region.inner, mapid) }
 }
 

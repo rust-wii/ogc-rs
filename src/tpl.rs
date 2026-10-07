@@ -34,7 +34,7 @@ impl Tpl {
 
     // Loads texture by id into texture
     pub fn get_texture(&mut self, id: u32, texture: &mut gx::Texture) {
-        unsafe { ffi::TPL_GetTexture(self.raw(), id as _, texture.as_mut_gxtexobj()) };
+        unsafe { ffi::TPL_GetTexture(self.raw(), id as _, texture.as_mut_ptr().cast()) };
     }
 
     fn raw(&mut self) -> *mut ffi::TPLFile {
