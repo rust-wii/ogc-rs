@@ -2041,25 +2041,57 @@ impl Gx {
 
     /// Sets the source parameters for the EFB to XFB copy operation.
     /// See [GX_SetDispCopySrc](https://libogc.devkitpro.org/gx_8h.html#a979d8db7abbbc2e9a267f5d1710ac588) for more.
-    pub fn set_disp_copy_src(left: u16, top: u16, wd: u16, hd: u16) {
-        unsafe { ffi::GX_SetDispCopySrc(left, top, wd, hd) }
+    pub fn set_disp_copy_src(left: u16, top: u16, wd: u16, ht: u16) {
+        debug_assert!(left % 2 == 0, "left is not divisible by 2");
+        debug_assert!(top % 2 == 0, "top is not divisible by 2");
+        debug_assert!(wd % 2 == 0, "width is not divisible by 2");
+        debug_assert!(ht % 2 == 0, "height is not divisible by 2");
+        unsafe { ffi::GX_SetDispCopySrc(left, top, wd, ht) }
     }
 
     /// Sets the witth and height of the display buffer in pixels.
     /// See [GX_SetDispCopyDst](https://libogc.devkitpro.org/gx_8h.html#ab6f639059b750e57af4c593ba92982c5) for more.
     pub fn set_disp_copy_dst(width: u16, height: u16) {
+        debug_assert!(
+            width.is_multiple_of(16),
+            "width must be a multiple of 16, got {width}"
+        );
         unsafe { ffi::GX_SetDispCopyDst(width, height) }
     }
 
     /// Sets the subpixel sample patterns and vertical filter coefficients used to filter subpixels into pixels.
     /// See [GX_SetCopyFilter](https://libogc.devkitpro.org/gx_8h.html#afd65b7e5f2040ddb3352649efde72faf) for more.
     pub fn set_copy_filter(
-        aa: bool,
-        sample_pattern: &mut [[u8; 2]; 12],
-        vf: bool,
-        v_filter: &mut [u8; 7],
+        sample_pattern: Option<[[u8; 2]; 12]>,
+        vfilter: Option<[u8; 7]>,
     ) {
-        unsafe { ffi::GX_SetCopyFilter(aa as u8, sample_pattern.as_mut_ptr(), vf as u8, v_filter.as_mut_ptr()) }
+        if let Some(sp) = sample_pattern {
+            debug_assert!(
+                sp.iter().flatten().all(|x| (1..=11).contains(x)),
+                "valid range for sample coordinate points is 1..=11, got {sp:?}"
+            );
+        }
+        if let Some(vf) = vfilter {
+            debug_assert!(
+                vf.iter().all(|x| (0..=63).contains(x)),
+                "valid range for vertical filter coefficients is 0..=63, got {vf:?}"
+            );
+            let sum: u8 = vf.iter().sum();
+            debug_assert_eq!(
+                sum,
+                64,
+                "sum of vertical filter coefficients should be 64, got {sum}"
+            );
+        }
+        
+        unsafe {
+            ffi::GX_SetCopyFilter(
+                sample_pattern.is_some() as u8,
+                sample_pattern.unwrap_or_default().as_mut_ptr(),
+                vfilter.is_some() as u8,
+                vfilter.unwrap_or_default().as_mut_ptr()
+            )
+        }
     }
 
     /// Sets the lighting controls for a particular color channel.
