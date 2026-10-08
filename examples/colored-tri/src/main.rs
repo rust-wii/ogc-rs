@@ -1,15 +1,10 @@
 #![no_std]
 #![no_main]
 
-use core::mem::ManuallyDrop;
-
 use ogc_rs::{
-    ffi::{
-        GX_CLR_RGBA, GX_COLOR0A0, GX_PASSCLR, GX_POS_XYZ, GX_RGBA8, GX_S16, GX_TEXCOORDNULL,
-        GX_TEXMAP_NULL, GX_VA_CLR0, GX_VA_POS,
-    },
+    ffi::{GX_PASSCLR, GX_TEXCOORDNULL, GX_TEXMAP_NULL},
     gu::{Gu, RotationAxis},
-    gx::{types::VtxDest, CmpFn, Color, CullMode, Gx, Primitive, ProjectionType, VtxAttr},
+    gx::{self, types::VtxDest, CmpFn, Color, CullMode, Gx, Primitive, ProjectionType, VtxAttr},
     video::Video,
 };
 
@@ -32,7 +27,7 @@ extern "C" fn main(_argc: isize, _argv: *const *const u8) -> isize {
     Video::set_black(false);
     Video::flush();
 
-    let fifo = ManuallyDrop::new(Gx::init(256 * 1024));
+    let _fifo = Gx::init(256 * 1024);
     // Set values to use when video is flipped / cleared
     Gx::set_copy_clear(Color::new(0x00, 0x00, 0x00), 0x00_FF_FF_FF);
 
@@ -59,17 +54,11 @@ extern "C" fn main(_argc: isize, _argv: *const *const u8) -> isize {
     );
     Gx::set_disp_copy_dst(config.framebuffer_width, config.extern_framebuffer_height);
     Gx::set_copy_filter(
-        config.anti_aliasing != 0,
-        &mut config.sample_pattern,
-        true,
-        &mut config.v_filter,
+        (config.anti_aliasing != 0).then_some(config.sample_pattern),
+        Some(config.v_filter),
     );
 
-    let val = if config.vi_height == 2 * config.extern_framebuffer_height {
-        false
-    } else {
-        true
-    };
+    let val = config.vi_height != 2 * config.extern_framebuffer_height;
 
     Gx::set_field_mode(config.field_rendering != 0, val);
     Gx::set_cull_mode(CullMode::None);
@@ -81,23 +70,14 @@ extern "C" fn main(_argc: isize, _argv: *const *const u8) -> isize {
     Gx::clear_vtx_desc();
     Gx::set_vtx_desc(VtxAttr::Pos, VtxDest::INDEX8);
     Gx::set_vtx_desc(VtxAttr::Color0, VtxDest::INDEX8);
-    Gx::set_vtx_attr_fmt(0, VtxAttr::Pos, GX_POS_XYZ, GX_S16, 0);
-    Gx::set_vtx_attr_fmt(0, VtxAttr::Color0, GX_CLR_RGBA, GX_RGBA8, 0);
+    Gx::set_vtx_attr_fmt(0, VtxAttr::Pos, gx::POS_XYZ, gx::S16, 0);
+    Gx::set_vtx_attr_fmt(0, VtxAttr::Color0, gx::CLR_RGBA, gx::RGBA8, 0);
 
     let positions: [[i16; 3]; 3] = [[0, 15, 0], [-15, -15, 0], [15, -15, 0]];
     let colors: [[u8; 4]; 3] = [[255, 0, 0, 255], [0, 255, 0, 255], [0, 0, 255, 255]];
 
-    Gx::set_array(
-        GX_VA_POS,
-        &positions,
-        core::mem::size_of::<[i16; 3]>().try_into().unwrap(),
-    );
-
-    Gx::set_array(
-        GX_VA_CLR0,
-        &colors,
-        core::mem::size_of::<[u8; 4]>().try_into().unwrap(),
-    );
+    Gx::set_array(VtxAttr::Pos, &positions);
+    Gx::set_array(VtxAttr::Color0, &colors);
 
     Gx::set_num_chans(1);
     Gx::set_num_tex_gens(0);
@@ -106,7 +86,7 @@ extern "C" fn main(_argc: isize, _argv: *const *const u8) -> isize {
         0,
         GX_TEXCOORDNULL.try_into().unwrap(),
         GX_TEXMAP_NULL,
-        GX_COLOR0A0.try_into().unwrap(),
+        (gx::ColorChannel::Color0A0 as u32).try_into().unwrap(),
     );
     Gx::set_tev_op(0, GX_PASSCLR.try_into().unwrap());
 

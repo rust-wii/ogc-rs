@@ -144,7 +144,6 @@ fn main() {
 		.layout_tests(false)
 		.ctypes_prefix("::libc")
 		.prepend_enum_name(false)
-		.disable_untagged_union()
 		.blocklist_type("u(8|16|32|64|128)")
 		.blocklist_type("i(8|16|32|64|128)")
 		.blocklist_type("f(32|64)")

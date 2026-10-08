@@ -2,185 +2,223 @@
 
 use crate::wgPipe;
 
+#[inline]
 pub unsafe fn GX_End() {}
 
+#[inline]
 pub unsafe fn GX_Position3f32(x: f32, y: f32, z: f32) {
-    *(*wgPipe).F32.as_mut() = x;
-    *(*wgPipe).F32.as_mut() = y;
-    *(*wgPipe).F32.as_mut() = z;
+    (*wgPipe).F32 = x;
+    (*wgPipe).F32 = y;
+    (*wgPipe).F32 = z;
 }
 
+#[inline]
 pub unsafe fn GX_Position3u16(x: u16, y: u16, z: u16) {
-    *(*wgPipe).U16.as_mut() = x;
-    *(*wgPipe).U16.as_mut() = y;
-    *(*wgPipe).U16.as_mut() = z;
+    (*wgPipe).U16 = x;
+    (*wgPipe).U16 = y;
+    (*wgPipe).U16 = z;
 }
 
+#[inline]
 pub unsafe fn GX_Position3s16(x: i16, y: i16, z: i16) {
-    *(*wgPipe).S16.as_mut() = x;
-    *(*wgPipe).S16.as_mut() = y;
-    *(*wgPipe).S16.as_mut() = z;
+    (*wgPipe).S16 = x;
+    (*wgPipe).S16 = y;
+    (*wgPipe).S16 = z;
 }
 
+#[inline]
 pub unsafe fn GX_Position3u8(x: u8, y: u8, z: u8) {
-    *(*wgPipe).U8.as_mut() = x;
-    *(*wgPipe).U8.as_mut() = y;
-    *(*wgPipe).U8.as_mut() = z;
+    (*wgPipe).U8 = x;
+    (*wgPipe).U8 = y;
+    (*wgPipe).U8 = z;
 }
 
+#[inline]
 pub unsafe fn GX_Position3s8(x: i8, y: i8, z: i8) {
-    *(*wgPipe).S8.as_mut() = x;
-    *(*wgPipe).S8.as_mut() = y;
-    *(*wgPipe).S8.as_mut() = z;
+    (*wgPipe).S8 = x;
+    (*wgPipe).S8 = y;
+    (*wgPipe).S8 = z;
 }
 
+#[inline]
 pub unsafe fn GX_Position2f32(x: f32, y: f32) {
-    *(*wgPipe).F32.as_mut() = x;
-    *(*wgPipe).F32.as_mut() = y;
+    (*wgPipe).F32 = x;
+    (*wgPipe).F32 = y;
 }
 
+#[inline]
 pub unsafe fn GX_Position2u16(x: u16, y: u16) {
-    *(*wgPipe).U16.as_mut() = x;
-    *(*wgPipe).U16.as_mut() = y;
+    (*wgPipe).U16 = x;
+    (*wgPipe).U16 = y;
 }
 
+#[inline]
 pub unsafe fn GX_Position2s16(x: i16, y: i16) {
-    *(*wgPipe).S16.as_mut() = x;
-    *(*wgPipe).S16.as_mut() = y;
+    (*wgPipe).S16 = x;
+    (*wgPipe).S16 = y;
 }
 
+#[inline]
 pub unsafe fn GX_Position2u8(x: u8, y: u8) {
-    *(*wgPipe).U8.as_mut() = x;
-    *(*wgPipe).U8.as_mut() = y;
+    (*wgPipe).U8 = x;
+    (*wgPipe).U8 = y;
 }
 
+#[inline]
 pub unsafe fn GX_Position2s8(x: i8, y: i8) {
-    *(*wgPipe).S8.as_mut() = x;
-    *(*wgPipe).S8.as_mut() = y;
+    (*wgPipe).S8 = x;
+    (*wgPipe).S8 = y;
 }
 
+#[inline]
 pub unsafe fn GX_Position1x8(index: u8) {
-    *(*wgPipe).U8.as_mut() = index;
+    (*wgPipe).U8 = index;
 }
 
+#[inline]
 pub unsafe fn GX_Position1x16(index: u16) {
-    *(*wgPipe).U16.as_mut() = index;
+    (*wgPipe).U16 = index;
 }
 
+#[inline]
 pub unsafe fn GX_Normal3f32(nx: f32, ny: f32, nz: f32) {
-    *(*wgPipe).F32.as_mut() = nx;
-    *(*wgPipe).F32.as_mut() = ny;
-    *(*wgPipe).F32.as_mut() = nz;
+    (*wgPipe).F32 = nx;
+    (*wgPipe).F32 = ny;
+    (*wgPipe).F32 = nz;
 }
 
+#[inline]
 pub unsafe fn GX_Normal3s16(nx: i16, ny: i16, nz: i16) {
-    *(*wgPipe).S16.as_mut() = nx;
-    *(*wgPipe).S16.as_mut() = ny;
-    *(*wgPipe).S16.as_mut() = nz;
+    (*wgPipe).S16 = nx;
+    (*wgPipe).S16 = ny;
+    (*wgPipe).S16 = nz;
 }
 
+#[inline]
 pub unsafe fn GX_Normal3s8(nx: i8, ny: i8, nz: i8) {
-    *(*wgPipe).S8.as_mut() = nx;
-    *(*wgPipe).S8.as_mut() = ny;
-    *(*wgPipe).S8.as_mut() = nz;
+    (*wgPipe).S8 = nx;
+    (*wgPipe).S8 = ny;
+    (*wgPipe).S8 = nz;
 }
 
+#[inline]
 pub unsafe fn GX_Normal1x8(index: u8) {
-    *(*wgPipe).U8.as_mut() = index;
+    (*wgPipe).U8 = index;
 }
 
+#[inline]
 pub unsafe fn GX_Normal1x16(index: u16) {
-    *(*wgPipe).U16.as_mut() = index;
+    (*wgPipe).U16 = index;
 }
 
+#[inline]
 pub unsafe fn GX_Color4u8(r: u8, g: u8, b: u8, a: u8) {
-    *(*wgPipe).U8.as_mut() = r;
-    *(*wgPipe).U8.as_mut() = g;
-    *(*wgPipe).U8.as_mut() = b;
-    *(*wgPipe).U8.as_mut() = a;
+    (*wgPipe).U8 = r;
+    (*wgPipe).U8 = g;
+    (*wgPipe).U8 = b;
+    (*wgPipe).U8 = a;
 }
 
+#[inline]
 pub unsafe fn GX_Color3u8(r: u8, g: u8, b: u8) {
-    *(*wgPipe).U8.as_mut() = r;
-    *(*wgPipe).U8.as_mut() = g;
-    *(*wgPipe).U8.as_mut() = b;
+    (*wgPipe).U8 = r;
+    (*wgPipe).U8 = g;
+    (*wgPipe).U8 = b;
 }
 
+#[inline]
 pub unsafe fn GX_Color3f32(r: f32, g: f32, b: f32) {
-    *(*wgPipe).U8.as_mut() = (r * 255.0) as u8;
-    *(*wgPipe).U8.as_mut() = (g * 255.0) as u8;
-    *(*wgPipe).U8.as_mut() = (b * 255.0) as u8;
+    (*wgPipe).U8 = (r * 255.0) as u8;
+    (*wgPipe).U8 = (g * 255.0) as u8;
+    (*wgPipe).U8 = (b * 255.0) as u8;
 }
 
+#[inline]
 pub unsafe fn GX_Color1u32(clr: u32) {
-    *(*wgPipe).U32.as_mut() = clr;
+    (*wgPipe).U32 = clr;
 }
 
+#[inline]
 pub unsafe fn GX_Color1u16(clr: u16) {
-    *(*wgPipe).U16.as_mut() = clr;
+    (*wgPipe).U16 = clr;
 }
 
+#[inline]
 pub unsafe fn GX_Color1x8(index: u8) {
-    *(*wgPipe).U8.as_mut() = index;
+    (*wgPipe).U8 = index;
 }
 
+#[inline]
 pub unsafe fn GX_Color1x16(index: u16) {
-    *(*wgPipe).U16.as_mut() = index;
+    (*wgPipe).U16 = index;
 }
 
+#[inline]
 pub unsafe fn GX_TexCoord2f32(s: f32, t: f32) {
-    *(*wgPipe).F32.as_mut() = s;
-    *(*wgPipe).F32.as_mut() = t;
+    (*wgPipe).F32 = s;
+    (*wgPipe).F32 = t;
 }
 
+#[inline]
 pub unsafe fn GX_TexCoord2u16(s: u16, t: u16) {
-    *(*wgPipe).U16.as_mut() = s;
-    *(*wgPipe).U16.as_mut() = t;
+    (*wgPipe).U16 = s;
+    (*wgPipe).U16 = t;
 }
 
+#[inline]
 pub unsafe fn GX_TexCoord2s16(s: i16, t: i16) {
-    *(*wgPipe).S16.as_mut() = s;
-    *(*wgPipe).S16.as_mut() = t;
+    (*wgPipe).S16 = s;
+    (*wgPipe).S16 = t;
 }
 
+#[inline]
 pub unsafe fn GX_TexCoord2u8(s: u8, t: u8) {
-    *(*wgPipe).U8.as_mut() = s;
-    *(*wgPipe).U8.as_mut() = t;
+    (*wgPipe).U8 = s;
+    (*wgPipe).U8 = t;
 }
 
+#[inline]
 pub unsafe fn GX_TexCoord2s8(s: i8, t: i8) {
-    *(*wgPipe).S8.as_mut() = s;
-    *(*wgPipe).S8.as_mut() = t;
+    (*wgPipe).S8 = s;
+    (*wgPipe).S8 = t;
 }
 
+#[inline]
 pub unsafe fn GX_TexCoord1f32(s: f32) {
-    *(*wgPipe).F32.as_mut() = s;
+    (*wgPipe).F32 = s;
 }
 
+#[inline]
 pub unsafe fn GX_TexCoord1u16(s: u16) {
-    *(*wgPipe).U16.as_mut() = s;
+    (*wgPipe).U16 = s;
 }
 
+#[inline]
 pub unsafe fn GX_TexCoord1s16(s: i16) {
-    *(*wgPipe).S16.as_mut() = s;
+    (*wgPipe).S16 = s;
 }
 
+#[inline]
 pub unsafe fn GX_TexCoord1u8(s: u8) {
-    *(*wgPipe).U8.as_mut() = s;
+    (*wgPipe).U8 = s;
 }
 
+#[inline]
 pub unsafe fn GX_TexCoord1s8(s: i8) {
-    *(*wgPipe).S8.as_mut() = s;
+    (*wgPipe).S8 = s;
 }
 
+#[inline]
 pub unsafe fn GX_TexCoord1x8(index: u8) {
-    *(*wgPipe).U8.as_mut() = index;
+    (*wgPipe).U8 = index;
 }
 
+#[inline]
 pub unsafe fn GX_TexCoord1x16(index: u16) {
-    *(*wgPipe).U16.as_mut() = index;
+    (*wgPipe).U16 = index;
 }
 
+#[inline]
 pub unsafe fn GX_MatrixIndex1x8(index: u8) {
-    *(*wgPipe).U8.as_mut() = index;
+    (*wgPipe).U8 = index;
 }

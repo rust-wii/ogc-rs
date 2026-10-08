@@ -117,22 +117,9 @@ extern "C" fn main(_argc: isize, _argv: *const *const u8) -> isize {
 
     let tex: Vec<[f32; 2]> = obj.texcoords().unwrap().collect::<Vec<[f32; 2]>>();
 
-    Gx::set_array(
-        GX_VA_POS,
-        &positions,
-        core::mem::size_of::<[f32; 3]>().try_into().unwrap(),
-    );
-
-    Gx::set_array(
-        GX_VA_NRM,
-        &normals,
-        core::mem::size_of::<[f32; 3]>().try_into().unwrap(),
-    );
-    Gx::set_array(
-        GX_VA_TEX0,
-        &tex,
-        core::mem::size_of::<[f32; 2]>().try_into().unwrap(),
-    );
+    Gx::set_array(VtxAttr::Pos, &positions);
+    Gx::set_array(VtxAttr::Nrm, &normals);
+    Gx::set_array(VtxAttr::Tex0, &tex);
 
     let header = minipng::decode_png_header(WHITE_BYTES).unwrap();
     let mut work_buf = alloc::vec![0; header.required_bytes_rgba8bpc()];
@@ -159,12 +146,11 @@ extern "C" fn main(_argc: isize, _argv: *const *const u8) -> isize {
         header.width().try_into().unwrap(),
         header.height().try_into().unwrap(),
         GX_TF_CMPR.try_into().unwrap(),
-        WrapMode::Clamp,
-        WrapMode::Clamp,
+        (WrapMode::Clamp, WrapMode::Clamp),
         false,
     );
     texr.set_filter_mode(TexFilter::Near, TexFilter::Near);
-    Gx::load_texture(&texr, GX_TEXMAP0.try_into().unwrap());
+    Gx::load_texture(&mut texr, GX_TEXMAP0.try_into().unwrap());
 
     Gx::set_num_chans(1);
     Gx::set_num_tex_gens(1);
@@ -195,7 +181,7 @@ extern "C" fn main(_argc: isize, _argv: *const *const u8) -> isize {
         Gx::inv_vtx_cache();
         Gx::invalidate_tex_all();
 
-        Gx::load_texture(&texr, GX_TEXMAP0.try_into().unwrap());
+        Gx::load_texture(&mut texr, GX_TEXMAP0.try_into().unwrap());
 
         Gx::set_viewport(
             0.0,

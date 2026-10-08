@@ -113,13 +113,12 @@ extern "C" fn main(_argc: isize, _argv: *const *const u8) -> isize {
         header.width().try_into().unwrap(),
         header.height().try_into().unwrap(),
         GX_TF_CMPR.try_into().unwrap(),
-        WrapMode::Clamp,
-        WrapMode::Clamp,
+        (WrapMode::Clamp, WrapMode::Clamp),
         false,
     );
     texr.set_filter_mode(TexFilter::Near, TexFilter::Near);
 
-    Gx::load_texture(&texr, GX_TEXMAP0.try_into().unwrap());
+    Gx::load_texture(&mut texr, GX_TEXMAP0.try_into().unwrap());
 
     Gx::set_vtx_attr_fmt(0, VtxAttr::Pos, GX_POS_XYZ, GX_S16, 0);
     Gx::set_vtx_attr_fmt(0, VtxAttr::Color0, GX_CLR_RGBA, GX_RGBA8, 0);
@@ -128,20 +127,17 @@ extern "C" fn main(_argc: isize, _argv: *const *const u8) -> isize {
     let colors: [[u8; 4]; 3] = [[255, 0, 0, 255], [0, 255, 0, 255], [0, 0, 255, 255]];
     let tex: [[u8; 2]; 3] = [[0, 1], [1, 0], [1, 1]];
     Gx::set_array(
-        GX_VA_POS,
+        VtxAttr::Pos,
         &positions,
-        core::mem::size_of::<[i16; 3]>().try_into().unwrap(),
     );
 
     Gx::set_array(
-        GX_VA_CLR0,
+        VtxAttr::Color0,
         &colors,
-        core::mem::size_of::<[u8; 4]>().try_into().unwrap(),
     );
     Gx::set_array(
-        GX_VA_TEX0,
+        VtxAttr::Tex0,
         &tex,
-        core::mem::size_of::<[u8; 2]>().try_into().unwrap(),
     );
     Gx::set_num_chans(1);
     Gx::set_num_tex_gens(1);
