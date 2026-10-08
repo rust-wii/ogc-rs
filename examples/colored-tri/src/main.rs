@@ -54,10 +54,8 @@ extern "C" fn main(_argc: isize, _argv: *const *const u8) -> isize {
     );
     Gx::set_disp_copy_dst(config.framebuffer_width, config.extern_framebuffer_height);
     Gx::set_copy_filter(
-        config.anti_aliasing != 0,
-        &mut config.sample_pattern,
-        true,
-        &mut config.v_filter,
+        (config.anti_aliasing != 0).then_some(config.sample_pattern),
+        Some(config.v_filter),
     );
 
     let val = config.vi_height != 2 * config.extern_framebuffer_height;

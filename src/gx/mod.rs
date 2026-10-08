@@ -20,7 +20,7 @@ use self::types::{Gamma, VtxDest};
 
 pub use crate::ffi::WGPipe;
 
-pub const WGPIPE: VolAddress<WGPipe, (), Safe> = unsafe { VolAddress::new(0xCC00_8000) };
+pub const GX_PIPE: VolAddress<u8, (), Safe> = unsafe { VolAddress::new(0xCC00_8000) };
 
 // Number of components in an attribute
 pub const CLR_RGB: u32 = ffi::GX_CLR_RGB;
@@ -2049,7 +2049,8 @@ impl Gx {
         unsafe { ffi::GX_SetDispCopySrc(left, top, wd, ht) }
     }
 
-    /// Sets the witth and height of the display buffer in pixels.
+    /// Sets the width and height of the display buffer in pixels.
+    /// 
     /// See [GX_SetDispCopyDst](https://libogc.devkitpro.org/gx_8h.html#ab6f639059b750e57af4c593ba92982c5) for more.
     pub fn set_disp_copy_dst(width: u16, height: u16) {
         debug_assert!(
@@ -2408,85 +2409,178 @@ impl Gx {
 
     #[inline]
     pub fn position_3f32(x: f32, y: f32, z: f32) {
-        Gx::position_2f32(x, y);
-        WGPIPE.write(WGPipe { F32: z });
+        let bytes = x.to_be_bytes()
+            .into_iter()
+            .chain(y.to_be_bytes())
+            .chain(z.to_be_bytes());
+        for byte in bytes {
+            GX_PIPE.write(byte);
+        }
     }
 
     #[inline]
     pub fn position_3u16(x: u16, y: u16, z: u16) {
-        Gx::position_2u16(x, y);
-        WGPIPE.write(WGPipe { U16: z });
+        let x_bytes = x.to_be_bytes();
+        let y_bytes = y.to_be_bytes();
+        let z_bytes = z.to_be_bytes();
+        for byte in x_bytes {
+            GX_PIPE.write(byte);
+        }
+        for byte in y_bytes {
+            GX_PIPE.write(byte);
+        }
+
+        for byte in z_bytes {
+            GX_PIPE.write(byte);
+        }
     }
 
     #[inline]
     pub fn position_3i16(x: i16, y: i16, z: i16) {
-        Gx::position_2i16(x, y);
-        WGPIPE.write(WGPipe { S16: z });
+        let x_bytes = x.to_be_bytes();
+        let y_bytes = y.to_be_bytes();
+        let z_bytes = z.to_be_bytes();
+        for byte in x_bytes {
+            GX_PIPE.write(byte);
+        }
+        for byte in y_bytes {
+            GX_PIPE.write(byte);
+        }
+
+        for byte in z_bytes {
+            GX_PIPE.write(byte);
+        }
     }
 
     #[inline]
     pub fn position_3u8(x: u8, y: u8, z: u8) {
-        Gx::position_2u8(x, y);
-        WGPIPE.write(WGPipe { U8: z });
+        let x_bytes = x.to_be_bytes();
+        let y_bytes = y.to_be_bytes();
+        let z_bytes = z.to_be_bytes();
+        for byte in x_bytes {
+            GX_PIPE.write(byte);
+        }
+        for byte in y_bytes {
+            GX_PIPE.write(byte);
+        }
+
+        for byte in z_bytes {
+            GX_PIPE.write(byte);
+        }
     }
 
     #[inline]
     pub fn position_3i8(x: i8, y: i8, z: i8) {
-        Gx::position_2i8(x, y);
-        WGPIPE.write(WGPipe { S8: z });
+        let x_bytes = x.to_be_bytes();
+        let y_bytes = y.to_be_bytes();
+        let z_bytes = z.to_be_bytes();
+        for byte in x_bytes {
+            GX_PIPE.write(byte);
+        }
+        for byte in y_bytes {
+            GX_PIPE.write(byte);
+        }
+
+        for byte in z_bytes {
+            GX_PIPE.write(byte);
+        }
     }
 
     #[inline]
     pub fn position_2f32(x: f32, y: f32) {
-        WGPIPE.write(WGPipe { F32: x });
-        WGPIPE.write(WGPipe { F32: y });
+        let x_bytes = x.to_be_bytes();
+        let y_bytes = y.to_be_bytes();
+
+        for byte in x_bytes {
+            GX_PIPE.write(byte);
+        }
+
+        for byte in y_bytes {
+            GX_PIPE.write(byte);
+        }
     }
 
     #[inline]
     pub fn position_2u16(x: u16, y: u16) {
-        WGPIPE.write(WGPipe { U16: x });
-        WGPIPE.write(WGPipe { U16: y });
+        let x_bytes = x.to_be_bytes();
+        let y_bytes = y.to_be_bytes();
+
+        for byte in x_bytes {
+            GX_PIPE.write(byte);
+        }
+
+        for byte in y_bytes {
+            GX_PIPE.write(byte);
+        }
     }
 
     #[inline]
     pub fn position_2i16(x: i16, y: i16) {
-        WGPIPE.write(WGPipe { S16: x });
-        WGPIPE.write(WGPipe { S16: y });
+        let x_bytes = x.to_be_bytes();
+        let y_bytes = y.to_be_bytes();
+
+        for byte in x_bytes {
+            GX_PIPE.write(byte);
+        }
+
+        for byte in y_bytes {
+            GX_PIPE.write(byte);
+        }
     }
 
     #[inline]
     pub fn position_2u8(x: u8, y: u8) {
-        WGPIPE.write(WGPipe { U8: x });
-        WGPIPE.write(WGPipe { U8: y });
+        let x_bytes = x.to_be_bytes();
+        let y_bytes = y.to_be_bytes();
+
+        for byte in x_bytes {
+            GX_PIPE.write(byte);
+        }
+
+        for byte in y_bytes {
+            GX_PIPE.write(byte);
+        }
     }
 
     #[inline]
     pub fn position_2i8(x: i8, y: i8) {
-        WGPIPE.write(WGPipe { S8: x });
-        WGPIPE.write(WGPipe { S8: y });
+        let x_bytes = x.to_be_bytes();
+        let y_bytes = y.to_be_bytes();
+
+        for byte in x_bytes {
+            GX_PIPE.write(byte);
+        }
+
+        for byte in y_bytes {
+            GX_PIPE.write(byte);
+        }
     }
 
     #[inline]
     pub fn position1x8(index: u8) {
-        WGPIPE.write(WGPipe { U8: index });
+        GX_PIPE.write(index);
     }
 
     #[inline]
     pub fn position1x16(index: u16) {
-        WGPIPE.write(WGPipe { U16: index });
+        for byte in index.to_be_bytes() {
+            GX_PIPE.write(byte);
+        }
     }
 
     #[inline]
     pub fn color_4u8(r: u8, g: u8, b: u8, a: u8) {
-        Gx::color_3u8(r, g, b);
-        WGPIPE.write(WGPipe { U8: a });
+        GX_PIPE.write(r);
+        GX_PIPE.write(g);
+        GX_PIPE.write(b);
+        GX_PIPE.write(a);
     }
 
     #[inline]
     pub fn color_3u8(r: u8, g: u8, b: u8) {
-        WGPIPE.write(WGPipe { U8: r });
-        WGPIPE.write(WGPipe { U8: g });
-        WGPIPE.write(WGPipe { U8: b });
+        GX_PIPE.write(r);
+        GX_PIPE.write(g);
+        GX_PIPE.write(b);
     }
 
     #[inline]
@@ -2495,37 +2589,54 @@ impl Gx {
         debug_assert!((0.0..=1.0).contains(&g));
         debug_assert!((0.0..=1.0).contains(&b));
 
-        WGPIPE.write(WGPipe { U8: (r * 255.0) as u8 });
-        WGPIPE.write(WGPipe { U8: (g * 255.0) as u8 });
-        WGPIPE.write(WGPipe { U8: (b * 255.0) as u8 });
+        let r: u8 = (r * 255.0) as u8;
+        let g: u8 = (g * 255.0) as u8;
+        let b: u8 = (b * 255.0) as u8;
+
+        GX_PIPE.write(r);
+        GX_PIPE.write(g);
+        GX_PIPE.write(b);
     }
 
     #[inline]
     pub fn color_4f32(r: f32, g: f32, b: f32, a: f32) {
         debug_assert!((0.0..=1.0).contains(&a));
 
+        let a = (a * 255.0) as u8;
+
         Gx::color_3f32(r, g, b);
-        WGPIPE.write(WGPipe { U8: (a * 255.0) as u8 });
+        GX_PIPE.write(a);
     }
 
     #[inline]
     pub fn color_1u32(clr: u32) {
-        WGPIPE.write(WGPipe { U32: clr });
+        for byte in clr.to_be_bytes() {
+            GX_PIPE.write(byte);
+        }
     }
 
     #[inline]
     pub fn color_1u16(clr: u16) {
-        WGPIPE.write(WGPipe { U16: clr });
+        let clr_bytes = clr.to_be_bytes();
+        for byte in clr_bytes {
+            GX_PIPE.write(byte);
+        }
     }
 
     #[inline]
     pub fn color1x8(index: u8) {
-        WGPIPE.write(WGPipe { U8: index });
+        let idx_bytes = index.to_be_bytes();
+        for byte in idx_bytes {
+            GX_PIPE.write(byte);
+        }
     }
 
     #[inline]
     pub fn color1x16(index: u16) {
-        WGPIPE.write(WGPipe { U16: index });
+        let idx_bytes = index.to_be_bytes();
+        for byte in idx_bytes {
+            GX_PIPE.write(byte);
+        }
     }
 
     ///Helper functions to just pass in a color object
@@ -2535,8 +2646,16 @@ impl Gx {
 
     #[inline]
     pub fn tex_coord_2f32(s: f32, t: f32) {
-        WGPIPE.write(WGPipe { F32: s });
-        WGPIPE.write(WGPipe { F32: t });
+        let s_bytes = s.to_be_bytes();
+        let t_bytes = t.to_be_bytes();
+
+        for byte in s_bytes {
+            GX_PIPE.write(byte);
+        }
+
+        for byte in t_bytes {
+            GX_PIPE.write(byte);
+        }
     }
 
     pub fn flush() {
@@ -3047,10 +3166,8 @@ fn call_display_list(display_list: &[u8]) {
         GX_PIPE.write(byte);
     }
 }
-*/
 
 //Currently doesnt check dirty state
-/*
 fn draw_begin(command: GPDrawCommand, vertex_format: u8, vertex_count: u16) {
     assert!(vertex_format <= 7, "Incorrect vertex format");
     let gp_cmd = (command as u8) | (vertex_format & 7);
