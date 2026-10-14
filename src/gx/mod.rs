@@ -16,8 +16,6 @@ use crate::ffi::{self, Mtx as Mtx34, Mtx44};
 use crate::{cache, lwp};
 use crate::utils::{Buf32, mem};
 
-use self::types::{Gamma, VtxDest};
-
 pub use crate::ffi::WGPipe;
 
 pub const GX_PIPE: VolAddress<u8, (), Safe> = unsafe { VolAddress::new(0xCC00_8000) };
@@ -61,12 +59,37 @@ pub mod types;
 pub struct Color(ffi::GXColor);
 
 impl Color {
+    pub const BLACK: Self = Self::new(0, 0, 0);
+    pub const WHITE: Self = Self::new(255, 255, 255);
+    
     pub const fn new(r: u8, g: u8, b: u8) -> Self {
         Self::with_alpha(r, g, b, 255)
     }
 
     pub const fn with_alpha(r: u8, g: u8, b: u8, a: u8) -> Self {
         Self(ffi::GXColor { r, g, b, a })
+    }
+    
+    pub(crate) const fn as_gxcolor(self) -> ffi::GXColor {
+        self.0
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
+#[repr(transparent)]
+pub struct ColorS10(ffi::GXColorS10);
+
+impl ColorS10 {
+    pub const fn new(r: i16, g: i16, b: i16) -> Self {
+        Self::with_alpha(r, g, b, 255)
+    }
+
+    pub const fn with_alpha(r: i16, g: i16, b: i16, a: i16) -> Self {
+        Self(ffi::GXColorS10 { r, g, b, a })
+    }
+    
+    pub(crate) const fn as_gxcolors10(self) -> ffi::GXColorS10 {
+        self.0
     }
 }
 
@@ -3296,4 +3319,21 @@ pub enum PixelFormat {
     U8 = ffi::GX_PF_U8,
     V8 = ffi::GX_PF_V8,
     Yuv420 = ffi::GX_PF_YUV420,
+}
+
+/// Vertex data input type
+#[repr(u32)]
+pub enum VtxAttrIn {
+    None = ffi::GX_NONE,
+    Direct = ffi::GX_DIRECT,
+    Index8 = ffi::GX_INDEX8,
+    Index16 = ffi::GX_INDEX16,
+}
+
+/// Gamma correction value to apply.
+#[repr(u32)]
+pub enum Gamma {
+    Mode10 = ffi::GX_GM_1_0,
+    Mode17 = ffi::GX_GM_1_7,
+    Mode22 = ffi::GX_GM_2_2,
 }
