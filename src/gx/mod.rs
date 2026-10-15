@@ -17,6 +17,12 @@ use crate::{cache, lwp};
 use crate::utils::{Buf32, mem};
 
 pub use crate::ffi::WGPipe;
+pub use crate::ffi::Vtx;
+pub use crate::ffi::GXVtxAttrFmt as VtxAttrFmt;
+pub use crate::ffi::GXVtxDesc as VtxDesc;
+pub use crate::ffi::GXBreakPtCallback as RawBreakPtCallback;
+pub use crate::ffi::GXDrawDoneCallback as RawDrawDoneCallback;
+pub use crate::ffi::GXDrawSyncCallback as RawDrawSyncCallback;
 
 pub const GX_PIPE: VolAddress<u8, (), Safe> = unsafe { VolAddress::new(0xCC00_8000) };
 
@@ -1664,14 +1670,6 @@ pub enum VtxAttr {
     Null = ffi::GX_VA_NULL,
 }
 
-/// Structure describing how a single vertex attribute will be referenced.
-///
-/// An array of these structures can be used to describe all the attributes in a vertex. The
-/// attribute `GX_VA_NULL` should be used to mark the end of the array.
-#[derive(Clone, Copy, Debug)]
-#[repr(transparent)]
-pub struct VtxDesc(ffi::GXVtxDesc);
-
 #[derive(Copy, Clone, Debug)]
 #[repr(u32)]
 pub enum ProjectionType {
@@ -1692,16 +1690,6 @@ pub struct GpStatus {
     pub cmd_idle: bool,
     /// `true` if FIFO has reached a breakpoint and GP reads have been stopped.
     pub brkpt: bool,
-}
-
-#[derive(Clone, Copy, Debug)]
-#[repr(transparent)]
-pub struct VtxAttrFmt(ffi::GXVtxAttrFmt);
-
-impl AsRef<ffi::GXVtxAttrFmt> for VtxAttrFmt {
-    fn as_ref(&self) -> &ffi::GXVtxAttrFmt {
-        &self.0
-    }
 }
 
 #[derive(Debug, Clone, Copy)]
