@@ -44,9 +44,9 @@ pub const S8: u32 = ffi::GX_S8;
 pub const S16: u32 = ffi::GX_S16;
 pub const F32: u32 = ffi::GX_F32;
 
-static GX_IS_INIT: AtomicBool = AtomicBool::new(false);
 static IN_DISPLAY_LIST: AtomicBool = AtomicBool::new(false);
 
+static INIT_FIFO: AtomicPtr<RawFifo> = AtomicPtr::null();
 static BREAKPT_CB: AtomicPtr<unsafe fn()> = AtomicPtr::null();
 static DRAW_DONE_CB: AtomicPtr<fn()> = AtomicPtr::null();
 static DRAW_SYNC_CB: AtomicPtr<fn(u16)> = AtomicPtr::null();
@@ -451,7 +451,7 @@ pub enum AttnFn {
     Spot = ffi::GX_AF_SPOT,
 }
 
-/// Object describing a graphics FIFO.
+/// Raw First-In, First-Out data structure (FIFO) for queuing graphics commands.
 ///
 /// The Graphics FIFO is the mechanism used to communicate graphics commands from the CPU to the
 /// Graphics Processor (GP). The FIFO base pointer is 32-byte aligned and the size must be a
@@ -464,17 +464,19 @@ pub enum AttnFn {
 /// stored. Up to 32 NOPs may be written at the end during flushing.
 #[derive(Debug)]
 #[repr(transparent)]
-pub struct Fifo(ffi::GXFifoObj);
+pub struct RawFifo(ffi::GXFifoObj);
 
-impl Default for Fifo {
-    fn default() -> Self {
-        Fifo::new()
-    }
+/// First-In, First-Out data structure (FIFO) with an internal buffer for queuing
+/// graphics commands.
+#[derive(Debug)]
+pub struct Fifo {
+    inner: RawFifo,
+    buf: Buf32,
 }
 
-impl AsRef<ffi::GXFifoObj> for Fifo {
-    fn as_ref(&self) -> &ffi::GXFifoObj {
-        &self.0
+impl AsRef<RawFifo> for Fifo {
+    fn as_ref(&self) -> &RawFifo {
+        &self.inner
     }
 }
 
@@ -502,39 +504,18 @@ impl Fifo {
         unsafe {
             ffi::GX_InitFifoBase(
                 fifo.as_mut_ptr(),
-                buf.as_mut_ptr().map_addr(mem::to_uncached) as *mut _,
+                buf.as_mut_ptr().map_addr(mem::to_uncached).cast(),
                 buf.len() as u32,
             );
-            Fifo(fifo.assume_init())
+            Fifo {
+                inner: RawFifo(fifo.assume_init()),
+                buf,
+            }
         }
     }
+}
 
-    /// Sets the high and low water mark for the fifo.
-    ///
-    /// The high and low water marks are used in *immediate-mode*, i.e. when the fifo is attached
-    /// to both the CPU and Graphics Processor (GP) (see `Gx::set_cpu_fifo()` and
-    /// `Gx::set_gp_fifo()`).
-    ///
-    /// The hardware keeps track of the number of bytes between the read and write pointers. This
-    /// number represents how full the FIFO is, and when it is greater than or equal to the
-    /// *hiwatermark*, the hardware issues an interrupt. The GX API will suspend sending graphics
-    /// to the Graphics FIFO until it has emptied to a certain point. The *lowatermark* is used to
-    /// set the point at which the FIFO is empty enough to resume sending graphics commands to the
-    /// FIFO. Both *hiwatermark* and *lowatermark* should be in multiples of 32B. The count for
-    /// *lowatermark* should be less than *hiwatermark*. Of course, *hiwatermark* and *lowatermark*
-    /// must be less than the size of the FIFO.
-    ///
-    /// # Note
-    /// When the FIFO is only attached to the CPU or only attached to the GP, the high and low
-    /// watermark interrupts are disabled.
-    pub fn set_limits(&mut self, hiwatermark: u32, lowatermark: u32) {
-        assert_eq!(0, hiwatermark % 32);
-        assert_eq!(0, lowatermark % 32);
-        // assert!(hiwatermark < self.len());
-        // assert!(lowatermark < self.len());
-        unsafe { ffi::GX_InitFifoLimits(&mut self.0, hiwatermark, lowatermark) }
-    }
-
+impl RawFifo {
     /// Get the base address for a given *fifo*.
     pub fn base(&self) -> *mut u8 {
         unsafe { ffi::GX_GetFifoBase(self as *const _ as *mut _) as *mut _ }
@@ -554,10 +535,6 @@ impl Fifo {
         unsafe { ffi::GX_GetFifoSize(&self.0) as usize }
     }
 
-    pub fn is_empty(&self) -> bool {
-        false
-    }
-
     /// Returns a non-zero value if the write pointer has passed the TOP of the FIFO.
     ///
     /// Returns true only if the FIFO is attached to the CPU and the FIFO write pointer has passed
@@ -568,7 +545,7 @@ impl Fifo {
     /// # Note
     /// If the FIFO write pointer is not explicitly set to the base of the FIFO, you cannot rely on
     /// this function to detect overflows.
-    pub fn get_wrap(&self) -> u8 {
+    pub fn wrap_status(&self) -> u8 {
         unsafe { ffi::GX_GetFifoWrap(&self.0) }
     }
 
@@ -582,15 +559,66 @@ impl Fifo {
         unsafe {
             ffi::GX_GetFifoPtrs(&self.0, &mut rd_ptr, &mut wt_ptr);
         }
-        (rd_ptr as *const _, wt_ptr as *mut _)
+        (rd_ptr.cast(), wt_ptr.cast())
     }
-
-    /// Sets the *fifo* read and write pointers.
+    
+    /// Describes the area of main memory that will be used for this fifo.
+    /// 
+    /// # Safety
+    /// - This method should NOT be called from a `Fifo`, as it manages the internal
+    ///   buffer itself.
+    /// - `base` must be aligned to a 32-byte boundary.
+    /// - `base` must be at least [`Fifo::MIN_SIZE`] bytes long.
+    /// - `base` length must be a multiple of 32.
+    /// 
+    /// See [GX_InitFifoBase](https://libogc.devkitpro.org/gx_8h.html#af02173c9ee890c6d481c14a6f16184af) for more.
+    pub unsafe fn set_base(&mut self, base: &mut [u8]) {
+        debug_assert!(base.as_mut_ptr().is_aligned_to(32));
+        debug_assert!(base.len().is_multiple_of(32));
+        debug_assert!(base.len() >= Fifo::MIN_SIZE);
+        unsafe {
+            ffi::GX_InitFifoBase(&mut self.0, base.as_mut_ptr().cast(), base.len() as u32)
+        }
+    }
+    
+    /// Sets the high and low water mark for the fifo.
+    ///
+    /// The high and low water marks are used in *immediate-mode*, i.e. when the fifo is attached
+    /// to both the CPU and Graphics Processor (GP) (see `Gx::set_cpu_fifo()` and
+    /// `Gx::set_gp_fifo()`).
+    ///
+    /// The hardware keeps track of the number of bytes between the read and write pointers. This
+    /// number represents how full the FIFO is, and when it is greater than or equal to the
+    /// *hiwatermark*, the hardware issues an interrupt. The GX API will suspend sending graphics
+    /// to the Graphics FIFO until it has emptied to a certain point. The *lowatermark* is used to
+    /// set the point at which the FIFO is empty enough to resume sending graphics commands to the
+    /// FIFO. Both *hiwatermark* and *lowatermark* should be in multiples of 32B. The count for
+    /// *lowatermark* should be less than *hiwatermark*. Of course, *hiwatermark* and *lowatermark*
+    /// must be less than the size of the FIFO.
     ///
     /// # Note
-    /// This is normally done only during initialization of the FIFO. After that, the graphics
-    /// hardware manages the FIFO pointers.
-    pub fn set_pointers(&mut self, rd_ptr: *const u8, wt_ptr: *mut u8) {
+    /// When the FIFO is only attached to the CPU or only attached to the GP, the high and low
+    /// watermark interrupts are disabled.
+    pub fn set_limits(&mut self, hiwatermark: u32, lowatermark: u32) {
+        debug_assert!(hiwatermark.is_multiple_of(32));
+        debug_assert!(lowatermark.is_multiple_of(32));
+        // assert!(hiwatermark < self.len());
+        // assert!(lowatermark < self.len());
+        unsafe { ffi::GX_InitFifoLimits(&mut self.0, hiwatermark, lowatermark) }
+    }
+
+    /// Sets the FIFO's read and write pointers.
+    /// 
+    /// # Safety
+    /// - `rd_ptr` and `wt_ptr` must be 32-byte aligned.
+    /// - `rd_ptr` and `wt_ptr` must have the same provenance as the FIFO's base pointer.
+    ///
+    /// # Note
+    /// This is normally done only during initialization of the FIFO. After that, the
+    /// graphics hardware manages the FIFO pointers.
+    pub unsafe fn set_pointers(&mut self, rd_ptr: *const u8, wt_ptr: *mut u8) {
+        debug_assert!(rd_ptr.is_aligned_to(32));
+        debug_assert!(wt_ptr.is_aligned_to(32));
         unsafe { ffi::GX_InitFifoPtrs(&mut self.0, rd_ptr as *mut _, wt_ptr as *mut _) }
     }
 }
@@ -1092,7 +1120,7 @@ pub enum TexOffset {
 #[derive(Debug, Clone)]
 #[repr(transparent)]
 pub struct RawTexture {
-    pub inner: ffi::GXTexObj,
+    inner: ffi::GXTexObj,
 }
 
 /// Texture with an internal image data buffer.
@@ -1734,7 +1762,14 @@ impl Gx {
     /// the calling thread is the one responsible for generating graphics data. This thread will be
     /// the thread to be suspended when the FIFO gets too full. The current GX thread can be
     /// changed by calling [`Gx::set_current_gx_thread()`].
-    pub fn init(size: usize) -> AtomicPtr<Fifo> {
+    pub fn init(size: usize) -> AtomicPtr<RawFifo> {
+        let init_fifo = INIT_FIFO.load(Ordering::Acquire);
+        
+        // check if GX has already been initialized
+        if ! init_fifo.is_null() {
+            return AtomicPtr::new(init_fifo);
+        }
+        
         // keep buf around with ManuallyDrop, otherwise it will be deallocated
         // by the end of the function.
         let mut buf = ManuallyDrop::new(Buf32::new(size.max(Fifo::MIN_SIZE)));
@@ -1742,7 +1777,7 @@ impl Gx {
         // SAFETY: all safety is ensured by Buf32.
         let gxfifo = unsafe {
             ffi::GX_Init(
-                buf.as_mut_ptr().map_addr(mem::to_uncached) as *mut _,
+                buf.as_mut_ptr().map_addr(mem::to_uncached).cast(),
                 buf.len() as u32,
             )
         };
@@ -1754,29 +1789,61 @@ impl Gx {
         }
 
         // Mark GX as initialized.
-        GX_IS_INIT.store(true, Ordering::Release);
-        AtomicPtr::new(gxfifo as *mut Fifo)
+        let fifo_ptr = gxfifo.cast();
+        INIT_FIFO.store(fifo_ptr, Ordering::Release);
+        AtomicPtr::new(fifo_ptr)
     }
 
-    /// Gives a copy of the FIFO currently attached to the GP.
+    /// Return a copy of the currently attached GP FIFO.
     ///
-    /// See [GX_GetGPFifo](https://libogc.devkitpro.org/gx_8h.html#af98b3858d1d04a4bbe620b0a45d94c8c) for more.
-    pub fn get_gp_fifo() -> Option<Fifo> {
-        unimplemented!()
+    /// See [GX_GetGPFifo](https://libogc.devkitpro.org/gx_8h.html#ab44a1fe8f8fc13e5d22429d144227d5a) for more.
+    pub fn get_gp_fifo() -> Option<RawFifo> {
+        if INIT_FIFO.load(Ordering::Acquire).is_null() {
+            None
+        } else {
+            let mut rawfifo: MaybeUninit<RawFifo> = MaybeUninit::zeroed();
+            unsafe {
+                ffi::GX_GetGPFifo(rawfifo.as_mut_ptr().cast());
+                Some(rawfifo.assume_init())
+            }
+        }
+    }
+
+    /// Attaches a FIFO to the GP.
+    ///
+    /// See [GX_SetGPFifo](https://libogc.devkitpro.org/gx_8h.html#af98b3858d1d04a4bbe620b0a45d94c8c) for more.
+    pub fn set_gp_fifo(fifo: Option<&RawFifo>) {
+        let fifo_ptr = match fifo {
+            Some(fifo) => fifo,
+            None => ptr::null(),
+        };
+        unsafe { ffi::GX_SetGPFifo(fifo_ptr.cast_mut().cast()) }
+    }
+
+    /// Return a copy of the currently attached CPU FIFO.
+    ///
+    /// See [GX_GetCPUFifo](https://libogc.devkitpro.org/gx_8h.html#a43258a02791218395ef43ffc7d8ed397) for more.
+    pub fn get_cpu_fifo() -> Option<RawFifo> {
+        if INIT_FIFO.load(Ordering::Acquire).is_null() {
+            None
+        } else {
+            let mut rawfifo: MaybeUninit<RawFifo> = MaybeUninit::zeroed();
+            unsafe {
+                ffi::GX_GetCPUFifo(rawfifo.as_mut_ptr().cast());
+                Some(rawfifo.assume_init())
+            }
+        }
     }
 
     /// Attaches a FIFO to the CPU.
     ///
-    /// See [GX_SetGPFifo](https://libogc.devkitpro.org/gx_8h.html#af98b3858d1d04a4bbe620b0a45d94c8c) for more.
-    pub fn set_gp_fifo(_fifo: Fifo) {
-        unimplemented!()
-    }
-
-    /// Copies the given FIFO into the CPU FIFO.
-    ///
     /// See [GX_SetCPUFifo](https://libogc.devkitpro.org/gx_8h.html#a69852ae8a9b982556a3a37a450af30d8) for more.
-    pub fn set_cpu_fifo(_fifo: &Fifo) {
-        unimplemented!()
+    pub fn set_cpu_fifo(fifo: Option<&RawFifo>) {
+        let fifo_ptr = match fifo {
+            Some(fifo) => fifo,
+            None => ptr::null(),
+        };
+        unsafe { ffi::GX_SetCPUFifo(fifo_ptr.cast_mut().cast()) }
     }
 
     /// Returns the current GX thread.
