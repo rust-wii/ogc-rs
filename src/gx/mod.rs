@@ -3284,6 +3284,7 @@ pub enum GPDrawCommand {
     DrawPoints = 0xBB,
 }
 
+/// The stub used by ogc-rs to invoke Rust functions for the breakpoint callback.
 unsafe extern "C" fn breakpt_callback_stub() {
     let cb_ptr = BREAKPT_CB.load(Ordering::Acquire);
     if ! cb_ptr.is_null() {
@@ -3293,7 +3294,8 @@ unsafe extern "C" fn breakpt_callback_stub() {
 
 /// Registers `cb` as a function to be invoked when a break point is encountered.
 ///
-/// `cb` is an `unsafe fn()` due to being run when interrupts are disabled.
+/// `cb` is an `unsafe fn()` due to being run when interrupts are disabled. It should
+/// return as soon as possible.
 ///
 /// See [GX_SetBreakPtCallback](https://libogc.devkitpro.org/gx_8h.html#a58d6aafb813095b05aa40675a9f83ed8) for more.
 pub fn set_breakpt_callback(cb: Option<unsafe fn()>) -> Option<unsafe fn()> {
@@ -3307,22 +3309,34 @@ pub fn set_breakpt_callback(cb: Option<unsafe fn()>) -> Option<unsafe fn()> {
     if prev_cb_ptr.is_null() {
         None
     } else {
-        // only we set the pointer (above), so it will always be valid
+        // SAFETY:
+        // - pointer already checked to be non-null
+        // - we always set a valid rust function
         Some(unsafe { *prev_cb_ptr })
     }
 }
 
 
+/// The stub used by ogc-rs to invoke Rust functions for the DrawDone callback.
+/// 
+/// This stub is automatically set when calling [`gx::init()`].
 unsafe extern "C" fn draw_done_callback_stub() {
     let cb_ptr = DRAW_DONE_CB.load(Ordering::Acquire);
     if ! cb_ptr.is_null() {
+        // SAFETY:
+        // - pointer already checked to be non-null
+        // - we always set a valid rust function
         unsafe { (*cb_ptr)(); }
     }
 }
 
-/// Installs a callback that is invoked whenever a DrawDone command is encountered by the GP.
-///
-/// See [GX_SetDrawDoneCallback](https://libogc.devkitpro.org/gx_8h.html#a0a39520decc53fdd2a687ab8d5a46ff2) for more.
+/// Sets a Rust callback that gets invoked when the graphics pipeline encounters a
+/// DrawDone command.
+/// 
+/// The DrawDone command is sent by [`gx::set_draw_done()`].
+/// 
+/// Note that by the time the callback is invoked, the GP will already have resumed
+/// reading from the FIFO if there are any commands in it.
 pub fn set_draw_done_callback(cb: Option<fn()>) -> Option<fn()> {
     let cb_ptr = match cb {
         None => ptr::null_mut(),
@@ -3334,19 +3348,33 @@ pub fn set_draw_done_callback(cb: Option<fn()>) -> Option<fn()> {
     if prev_cb_ptr.is_null() {
         None
     } else {
-        // only we set the pointer (above), so it will always be valid
+        // SAFETY:
+        // - pointer already checked to be non-null
+        // - we always set a valid rust function
         Some(unsafe { *prev_cb_ptr })
     }
 }
 
 
+/// The stub used by ogc-rs to invoke Rust functions for the DrawSync callback.
+/// 
+/// This stub is automatically set when calling [`gx::init()`].
 unsafe extern "C" fn draw_sync_callback_stub(token: u16) {
     let cb_ptr = DRAW_SYNC_CB.load(Ordering::Acquire);
     if ! cb_ptr.is_null() {
+        // SAFETY:
+        // - pointer already checked to be non-null
+        // - we always set a valid rust function
         unsafe { (*cb_ptr)(token); }
     }
 }
 
+/// Sets a Rust callback that gets invoked when the graphics pipeline encounters a
+/// `DrawSync` token.
+/// 
+/// The argument to the callback is the value of the most recently encountered token. Your
+/// code must be able to deduce if any tokens have been missed, since graphics processing
+/// doesn't stop while the callback is running.
 pub fn set_draw_sync_callback(cb: Option<fn(u16)>) -> Option<fn(u16)> {
     let cb_ptr = match cb {
         None => ptr::null_mut(),
@@ -3358,7 +3386,9 @@ pub fn set_draw_sync_callback(cb: Option<fn(u16)>) -> Option<fn(u16)> {
     if prev_cb_ptr.is_null() {
         None
     } else {
-        // only we set the pointer (above), so it will always be valid
+        // SAFETY:
+        // - pointer already checked to be non-null
+        // - we always set a valid rust function
         Some(unsafe { *prev_cb_ptr })
     }
 }
