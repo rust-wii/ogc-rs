@@ -1776,12 +1776,6 @@ impl Gx {
             )
         };
 
-        unsafe {
-            ffi::GX_SetBreakPtCallback(Some(breakpt_callback_stub));
-            ffi::GX_SetDrawDoneCallback(Some(draw_done_callback_stub));
-            ffi::GX_SetDrawSyncCallback(Some(draw_sync_callback_stub));
-        }
-
         // Mark GX as initialized.
         let fifo_ptr = gxfifo.cast();
         INIT_FIFO.store(fifo_ptr, Ordering::Release);
@@ -3306,8 +3300,14 @@ unsafe extern "C" fn breakpt_callback_stub() {
 /// See [GX_SetBreakPtCallback](https://libogc.devkitpro.org/gx_8h.html#a58d6aafb813095b05aa40675a9f83ed8) for more.
 pub fn set_breakpt_callback(cb: Option<unsafe fn()>) -> Option<unsafe fn()> {
     let cb_ptr = match cb {
-        None => ptr::null_mut(),
-        Some(mut f) => (&mut f) as *mut unsafe fn(),
+        None => {
+            unsafe { ffi::GX_SetBreakPtCallback(None); }
+            ptr::null_mut()
+        }
+        Some(mut f) => {
+            unsafe { ffi::GX_SetBreakPtCallback(Some(breakpt_callback_stub)); }
+            (&mut f) as *mut unsafe fn()
+        }
     };
 
     let prev_cb_ptr = BREAKPT_CB.swap(cb_ptr, Ordering::AcqRel);
@@ -3345,8 +3345,14 @@ unsafe extern "C" fn draw_done_callback_stub() {
 /// reading from the FIFO if there are any commands in it.
 pub fn set_draw_done_callback(cb: Option<fn()>) -> Option<fn()> {
     let cb_ptr = match cb {
-        None => ptr::null_mut(),
-        Some(mut f) => (&mut f) as *mut fn(),
+        None => {
+            unsafe { ffi::GX_SetDrawDoneCallback(None); }
+            ptr::null_mut()
+        }
+        Some(mut f) => {
+            unsafe { ffi::GX_SetDrawDoneCallback(Some(draw_done_callback_stub)); }
+            (&mut f) as *mut fn()
+        }
     };
 
     let prev_cb_ptr = DRAW_DONE_CB.swap(cb_ptr, Ordering::AcqRel);
@@ -3383,8 +3389,14 @@ unsafe extern "C" fn draw_sync_callback_stub(token: u16) {
 /// doesn't stop while the callback is running.
 pub fn set_draw_sync_callback(cb: Option<fn(u16)>) -> Option<fn(u16)> {
     let cb_ptr = match cb {
-        None => ptr::null_mut(),
-        Some(mut f) => (&mut f) as *mut fn(u16),
+        None => {
+            unsafe { ffi::GX_SetDrawSyncCallback(None); }
+            ptr::null_mut()
+        }
+        Some(mut f) => {
+            unsafe { ffi::GX_SetDrawSyncCallback(Some(draw_sync_callback_stub)); }
+            (&mut f) as *mut fn(u16)
+        }
     };
 
     let prev_cb_ptr = DRAW_SYNC_CB.swap(cb_ptr, Ordering::AcqRel);
