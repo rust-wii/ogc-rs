@@ -1601,9 +1601,12 @@ pub enum TlutFormat {
     RGB5A3 = ffi::GX_TL_RGB5A3,
 }
 
-/// Texture Look-Up Table
-#[repr(transparent)]
-pub struct Tlut(ffi::GXTlutObj);
+
+/// Texture Look-Up Table with an internal buffer
+pub struct Tlut {
+    inner: ffi::GXTlutObj,
+    buf: Buf32,
+}
 
 impl Tlut {
     /// Initializes a Texture Look-Up Table (TLUT) object.
@@ -1616,15 +1619,18 @@ impl Tlut {
     /// `lut`: ptr to look-up table data; must be 32B aligned
     /// `fmt`: format of the entries in the TLUT.
     /// `entries`: number of entries in this table; maximum is 16,384
-    pub fn new(mut lut: Buf32, fmt: TlutFormat, entries: u16) -> Tlut {
+    pub fn new(mut lut: Buf32, fmt: TlutFormat, entries: u16) -> Self {
         // libogc doesn't check entries is within range. unsure of consequences, so let's just
         // play it safe.
         assert!(entries <= 16384);
         let mut obj = core::mem::MaybeUninit::uninit();
         unsafe {
-            ffi::GX_InitTlutObj(obj.as_mut_ptr(), lut.as_mut_ptr() as *mut _, fmt as _, entries);
+            ffi::GX_InitTlutObj(obj.as_mut_ptr(), lut.as_mut_ptr().cast(), fmt as _, entries);
             // SAFETY: per libogc source, it zeroes and then initializes obj itself.
-            Tlut(obj.assume_init())
+            Tlut {
+                inner: obj.assume_init(),
+                buf: lut,
+            }
         }
     }
 }
@@ -2255,7 +2261,7 @@ impl Gx {
     /// Sets the gamma correction applied to pixels during EFB to XFB copy operation.
     /// See [GX_SetDispCopyGamma](https://libogc.devkitpro.org/gx_8h.html#aa8e5bc962cc786b2049345fa698d4efa) for more.
     pub fn set_disp_copy_gamma(gamma: Gamma) {
-        unsafe { ffi::GX_SetDispCopyGamma(gamma.0) }
+        unsafe { ffi::GX_SetDispCopyGamma(gamma as _) }
     }
 
     /// Sets the attribute format (vtxattr) for a single attribute in the Vertex Attribute Table (VAT).
@@ -2364,8 +2370,8 @@ impl Gx {
 
     /// Sets the type of a single attribute (attr) in the current vertex descriptor.
     /// See [GX_SetVtxDesc](https://libogc.devkitpro.org/gx_8h.html#af41b45011ae731ae5697b26b2bf97e2f) for more.
-    pub fn set_vtx_desc(attr: VtxAttr, v_type: VtxDest) {
-        unsafe { ffi::GX_SetVtxDesc(attr as u8, v_type.0) }
+    pub fn set_vtx_desc(attr: VtxAttr, v_type: VtxAttrIn) {
+        unsafe { ffi::GX_SetVtxDesc(attr as u8, v_type as _) }
     }
 
     /// Used to load a 3x4 modelview matrix mt into matrix memory at location pnidx.
