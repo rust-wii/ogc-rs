@@ -3496,3 +3496,68 @@ pub enum Gamma {
     Mode17 = ffi::GX_GM_1_7,
     Mode22 = ffi::GX_GM_2_2,
 }
+
+
+/// Allows the sharing of a texcoord between an indirect stage and a regular TEV stage.
+/// 
+/// Scale arguments take a value between 0 and 8 inclusive, which corresponds to the power
+/// of two used for the indirect scaling. For example, to get the same behavior as using
+/// `GX_ITS_32`, use a scale value of 5.
+/// 
+/// See [GX_SetIndTexCoordScale](https://libogc.devkitpro.org/gx_8h.html#a3b1738565a2a703e16700c78c6eabfe7) for more.
+pub fn set_ind_tex_coord_scale(indtexid: u8, scale_s: u8, scale_t: u8) {
+    debug_assert!(indtexid <= 3);
+    debug_assert!(scale_s <= 8);
+    debug_assert!(scale_t <= 8);
+    unsafe { ffi::GX_SetIndTexCoordScale(indtexid, scale_s, scale_t) }
+}
+
+/// Indirect texture matrix
+#[repr(u32)]
+pub enum IndTexMat {
+    /// Specifies a matrix of all zeroes.
+    Off = ffi::GX_ITM_OFF,
+    /// Specifies indirect matrix 0, indirect scale 0.
+    Ind0 = ffi::GX_ITM_0,
+    /// Specifies indirect matrix 1, indirect scale 1.
+    Ind1 = ffi::GX_ITM_1,
+    /// Specifies indirect matrix 2, indirect scale 2.
+    Ind2 = ffi::GX_ITM_2,
+    /// Specifies dynamic S-type matrix, indirect scale 0.
+    S0 = ffi::GX_ITM_S0,
+    /// Specifies dynamic S-type matrix, indirect scale 1.
+    S1 = ffi::GX_ITM_S1,
+    /// Specifies dynamic S-type matrix, indirect scale 2.
+    S2 = ffi::GX_ITM_S2,
+    /// Specifies dynamic T-type matrix, indirect scale 0.
+    T0 = ffi::GX_ITM_T0,
+    /// Specifies dynamic T-type matrix, indirect scale 1.
+    T1 = ffi::GX_ITM_T1,
+    /// Specifies dynamic T-type matrix, indirect scale 2.
+    T2 = ffi::GX_ITM_T2,
+}
+
+/// Sets one of the three static indirect matrices and the associated scale factor.
+/// 
+/// See [GX_SetIndTexMatrix](https://libogc.devkitpro.org/gx_8h.html#ab420287ea1ba94471048ed0ef2541f15) for more.
+pub fn set_ind_tex_matrix(indtexmtx: IndTexMat, offset_mtx: [[f32; 3]; 2], scale_exp: i8) {
+    unsafe {
+        ffi::GX_SetIndTexMatrix(indtexmtx as u8, offset_mtx.as_ptr().cast_mut(), scale_exp)
+    }
+}
+
+/// Sets one of the three static indirect matrices and the associated scale factor.
+/// 
+/// See [GX_SetIndTexMatrix](https://libogc.devkitpro.org/gx_8h.html#ab420287ea1ba94471048ed0ef2541f15) for more.
+pub fn set_ind_tex_order(indtexstage: u8, texcoord: Option<u8>, texmap: Option<u8>) {
+    debug_assert!(indtexstage <= 3);
+    debug_assert!(if let Some(x) = texcoord { x <= 7 } else { true });
+    debug_assert!(if let Some(x) = texmap { x <= 7 } else { true });
+    unsafe {
+        ffi::GX_SetIndTexOrder(
+            indtexstage,
+            texcoord.unwrap_or(ffi::GX_TEXCOORDNULL as u8),
+            texmap.unwrap_or(ffi::GX_TEXMAP_NULL as u8)
+        )
+    }
+}
