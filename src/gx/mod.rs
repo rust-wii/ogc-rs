@@ -4066,3 +4066,125 @@ pub fn set_tev_swap_mode_table(swapid: u8, r: u8, g: u8, b: u8, a: u8) {
     debug_assert!(a < 4 as u8);
     unsafe { ffi::GX_SetTevSwapModeTable(swapid, r, g, b, a); }
 }
+
+/// Sets the texture coordinate bias of a particular texture.
+/// 
+/// See [GX_SetTexCoordBias](https://libogc.devkitpro.org/gx_8h.html#a8126aeaf9971a440c799a3aeefb3ec66) for more.
+pub fn set_tex_coord_bias(texcoord: u8, s_enable: bool, t_enable: bool) {
+    debug_assert!(texcoord < ffi::GX_MAXCOORD as u8);
+    unsafe { ffi::GX_SetTexCoordBias(texcoord, s_enable as u8, t_enable as u8) }
+}
+
+pub fn set_tex_coord_cyl_wrap(texcoord: u8, s_enable: bool, t_enable: bool) {
+    debug_assert!(texcoord < ffi::GX_MAXCOORD as u8);
+    unsafe { ffi::GX_SetTexCoordCylWrap(texcoord, s_enable as u8, t_enable as u8) }
+}
+
+/// Texture coordinate generation type
+#[repr(u32)]
+pub enum TexGenType {
+    /// 3x4 matrix multiply on the input attribute and generate S,T,Q coordinates; S,T are
+    /// then divided by Q to produce the actual 2D texture coordinates.
+    Mtx3x4 = ffi::GX_TG_MTX3x4,
+    /// 2x4 matrix multiply on the input attribute and generate S,T texture coordinates.
+    Mtx2x4 = ffi::GX_TG_MTX2x4,
+    /// Use light 0 in the bump map calculation.
+    Bump0 = ffi::GX_TG_BUMP0,
+    /// Use light 1 in the bump map calculation.
+    Bump1 = ffi::GX_TG_BUMP1,
+    /// Use light 2 in the bump map calculation.
+    Bump2 = ffi::GX_TG_BUMP2,
+    /// Use light 3 in the bump map calculation.
+    Bump3 = ffi::GX_TG_BUMP3,
+    /// Use light 4 in the bump map calculation.
+    Bump4 = ffi::GX_TG_BUMP4,
+    /// Use light 5 in the bump map calculation.
+    Bump5 = ffi::GX_TG_BUMP5,
+    /// Use light 6 in the bump map calculation.
+    Bump6 = ffi::GX_TG_BUMP6,
+    /// Use light 7 in the bump map calculation.
+    Bump7 = ffi::GX_TG_BUMP7,
+    /// Coordinates generated from vertex lighting results; one of the color channel results
+    /// is converted into texture coordinates.
+    Srtg = ffi::GX_TG_SRTG,
+}
+
+/// Texture coordinate source
+#[repr(u32)]
+pub enum TexGenSrc {
+    Pos = ffi::GX_TG_POS,
+    Normal = ffi::GX_TG_NRM,
+    Binorm = ffi::GX_TG_BINRM,
+    Tangent = ffi::GX_TG_TANGENT,
+    Tex0 = ffi::GX_TG_TEX0,
+    Tex1 = ffi::GX_TG_TEX1,
+    Tex2 = ffi::GX_TG_TEX2,
+    Tex3 = ffi::GX_TG_TEX3,
+    Tex4 = ffi::GX_TG_TEX4,
+    Tex5 = ffi::GX_TG_TEX5,
+    Tex6 = ffi::GX_TG_TEX6,
+    Tex7 = ffi::GX_TG_TEX7,
+    TexCoord0 = ffi::GX_TG_TEXCOORD0,
+    TexCoord1 = ffi::GX_TG_TEXCOORD1,
+    TexCoord2 = ffi::GX_TG_TEXCOORD2,
+    TexCoord3 = ffi::GX_TG_TEXCOORD3,
+    TexCoord4 = ffi::GX_TG_TEXCOORD4,
+    TexCoord5 = ffi::GX_TG_TEXCOORD5,
+    TexCoord6 = ffi::GX_TG_TEXCOORD6,
+    Color0 = ffi::GX_TG_COLOR0,
+    Color1 = ffi::GX_TG_COLOR1,
+}
+
+/// An extension of [`gx::set_tex_coord_gen()`]. It allows one to specify additional
+/// texgen options.
+/// 
+/// See [GX_SetTexCoordGen2](https://libogc.devkitpro.org/gx_8h.html#a55a426a3ff796db584302bddd829f002) for more.
+pub fn set_tex_coord_gen_2(
+    texcoord: u8,
+    tgen_type: TexGenType,
+    tgen_src: TexGenSrc,
+    mtxsrc: u32,
+    normalize: bool,
+    postmtx: u32
+) {
+    debug_assert!(texcoord < ffi::GX_MAXCOORD as u8);
+    debug_assert!([30, 33, 36, 39, 42, 45, 48, 51, 54, 57, 60].contains(&mtxsrc));
+    unsafe {
+        ffi::GX_SetTexCoordGen2(
+            texcoord as u16,
+            tgen_type as u32,
+            tgen_src as u32,
+            mtxsrc,
+            normalize as u32,
+            postmtx
+        )
+    }
+}
+
+/// Overrides the automatic texture coordinate scaling (based upon the associated map
+/// size) and lets one manually assign the scale values that are used for a given
+/// texcoord.
+/// 
+/// See [GX_SetTexCoordScaleManually](https://libogc.devkitpro.org/gx_8h.html#a9293b94d9abfd7a8700d42d69dd4c58b) for more.
+pub fn set_tex_coord_scale_manually(texcoord: u8, enable: bool, ss: u16, ts: u16) {
+    debug_assert!(texcoord < ffi::GX_MAXCOORD as u8);
+    unsafe { ffi::GX_SetTexCoordScaleManually(texcoord, enable as u8, ss, ts) }
+}
+
+/// This function sets the width and height of the destination texture buffer in texels.
+/// 
+/// See [GX_SetTexCopyDst](https://libogc.devkitpro.org/gx_8h.html#a613bd9073b45486e7691a834d4f2a791) for more.
+pub fn set_tex_copy_dst(wd: u16, ht: u16, fmt: TexFormat, mipmap: bool) {
+    unsafe { ffi::GX_SetTexCopyDst(wd, ht, fmt as u32, mipmap as u8)}
+}
+
+/// Sets the source parameters for the Embedded Frame Buffer (EFB) to texture image copy.
+/// 
+/// See [GX_SetTexCopySrc](https://libogc.devkitpro.org/gx_8h.html#a8f5bcb4991993e8eb92f1955385e7d5f) for more.
+pub fn set_tex_copy_src(left: u16, top: u16, wd: u16, ht: u16) {
+    debug_assert!(left.is_multiple_of(2));
+    debug_assert!(top.is_multiple_of(2));
+    debug_assert!(wd.is_multiple_of(2));
+    debug_assert!(ht.is_multiple_of(2));
+    unsafe { ffi::GX_SetTexCopySrc(left, top, wd, ht) }
+}
