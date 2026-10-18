@@ -24,7 +24,26 @@ pub use crate::ffi::GXBreakPtCallback as RawBreakPtCallback;
 pub use crate::ffi::GXDrawDoneCallback as RawDrawDoneCallback;
 pub use crate::ffi::GXDrawSyncCallback as RawDrawSyncCallback;
 
-pub const GX_PIPE: VolAddress<u8, (), Safe> = unsafe { VolAddress::new(0xCC00_8000) };
+/// Write-gather pipe for writing and sending attribute data to the GP.
+/// 
+/// This is here in case the `gx::pos*()`, `gx::color*()`, etc. functions don't cover all
+/// your needs.
+/// 
+/// Relevant tips given by the [WiiBrew wiki's Developer Tips page]:
+/// > If your GX application hangs as soon as you begin drawing with `GX_Begin()`, here
+/// > are a few possible causes:
+/// > - incorrect vertex formats - the vertex format specified with `GX_SetVtxAttrFmt()`
+/// >   must match what your app sends between `GX_Begin()` and `GX_End()`.
+/// > - incorrect vertex count - the vertex count specified by `GX_Begin()` must match the
+/// >   vertex count your app sends between `GX_Begin()` and `GX_End()`.
+/// > - incorrect vertex data order - vertex data is order dependent - the order GX
+/// >   expects vertex data is: position, normal, color, bi-normals, and texture
+/// >   coordinates.
+/// > - surpassing the maximum number of vertex per between `GX_Begin()` and `GX_End()`
+/// >   block which is 65,536 (not counting normals/colours).
+/// 
+/// [WiiBrew wiki's Developer Tips page]: https://wiibrew.org/wiki/Developer_tips#GX_Tips
+pub const WG_PIPE: VolAddress<WGPipe, (), Safe> = unsafe { VolAddress::new(0xCC00_8000) };
 
 // Number of components in an attribute
 pub const CLR_RGB: u32 = ffi::GX_CLR_RGB;
@@ -2485,255 +2504,234 @@ impl Gx {
         Gx::set_clip_mode(ffi::GX_CLIP_DISABLE as u8);
     }
 
+    /// Writes a 3D f32 position.
     #[inline]
-    pub fn position_3f32(x: f32, y: f32, z: f32) {
-        let bytes = x.to_be_bytes()
-            .into_iter()
-            .chain(y.to_be_bytes())
-            .chain(z.to_be_bytes());
-        for byte in bytes {
-            GX_PIPE.write(byte);
-        }
+    pub fn pos3_f32(x: f32, y: f32, z: f32) {
+        unsafe { ffi::GX_Position3f32(x, y, z);}
     }
 
+    /// Writes a 3D u16 position.
     #[inline]
-    pub fn position_3u16(x: u16, y: u16, z: u16) {
-        let x_bytes = x.to_be_bytes();
-        let y_bytes = y.to_be_bytes();
-        let z_bytes = z.to_be_bytes();
-        for byte in x_bytes {
-            GX_PIPE.write(byte);
-        }
-        for byte in y_bytes {
-            GX_PIPE.write(byte);
-        }
-
-        for byte in z_bytes {
-            GX_PIPE.write(byte);
-        }
+    pub fn pos3_u16(x: u16, y: u16, z: u16) {
+        unsafe { ffi::GX_Position3u16(x, y, z) }
     }
 
+    /// Writes a 3D i16 position.
     #[inline]
-    pub fn position_3i16(x: i16, y: i16, z: i16) {
-        let x_bytes = x.to_be_bytes();
-        let y_bytes = y.to_be_bytes();
-        let z_bytes = z.to_be_bytes();
-        for byte in x_bytes {
-            GX_PIPE.write(byte);
-        }
-        for byte in y_bytes {
-            GX_PIPE.write(byte);
-        }
-
-        for byte in z_bytes {
-            GX_PIPE.write(byte);
-        }
+    pub fn pos3_i16(x: i16, y: i16, z: i16) {
+        unsafe { ffi::GX_Position3s16(x, y, z) }
     }
 
+    /// Writes a 3D u8 position.
     #[inline]
-    pub fn position_3u8(x: u8, y: u8, z: u8) {
-        let x_bytes = x.to_be_bytes();
-        let y_bytes = y.to_be_bytes();
-        let z_bytes = z.to_be_bytes();
-        for byte in x_bytes {
-            GX_PIPE.write(byte);
-        }
-        for byte in y_bytes {
-            GX_PIPE.write(byte);
-        }
-
-        for byte in z_bytes {
-            GX_PIPE.write(byte);
-        }
+    pub fn pos3_u8(x: u8, y: u8, z: u8) {
+        unsafe { ffi::GX_Position3u8(x, y, z) }
     }
 
+    /// Writes a 3D i8 position.
     #[inline]
-    pub fn position_3i8(x: i8, y: i8, z: i8) {
-        let x_bytes = x.to_be_bytes();
-        let y_bytes = y.to_be_bytes();
-        let z_bytes = z.to_be_bytes();
-        for byte in x_bytes {
-            GX_PIPE.write(byte);
-        }
-        for byte in y_bytes {
-            GX_PIPE.write(byte);
-        }
-
-        for byte in z_bytes {
-            GX_PIPE.write(byte);
-        }
+    pub fn pos3_i8(x: i8, y: i8, z: i8) {
+        unsafe { ffi::GX_Position3s8(x, y, z) }
     }
 
+    /// Writes a 2D f32 position.
     #[inline]
-    pub fn position_2f32(x: f32, y: f32) {
-        let x_bytes = x.to_be_bytes();
-        let y_bytes = y.to_be_bytes();
-
-        for byte in x_bytes {
-            GX_PIPE.write(byte);
-        }
-
-        for byte in y_bytes {
-            GX_PIPE.write(byte);
-        }
+    pub fn pos2_f32(x: f32, y: f32) {
+        unsafe { ffi::GX_Position2f32(x, y);}
     }
 
+    /// Writes a 2D u16 position.
     #[inline]
-    pub fn position_2u16(x: u16, y: u16) {
-        let x_bytes = x.to_be_bytes();
-        let y_bytes = y.to_be_bytes();
-
-        for byte in x_bytes {
-            GX_PIPE.write(byte);
-        }
-
-        for byte in y_bytes {
-            GX_PIPE.write(byte);
-        }
+    pub fn pos2_u16(x: u16, y: u16) {
+        unsafe { ffi::GX_Position2u16(x, y) }
     }
 
+    /// Writes a 2D i16 position.
     #[inline]
-    pub fn position_2i16(x: i16, y: i16) {
-        let x_bytes = x.to_be_bytes();
-        let y_bytes = y.to_be_bytes();
-
-        for byte in x_bytes {
-            GX_PIPE.write(byte);
-        }
-
-        for byte in y_bytes {
-            GX_PIPE.write(byte);
-        }
+    pub fn pos2_i16(x: i16, y: i16) {
+        unsafe { ffi::GX_Position2s16(x, y) }
     }
 
+    /// Writes a 2D u8 position.
     #[inline]
-    pub fn position_2u8(x: u8, y: u8) {
-        let x_bytes = x.to_be_bytes();
-        let y_bytes = y.to_be_bytes();
-
-        for byte in x_bytes {
-            GX_PIPE.write(byte);
-        }
-
-        for byte in y_bytes {
-            GX_PIPE.write(byte);
-        }
+    pub fn pos2_u8(x: u8, y: u8) {
+        unsafe { ffi::GX_Position2u8(x, y) }
     }
 
+    /// Writes a 2D i8 position.
     #[inline]
-    pub fn position_2i8(x: i8, y: i8) {
-        let x_bytes = x.to_be_bytes();
-        let y_bytes = y.to_be_bytes();
-
-        for byte in x_bytes {
-            GX_PIPE.write(byte);
-        }
-
-        for byte in y_bytes {
-            GX_PIPE.write(byte);
-        }
+    pub fn pos2_i8(x: i8, y: i8) {
+        unsafe { ffi::GX_Position2s8(x, y) }
     }
 
+    /// Writes a u8-indexed position.
     #[inline]
-    pub fn position1x8(index: u8) {
-        GX_PIPE.write(index);
+    pub fn pos1_x8(index: u8) {
+        unsafe { ffi::GX_Position1x8(index) }
     }
 
+    /// Writes a u16-indexed position.
     #[inline]
-    pub fn position1x16(index: u16) {
-        for byte in index.to_be_bytes() {
-            GX_PIPE.write(byte);
-        }
+    pub fn pos1_x16(index: u16) {
+        unsafe { ffi::GX_Position1x16(index) }
+    }
+    
+    /// Writes a 3D f32 normal.
+    #[inline]
+    pub fn normal3_f32(x: f32, y: f32, z: f32) {
+        unsafe { ffi::GX_Normal3f32(x, y, z) }
+    }
+    
+    /// Writes a 3D i16 normal.
+    #[inline]
+    pub fn normal3_i16(x: i16, y: i16, z: i16) {
+        unsafe { ffi::GX_Normal3s16(x, y, z) }
+    }
+    
+    /// Writes a 2D i8 normal.
+    #[inline]
+    pub fn normal3_i8(x: i8, y: i8, z: i8) {
+        unsafe { ffi::GX_Normal3s8(x, y, z) }
+    }
+    
+    /// Writes a u8-indexed normal.
+    #[inline]
+    pub fn normal1_x8(index: u8) {
+        unsafe { ffi::GX_Normal1x8(index) }
+    }
+    
+    /// Writes a u16-indexed normal.
+    #[inline]
+    pub fn normal1_x16(index: u16) {
+        unsafe { ffi::GX_Normal1x16(index) }
     }
 
+    /// Writes an RGBA color given in u8.
     #[inline]
-    pub fn color_4u8(r: u8, g: u8, b: u8, a: u8) {
-        GX_PIPE.write(r);
-        GX_PIPE.write(g);
-        GX_PIPE.write(b);
-        GX_PIPE.write(a);
+    pub fn color4_u8(r: u8, g: u8, b: u8, a: u8) {
+        unsafe { ffi::GX_Color4u8(r, g, b, a) }
     }
 
+    /// Writes an RGB color given in u8
     #[inline]
-    pub fn color_3u8(r: u8, g: u8, b: u8) {
-        GX_PIPE.write(r);
-        GX_PIPE.write(g);
-        GX_PIPE.write(b);
+    pub fn color3_u8(r: u8, g: u8, b: u8) {
+        unsafe { ffi::GX_Color3u8(r, g, b) }
     }
 
+    /// Writes an RGB color given in f32 between 0 and 1.
     #[inline]
-    pub fn color_3f32(r: f32, g: f32, b: f32) {
-        debug_assert!((0.0..=1.0).contains(&r));
-        debug_assert!((0.0..=1.0).contains(&g));
-        debug_assert!((0.0..=1.0).contains(&b));
-
-        let r: u8 = (r * 255.0) as u8;
-        let g: u8 = (g * 255.0) as u8;
-        let b: u8 = (b * 255.0) as u8;
-
-        GX_PIPE.write(r);
-        GX_PIPE.write(g);
-        GX_PIPE.write(b);
+    pub fn color3_f32(r: f32, g: f32, b: f32) {
+        unsafe { ffi::GX_Color3f32(r, g, b) }
     }
 
+    /// Writes a color given as a u32.
     #[inline]
-    pub fn color_4f32(r: f32, g: f32, b: f32, a: f32) {
-        debug_assert!((0.0..=1.0).contains(&a));
-
-        let a = (a * 255.0) as u8;
-
-        Gx::color_3f32(r, g, b);
-        GX_PIPE.write(a);
+    pub fn color1_u32(clr: u32) {
+        unsafe { ffi::GX_Color1u32(clr) }
     }
 
+    /// Writes a color given as a u16.
     #[inline]
-    pub fn color_1u32(clr: u32) {
-        for byte in clr.to_be_bytes() {
-            GX_PIPE.write(byte);
-        }
+    pub fn color1_u16(clr: u16) {
+        unsafe { ffi::GX_Color1u16(clr) }
     }
 
+    /// Writes a color given as a u8 index.
     #[inline]
-    pub fn color_1u16(clr: u16) {
-        let clr_bytes = clr.to_be_bytes();
-        for byte in clr_bytes {
-            GX_PIPE.write(byte);
-        }
+    pub fn color1_x8(index: u8) {
+        unsafe { ffi::GX_Color1x8(index) }
     }
 
+    /// Writes a color given as a u16 index.
     #[inline]
-    pub fn color1x8(index: u8) {
-        let idx_bytes = index.to_be_bytes();
-        for byte in idx_bytes {
-            GX_PIPE.write(byte);
-        }
+    pub fn color1_x16(index: u16) {
+        unsafe { ffi::GX_Color1x16(index) }
     }
 
+    /// Writes a color given as a [`Color`] object.
+    /// 
+    /// This is a convenience function and not part of libogc's interface.
     #[inline]
-    pub fn color1x16(index: u16) {
-        let idx_bytes = index.to_be_bytes();
-        for byte in idx_bytes {
-            GX_PIPE.write(byte);
-        }
+    pub fn color1_color(clr: Color) {
+        Self::color4_u8(clr.0.r, clr.0.g, clr.0.b, clr.0.a);
     }
 
-    ///Helper functions to just pass in a color object
-    pub fn color_color(clr: Color) {
-        Gx::color_4u8(clr.0.r, clr.0.g, clr.0.b, clr.0.a);
+    /// Writes a 2D texture coordinate in f32.
+    #[inline]
+    pub fn texcoord2_f32(s: f32, t: f32) {
+        unsafe { ffi::GX_TexCoord2f32(s, t) }
     }
 
+    /// Writes a 2D texture coordinate in u32.
     #[inline]
-    pub fn tex_coord_2f32(s: f32, t: f32) {
-        let s_bytes = s.to_be_bytes();
-        let t_bytes = t.to_be_bytes();
+    pub fn texcoord2_u16(s: u16, t: u16) {
+        unsafe { ffi::GX_TexCoord2u16(s, t) }
+    }
 
-        for byte in s_bytes {
-            GX_PIPE.write(byte);
-        }
+    /// Writes a 2D texture coordinate in i16.
+    #[inline]
+    pub fn texcoord2_i16(s: i16, t: i16) {
+        unsafe { ffi::GX_TexCoord2s16(s, t) }
+    }
 
-        for byte in t_bytes {
-            GX_PIPE.write(byte);
-        }
+    /// Writes a 2D texture coordinate in u8.
+    #[inline]
+    pub fn texcoord2_u8(s: u8, t: u8) {
+        unsafe { ffi::GX_TexCoord2u8(s, t) }
+    }
+
+    /// Writes a 2D texture coordinate in i8.
+    #[inline]
+    pub fn texcoord2_i8(s: i8, t: i8) {
+        unsafe { ffi::GX_TexCoord2s8(s, t) }
+    }
+
+    /// Writes a 1D texture coordinate in f32.
+    #[inline]
+    pub fn texcoord1_f32(s: f32) {
+        unsafe { ffi::GX_TexCoord1f32(s) }
+    }
+
+    /// Writes a 1D texture coordinate in u16.
+    #[inline]
+    pub fn texcoord1_u16(s: u16) {
+        unsafe { ffi::GX_TexCoord1u16(s) }
+    }
+
+    /// Writes a 1D texture coordinate in i16.
+    #[inline]
+    pub fn texcoord1_i16(s: i16) {
+        unsafe { ffi::GX_TexCoord1s16(s) }
+    }
+
+    /// Writes a 1D texture coordinate in u8.
+    #[inline]
+    pub fn texcoord1_u8(s: u8) {
+        unsafe { ffi::GX_TexCoord1u8(s) }
+    }
+
+    /// Writes a 1D texture coordinate in i8.
+    #[inline]
+    pub fn texcoord1_i8(s: i8) {
+        unsafe { ffi::GX_TexCoord1s8(s) }
+    }
+
+    /// Writes a texture coordinate indexed by a u8.
+    #[inline]
+    pub fn texcoord1_x8(index: u8) {
+        unsafe { ffi::GX_TexCoord1x8(index) }
+    }
+
+    /// Writes a texture coordinate indexed by a u16.
+    #[inline]
+    pub fn texcoord1_x16(index: u16) {
+        unsafe { ffi::GX_TexCoord1x16(index) }
+    }
+
+    /// Writes a matrix indexed by a u8.
+    #[inline]
+    pub fn matrix1_x8(index: u8) {
+        unsafe { ffi::GX_MatrixIndex1x8(index) }
     }
 
     pub fn flush() {
