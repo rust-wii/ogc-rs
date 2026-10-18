@@ -3580,3 +3580,489 @@ pub fn set_ind_tex_order(indtexstage: u8, texcoord: Option<u8>, texmap: Option<u
         )
     }
 }
+
+/// TEV alpha combiner input
+#[repr(u32)]
+pub enum TevAlphaArg {
+    /// Use the alpha value from previous TEV stage
+    APrev = ffi::GX_CA_APREV,
+    /// Use the alpha value from the color/output register 0
+    A0 = ffi::GX_CA_A0,
+    /// Use the alpha value from the color/output register 1
+    A1 = ffi::GX_CA_A1,
+    /// Use the alpha value from the color/output register 2
+    A2 = ffi::GX_CA_A2,
+    /// Use the alpha value from texture
+    TexA = ffi::GX_CA_TEXA,
+    /// Use the alpha value from rasterizer
+    RasA = ffi::GX_CA_RASA,
+    Konst = ffi::GX_CA_KONST,
+    /// Use to pass zero value
+    Zero = ffi::GX_CA_ZERO,
+}
+
+/// Sets the alpha input sources for one tevstage of the Texture Environment (TEV) alpha
+/// combiner.
+/// 
+/// See [GX_SetTevAlphaIn](https://libogc.devkitpro.org/gx_8h.html#a4a9970519c90a72b0a5b161d3252bb76) for more.
+pub fn set_tev_alpha_in(
+    tevstage: u8,
+    a: TevAlphaArg,
+    b: TevAlphaArg,
+    c: TevAlphaArg,
+    d: TevAlphaArg
+) {
+    debug_assert!(tevstage < ffi::GX_MAX_TEVSTAGE as u8);
+    unsafe { ffi::GX_SetTevAlphaIn(tevstage, a as u8, b as u8, c as u8, d as u8); }
+}
+
+/// TEV combiner operator
+#[repr(u32)]
+pub enum TevOp {
+    Add = ffi::GX_TEV_ADD,
+    Sub = ffi::GX_TEV_SUB,
+    CompR8Gt = ffi::GX_TEV_COMP_R8_GT,
+    CompR8Eq = ffi::GX_TEV_COMP_R8_EQ,
+    CompGR16Gt = ffi::GX_TEV_COMP_GR16_GT,
+    CompGR16Eq = ffi::GX_TEV_COMP_GR16_EQ,
+    CompBGR24Gt = ffi::GX_TEV_COMP_BGR24_GT,
+    CompBGR24Eq = ffi::GX_TEV_COMP_BGR24_EQ,
+    /// Can also be used to compare alpha values
+    CompRGB8Gt = ffi::GX_TEV_COMP_RGB8_GT,
+    /// Can also be used to compare alpha values
+    CompRGB8Eq = ffi::GX_TEV_COMP_RGB8_EQ,
+}
+
+/// TEV bias value
+#[repr(u32)]
+pub enum TevBias {
+    Zero = ffi::GX_TB_ZERO,
+    AddHalf = ffi::GX_TB_ADDHALF,
+    SubHalf = ffi::GX_TB_SUBHALF,
+}
+
+/// TEV scale value
+#[repr(u32)]
+pub enum TevScale {
+    Scale1 = ffi::GX_CS_SCALE_1,
+    Scale2 = ffi::GX_CS_SCALE_2,
+    Scale4 = ffi::GX_CS_SCALE_4,
+    Divide2 = ffi::GX_CS_DIVIDE_2,
+}
+
+/// TEV color/output register
+#[repr(u32)]
+pub enum TevColOutReg {
+    /// Default register for passing results from one stage to another.
+    Prev = ffi::GX_TEVPREV,
+    Reg0 = ffi::GX_TEVREG0,
+    Reg1 = ffi::GX_TEVREG1,
+    Reg2 = ffi::GX_TEVREG2,
+}
+
+/// Sets the tevop, tevbias, tevscale and clamp-mode operation for the alpha combiner for
+/// this tevstage of the TEV unit.
+pub fn set_tev_alpha_op(
+    tevstage: u8,
+    tevop: TevOp,
+    tevbias: TevBias,
+    tevscale: TevScale,
+    clamp: bool,
+    tevregid: TevColOutReg
+) {
+    debug_assert!(tevstage < ffi::GX_MAX_TEVSTAGE as u8);
+    unsafe {
+        ffi::GX_SetTevAlphaOp(
+            tevstage,
+            tevop as u8,
+            tevbias as u8,
+            tevscale as u8,
+            clamp as u8,
+            tevregid as u8
+        )
+    }
+}
+
+/// Used to set one of the primary color registers in the TEV unit.
+pub fn set_tev_color(tev_regid: TevColOutReg, color: Color) {
+    debug_assert!(
+        matches!(tev_regid, TevColOutReg::Reg0 | TevColOutReg::Reg1 | TevColOutReg::Reg2)
+    );
+    unsafe { ffi::GX_SetTevColor(tev_regid as u8, color.0); }
+}
+
+/// TEV color combiner input
+#[repr(u32)]
+pub enum TevColorArg {
+    /// Use the color value from previous TEV stage
+    PrevColor = ffi::GX_CC_CPREV,
+    /// Use the alpha value from previous TEV stage
+    PrevAlpha = ffi::GX_CC_APREV,
+    /// Use the color value from the color/output register 0
+    Reg0Color = ffi::GX_CC_C0,
+    /// Use the alpha value from the color/output register 0 
+    Reg0Alpha = ffi::GX_CC_A0,
+    /// Use the color value from the color/output register 1
+    Reg1Color = ffi::GX_CC_C1,
+    /// Use the alpha value from the color/output register 1
+    Reg1Alpha = ffi::GX_CC_A1,
+    /// Use the color value from the color/output register 2
+    Reg2Color = ffi::GX_CC_C2,
+    /// Use the alpha value from the color/output register 2
+    Reg2Alpha = ffi::GX_CC_A2,
+    /// Use the color value from texture
+    TexColor = ffi::GX_CC_TEXC,
+    /// Use the alpha value from texture
+    TexAlpha = ffi::GX_CC_TEXA,
+    /// Use the color value from rasterizer
+    RasColor = ffi::GX_CC_RASC,
+    /// Use the alpha value from rasterizer
+    RasAlpha = ffi::GX_CC_RASA,
+    One = ffi::GX_CC_ONE,
+    Half = ffi::GX_CC_HALF,
+    Konst = ffi::GX_CC_KONST,
+    /// Use to pass zero value
+    Zero = ffi::GX_CC_ZERO,
+}
+
+/// Sets the color input sources for one tevstage of the Texture Environment (TEV) color
+/// combiner.
+pub fn set_tev_color_in(
+    tevstage: u8,
+    a: TevColorArg,
+    b: TevColorArg,
+    c: TevColorArg,
+    d: TevColorArg
+) {
+    debug_assert!(tevstage < ffi::GX_MAX_TEVSTAGE as u8);
+    unsafe { ffi::GX_SetTevColorIn(tevstage, a as u8, b as u8, c as u8, d as u8); }
+}
+
+/// Sets the tevop, tevbias, tevscale and clamp-mode operation for the color combiner for
+/// this tevstage of the TEV unit.
+pub fn set_tev_color_op(
+    tevstage: u8,
+    tevop: TevOp,
+    tevbias: TevBias,
+    tevscale: TevScale,
+    clamp: bool,
+    tevregid: TevColOutReg
+) {
+    debug_assert!(tevstage < ffi::GX_MAX_TEVSTAGE as u8);
+    unsafe {
+        ffi::GX_SetTevColorOp(
+            tevstage,
+            tevop as u8,
+            tevbias as u8,
+            tevscale as u8,
+            clamp as u8,
+            tevregid as u8
+        );
+    }
+}
+
+/// Used to set one of the constant color registers in the TEV unit.
+pub fn set_tev_color_s10(tev_regid: TevColOutReg, color: ColorS10) {
+    debug_assert!(
+        matches!(tev_regid, TevColOutReg::Reg0 | TevColOutReg::Reg1 | TevColOutReg::Reg2)
+    );
+    unsafe { ffi::GX_SetTevColorS10(tev_regid as u8, color.0); }
+}
+
+/// Used to turn off all indirect texture processing for the specified regular TEV stage.
+pub fn set_tev_direct(tevstage: u8) {
+    debug_assert!(tevstage < ffi::GX_MAX_TEVSTAGE as u8);
+    unsafe { ffi::GX_SetTevDirect(tevstage); }
+}
+
+/// Sets up an environment-mapped bump-mapped indirect lookup.
+/// 
+/// See [GX_SetTevIndBumpST](https://libogc.devkitpro.org/gx_8h.html#ab3f959a80b7097e5a802c398502da307) for more.
+pub fn set_tev_ind_bump_st(tevstage: u8, indtexstage: u8, mtx_sel: IndTexMat) {
+    debug_assert!(tevstage < ffi::GX_MAX_TEVSTAGE as u8);
+    debug_assert!(indtexstage < ffi::GX_MAX_INDTEXSTAGE as u8);
+    unsafe { ffi::GX_SetTevIndBumpST(tevstage, indtexstage, mtx_sel as u8); }
+}
+
+/// Sets up an environment-mapped bump-mapped indirect lookup.
+/// 
+/// See [GX_SetTevIndBumpXYZ](https://libogc.devkitpro.org/gx_8h.html#af37aa8723c7a078a2612693bb617a8ac) for more.
+pub fn set_tev_ind_bump_xyz(tevstage: u8, indtexstage: u8, mtx_sel: IndTexMat) {
+    debug_assert!(tevstage < ffi::GX_MAX_TEVSTAGE as u8);
+    debug_assert!(indtexstage < ffi::GX_MAX_INDTEXSTAGE as u8);
+    unsafe { ffi::GX_SetTevIndBumpXYZ(tevstage, indtexstage, mtx_sel as u8); }
+}
+
+/// Indirect texture format
+/// 
+/// Bits for the indirect offsets are extracted from the high end of each component byte.
+/// Bits for the bump alpha are extraced off the low end of the byte. For
+/// `IndTexFmt::EightBits`, the byte is duplicated for the offset and the bump alpha.
+#[repr(u32)]
+pub enum IndTexFmt {
+    EightBits = ffi::GX_ITF_8,
+    FiveBits = ffi::GX_ITF_5,
+    FourBits = ffi::GX_ITF_4,
+    ThreeBits = ffi::GX_ITF_3,
+}
+
+/// Indirect texture bias select
+/// 
+/// The bias is fixed at -128 for `GX_ITF_8` (TODO: what?) and +1 for the other formats.
+/// The bias happens prior to the indirect matrix multiply.
+#[repr(u32)]
+pub enum IndTexBias {
+    None = ffi::GX_ITB_NONE,
+    S = ffi::GX_ITB_S,
+    T = ffi::GX_ITB_T,
+    ST = ffi::GX_ITB_ST,
+    U = ffi::GX_ITB_U,
+    SU = ffi::GX_ITB_SU,
+    TU = ffi::GX_ITB_TU,
+    STU = ffi::GX_ITB_STU,
+}
+
+/// Indirect texture wrap value
+/// 
+/// Indicates whether the regular texture coordinate should be wrapped before being added
+/// to the offset.
+#[repr(u32)]
+pub enum IndTexWrap {
+    Off = ffi::GX_ITW_OFF,
+    Mod256 = ffi::GX_ITW_256,
+    Mod128 = ffi::GX_ITW_128,
+    Mod64 = ffi::GX_ITW_64,
+    Mod32 = ffi::GX_ITW_32,
+    Mod16 = ffi::GX_ITW_16,
+    Zero = ffi::GX_ITW_0,
+}
+
+/// Indirect texture bump alpha select
+/// 
+/// Indicates which offset component should provide the "bump" alpha output for the given
+/// TEV stage. Note that bump alpha is not available for TEV stage 0.
+#[repr(u32)]
+pub enum IndTexAlphaSel {
+    Off = ffi::GX_ITBA_OFF,
+    S = ffi::GX_ITBA_S,
+    T = ffi::GX_ITBA_T,
+    U = ffi::GX_ITBA_U,
+}
+
+/// Controls how the results from an indirect lookup will be used to modify a given
+/// regular TEV stage lookup.
+/// 
+/// See [GX_SetTevIndirect](https://libogc.devkitpro.org/gx_8h.html#a00fa37cf7924a9992978ef2263ca3e3d) for more.
+pub fn set_tev_indirect(
+    tevstage: u8,
+    indtexid: u8,
+    format: IndTexFmt,
+    bias: IndTexBias,
+    mtxid: IndTexMat,
+    wrap_s: IndTexWrap,
+    wrap_t: IndTexWrap,
+    addprev: bool,
+    utclod: bool,
+    a: IndTexAlphaSel
+) {
+    debug_assert!(tevstage < ffi::GX_MAX_TEVSTAGE as u8);
+    debug_assert!(indtexid < ffi::GX_MAX_INDTEXSTAGE as u8);
+    unsafe {
+        ffi::GX_SetTevIndirect(
+            tevstage,
+            indtexid,
+            format as u8,
+            bias as u8,
+            mtxid as u8,
+            wrap_s as u8,
+            wrap_t as u8,
+            addprev as u8,
+            utclod as u8,
+            a as u8
+        )
+    }
+}
+
+/// Set a given TEV stage to use the same texture coordinates as were computed in the
+/// previous stage.
+/// 
+/// See [GX_SetTevIndRepeat](https://libogc.devkitpro.org/gx_8h.html#af8e89d4c40c6e1c70eb724cb0dea977a) for more.
+pub fn set_tev_ind_repeat(tevstage: u8) {
+    debug_assert!(tevstage < ffi::GX_MAX_TEVSTAGE as u8);
+    unsafe { ffi::GX_SetTevIndRepeat(tevstage); }
+}
+
+/// Used to implement tiled texturing using indirect textures.
+/// 
+/// See [GX_SetTevIndTile](https://libogc.devkitpro.org/gx_8h.html#af000453c289eb7a81a7260cc8ba8b944) for more.
+pub fn set_tev_ind_tile(
+    tevstage: u8,
+    indtexid: u8,
+    tilesize_x: u16,
+    tilesize_y: u16,
+    tilespacing_x: u16,
+    tilespacing_y: u16,
+    indtexfmt: IndTexFmt,
+    indtexmtx: IndTexMat,
+    bias_sel: IndTexBias,
+    alpha_sel: IndTexAlphaSel
+) {
+    debug_assert!(tevstage < ffi::GX_MAX_TEVSTAGE as u8);
+    debug_assert!(indtexid < ffi::GX_MAX_INDTEXSTAGE as u8);
+    unsafe {
+        ffi::GX_SetTevIndTile(
+            tevstage,
+            indtexid,
+            tilesize_x,
+            tilesize_y,
+            tilespacing_x,
+            tilespacing_y,
+            indtexfmt as u8,
+            indtexmtx as u8,
+            bias_sel as u8,
+            alpha_sel as u8
+        )
+    }
+}
+
+/// Used to warp a normal texture lookup using an indirect texture map with 8-bit offsets.
+/// 
+/// See [GX_SetTevIndWarp](https://libogc.devkitpro.org/gx_8h.html#a3f7516527d627c6086a969982a962ddc) for more.
+pub fn set_tev_ind_warp(
+    tevstage: u8,
+    indtexid: u8,
+    bias_flag: bool,
+    replace_tex: bool,
+    mtxid: IndTexMat
+) {
+    debug_assert!(tevstage < ffi::GX_MAX_TEVSTAGE as u8);
+    debug_assert!(indtexid < ffi::GX_MAX_INDTEXSTAGE as u8);
+    unsafe {
+        ffi::GX_SetTevIndWarp(
+            tevstage,
+            indtexid,
+            bias_flag as u8,
+            replace_tex as u8,
+            mtxid as u8
+        )
+    }
+}
+
+/// TEV constant alpha selection
+#[repr(u32)]
+pub enum TevKAlphaSel {
+    One = ffi::GX_TEV_KASEL_1,
+    Half = ffi::GX_TEV_KASEL_1_2,
+    Fourth = ffi::GX_TEV_KASEL_1_4,
+    Eighth = ffi::GX_TEV_KASEL_1_8,
+    ThreeFourths = ffi::GX_TEV_KASEL_3_4,
+    ThreeEighths = ffi::GX_TEV_KASEL_3_8,
+    FiveEighths = ffi::GX_TEV_KASEL_5_8,
+    SevenEighths = ffi::GX_TEV_KASEL_7_8,
+    K0Alpha = ffi::GX_TEV_KASEL_K0_A,
+    K0Blue = ffi::GX_TEV_KASEL_K0_B,
+    K0Green = ffi::GX_TEV_KASEL_K0_G,
+    K0Red = ffi::GX_TEV_KASEL_K0_R,
+    K1Alpha = ffi::GX_TEV_KASEL_K1_A,
+    K1Blue = ffi::GX_TEV_KASEL_K1_B,
+    K1Green = ffi::GX_TEV_KASEL_K1_G,
+    K1Red = ffi::GX_TEV_KASEL_K1_R,
+    K2Alpha = ffi::GX_TEV_KASEL_K2_A,
+    K2Blue = ffi::GX_TEV_KASEL_K2_B,
+    K2Green = ffi::GX_TEV_KASEL_K2_G,
+    K2Red = ffi::GX_TEV_KASEL_K2_R,
+    K3Alpha = ffi::GX_TEV_KASEL_K3_A,
+    K3Blue = ffi::GX_TEV_KASEL_K3_B,
+    K3Green = ffi::GX_TEV_KASEL_K3_G,
+    K3Red = ffi::GX_TEV_KASEL_K3_R,
+}
+
+/// Selects a "konstant" alpha input to be used in a given TEV stage.
+pub fn set_tev_k_alpha_sel(tevstage: u8, sel: TevKAlphaSel) {
+    debug_assert!(tevstage < ffi::GX_MAX_TEVSTAGE as u8);
+    unsafe { ffi::GX_SetTevKAlphaSel(tevstage, sel as u8); }
+}
+
+/// Sets one of the "konstant" color registers in the TEV unit.
+/// 
+/// These registers are available to all TEV stages. They are constant in the sense that
+/// they cannot be written to the TEV itself.
+pub fn set_tev_k_color(sel: u8, col: Color) {
+    debug_assert!(sel < ffi::GX_KCOLOR_MAX as u8);
+    unsafe { ffi::GX_SetTevKColor(sel, col.0); }
+}
+
+/// Used to set one of the constant color registers in the Texture Environment (TEV) unit.
+/// 
+/// See [GX_SetTevKColorS10](https://libogc.devkitpro.org/gx_8h.html#a741c9a31532ffe78ea266eb1f8c8ce2c) for more.
+pub fn set_tev_k_color_s10(sel: u8, col: ColorS10) {
+    debug_assert!(sel < ffi::GX_KCOLOR_MAX as u8);
+    unsafe { ffi::GX_SetTevKColorS10(sel, col.0); }
+}
+
+/// TEV constant alpha selection
+#[repr(u32)]
+pub enum TevKColorSel {
+    One = ffi::GX_TEV_KCSEL_1,
+    Half = ffi::GX_TEV_KCSEL_1_2,
+    Fourth = ffi::GX_TEV_KCSEL_1_4,
+    Eighth = ffi::GX_TEV_KCSEL_1_8,
+    ThreeFourths = ffi::GX_TEV_KCSEL_3_4,
+    ThreeEighths = ffi::GX_TEV_KCSEL_3_8,
+    FiveEighths = ffi::GX_TEV_KCSEL_5_8,
+    SevenEighths = ffi::GX_TEV_KCSEL_7_8,
+    K0 = ffi::GX_TEV_KCSEL_K0,
+    K0Alpha = ffi::GX_TEV_KCSEL_K0_A,
+    K0Blue = ffi::GX_TEV_KCSEL_K0_B,
+    K0Green = ffi::GX_TEV_KCSEL_K0_G,
+    K0Red = ffi::GX_TEV_KCSEL_K0_R,
+    K1 = ffi::GX_TEV_KCSEL_K1,
+    K1Alpha = ffi::GX_TEV_KCSEL_K1_A,
+    K1Blue = ffi::GX_TEV_KCSEL_K1_B,
+    K1Green = ffi::GX_TEV_KCSEL_K1_G,
+    K1Red = ffi::GX_TEV_KCSEL_K1_R,
+    K2 = ffi::GX_TEV_KCSEL_K2,
+    K2Alpha = ffi::GX_TEV_KCSEL_K2_A,
+    K2Blue = ffi::GX_TEV_KCSEL_K2_B,
+    K2Green = ffi::GX_TEV_KCSEL_K2_G,
+    K2Red = ffi::GX_TEV_KCSEL_K2_R,
+    K3 = ffi::GX_TEV_KCSEL_K3,
+    K3Alpha = ffi::GX_TEV_KCSEL_K3_A,
+    K3Blue = ffi::GX_TEV_KCSEL_K3_B,
+    K3Green = ffi::GX_TEV_KCSEL_K3_G,
+    K3Red = ffi::GX_TEV_KCSEL_K3_R,
+}
+
+/// Selects a "konstant" color input to be used in a given TEV stage.
+/// 
+/// See [GX_SetTevKColorSel](https://libogc.devkitpro.org/gx_8h.html#a5197b7367619940d411a3d33ab572e99) for more.
+pub fn set_tev_k_color_sel(tevstage: u8, sel: TevKColorSel) {
+    debug_assert!(tevstage < ffi::GX_MAX_TEVSTAGE as u8);
+    unsafe { ffi::GX_SetTevKColorSel(tevstage, sel as u8); }
+}
+
+/// Selects a set of swap modes for the rasterized color and texture color for a given TEV
+/// stage.
+/// 
+/// `ras_sel` and `tex_sel` are numbers between 0 and 4 inclusive, representing the swap
+/// table entry to be used.
+/// 
+/// See [GX_SetTevSwapMode](https://libogc.devkitpro.org/gx_8h.html#a2b40e50b32f2f021ba5adfc93bb769c2) for more.
+pub fn set_tev_swap_mode(tevstage: u8, ras_sel: u8, tex_sel: u8) {
+    debug_assert!(tevstage < ffi::GX_MAX_TEVSTAGE as u8);
+    debug_assert!(ras_sel < ffi::GX_MAX_TEVSWAP as u8);
+    debug_assert!(tex_sel < ffi::GX_MAX_TEVSWAP as u8);
+    unsafe { ffi::GX_SetTevSwapMode(tevstage, ras_sel, tex_sel); }
+}
+
+/// Sets up the TEV color swap table.
+/// 
+/// See [GX_SetTevSwapModeTable](https://libogc.devkitpro.org/gx_8h.html#ad83fd1e72254606cf69a076015406879) for more.
+pub fn set_tev_swap_mode_table(swapid: u8, r: u8, g: u8, b: u8, a: u8) {
+    debug_assert!(swapid < ffi::GX_MAX_TEVSWAP as u8);
+    debug_assert!(r < 4 as u8);
+    debug_assert!(g < 4 as u8);
+    debug_assert!(b < 4 as u8);
+    debug_assert!(a < 4 as u8);
+    unsafe { ffi::GX_SetTevSwapModeTable(swapid, r, g, b, a); }
+}
