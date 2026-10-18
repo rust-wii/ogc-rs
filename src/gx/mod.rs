@@ -1153,13 +1153,16 @@ pub struct RawTexture {
 /// This implements `Deref` and `DerefMut` for [`RawTexture`], which means a `Texture` may
 /// be used anywhere a `RawTexture` is referenced. This is similar to using a `&Vec<u8>`
 /// in place of a `&[u8]`, for example.
+/// 
+/// User data can also be stored in this texture with `set_user_data()`.
 #[derive(Debug, Clone)]
-pub struct Texture {
+pub struct Texture<U = !> {
     inner: RawTexture,
     img: Buf32,
+    user: Option<U>,
 }
 
-impl Texture {
+impl<T> Texture<T> {
     /// Returns the amount of memory in bytes needed to store a texture of the given size
     /// and format.
     ///
@@ -1215,6 +1218,7 @@ impl Texture {
             Texture {
                 inner: texture.assume_init(),
                 img: img_data,
+                user: None,
             }
         }
     }
@@ -1275,6 +1279,7 @@ impl Texture {
             Texture {
                 inner: texture.assume_init(),
                 img: img_data,
+                user: None,
             }
         }
     }
@@ -1293,9 +1298,24 @@ impl Texture {
     pub fn buf_mut(&mut self) -> &mut Buf32 {
         &mut self.img
     }
+    
+    /// Returns the user data stored in this texture, if any.
+    pub fn user_data(&self) -> Option<&T> {
+        self.user.as_ref()
+    }
+    
+    /// Returns the user data stored in this texture, if any.
+    pub fn user_data_mut(&mut self) -> Option<&mut T> {
+        self.user.as_mut()
+    }
+    
+    /// Sets the user data stored in this texture.
+    pub fn set_user_data(&mut self, t: T) {
+        self.user = Some(t);
+    }
 }
 
-impl Deref for Texture {
+impl<T> Deref for Texture<T> {
     type Target = RawTexture;
 
     fn deref(&self) -> &Self::Target {
@@ -1303,7 +1323,7 @@ impl Deref for Texture {
     }
 }
 
-impl DerefMut for Texture {
+impl<T> DerefMut for Texture<T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.inner
     }
