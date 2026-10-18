@@ -2050,8 +2050,8 @@ impl Gx {
     /// not be coherent with the CPU's cache. The application is responsible for storing the light
     /// object data from the CPU cache (using `DCStoreRange()`) before calling
     /// `Gx::load_light_idx()`.
-    pub fn load_light_idx(litobjidx: usize, litid: u8) {
-        unsafe { ffi::GX_LoadLightObjIdx(litobjidx as u32, litid) }
+    pub fn load_light_idx(litobjidx: u32, litid: u8) {
+        unsafe { ffi::GX_LoadLightObjIdx(litobjidx, litid) }
     }
 
     /// Causes the GPU to wait for the pipe to flush.
@@ -2221,7 +2221,7 @@ impl Gx {
 
     /// Sets the lighting controls for a particular color channel.
     pub fn set_channel_controls(
-        channel: i32,
+        channel: ColorChannel,
         enable: bool,
         ambsrc: Source,
         matsrc: Source,
@@ -2231,7 +2231,7 @@ impl Gx {
     ) {
         unsafe {
             ffi::GX_SetChanCtrl(
-                channel,
+                channel as i32,
                 enable as u8,
                 ambsrc as u8,
                 matsrc as u8,
@@ -2335,10 +2335,29 @@ impl Gx {
         unsafe { ffi::GX_SetTevOp(tevstage, mode) }
     }
 
-    /// Specifies the texture and rasterized color that will be available as inputs to this TEV tevstage.
+    /// Specifies the texture and rasterized color that will be available as inputs to
+    /// this TEV tevstage.
+    /// 
     /// See [GX_SetTevOrder](https://libogc.devkitpro.org/gx_8h.html#ae64799e52298de39efc74bf989fc57f5) for more.
-    pub fn set_tev_order(tevstage: u8, texcoord: u8, texmap: u32, color: u8) {
-        unsafe { ffi::GX_SetTevOrder(tevstage, texcoord, texmap, color) }
+    pub fn set_tev_order(
+        tevstage: u8,
+        texcoord: Option<u8>,
+        disable_texmap_lookup: bool,
+        texmap: Option<u8>,
+        color: Option<ColorChannel>
+    ) {
+        debug_assert!(tevstage <= 15);
+        debug_assert!(if let Some(x) = texcoord { x <= 7 } else { true });
+        debug_assert!(if let Some(x) = texmap { x <= 7 } else { true });
+        let disable_flag = if disable_texmap_lookup { ffi::GX_TEXMAP_DISABLE } else { 0 };
+        unsafe {
+            ffi::GX_SetTevOrder(
+                tevstage,
+                texcoord.unwrap_or(ffi::GX_TEXCOORDNULL as u8),
+                texmap.unwrap_or(ffi::GX_TEXMAPNULL as u8) as u32 | disable_flag,
+                color.map(|ch| ch as u8).unwrap_or(ffi::GX_COLORNULL as u8)
+            )
+        }
     }
 
     /// Specifies how texture coordinates are generated.
@@ -3138,15 +3157,15 @@ pub fn reset_overflow_count() -> u32 {
 /// Sets the ambient color register for the color channel.
 ///
 /// See [GX_SetChanAmbColor](https://libogc.devkitpro.org/gx_8h.html#a5097c9cfead421e0f7e492620446bcca) for more.
-pub fn set_chan_amb_color(channel: i32, color: Color) {
-    unsafe { ffi::GX_SetChanAmbColor(channel, color.0) }
+pub fn set_chan_amb_color(channel: ColorChannel, color: Color) {
+    unsafe { ffi::GX_SetChanAmbColor(channel as i32, color.0) }
 }
 
 /// Sets the material color register for the color channel.
 ///
 /// See [GX_SetChanMatColor](https://libogc.devkitpro.org/gx_8h.html#a477a92781b0379250c56afcfda9b603b) for more.
-pub fn set_chan_mat_color(channel: i32, color: Color) {
-    unsafe { ffi::GX_SetChanMatColor(channel, color.0) }
+pub fn set_chan_mat_color(channel: ColorChannel, color: Color) {
+    unsafe { ffi::GX_SetChanMatColor(channel as i32, color.0) }
 }
 
 /// Enables or disables coplanar triangle processing.
