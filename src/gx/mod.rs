@@ -2363,6 +2363,7 @@ impl Gx {
     /// Specifies how texture coordinates are generated.
     /// See [GX_SetTexCoordGen](https://libogc.devkitpro.org/gx_8h.html#a7d3139b693ace5587c3224e7df2d8245) for more.
     pub fn set_tex_coord_gen(texcoord: u16, tgen_typ: u32, tgen_src: u32, mtxsrc: u32) {
+        debug_assert!([30, 33, 36, 39, 42, 45, 48, 51, 54, 57, 60].contains(&mtxsrc));
         unsafe { ffi::GX_SetTexCoordGen(texcoord, tgen_typ, tgen_src, mtxsrc) }
     }
 
@@ -2468,14 +2469,16 @@ impl Gx {
 
     /// Loads a texture matrix mt into the matrix memory at location texidx.
     /// See [GX_LoadTexMtxImm](https://libogc.devkitpro.org/gx_8h.html#a2dae7e821ed8020450b26745e900b97b) for more.
-    pub fn load_tex_mtx_imm(mut mt: Mtx34, pnidx: u32, r#type: MtxType) {
-        unsafe { ffi::GX_LoadTexMtxImm(mt.as_mut_ptr(), pnidx, r#type as _) }
+    pub fn load_tex_mtx_imm(mut mt: Mtx34, texidx: u32, r#type: MtxType) {
+        debug_assert!([30, 33, 36, 39, 42, 45, 48, 51, 54, 57, 60].contains(&texidx));
+        unsafe { ffi::GX_LoadTexMtxImm(mt.as_mut_ptr(), texidx, r#type as _) }
     }
     
     /// Loads a texture matrix at index mtxidx from the array in main memory.
     /// See [GX_LoadTexMtxIdx](https://libogc.devkitpro.org/gx_8h.html#aa0c2283cf1c213231ec7e4a46b67e5a0) for more.
-    pub fn load_tex_mtx_idx(mtxidx: u16, pnidx: u32, r#type: MtxType) {
-        unsafe { ffi::GX_LoadTexMtxIdx(mtxidx, pnidx, r#type as _) }
+    pub fn load_tex_mtx_idx(mtxidx: u16, texidx: u32, r#type: MtxType) {
+        debug_assert!([30, 33, 36, 39, 42, 45, 48, 51, 54, 57, 60].contains(&texidx));
+        unsafe { ffi::GX_LoadTexMtxIdx(mtxidx, texidx, r#type as _) }
     }
 
     /// Enables or disables dithering.
@@ -2906,7 +2909,7 @@ impl Gx {
     /// * `dest`: pointer to the image buffer in main memory. _dest_ should be
     ///   32B aligned.
     /// * `clear`: flag that indicates framebuffer should be cleared if `true`.
-    pub fn copy_efb(mut dest: Buf32, clear: bool) {
+    pub fn copy_tex(mut dest: Buf32, clear: bool) {
         unsafe { ffi::GX_CopyTex(dest.as_mut_ptr() as *mut _, clear as _) }
     }
 
