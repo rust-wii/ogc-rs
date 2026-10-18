@@ -4,7 +4,7 @@
 use ogc_rs::{
     ffi::{GX_PASSCLR, GX_TEXCOORDNULL, GX_TEXMAP_NULL},
     gu::{Gu, RotationAxis},
-    gx::{self, types::VtxDest, CmpFn, Color, CullMode, Gx, Primitive, ProjectionType, VtxAttr},
+    gx::{self, CmpFn, Color, CullMode, Gx, Primitive, ProjectionType, VtxAttr, VtxAttrIn},
     video::Video,
 };
 
@@ -68,8 +68,8 @@ extern "C" fn main(_argc: isize, _argv: *const *const u8) -> isize {
     Gu::perspective(&mut mat, 60., 4. / 3., 10., 300.);
     Gx::load_projection_mtx(&mat, ProjectionType::Perspective);
     Gx::clear_vtx_desc();
-    Gx::set_vtx_desc(VtxAttr::Pos, VtxDest::INDEX8);
-    Gx::set_vtx_desc(VtxAttr::Color0, VtxDest::INDEX8);
+    Gx::set_vtx_desc(VtxAttr::Pos, VtxAttrIn::Index8);
+    Gx::set_vtx_desc(VtxAttr::Color0, VtxAttrIn::Index8);
     Gx::set_vtx_attr_fmt(0, VtxAttr::Pos, gx::POS_XYZ, gx::S16, 0);
     Gx::set_vtx_attr_fmt(0, VtxAttr::Color0, gx::CLR_RGBA, gx::RGBA8, 0);
 
@@ -114,12 +114,12 @@ extern "C" fn main(_argc: isize, _argv: *const *const u8) -> isize {
         Gx::load_pos_mtx_imm(&mut mdl_mtx, 0);
 
         Gx::begin(Primitive::Triangles, 0, 3);
-        Gx::position1x8(0);
-        Gx::color1x8(0);
-        Gx::position1x8(1);
-        Gx::color1x8(1);
-        Gx::position1x8(2);
-        Gx::color1x8(2);
+        Gx::pos1_x8(0);
+        Gx::color1_x8(0);
+        Gx::pos1_x8(1);
+        Gx::color1_x8(1);
+        Gx::pos1_x8(2);
+        Gx::color1_x8(2);
 
         /*
                 Gx::position_3i16(0, 15, 0);

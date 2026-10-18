@@ -4,17 +4,16 @@
 mod obj;
 use core::f32::consts::PI;
 use core::mem::ManuallyDrop;
-use ogc_rs::ffi::{GX_F32, GX_NRM_XYZ, GX_TEX_ST, GX_VA_NRM, GX_VA_TEX0};
 use ogc_rs::gu::RotationAxis;
 use ogc_rs::input::{Button, ControllerPort, ControllerType, Input};
 use ogc_rs::{alloc_aligned_buffer, print};
 
 use ogc_rs::{
-    ffi::{GX_COLOR0A0, GX_MODULATE, GX_POS_XYZ, GX_TEXCOORD0, GX_TEXMAP0, GX_TF_CMPR, GX_VA_POS},
+    ffi::{GX_COLOR0A0, GX_MODULATE, GX_TEXCOORD0, GX_TEXMAP0, GX_TF_CMPR},
     gu::Gu,
     gx::{
-        types::VtxDest, CmpFn, Color, CullMode, Gx, Primitive, ProjectionType, TexFilter, Texture,
-        VtxAttr, WrapMode,
+        self, VtxAttrIn, CmpFn, Color, CullMode, Gx, Primitive, ProjectionType, TexFilter,
+        Texture, VtxAttr, WrapMode,
     },
     println,
     video::Video,
@@ -76,10 +75,8 @@ extern "C" fn main(_argc: isize, _argv: *const *const u8) -> isize {
     );
     Gx::set_disp_copy_dst(config.framebuffer_width, config.extern_framebuffer_height);
     Gx::set_copy_filter(
-        config.anti_aliasing != 0,
-        &mut config.sample_pattern,
-        true,
-        &mut config.v_filter,
+        (config.anti_aliasing != 0).then_some(config.sample_pattern),
+        Some(config.v_filter),
     );
 
     let val = config.vi_height != 2 * config.extern_framebuffer_height;
@@ -94,12 +91,12 @@ extern "C" fn main(_argc: isize, _argv: *const *const u8) -> isize {
 
     Gx::inv_vtx_cache();
     Gx::clear_vtx_desc();
-    Gx::set_vtx_desc(VtxAttr::Pos, VtxDest::INDEX16);
-    Gx::set_vtx_desc(VtxAttr::Nrm, VtxDest::INDEX8);
-    Gx::set_vtx_desc(VtxAttr::Tex0, VtxDest::INDEX8);
-    Gx::set_vtx_attr_fmt(0, VtxAttr::Pos, GX_POS_XYZ, GX_F32, 0);
-    Gx::set_vtx_attr_fmt(0, VtxAttr::Nrm, GX_NRM_XYZ, GX_F32, 0);
-    Gx::set_vtx_attr_fmt(0, VtxAttr::Tex0, GX_TEX_ST, GX_F32, 0);
+    Gx::set_vtx_desc(VtxAttr::Pos, VtxAttrIn::Index16);
+    Gx::set_vtx_desc(VtxAttr::Nrm, VtxAttrIn::Index8);
+    Gx::set_vtx_desc(VtxAttr::Tex0, VtxAttrIn::Index8);
+    Gx::set_vtx_attr_fmt(0, VtxAttr::Pos, gx::POS_XYZ, gx::F32, 0);
+    Gx::set_vtx_attr_fmt(0, VtxAttr::Nrm, gx::NRM_XYZ, gx::F32, 0);
+    Gx::set_vtx_attr_fmt(0, VtxAttr::Tex0, gx::TEX_ST, gx::F32, 0);
 
     let indices: Vec<(usize, Option<usize>, Option<usize>)> = obj
         .indices()
@@ -213,17 +210,17 @@ extern "C" fn main(_argc: isize, _argv: *const *const u8) -> isize {
         Gx::begin(Primitive::Triangles, 0, indices.len().try_into().unwrap());
         // v / vt / vn
         for index in indices.iter() {
-            Gx::position1x16(u16::try_from(index.0).unwrap());
+            Gx::pos1_x16(u16::try_from(index.0).unwrap());
             // let [x, y, z] = positions[*index];
             // Gx::position_3f32(x, y, z);
             if let Some(idx) = index.2 {
-                Gx::position1x8(idx.try_into().unwrap());
+                Gx::pos1_x8(idx.try_into().unwrap());
             } else {
                 panic!()
             }
 
             if let Some(idx) = index.1 {
-                Gx::position1x8(idx.try_into().unwrap());
+                Gx::pos1_x8(idx.try_into().unwrap());
             } else {
                 panic!()
             }
