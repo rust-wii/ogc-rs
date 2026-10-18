@@ -12,7 +12,8 @@ use core::sync::atomic::{AtomicBool, AtomicPtr, Ordering};
 use ogc_sys::GXRModeObj;
 use voladdress::{Safe, VolAddress};
 
-use crate::ffi::{self, Mtx as Mtx34, Mtx44};
+use crate::ffi;
+use crate::gu::{Mtx33, Mtx34, Mtx44};
 use crate::{cache, lwp};
 use crate::utils::{Buf32, mem};
 
@@ -1770,6 +1771,12 @@ pub enum FogType {
     OrthoRevExp2 = ffi::GX_FOG_ORTHO_REVEXP2,
 }
 
+#[repr(u32)]
+pub enum MtxType {
+    M3x4 = ffi::GX_MTX3x4,
+    M2x4 = ffi::GX_MTX2x4,
+}
+
 /// Represents the GX service.
 pub struct Gx;
 
@@ -2409,16 +2416,47 @@ impl Gx {
 
     /// Used to load a 3x4 modelview matrix mt into matrix memory at location pnidx.
     /// See [GX_LoadPosMtxImm](https://libogc.devkitpro.org/gx_8h.html#a90349e713128a1fa4fd6048dcab7b5e7) for more.
-    pub fn load_pos_mtx_imm(mt: &mut Mtx34, pnidx: u32) {
-        unsafe { ffi::GX_LoadPosMtxImm(mt as *mut _, pnidx) }
+    pub fn load_pos_mtx_imm(mut mt: Mtx34, pnidx: u32) {
+        unsafe { ffi::GX_LoadPosMtxImm(mt.as_mut_ptr(), pnidx) }
+    }
+    
+    /// Loads a 3x4 modelview matrix at index mtxidx from the array in main memory.
+    /// See [GX_LoadPosMtxIdx](https://libogc.devkitpro.org/gx_8h.html#aa0c2283cf1c213231ec7e4a46b67e5a0) for more.
+    pub fn load_pos_mtx_idx(mtxidx: u16, pnidx: u32) {
+        unsafe { ffi::GX_LoadPosMtxIdx(mtxidx, pnidx) }
     }
 
-    pub fn load_nrm_mtx_imm(mt: &mut Mtx34, pnidx: u32) {
-        unsafe { ffi::GX_LoadNrmMtxImm(mt as *mut _, pnidx) }
+    /// Used to load a normal transform matrix into matrix memory at location pnidx from
+    /// the 4x3 matrix mt.
+    /// See [GX_LoadNrmMtxImm](https://libogc.devkitpro.org/gx_8h.html#ac678f81095bfbafadcd100cf6811ec72) for more.
+    pub fn load_nrm_mtx_imm(mut mt: Mtx34, pnidx: u32) {
+        unsafe { ffi::GX_LoadNrmMtxImm(mt.as_mut_ptr(), pnidx) }
+    }
+    
+    /// Loads a 3x3 normal matrix into matrix memory at location pnidx from a 3x3 matrix
+    /// located at index mtxidx from the array in main memory.
+    /// See [GX_LoadNrmMtxIdx3x3](https://libogc.devkitpro.org/gx_8h.html#a84a37dd00a3c4d55cfad8d357bb6c2b1) for more.
+    pub fn load_nrm_mtx_idx_3x3(mtxidx: u16, pnidx: u32) {
+        unsafe { ffi::GX_LoadNrmMtxIdx3x3(mtxidx, pnidx) }
+    }
+    
+    /// Used to load a normal transform matrix into matrix memory at location pnidx from
+    /// the 3x3 matrix mt.
+    /// See [GX_LoadNrmMtxImm3x3](https://libogc.devkitpro.org/gx_8h.html#a6f9f81dad834cb3fbc437ddb21ab83c3) for more.
+    pub fn load_nrm_mtx_imm_3x3(mut mt: Mtx33, pnidx: u32) {
+        unsafe { ffi::GX_LoadNrmMtxImm3x3(mt.as_mut_ptr(), pnidx) }
     }
 
-    pub fn load_tex_mtx_imm(mt: &mut Mtx34, pnidx: u32) {
-        unsafe { ffi::GX_LoadTexMtxImm(mt as *mut _, pnidx, ffi::GX_MTX3x4 as _) }
+    /// Loads a texture matrix mt into the matrix memory at location texidx.
+    /// See [GX_LoadTexMtxImm](https://libogc.devkitpro.org/gx_8h.html#a2dae7e821ed8020450b26745e900b97b) for more.
+    pub fn load_tex_mtx_imm(mut mt: Mtx34, pnidx: u32, r#type: MtxType) {
+        unsafe { ffi::GX_LoadTexMtxImm(mt.as_mut_ptr(), pnidx, r#type as _) }
+    }
+    
+    /// Loads a texture matrix at index mtxidx from the array in main memory.
+    /// See [GX_LoadTexMtxIdx](https://libogc.devkitpro.org/gx_8h.html#aa0c2283cf1c213231ec7e4a46b67e5a0) for more.
+    pub fn load_tex_mtx_idx(mtxidx: u16, pnidx: u32, r#type: MtxType) {
+        unsafe { ffi::GX_LoadTexMtxIdx(mtxidx, pnidx, r#type as _) }
     }
 
     /// Enables or disables dithering.
