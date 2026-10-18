@@ -1701,13 +1701,9 @@ pub enum VtxAttr {
     Tex5 = ffi::GX_VA_TEX5,
     Tex6 = ffi::GX_VA_TEX6,
     Tex7 = ffi::GX_VA_TEX7,
-    #[doc(hidden)]
     PosMtxArray = ffi::GX_POSMTXARRAY,
-    #[doc(hidden)]
     NrmMtxArray = ffi::GX_NRMMTXARRAY,
-    #[doc(hidden)]
     TexMtxArray = ffi::GX_TEXMTXARRAY,
-    #[doc(hidden)]
     LightArray = ffi::GX_LIGHTARRAY,
     /// Normal, binormal, tangent
     Nbt = ffi::GX_VA_NBT,
@@ -2148,6 +2144,10 @@ impl Gx {
     /// Calculates an appropriate Y scale factor value for GX_SetDispCopyYScale() based on the height of the EFB and the height of the XFB.
     /// See [GX_GetYScaleFactor](https://libogc.devkitpro.org/gx_8h.html#a1558cf7d2eb9a6690fee4b64c4fc5a8e) for more.
     pub fn get_y_scale_factor(efb_height: u16, xfb_height: u16) -> f32 {
+        debug_assert!((2..=528).contains(&efb_height));
+        debug_assert!(efb_height.is_multiple_of(2));
+        debug_assert!((2..=1024).contains(&xfb_height));
+        debug_assert!(xfb_height >= efb_height);
         unsafe { ffi::GX_GetYScaleFactor(efb_height, xfb_height) }
     }
 
