@@ -5,11 +5,12 @@
 use core::fmt;
 
 use ffi::guQuaternion;
+pub use crate::ffi::{Mtx as Mtx34, Mtx33, Mtx44};
 
 use num_traits::Float;
 
 use crate::{
-    ffi::{self, Mtx as Mtx34, Mtx44, guVector},
+    ffi::{self, guVector},
     gx::{self, Gx},
 };
 
@@ -594,12 +595,12 @@ impl Mat3x4 {
     }
 
     pub fn load_as_pos_mtx(&mut self, pnidx: u32) {
-        Gx::load_pos_mtx_imm(self.as_array_mut(), pnidx);
+        Gx::load_pos_mtx_imm(self.0, pnidx);
     }
     pub fn load_as_nrm_mtx(&mut self, pnidx: u32) {
-        Gx::load_nrm_mtx_imm(self.as_array_mut(), pnidx);
+        Gx::load_nrm_mtx_imm(self.0, pnidx);
     }
     pub fn load_as_tex_mtx(&mut self, pnidx: u32) {
-        Gx::load_tex_mtx_imm(self.as_array_mut(), pnidx);
+        Gx::load_tex_mtx_imm(self.0, pnidx, gx::MtxType::M3x4);
     }
 }

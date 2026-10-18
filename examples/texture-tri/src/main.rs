@@ -5,13 +5,12 @@ use core::mem::ManuallyDrop;
 
 use ogc_rs::{
     ffi::{
-        GX_CLR_RGBA, GX_COLOR0A0, GX_MODULATE, GX_PASSCLR, GX_POS_XYZ, GX_REPLACE, GX_RGBA8,
-        GX_S16, GX_TEXCOORD0, GX_TEXMAP0, GX_TEX_ST, GX_TF_CMPR, GX_TF_RGBA8, GX_U8, GX_VA_CLR0,
-        GX_VA_POS, GX_VA_TEX0,
+        GX_CLR_RGBA, GX_COLOR0A0, GX_MODULATE, GX_POS_XYZ, GX_RGBA8,
+        GX_S16, GX_TEXCOORD0, GX_TEXMAP0, GX_TEX_ST, GX_TF_CMPR, GX_U8,
     },
     gu::{Gu, RotationAxis},
     gx::{
-        types::VtxDest, CmpFn, Color, CullMode, Gx, Primitive, ProjectionType, TexFilter, Texture,
+        VtxAttrIn, CmpFn, Color, CullMode, Gx, Primitive, ProjectionType, TexFilter, Texture,
         VtxAttr, WrapMode,
     },
     print, println,
@@ -66,10 +65,8 @@ extern "C" fn main(_argc: isize, _argv: *const *const u8) -> isize {
     );
     Gx::set_disp_copy_dst(config.framebuffer_width, config.extern_framebuffer_height);
     Gx::set_copy_filter(
-        config.anti_aliasing != 0,
-        &mut config.sample_pattern,
-        true,
-        &mut config.v_filter,
+        (config.anti_aliasing != 0).then_some(config.sample_pattern),
+        Some(config.v_filter),
     );
 
     let val = if config.vi_height == 2 * config.extern_framebuffer_height {
@@ -86,9 +83,9 @@ extern "C" fn main(_argc: isize, _argv: *const *const u8) -> isize {
     Gu::perspective(&mut mat, 60., 4. / 3., 10., 300.);
     Gx::load_projection_mtx(&mat, ProjectionType::Perspective);
     Gx::clear_vtx_desc();
-    Gx::set_vtx_desc(VtxAttr::Pos, VtxDest::INDEX8);
-    Gx::set_vtx_desc(VtxAttr::Color0, VtxDest::INDEX8);
-    Gx::set_vtx_desc(VtxAttr::Tex0, VtxDest::INDEX8);
+    Gx::set_vtx_desc(VtxAttr::Pos, VtxAttrIn::Index8);
+    Gx::set_vtx_desc(VtxAttr::Color0, VtxAttrIn::Index8);
+    Gx::set_vtx_desc(VtxAttr::Tex0, VtxAttrIn::Index8);
 
     let header = minipng::decode_png_header(WHITE_BYTES).unwrap();
     let mut work_buf = vec![0u8; header.required_bytes_rgba8bpc()];
@@ -113,13 +110,12 @@ extern "C" fn main(_argc: isize, _argv: *const *const u8) -> isize {
         header.width().try_into().unwrap(),
         header.height().try_into().unwrap(),
         GX_TF_CMPR.try_into().unwrap(),
-        WrapMode::Clamp,
-        WrapMode::Clamp,
+        (WrapMode::Clamp, WrapMode::Clamp),
         false,
     );
     texr.set_filter_mode(TexFilter::Near, TexFilter::Near);
 
-    Gx::load_texture(&texr, GX_TEXMAP0.try_into().unwrap());
+    Gx::load_texture(&mut texr, GX_TEXMAP0.try_into().unwrap());
 
     Gx::set_vtx_attr_fmt(0, VtxAttr::Pos, GX_POS_XYZ, GX_S16, 0);
     Gx::set_vtx_attr_fmt(0, VtxAttr::Color0, GX_CLR_RGBA, GX_RGBA8, 0);
@@ -128,20 +124,17 @@ extern "C" fn main(_argc: isize, _argv: *const *const u8) -> isize {
     let colors: [[u8; 4]; 3] = [[255, 0, 0, 255], [0, 255, 0, 255], [0, 0, 255, 255]];
     let tex: [[u8; 2]; 3] = [[0, 1], [1, 0], [1, 1]];
     Gx::set_array(
-        GX_VA_POS,
+        VtxAttr::Pos,
         &positions,
-        core::mem::size_of::<[i16; 3]>().try_into().unwrap(),
     );
 
     Gx::set_array(
-        GX_VA_CLR0,
+        VtxAttr::Color0,
         &colors,
-        core::mem::size_of::<[u8; 4]>().try_into().unwrap(),
     );
     Gx::set_array(
-        GX_VA_TEX0,
+        VtxAttr::Tex0,
         &tex,
-        core::mem::size_of::<[u8; 2]>().try_into().unwrap(),
     );
     Gx::set_num_chans(1);
     Gx::set_num_tex_gens(1);
@@ -180,15 +173,15 @@ extern "C" fn main(_argc: isize, _argv: *const *const u8) -> isize {
         Gx::load_pos_mtx_imm(&mut mdl_mtx, 0);
 
         Gx::begin(Primitive::Triangles, 0, 3);
-        Gx::position1x8(0);
-        Gx::color1x8(0);
-        Gx::position1x8(0);
-        Gx::position1x8(1);
-        Gx::color1x8(1);
-        Gx::position1x8(1);
-        Gx::position1x8(2);
-        Gx::color1x8(2);
-        Gx::position1x8(2);
+        Gx::pos1_x8(0);
+        Gx::color1_x8(0);
+        Gx::pos1_x8(0);
+        Gx::pos1_x8(1);
+        Gx::color1_x8(1);
+        Gx::pos1_x8(1);
+        Gx::pos1_x8(2);
+        Gx::color1_x8(2);
+        Gx::pos1_x8(2);
 
         /*
                 Gx::position_3i16(0, 15, 0);

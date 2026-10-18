@@ -1,27 +1,81 @@
-//! The ``gx`` module of ``ogc-rs``.
+//! Provides an OpenGL-like interface for rendering on the Wii.
 //!
-//! This module implements a safe wrapper around the graphics functions found in ``gx.h``.
+//! This module implements a safe wrapper around the graphics functions found
+//! in `gx.h`.
 
 use core::ffi::c_void;
-use core::marker::PhantomData;
-use core::mem::ManuallyDrop;
+use core::mem::{ManuallyDrop, MaybeUninit};
+use core::ops::{Deref, DerefMut};
+use core::ptr;
+use core::sync::atomic::{AtomicBool, AtomicPtr, Ordering};
 
-use alloc::vec::Vec;
-use bit_field::BitField;
-use ffi::GXTexObj;
+use ogc_sys::GXRModeObj;
 use voladdress::{Safe, VolAddress};
 
-use num_traits::Float;
-
-use crate::ffi::{self, Mtx as Mtx34, Mtx44};
-use crate::gx::regs::BPReg;
-use crate::utils::mem;
+use crate::ffi;
+use crate::gu::{Mtx33, Mtx34, Mtx44};
 use crate::{cache, lwp};
+use crate::utils::{Buf32, mem};
 
-use self::regs::XFReg;
-use self::types::{Gamma, PixelEngineControl, PixelFormat, VtxDest, ZFormat};
+pub use crate::ffi::WGPipe;
+pub use crate::ffi::Vtx;
+pub use crate::ffi::GXVtxAttrFmt as VtxAttrFmt;
+pub use crate::ffi::GXVtxDesc as VtxDesc;
+pub use crate::ffi::GXBreakPtCallback as RawBreakPtCallback;
+pub use crate::ffi::GXDrawDoneCallback as RawDrawDoneCallback;
+pub use crate::ffi::GXDrawSyncCallback as RawDrawSyncCallback;
 
-pub const GX_PIPE: VolAddress<u8, (), Safe> = unsafe { VolAddress::new(0xCC00_8000) };
+/// Write-gather pipe for writing and sending attribute data to the GP.
+/// 
+/// This is here in case the `gx::pos*()`, `gx::color*()`, etc. functions don't cover all
+/// your needs.
+/// 
+/// Relevant tips given by the [WiiBrew wiki's Developer Tips page]:
+/// > If your GX application hangs as soon as you begin drawing with `GX_Begin()`, here
+/// > are a few possible causes:
+/// > - incorrect vertex formats - the vertex format specified with `GX_SetVtxAttrFmt()`
+/// >   must match what your app sends between `GX_Begin()` and `GX_End()`.
+/// > - incorrect vertex count - the vertex count specified by `GX_Begin()` must match the
+/// >   vertex count your app sends between `GX_Begin()` and `GX_End()`.
+/// > - incorrect vertex data order - vertex data is order dependent - the order GX
+/// >   expects vertex data is: position, normal, color, bi-normals, and texture
+/// >   coordinates.
+/// > - surpassing the maximum number of vertex per between `GX_Begin()` and `GX_End()`
+/// >   block which is 65,536 (not counting normals/colours).
+/// 
+/// [WiiBrew wiki's Developer Tips page]: https://wiibrew.org/wiki/Developer_tips#GX_Tips
+pub const WG_PIPE: VolAddress<WGPipe, (), Safe> = unsafe { VolAddress::new(0xCC00_8000) };
+
+// Number of components in an attribute
+pub const CLR_RGB: u32 = ffi::GX_CLR_RGB;
+pub const CLR_RGBA: u32 = ffi::GX_CLR_RGBA;
+pub const NRM_NBT: u32 = ffi::GX_NRM_NBT;
+pub const NRM_NBT3: u32 = ffi::GX_NRM_NBT3;
+pub const NRM_XYZ: u32 = ffi::GX_NRM_XYZ;
+pub const POS_XY: u32 = ffi::GX_POS_XY;
+pub const POS_XYZ: u32 = ffi::GX_POS_XYZ;
+pub const TEX_S: u32 = ffi::GX_TEX_S;
+pub const TEX_ST: u32 = ffi::GX_TEX_ST;
+
+// Attribute component types
+pub const RGB565: u32 = ffi::GX_RGB565;
+pub const RGB8: u32 = ffi::GX_RGB8;
+pub const RGBA4: u32 = ffi::GX_RGBA4;
+pub const RGBA6: u32 = ffi::GX_RGBA6;
+pub const RGBA8: u32 = ffi::GX_RGBA8;
+pub const RGBX8: u32 = ffi::GX_RGBX8;
+pub const U8: u32 = ffi::GX_U8;
+pub const U16: u32 = ffi::GX_U16;
+pub const S8: u32 = ffi::GX_S8;
+pub const S16: u32 = ffi::GX_S16;
+pub const F32: u32 = ffi::GX_F32;
+
+static IN_DISPLAY_LIST: AtomicBool = AtomicBool::new(false);
+
+static INIT_FIFO: AtomicPtr<RawFifo> = AtomicPtr::null();
+static BREAKPT_CB: AtomicPtr<unsafe fn()> = AtomicPtr::null();
+static DRAW_DONE_CB: AtomicPtr<fn()> = AtomicPtr::null();
+static DRAW_SYNC_CB: AtomicPtr<fn(u16)> = AtomicPtr::null();
 
 mod regs;
 pub mod types;
@@ -31,6 +85,9 @@ pub mod types;
 pub struct Color(ffi::GXColor);
 
 impl Color {
+    pub const BLACK: Self = Self::new(0, 0, 0);
+    pub const WHITE: Self = Self::new(255, 255, 255);
+    
     pub const fn new(r: u8, g: u8, b: u8) -> Self {
         Self::with_alpha(r, g, b, 255)
     }
@@ -38,49 +95,85 @@ impl Color {
     pub const fn with_alpha(r: u8, g: u8, b: u8, a: u8) -> Self {
         Self(ffi::GXColor { r, g, b, a })
     }
+    
+    pub(crate) const fn as_gxcolor(self) -> ffi::GXColor {
+        self.0
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
+#[repr(transparent)]
+pub struct ColorS10(ffi::GXColorS10);
+
+impl ColorS10 {
+    pub const fn new(r: i16, g: i16, b: i16) -> Self {
+        Self::with_alpha(r, g, b, 255)
+    }
+
+    pub const fn with_alpha(r: i16, g: i16, b: i16, a: i16) -> Self {
+        Self(ffi::GXColorS10 { r, g, b, a })
+    }
+    
+    pub(crate) const fn as_gxcolors10(self) -> ffi::GXColorS10 {
+        self.0
+    }
+}
+
+#[repr(u32)]
+pub enum ColorChannel {
+    Color0 = ffi::GX_COLOR0,
+    Color1 = ffi::GX_COLOR1,
+    Alpha0 = ffi::GX_ALPHA0,
+    Alpha1 = ffi::GX_ALPHA1,
+    Color0A0 = ffi::GX_COLOR0A0,
+    Color1A1 = ffi::GX_COLOR1A1,
+    ColorZero = ffi::GX_COLORZERO,
+    AlphaBump = ffi::GX_ALPHA_BUMP,
+    AlphaBumpN = ffi::GX_ALPHA_BUMPN,
 }
 
 /// Backface culling mode.
 ///
-/// Primitives in which the vertex order is clockwise to the viewer are considered front-facing.
+/// Primitives in which the vertex order is clockwise to the viewer are
+/// considered front-facing.
 #[derive(Copy, Clone, Debug)]
-#[repr(u8)]
+#[repr(u32)]
 pub enum CullMode {
     /// Do not cull any primitives.
-    None = ffi::GX_CULL_NONE as _,
+    None = ffi::GX_CULL_NONE,
 
     /// Cull front-facing primitives.
-    Front = ffi::GX_CULL_FRONT as _,
+    Front = ffi::GX_CULL_FRONT,
 
     /// Cull back-facing primitives.
-    Back = ffi::GX_CULL_BACK as _,
+    Back = ffi::GX_CULL_BACK,
 
     /// Cull all primitives.
-    All = ffi::GX_CULL_ALL as _,
+    All = ffi::GX_CULL_ALL,
 }
 
 /// Comparison functions.
 #[derive(Copy, Clone, Debug)]
-#[repr(u8)]
+#[repr(u32)]
 pub enum CmpFn {
-    Never = ffi::GX_NEVER as _,
-    Less = ffi::GX_LESS as _,
-    Equal = ffi::GX_EQUAL as _,
-    LessEq = ffi::GX_LEQUAL as _,
-    Greater = ffi::GX_GREATER as _,
-    NotEq = ffi::GX_NEQUAL as _,
-    GreaterEq = ffi::GX_GEQUAL as _,
-    Always = ffi::GX_ALWAYS as _,
+    Never = ffi::GX_NEVER,
+    Less = ffi::GX_LESS,
+    Equal = ffi::GX_EQUAL,
+    LessEq = ffi::GX_LEQUAL,
+    Greater = ffi::GX_GREATER,
+    NotEq = ffi::GX_NEQUAL,
+    GreaterEq = ffi::GX_GEQUAL,
+    Always = ffi::GX_ALWAYS,
 }
 
-#[derive(Copy, Clone, Debug)]
-#[repr(u8)]
 /// Alpha combining operations.
+#[derive(Copy, Clone, Debug)]
+#[repr(u32)]
 pub enum AlphaOp {
-    And = ffi::GX_AOP_AND as _,
-    Or = ffi::GX_AOP_OR as _,
-    Xnor = ffi::GX_AOP_XNOR as _,
-    Xor = ffi::GX_AOP_XOR as _,
+    And = ffi::GX_AOP_AND,
+    Or = ffi::GX_AOP_OR,
+    Xnor = ffi::GX_AOP_XNOR,
+    Xor = ffi::GX_AOP_XOR,
 }
 
 /// Collection of primitive types that can be drawn by the GP.
@@ -88,89 +181,89 @@ pub enum AlphaOp {
 /// Which type you use depends on your needs; however, performance can increase by using triangle
 /// strips or fans instead of discrete triangles.
 #[derive(Copy, Clone, Debug)]
-#[repr(u8)]
+#[repr(u32)]
 pub enum Primitive {
     /// Draws a series of unconnected quads. Every four vertices completes a quad. Internally, each
     /// quad is translated into a pair of triangles.
-    Quads = ffi::GX_QUADS as _,
+    Quads = ffi::GX_QUADS,
 
     /// Draws a series of unconnected triangles. Three vertices make a single triangle.
-    Triangles = ffi::GX_TRIANGLES as _,
+    Triangles = ffi::GX_TRIANGLES,
 
     /// Draws a series of triangles. Each triangle (besides the first) shares a side with the
     /// previous triangle. Each vertex (besides the first two) completes a triangle.
-    TriangleStrip = ffi::GX_TRIANGLESTRIP as _,
+    TriangleStrip = ffi::GX_TRIANGLESTRIP,
 
     /// Draws a single triangle fan. The first vertex is the "centerpoint". The second and third
     /// vertex complete the first triangle. Each subsequent vertex completes another triangle which
     /// shares a side with the previous triangle (except the first triangle) and has the
     // centerpoint vertex as one of the vertices.
-    TriangleFan = ffi::GX_TRIANGLEFAN as _,
+    TriangleFan = ffi::GX_TRIANGLEFAN,
 
     /// Draws a series of unconnected line segments. Each pair of vertices makes a line.
-    Lines = ffi::GX_LINES as _,
+    Lines = ffi::GX_LINES,
 
     /// Draws a series of lines. Each vertex (besides the first) makes a line between it and the
     /// previous.
-    LineStrip = ffi::GX_LINESTRIP as _,
+    LineStrip = ffi::GX_LINESTRIP,
 
     /// Draws a series of points. Each vertex is a single point.
-    Points = ffi::GX_POINTS as _,
+    Points = ffi::GX_POINTS,
 }
 
 /// Specifies which blending operation to use.
 #[derive(Copy, Clone, Debug)]
-#[repr(u8)]
+#[repr(u32)]
 pub enum BlendMode {
     /// Write input directly to EFB
-    None = ffi::GX_BM_NONE as _,
+    None = ffi::GX_BM_NONE,
 
     /// Blend using blending equation
-    Blend = ffi::GX_BM_BLEND as _,
+    Blend = ffi::GX_BM_BLEND,
 
     /// Blend using bitwise operation
-    Logic = ffi::GX_BM_LOGIC as _,
+    Logic = ffi::GX_BM_LOGIC,
 
     /// Input subtracts from existing pixel
-    Subtract = ffi::GX_BM_SUBTRACT as _,
+    Subtract = ffi::GX_BM_SUBTRACT,
 }
 
 /// Destination (`dst`) acquires the value of one of these operations, given in Rust syntax.
 #[derive(Copy, Clone, Debug)]
-#[repr(u8)]
+#[repr(u32)]
 pub enum LogicOp {
     /// `src & dst`
-    And = ffi::GX_LO_AND as _,
+    And = ffi::GX_LO_AND,
     /// `0`
-    Clear = ffi::GX_LO_CLEAR as _,
+    Clear = ffi::GX_LO_CLEAR,
     /// `src`
-    Copy = ffi::GX_LO_COPY as _,
+    Copy = ffi::GX_LO_COPY,
     /// `!(src ^ dst)`
-    Equiv = ffi::GX_LO_EQUIV as _,
+    Equiv = ffi::GX_LO_EQUIV,
     /// `!dst`
-    Inv = ffi::GX_LO_INV as _,
+    Inv = ffi::GX_LO_INV,
     /// `!src & dst`
-    InvAnd = ffi::GX_LO_INVAND as _,
+    InvAnd = ffi::GX_LO_INVAND,
     /// `!src`
-    InvCopy = ffi::GX_LO_INVCOPY as _,
+    InvCopy = ffi::GX_LO_INVCOPY,
     /// `!src | dst`
-    InvOr = ffi::GX_LO_INVOR as _,
+    InvOr = ffi::GX_LO_INVOR,
     /// `!(src & dst)`
-    Nand = ffi::GX_LO_NAND as _,
+    Nand = ffi::GX_LO_NAND,
     /// `dst`
-    Nop = ffi::GX_LO_NOOP as _,
+    Nop = ffi::GX_LO_NOOP,
     /// `!(src | dst)`
-    Nor = ffi::GX_LO_NOR as _,
+    Nor = ffi::GX_LO_NOR,
     /// `src | dst`
-    Or = ffi::GX_LO_OR as _,
+    Or = ffi::GX_LO_OR,
     /// `src & !dst`
-    RevAnd = ffi::GX_LO_REVAND as _,
+    RevAnd = ffi::GX_LO_REVAND,
     /// `src | !dst`
-    RevOr = ffi::GX_LO_REVOR as _,
+    RevOr = ffi::GX_LO_REVOR,
     /// `1`
-    Set = ffi::GX_LO_SET as _,
+    Set = ffi::GX_LO_SET,
     /// `src ^ dst`
-    Xor = ffi::GX_LO_XOR as _,
+    Xor = ffi::GX_LO_XOR,
 }
 
 /// Performance counter 0 is used to measure attributes dealing with geometry and primitives, such
@@ -306,68 +399,85 @@ pub enum Perf1 {
     Vertices = ffi::GX_PERF1_VERTICES,
 }
 
+#[repr(u32)]
+pub enum VCacheAttr {
+    Position = ffi::GX_VC_POS,
+    Normal = ffi::GX_VC_NRM,
+    Color0 = ffi::GX_VC_CLR0,
+    Color1 = ffi::GX_VC_CLR1,
+    Texture0 = ffi::GX_VC_TEX0,
+    Texture1 = ffi::GX_VC_TEX1,
+    Texture2 = ffi::GX_VC_TEX2,
+    Texture3 = ffi::GX_VC_TEX3,
+    Texture4 = ffi::GX_VC_TEX4,
+    Texture5 = ffi::GX_VC_TEX5,
+    Texture6 = ffi::GX_VC_TEX6,
+    Texture7 = ffi::GX_VC_TEX7,
+    All = ffi::GX_VC_ALL,
+}
+
 /// Each pixel (source or destination) is multiplied by any of these controls.
 #[derive(Copy, Clone, Debug)]
-#[repr(u8)]
+#[repr(u32)]
 pub enum BlendCtrl {
     /// framebuffer alpha
-    DstAlpha = ffi::GX_BL_DSTALPHA as _,
+    DstAlpha = ffi::GX_BL_DSTALPHA,
     /// 1.0 - (framebuffer alpha)
-    InvDstAlpha = ffi::GX_BL_INVDSTALPHA as _,
+    InvDstAlpha = ffi::GX_BL_INVDSTALPHA,
     /// 1.0 - (source alpha)
-    InvSrcAlpha = ffi::GX_BL_INVSRCALPHA as _,
+    InvSrcAlpha = ffi::GX_BL_INVSRCALPHA,
     /// 1.0 - (source color)
-    InvSrcColor = ffi::GX_BL_INVSRCCLR as _,
+    InvSrcColor = ffi::GX_BL_INVSRCCLR,
     /// 1.0
-    One = ffi::GX_BL_ONE as _,
+    One = ffi::GX_BL_ONE,
     /// source alpha
-    SrcAlpha = ffi::GX_BL_SRCALPHA as _,
+    SrcAlpha = ffi::GX_BL_SRCALPHA,
     /// source color
-    SrcColor = ffi::GX_BL_SRCCLR as _,
+    SrcColor = ffi::GX_BL_SRCCLR,
     /// 0.0
-    Zero = ffi::GX_BL_ZERO as _,
+    Zero = ffi::GX_BL_ZERO,
 }
 
 /// Compressed Z format.
 ///
 /// See [`Gx::set_pixel_fmt()`] for details.
 #[derive(Copy, Clone, Debug)]
-#[repr(u8)]
-pub enum ZCompress {
-    Linear = ffi::GX_ZC_LINEAR as _,
-    Near = ffi::GX_ZC_NEAR as _,
-    Mid = ffi::GX_ZC_MID as _,
-    Far = ffi::GX_ZC_FAR as _,
+#[repr(u32)]
+pub enum ZFormat {
+    Linear = ffi::GX_ZC_LINEAR,
+    Near = ffi::GX_ZC_NEAR,
+    Mid = ffi::GX_ZC_MID,
+    Far = ffi::GX_ZC_FAR,
 }
 
 /// Specifies whether the input source color for a color channel comes from a register or a vertex.
 #[derive(Copy, Clone, Debug)]
-#[repr(u8)]
+#[repr(u32)]
 pub enum Source {
-    Register = ffi::GX_SRC_REG as _,
-    Vertex = ffi::GX_SRC_VTX as _,
+    Register = ffi::GX_SRC_REG,
+    Vertex = ffi::GX_SRC_VTX,
 }
 
 #[derive(Copy, Clone, Debug)]
-#[repr(u8)]
+#[repr(u32)]
 pub enum DiffFn {
-    None = ffi::GX_DF_NONE as _,
-    Signed = ffi::GX_DF_SIGNED as _,
-    Clamp = ffi::GX_DF_CLAMP as _,
+    None = ffi::GX_DF_NONE,
+    Signed = ffi::GX_DF_SIGNED,
+    Clamp = ffi::GX_DF_CLAMP,
 }
 
 #[derive(Copy, Clone, Debug)]
-#[repr(u8)]
+#[repr(u32)]
 pub enum AttnFn {
     /// No attenuation
-    None = ffi::GX_AF_NONE as _,
+    None = ffi::GX_AF_NONE,
     /// Specular computation
-    Spec = ffi::GX_AF_SPEC as _,
+    Spec = ffi::GX_AF_SPEC,
     /// Spot light attenuation
-    Spot = ffi::GX_AF_SPOT as _,
+    Spot = ffi::GX_AF_SPOT,
 }
 
-/// Object describing a graphics FIFO.
+/// Raw First-In, First-Out data structure (FIFO) for queuing graphics commands.
 ///
 /// The Graphics FIFO is the mechanism used to communicate graphics commands from the CPU to the
 /// Graphics Processor (GP). The FIFO base pointer is 32-byte aligned and the size must be a
@@ -380,11 +490,19 @@ pub enum AttnFn {
 /// stored. Up to 32 NOPs may be written at the end during flushing.
 #[derive(Debug)]
 #[repr(transparent)]
-pub struct Fifo(ffi::GXFifoObj);
+pub struct RawFifo(ffi::GXFifoObj);
 
-impl Default for Fifo {
-    fn default() -> Self {
-        Fifo::new()
+/// First-In, First-Out data structure (FIFO) with an internal buffer for queuing
+/// graphics commands.
+#[derive(Debug)]
+pub struct Fifo {
+    inner: RawFifo,
+    buf: Buf32,
+}
+
+impl AsRef<RawFifo> for Fifo {
+    fn as_ref(&self) -> &RawFifo {
+        &self.inner
     }
 }
 
@@ -400,14 +518,9 @@ impl Fifo {
     /// Constructs a new `Fifo` with the given size.
     ///
     /// If the given size is less than the minimum, the minimum size is used.
-    pub fn with_size(mut size: usize) -> Self {
+    pub fn with_size(size: usize) -> Self {
         let mut fifo = core::mem::MaybeUninit::zeroed();
-
-        if size < Fifo::MIN_SIZE {
-            size = Fifo::MIN_SIZE;
-        }
-
-        let mut buf = crate::utils::Buf32::new(size);
+        let mut buf = Buf32::new(size.max(Fifo::MIN_SIZE));
 
         // SAFETY:
         // + original libogc source suggests that available init functions don't
@@ -417,39 +530,18 @@ impl Fifo {
         unsafe {
             ffi::GX_InitFifoBase(
                 fifo.as_mut_ptr(),
-                buf.as_mut_ptr().map_addr(mem::to_uncached) as *mut _,
+                buf.as_mut_ptr().map_addr(mem::to_uncached).cast(),
                 buf.len() as u32,
             );
-            Fifo(fifo.assume_init())
+            Fifo {
+                inner: RawFifo(fifo.assume_init()),
+                buf,
+            }
         }
     }
+}
 
-    /// Sets the high and low water mark for the fifo.
-    ///
-    /// The high and low water marks are used in *immediate-mode*, i.e. when the fifo is attached
-    /// to both the CPU and Graphics Processor (GP) (see `Gx::set_cpu_fifo()` and
-    /// `Gx::set_gp_fifo()`).
-    ///
-    /// The hardware keeps track of the number of bytes between the read and write pointers. This
-    /// number represents how full the FIFO is, and when it is greater than or equal to the
-    /// *hiwatermark*, the hardware issues an interrupt. The GX API will suspend sending graphics
-    /// to the Graphics FIFO until it has emptied to a certain point. The *lowatermark* is used to
-    /// set the point at which the FIFO is empty enough to resume sending graphics commands to the
-    /// FIFO. Both *hiwatermark* and *lowatermark* should be in multiples of 32B. The count for
-    /// *lowatermark* should be less than *hiwatermark*. Of course, *hiwatermark* and *lowatermark*
-    /// must be less than the size of the FIFO.
-    ///
-    /// # Note
-    /// When the FIFO is only attached to the CPU or only attached to the GP, the high and low
-    /// watermark interrupts are disabled.
-    pub fn set_limits(&mut self, hiwatermark: u32, lowatermark: u32) {
-        assert_eq!(0, hiwatermark % 32);
-        assert_eq!(0, lowatermark % 32);
-        // assert!(hiwatermark < self.len());
-        // assert!(lowatermark < self.len());
-        unsafe { ffi::GX_InitFifoLimits(&mut self.0, hiwatermark, lowatermark) }
-    }
-
+impl RawFifo {
     /// Get the base address for a given *fifo*.
     pub fn base(&self) -> *mut u8 {
         unsafe { ffi::GX_GetFifoBase(self as *const _ as *mut _) as *mut _ }
@@ -469,10 +561,6 @@ impl Fifo {
         unsafe { ffi::GX_GetFifoSize(&self.0) as usize }
     }
 
-    pub fn is_empty(&self) -> bool {
-        false
-    }
-
     /// Returns a non-zero value if the write pointer has passed the TOP of the FIFO.
     ///
     /// Returns true only if the FIFO is attached to the CPU and the FIFO write pointer has passed
@@ -483,7 +571,7 @@ impl Fifo {
     /// # Note
     /// If the FIFO write pointer is not explicitly set to the base of the FIFO, you cannot rely on
     /// this function to detect overflows.
-    pub fn get_wrap(&self) -> u8 {
+    pub fn wrap_status(&self) -> u8 {
         unsafe { ffi::GX_GetFifoWrap(&self.0) }
     }
 
@@ -497,15 +585,66 @@ impl Fifo {
         unsafe {
             ffi::GX_GetFifoPtrs(&self.0, &mut rd_ptr, &mut wt_ptr);
         }
-        (rd_ptr as *const _, wt_ptr as *mut _)
+        (rd_ptr.cast(), wt_ptr.cast())
     }
-
-    /// Sets the *fifo* read and write pointers.
+    
+    /// Describes the area of main memory that will be used for this fifo.
+    /// 
+    /// # Safety
+    /// - This method should NOT be called from a `Fifo`, as it manages the internal
+    ///   buffer itself.
+    /// - `base` must be aligned to a 32-byte boundary.
+    /// - `base` must be at least [`Fifo::MIN_SIZE`] bytes long.
+    /// - `base` length must be a multiple of 32.
+    /// 
+    /// See [GX_InitFifoBase](https://libogc.devkitpro.org/gx_8h.html#af02173c9ee890c6d481c14a6f16184af) for more.
+    pub unsafe fn set_base(&mut self, base: &mut [u8]) {
+        debug_assert!(base.as_mut_ptr().is_aligned_to(32));
+        debug_assert!(base.len().is_multiple_of(32));
+        debug_assert!(base.len() >= Fifo::MIN_SIZE);
+        unsafe {
+            ffi::GX_InitFifoBase(&mut self.0, base.as_mut_ptr().cast(), base.len() as u32)
+        }
+    }
+    
+    /// Sets the high and low water mark for the fifo.
+    ///
+    /// The high and low water marks are used in *immediate-mode*, i.e. when the fifo is attached
+    /// to both the CPU and Graphics Processor (GP) (see `Gx::set_cpu_fifo()` and
+    /// `Gx::set_gp_fifo()`).
+    ///
+    /// The hardware keeps track of the number of bytes between the read and write pointers. This
+    /// number represents how full the FIFO is, and when it is greater than or equal to the
+    /// *hiwatermark*, the hardware issues an interrupt. The GX API will suspend sending graphics
+    /// to the Graphics FIFO until it has emptied to a certain point. The *lowatermark* is used to
+    /// set the point at which the FIFO is empty enough to resume sending graphics commands to the
+    /// FIFO. Both *hiwatermark* and *lowatermark* should be in multiples of 32B. The count for
+    /// *lowatermark* should be less than *hiwatermark*. Of course, *hiwatermark* and *lowatermark*
+    /// must be less than the size of the FIFO.
     ///
     /// # Note
-    /// This is normally done only during initialization of the FIFO. After that, the graphics
-    /// hardware manages the FIFO pointers.
-    pub fn set_pointers(&mut self, rd_ptr: *const u8, wt_ptr: *mut u8) {
+    /// When the FIFO is only attached to the CPU or only attached to the GP, the high and low
+    /// watermark interrupts are disabled.
+    pub fn set_limits(&mut self, hiwatermark: u32, lowatermark: u32) {
+        debug_assert!(hiwatermark.is_multiple_of(32));
+        debug_assert!(lowatermark.is_multiple_of(32));
+        // assert!(hiwatermark < self.len());
+        // assert!(lowatermark < self.len());
+        unsafe { ffi::GX_InitFifoLimits(&mut self.0, hiwatermark, lowatermark) }
+    }
+
+    /// Sets the FIFO's read and write pointers.
+    /// 
+    /// # Safety
+    /// - `rd_ptr` and `wt_ptr` must be 32-byte aligned.
+    /// - `rd_ptr` and `wt_ptr` must have the same provenance as the FIFO's base pointer.
+    ///
+    /// # Note
+    /// This is normally done only during initialization of the FIFO. After that, the
+    /// graphics hardware manages the FIFO pointers.
+    pub unsafe fn set_pointers(&mut self, rd_ptr: *const u8, wt_ptr: *mut u8) {
+        debug_assert!(rd_ptr.is_aligned_to(32));
+        debug_assert!(wt_ptr.is_aligned_to(32));
         unsafe { ffi::GX_InitFifoPtrs(&mut self.0, rd_ptr as *mut _, wt_ptr as *mut _) }
     }
 }
@@ -517,25 +656,25 @@ pub struct Light(ffi::GXLightObj);
 
 /// Type of the brightness decreasing function by distance.
 #[derive(Copy, Clone, Debug)]
-#[repr(u8)]
+#[repr(u32)]
 pub enum DistFn {
-    Off = ffi::GX_DA_OFF as _,
-    Gentle = ffi::GX_DA_GENTLE as _,
-    Medium = ffi::GX_DA_MEDIUM as _,
-    Steep = ffi::GX_DA_STEEP as _,
+    Off = ffi::GX_DA_OFF,
+    Gentle = ffi::GX_DA_GENTLE,
+    Medium = ffi::GX_DA_MEDIUM,
+    Steep = ffi::GX_DA_STEEP,
 }
 
 /// Spot illumination distribution function
 #[derive(Copy, Clone, Debug)]
-#[repr(u8)]
+#[repr(u32)]
 pub enum SpotFn {
-    Off = ffi::GX_SP_OFF as _,
-    Flat = ffi::GX_SP_FLAT as _,
-    Cos = ffi::GX_SP_COS as _,
-    Cos2 = ffi::GX_SP_COS2 as _,
-    Sharp = ffi::GX_SP_SHARP as _,
-    Ring1 = ffi::GX_SP_RING1 as _,
-    Ring2 = ffi::GX_SP_RING2 as _,
+    Off = ffi::GX_SP_OFF,
+    Flat = ffi::GX_SP_FLAT,
+    Cos = ffi::GX_SP_COS,
+    Cos2 = ffi::GX_SP_COS2,
+    Sharp = ffi::GX_SP_SHARP,
+    Ring1 = ffi::GX_SP_RING1,
+    Ring2 = ffi::GX_SP_RING2,
 }
 
 impl Light {
@@ -835,113 +974,422 @@ impl Light {
 
 /// Texture filter types
 #[derive(Copy, Clone, Debug)]
-#[repr(u8)]
+#[repr(u32)]
 pub enum TexFilter {
     /// Point sampling, no mipmap
-    Near = ffi::GX_NEAR as _,
+    Near = ffi::GX_NEAR,
     /// Point sampling, linear mipmap
-    NearMipLin = ffi::GX_NEAR_MIP_LIN as _,
+    NearMipLin = ffi::GX_NEAR_MIP_LIN,
     /// Point sampling, discrete mipmap
-    NearMipNear = ffi::GX_NEAR_MIP_NEAR as _,
+    NearMipNear = ffi::GX_NEAR_MIP_NEAR,
     /// Trilinear filtering
-    LinMipLin = ffi::GX_LIN_MIP_LIN as _,
+    LinMipLin = ffi::GX_LIN_MIP_LIN,
     /// Bilinear filtering, discrete mipmap
-    LinMipNear = ffi::GX_LIN_MIP_NEAR as _,
+    LinMipNear = ffi::GX_LIN_MIP_NEAR,
     /// Bilinear filtering, no mipmap
-    Linear = ffi::GX_LINEAR as _,
+    Linear = ffi::GX_LINEAR,
+}
+
+impl From<u8> for TexFilter {
+    fn from(x: u8) -> Self {
+        match x as u32 {
+            ffi::GX_NEAR => TexFilter::Near,
+            ffi::GX_NEAR_MIP_LIN => TexFilter::NearMipLin,
+            ffi::GX_NEAR_MIP_NEAR => TexFilter::NearMipNear,
+            ffi::GX_LIN_MIP_LIN => TexFilter::LinMipLin,
+            ffi::GX_LIN_MIP_NEAR => TexFilter::LinMipNear,
+            ffi::GX_LINEAR => TexFilter::Linear,
+            _ => panic!("invalid texture filter type")
+        }
+    }
 }
 
 /// Texture wrap modes
 #[derive(Copy, Clone, Debug)]
-#[repr(u8)]
+#[repr(u32)]
 pub enum WrapMode {
-    Clamp = ffi::GX_CLAMP as _,
-    Repeat = ffi::GX_REPEAT as _,
-    Mirror = ffi::GX_MIRROR as _,
+    Clamp = ffi::GX_CLAMP,
+    Repeat = ffi::GX_REPEAT,
+    Mirror = ffi::GX_MIRROR,
 }
 
-#[repr(transparent)]
-pub struct Texture<'img>(ffi::GXTexObj, PhantomData<&'img [u8]>);
+impl From<u8> for WrapMode {
+    fn from(x: u8) -> Self {
+        match x as u32 {
+            ffi::GX_CLAMP => WrapMode::Clamp,
+            ffi::GX_REPEAT => WrapMode::Repeat,
+            ffi::GX_MIRROR => WrapMode::Mirror,
+            _ => panic!("invalid wrap mode")
+        }
+    }
+}
 
-impl<'a> Texture<'a> {
+/// Texture formats that are supported.
+///
+/// For more information, see [https://wiki.tockdom.com/wiki/Image_Formats](https://wiki.tockdom.com/wiki/Image_Formats)
+#[derive(Copy, Clone, Debug)]
+#[repr(u32)]
+pub enum TexFormat {
+    /// 4 bpp: 4-bit intensity; 8x8 block
+    I4 = ffi::GX_TF_I4,
+    /// 8 bpp: 8-bit intensity; 8x4 block
+    I8 = ffi::GX_TF_I8,
+    /// 8 bpp: 4-bit alpha, 4-bit intensity; 8x4 block
+    /// `AAAAIIII`
+    IA4 = ffi::GX_TF_IA4,
+    /// 16 bpp: 8-bit alpha, 8-bit intensity; 4x4 block
+    /// `AAAAAAAA IIIIIIII`
+    IA8 = ffi::GX_TF_IA8,
+
+    /// 16 bpp: 5-bit red, 6-bit green, 5-bit blue; 4x4 block
+    /// `RRRRRGGG GGGBBBBB`
+    RGB565 = ffi::GX_TF_RGB565,
+    /// 16 bpp, 4x4 block
+    /// * `1RRRRRGG GGGBBBBB`: 5-bit red, 5-bit green, 5-bit blue
+    /// * `0AAARRRR GGGGBBBB`: 3-bit alpha, 4-bit red, 4-bit green, 4-bit blue
+    RGB5A3 = ffi::GX_TF_RGB5A3,
+    /// 32 bpp, 4x4 block
+    /// ```
+    /// AAAAAAAA RRRRRRRR, AAAAAAAA RRRRRRRR, ...
+    /// AAAAAAAA RRRRRRRR, AAAAAAAA RRRRRRRR, ...
+    /// GGGGGGGG BBBBBBBB, GGGGGGGG BBBBBBBB, ...
+    /// GGGGGGGG BBBBBBBB, GGGGGGGG BBBBBBBB, ...
+    /// ```
+    RGBA8 = ffi::GX_TF_RGBA8,
+
+    /// 4 bpp: 4-bit color index; 8x8 block, indices only; palletes: IA8, RGB565, RGB5A3
+    CI4 = ffi::GX_TF_CI4,
+    /// 8 bpp: 8-bit color index; 8x4 block, indices only; palletes: IA8, RGB565, RGB5A3
+    CI8 = ffi::GX_TF_CI8,
+    /// 16 bpp, 8x4 block, indices only; palletes: IA8, RGB565, RGB5A3
+    /// `XXCCCCCC CCCCCCCC`: 2-bit unused, 14-bit color index
+    CI14 = ffi::GX_TF_CI14,
+
+    /// [DXT1-compressed](https://en.wikipedia.org/wiki/S3_Texture_Compression#DXT1) form
+    CMPR = ffi::GX_TF_CMPR,
+
+    /// For copying 4 bits from red
+    CR4 = ffi::GX_CTF_R4,
+    /// For copying 4 bits from red, 4 bits from alpha
+    CRA4 = ffi::GX_CTF_RA4,
+    /// For copying 8 bits from red, 8 bits from alpha
+    CRA8 = ffi::GX_CTF_RA8,
+    CYUVA8 = ffi::GX_CTF_YUVA8,
+    /// For copying 8 bits from alpha
+    CA8 = ffi::GX_CTF_A8,
+    /// For copying 8 bits from red
+    CR8 = ffi::GX_CTF_R8,
+    /// For copying 8 bits from green
+    CG8 = ffi::GX_CTF_G8,
+    /// For copying 8 bits from blue
+    CB8 = ffi::GX_CTF_B8,
+    /// For copying 8 bits from red, 8 bits from green
+    CRG8 = ffi::GX_CTF_RG8,
+    /// For copying 8 bits from green, 8 bits from blue
+    CGB8 = ffi::GX_CTF_GB8,
+    /// For copying 4 upper bits from Z
+    CZ4 = ffi::GX_CTF_Z4,
+    /// For copying the middle 8 bits of Z
+    CZ8M = ffi::GX_CTF_Z8M,
+    /// For copying the lower 8 bits of Z
+    CZ8L = ffi::GX_CTF_Z8L,
+    /// For copying the lower 16 bits of Z
+    CZ16L = ffi::GX_CTF_Z16L,
+}
+
+
+impl From<u32> for TexFormat {
+    fn from(x: u32) -> Self {
+        match x {
+            ffi::GX_TF_I4 => TexFormat::I4,
+            ffi::GX_TF_I8 => TexFormat::I8,
+            ffi::GX_TF_IA4 => TexFormat::IA4,
+            ffi::GX_TF_IA8 => TexFormat::IA8,
+            ffi::GX_TF_RGB565 => TexFormat::RGB565,
+            ffi::GX_TF_RGB5A3 => TexFormat::RGB5A3,
+            ffi::GX_TF_RGBA8 => TexFormat::RGBA8,
+            ffi::GX_TF_CI4 => TexFormat::CI4,
+            ffi::GX_TF_CI8 => TexFormat::CI8,
+            ffi::GX_TF_CI14 => TexFormat::CI14,
+            ffi::GX_TF_CMPR => TexFormat::CMPR,
+            ffi::GX_CTF_R4 => TexFormat::CR4,
+            ffi::GX_CTF_RA4 => TexFormat::CRA4,
+            ffi::GX_CTF_RA8 => TexFormat::CRA8,
+            ffi::GX_CTF_YUVA8 => TexFormat::CYUVA8,
+            ffi::GX_CTF_A8 => TexFormat::CA8,
+            ffi::GX_CTF_R8 => TexFormat::CR8,
+            ffi::GX_CTF_G8 => TexFormat::CG8,
+            ffi::GX_CTF_B8 => TexFormat::CB8,
+            ffi::GX_CTF_RG8 => TexFormat::CRG8,
+            ffi::GX_CTF_GB8 => TexFormat::CGB8,
+            ffi::GX_CTF_Z4 => TexFormat::CZ4,
+            ffi::GX_CTF_Z8M => TexFormat::CZ8M,
+            ffi::GX_CTF_Z8L => TexFormat::CZ8L,
+            ffi::GX_CTF_Z16L => TexFormat::CZ16L,
+            _ => panic!("invalid texture format"),
+	    }
+    }
+}
+
+/// Texture offset value
+#[repr(u32)]
+pub enum TexOffset {
+    ToZero = ffi::GX_TO_ZERO,
+    ToSixteenth = ffi::GX_TO_SIXTEENTH,
+    ToEighth = ffi::GX_TO_EIGHTH,
+    ToFourth = ffi::GX_TO_FOURTH,
+    ToHalf = ffi::GX_TO_HALF,
+    ToOne = ffi::GX_TO_ONE,
+}
+
+/// Texture without a managed buffer.
+#[derive(Debug, Clone)]
+#[repr(transparent)]
+pub struct RawTexture {
+    inner: ffi::GXTexObj,
+}
+
+/// Texture with an internal image data buffer.
+///
+/// This implements `Deref` and `DerefMut` for [`RawTexture`], which means a `Texture` may
+/// be used anywhere a `RawTexture` is referenced. This is similar to using a `&Vec<u8>`
+/// in place of a `&[u8]`, for example.
+/// 
+/// User data can also be stored in this texture with `set_user_data()`.
+#[derive(Debug, Clone)]
+pub struct Texture<U = !> {
+    inner: RawTexture,
+    img: Buf32,
+    user: Option<U>,
+}
+
+impl<T> Texture<T> {
+    /// Returns the amount of memory in bytes needed to store a texture of the given size
+    /// and format.
+    ///
+    /// See [GX_GetTexBufferSize](https://libogc.devkitpro.org/gx_8h.html#a6fe8373aae06bd72cb9974c2990f8223) for more.
+    pub fn get_buffer_size(wd: u16, ht: u16, fmt: u32, mipmap: bool, maxlod: u8) -> usize {
+        unsafe { ffi::GX_GetTexBufferSize(wd, ht, fmt, mipmap as u8, maxlod) as usize }
+    }
+
     /// Used to initialize or change a texture object for non-color index textures.
+    ///
+    /// See [GX_InitTexObj](https://libogc.devkitpro.org/gx_8h.html#ab2813004d1e23965b1b64f77c954656e) for more.
     pub fn new(
-        img: &'a [u8],
+        img: &[u8],
         width: u16,
         height: u16,
-        format: u8,
-        wrap_s: WrapMode,
-        wrap_t: WrapMode,
+        format: TexFormat,
+        wrap: (WrapMode, WrapMode),
         mipmap: bool,
-    ) -> Texture<'a> {
-        let texture = core::mem::MaybeUninit::zeroed();
-        assert_eq!(0, img.as_ptr().align_offset(32));
-        assert!(width <= 1024, "max width for texture is 1024");
-        assert!(height <= 1024, "max height for texture is 1024");
+    ) -> Texture {
+        let mut img_data = Buf32::new(img.len());
+        let mut texture = core::mem::MaybeUninit::zeroed();
+
+        // populate image data
+        for (src, dest) in img.iter().zip(img_data.as_mut_slice().iter_mut()) {
+            *dest = *src;
+        }
+
+        // error in debug mode when dimensions are too big.
+        // in release it doesn't matter; libogc bit-masks the upper bits out.
+        debug_assert!(width <= 1024, "max width for texture is 1024");
+        debug_assert!(height <= 1024, "max height for texture is 1024");
+
+        // SAFETY:
+        // * ffi::GX_InitTexObj():
+        //   * img_data is aligned to 32B boundary by design.
+        // * texture.assume_init():
+        //   * texture is initialized to zero above.
         unsafe {
             cache::data_cache_flush(img);
         }
         unsafe {
             ffi::GX_InitTexObj(
-                texture.as_ptr() as *mut _,
-                img.as_ptr() as *mut _,
+                texture.as_mut_ptr() as *mut _,
+                img_data.as_mut_ptr() as *mut _,
                 width,
                 height,
-                format,
-                wrap_s as u8,
-                wrap_t as u8,
+                format as u8,
+                wrap.0 as u8,
+                wrap.1 as u8,
                 mipmap as u8,
             );
-            Texture(texture.assume_init(), PhantomData)
+
+            Texture {
+                inner: texture.assume_init(),
+                img: img_data,
+                user: None,
+            }
         }
     }
 
     /// Used to initialize or change a texture object when the texture is color index format.
+    ///
+    /// See [GX_InitTexObjCI](https://libogc.devkitpro.org/gx_8h.html#ab2813004d1e23965b1b64f77c954656e) for more.
     pub fn with_color_idx(
-        img: &'a [u8],
+        img: &[u8],
         width: u16,
         height: u16,
-        format: u8,
+        format: TexFormat,
         wrap: (WrapMode, WrapMode),
         mipmap: bool,
         tlut_name: u32,
-    ) -> Texture<'a> {
-        let texture = core::mem::MaybeUninit::zeroed();
-        assert_eq!(0, img.as_ptr().align_offset(32));
-        assert!(width <= 1024, "max width for texture is 1024");
-        assert!(height <= 1024, "max height for texture is 1024");
+    ) -> Texture {
+        let mut img_data = Buf32::new(img.len());
+        let mut texture = core::mem::MaybeUninit::zeroed();
+
+        // populate image data
+        for (src, dest) in img.iter().zip(img_data.as_mut_slice().iter_mut()) {
+            *dest = *src;
+        }
+
+        // error in debug mode when dimensions are too big.
+        // in release it doesn't matter; libogc bit-masks the upper bits out.
+        debug_assert!(width <= 1024, "max texture width is 1024, got {}", width);
+        debug_assert!(height <= 1024, "max texture height is 1024, got {}", height);
+
+        // error in debug mode when mipmaps sizes aren't a power of 2.
+        // not sure what this does in release mode
+        if mipmap {
+            debug_assert!(width.is_power_of_two(), "mipmap texture width must be power of 2");
+            debug_assert!(height.is_power_of_two(), "mipmap texture height must be power of 2");
+        }
+
+        // SAFETY:
+        // * ffi::GX_InitTexObj():
+        //   * img_data is aligned to 32B boundary by design.
+        // * texture.assume_init():
+        //   * texture is initialized to zero above.
         unsafe {
             cache::data_cache_flush(img);
         }
         unsafe {
             ffi::GX_InitTexObjCI(
-                texture.as_ptr() as *mut _,
-                img.as_ptr() as *mut _,
+                texture.as_mut_ptr() as *mut _,
+                img_data.as_mut_ptr() as *mut _,
                 width,
                 height,
-                format,
+                format as u8,
                 wrap.0 as u8,
                 wrap.1 as u8,
                 mipmap as u8,
                 tlut_name,
             );
-            Texture(texture.assume_init(), PhantomData)
+
+            Texture {
+                inner: texture.assume_init(),
+                img: img_data,
+                user: None,
+            }
         }
+    }
+
+    /// Returns a reference to the texture data.
+    pub fn buf(&self) -> &Buf32 {
+        //unsafe { ffi::GX_GetTexObjData(&self.inner) }
+        &self.img
+    }
+
+    /// Returns a mutable reference to the texture data.
+    ///
+    /// Make sure to flush the cache after modifying the data by calling
+    /// [`TexRegion::invalidate()`] on the corresponding region for this texture, or
+    /// [`gx::invalidate_tex_all()`] to invalidate all texture caches.
+    pub fn buf_mut(&mut self) -> &mut Buf32 {
+        &mut self.img
+    }
+    
+    /// Returns the user data stored in this texture, if any.
+    pub fn user_data(&self) -> Option<&T> {
+        self.user.as_ref()
+    }
+    
+    /// Returns the user data stored in this texture, if any.
+    pub fn user_data_mut(&mut self) -> Option<&mut T> {
+        self.user.as_mut()
+    }
+    
+    /// Sets the user data stored in this texture.
+    pub fn set_user_data(&mut self, t: T) {
+        self.user = Some(t);
+    }
+}
+
+impl<T> Deref for Texture<T> {
+    type Target = RawTexture;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+impl<T> DerefMut for Texture<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.inner
+    }
+}
+
+impl RawTexture {
+    /// Returns a physical pointer to the texture data.
+    pub fn data_ptr(&self) -> *const u8 {
+        unsafe { ffi::GX_GetTexObjData(&self.inner).cast() }
     }
 
     /// Returns the texture height.
     pub fn height(&self) -> u16 {
-        unsafe { ffi::GX_GetTexObjHeight(&self.0) }
+        unsafe { ffi::GX_GetTexObjHeight(&self.inner) }
     }
 
     /// Returns the texture width.
     pub fn width(&self) -> u16 {
-        unsafe { ffi::GX_GetTexObjWidth(&self.0) }
+        unsafe { ffi::GX_GetTexObjWidth(&self.inner) }
     }
 
     /// Returns `true` if the texture's mipmap flag is enabled.
     pub fn is_mipmapped(&self) -> bool {
-        unsafe { ffi::GX_GetTexObjMipMap(&self.0) != 0 }
+        unsafe { ffi::GX_GetTexObjMipMap(&self.inner) != 0 }
+    }
+
+    /// Returns the pixel format for the given texture.
+    pub fn format(&self) -> TexFormat {
+        unsafe { ffi::GX_GetTexObjFmt(&self.inner).into() }
+    }
+
+    /// Returns the wrap modes (horizontal and vertical) for this texture.
+    pub fn wrap_mode(&self) -> (WrapMode, WrapMode) {
+        unsafe {
+            let wrap_s = ffi::GX_GetTexObjWrapS(&self.inner).into();
+            let wrap_t = ffi::GX_GetTexObjWrapT(&self.inner).into();
+            (wrap_s, wrap_t)
+        }
+    }
+
+	/// Returns the minimum and maximum filter modes for the given texture.
+    pub fn filter_mode(&self) -> (TexFilter, TexFilter) {
+        let mut minfilt = 0;
+        let mut maxfilt = 0;
+        unsafe { ffi::GX_GetTexObjFilterMode(&self.inner, &mut minfilt, &mut maxfilt) }
+        (minfilt.into(), maxfilt.into())
+    }
+
+	/// Returns the minimum and maximum LOD values for the given texture.
+    pub fn lod(&self) -> (f32, f32) {
+        let mut minlod = 0.0;
+        let mut maxlod = 0.0;
+        unsafe { ffi::GX_GetTexObjLOD(&self.inner, &mut minlod, &mut maxlod) }
+        (minlod, maxlod)
+    }
+
+    /// Allows one to modify the image data pointer for an existing texture object.
+    ///
+    /// # Safety
+    /// * This should not be called from a `Texture`, as it already uses an internal
+    ///   buffer to manage image data.
+    /// * The size and format of the new data must agree with those of this texture.
+    /// * `img_ptr` must be 32-byte aligned.
+    pub unsafe fn set_data_ptr(&mut self, img_ptr: *const u8) {
+        unsafe { ffi::GX_InitTexObjData(&mut self.inner, img_ptr.cast_mut().cast()) }
     }
 
     /// Enables bias clamping for texture LOD.
@@ -951,7 +1399,7 @@ impl<'a> Texture<'a> {
     /// texture space. This prevents over-biasing the LOD when the polygon is perpendicular to the
     /// view direction.
     pub fn set_bias_clamp(&mut self, enable: bool) {
-        unsafe { ffi::GX_InitTexObjBiasClamp(&mut self.0, enable as u8) }
+        unsafe { ffi::GX_InitTexObjBiasClamp(&mut self.inner, enable as u8) }
     }
 
     /// Changes LOD computing mode.
@@ -961,7 +1409,7 @@ impl<'a> Texture<'a> {
     /// [`Texture::set_bias_clamp()`]) or anisotropic filtering (`GX_ANISO_2` or `GX_ANISO_4` for
     /// [`Texture::set_max_aniso()`] argument).
     pub fn set_edge_lod(&mut self, enable: bool) {
-        unsafe { ffi::GX_InitTexObjEdgeLOD(&mut self.0, enable as u8) }
+        unsafe { ffi::GX_InitTexObjEdgeLOD(&mut self.inner, enable as u8) }
     }
 
     /// Sets the filter mode for a texture.
@@ -974,7 +1422,7 @@ impl<'a> Texture<'a> {
             matches!(magfilt, TexFilter::Near | TexFilter::Linear),
             "magfilt can only be `TexFilter::Near` or `TexFilter::Linear`"
         );
-        unsafe { ffi::GX_InitTexObjFilterMode(&mut self.0, minfilt as u8, magfilt as u8) }
+        unsafe { ffi::GX_InitTexObjFilterMode(&mut self.inner, minfilt as u8, magfilt as u8) }
     }
 
     /// Sets texture Level Of Detail (LOD) controls explicitly for a texture object.
@@ -1028,7 +1476,7 @@ impl<'a> Texture<'a> {
         );
         unsafe {
             ffi::GX_InitTexObjLOD(
-                &mut self.0,
+                &mut self.inner,
                 filters.0 as u8,
                 filters.1 as u8,
                 lod_range.0,
@@ -1043,12 +1491,12 @@ impl<'a> Texture<'a> {
 
     /// Sets the LOD bias for a given texture.
     pub fn set_lod_bias(&mut self, lodbias: f32) {
-        unsafe { ffi::GX_InitTexObjLODBias(&mut self.0, lodbias) }
+        unsafe { ffi::GX_InitTexObjLODBias(&mut self.inner, lodbias) }
     }
 
     /// Sets the maximum anisotropic filter to use for a texture.
     pub fn set_max_aniso(&mut self, maxaniso: u8) {
-        unsafe { ffi::GX_InitTexObjMaxAniso(&mut self.0, maxaniso) }
+        unsafe { ffi::GX_InitTexObjMaxAniso(&mut self.inner, maxaniso) }
     }
 
     /// Sets the maximum LOD for a given texture.
@@ -1057,7 +1505,7 @@ impl<'a> Texture<'a> {
             (0.0..=10.0).contains(&maxlod),
             "valid range for max LOD is 0.0 to 10.0"
         );
-        unsafe { ffi::GX_InitTexObjMaxLOD(&mut self.0, maxlod) }
+        unsafe { ffi::GX_InitTexObjMaxLOD(&mut self.inner, maxlod) }
     }
 
     /// Sets the minimum LOD for a given texture.
@@ -1066,78 +1514,209 @@ impl<'a> Texture<'a> {
             (0.0..=10.0).contains(&minlod),
             "valid range for min LOD is 0.0 to 10.0"
         );
-        unsafe { ffi::GX_InitTexObjMinLOD(&mut self.0, minlod) }
+        unsafe { ffi::GX_InitTexObjMinLOD(&mut self.inner, minlod) }
     }
 
     /// Allows one to modify the TLUT that is associated with an existing texture object.
     pub fn set_tlut(&mut self, tlut_name: u32) {
-        unsafe { ffi::GX_InitTexObjTlut(&mut self.0, tlut_name) }
+        unsafe { ffi::GX_InitTexObjTlut(&mut self.inner, tlut_name) }
     }
 
     /// Allows one to modify the texture coordinate wrap modes for an existing texture object.
     pub fn set_wrap_mode(&mut self, wrap_s: WrapMode, wrap_t: WrapMode) {
-        unsafe { ffi::GX_InitTexObjWrapMode(&mut self.0, wrap_s as u8, wrap_t as u8) }
+        unsafe { ffi::GX_InitTexObjWrapMode(&mut self.inner, wrap_s as u8, wrap_t as u8) }
     }
 
-    pub fn gxtexobj(&mut self) -> &mut GXTexObj {
-        &mut self.0
+    pub(crate) fn as_ptr(&self) -> *const RawTexture {
+        self as *const _
+    }
+
+    pub(crate) fn as_mut_ptr(&mut self) -> *mut RawTexture {
+        self as *mut _
     }
 }
 
-impl<'a> From<GXTexObj> for Texture<'a> {
-    fn from(obj: GXTexObj) -> Self {
-        Self(obj, PhantomData)
+#[repr(u32)]
+pub enum TexCacheSize {
+    /// 32 kilobytes
+    Small = ffi::GX_TEXCACHE_32K,
+    /// 128 kilobytes
+    Medium = ffi::GX_TEXCACHE_128K,
+    /// 512 kilobytes
+    Large = ffi::GX_TEXCACHE_512K,
+    None = ffi::GX_TEXCACHE_NONE,
+}
+
+pub struct TexRegion {
+    inner: ffi::GXTexRegion,
+    buf_even: Buf32,
+    buf_odd: Buf32,
+}
+
+impl TexRegion {
+    /// Initializes a texture memory (TMEM) region object for cache.
+    ///
+    /// See [GX_InitTexCacheRegion](https://libogc.devkitpro.org/gx_8h.html#aebc5bbd189eb6a366877b64622c750fa) for more.
+    pub fn new(size_even: TexCacheSize, size_odd: TexCacheSize, is_32b_mipmap: bool) -> Self {
+        // libogc doesn't initialize all fields
+        let mut gxtexregion = MaybeUninit::zeroed();
+        let mut buf_even = Buf32::new(match size_even {
+            TexCacheSize::Large => 512 * 1024,
+            TexCacheSize::Medium => 128 * 1024,
+            _ => 32 * 1024,
+        });
+        let mut buf_odd = Buf32::new(match size_odd {
+            TexCacheSize::Large => 512 * 1024,
+            TexCacheSize::Medium => 128 * 1024,
+            _ => 32 * 1024,
+        });
+        unsafe {
+            ffi::GX_InitTexCacheRegion(
+                gxtexregion.as_mut_ptr(),
+                is_32b_mipmap as u8,
+                buf_even.as_mut_ptr() as u32,
+                size_even as _,
+                buf_odd.as_mut_ptr() as u32,
+                size_odd as _,
+            );
+
+            TexRegion {
+                inner: gxtexregion.assume_init(),
+                buf_even,
+                buf_odd,
+            }
+        }
+    }
+
+    /// Initializes a Texture Memory (TMEM) region object for preloading.
+    ///
+    /// See [GX_InitTexPreloadRegion](https://libogc.devkitpro.org/gx_8h.html#a31bd62d5243c4c207ea06a5d60d7865e) for more.
+    pub fn new_preloaded(size_even: TexCacheSize, size_odd: TexCacheSize) -> Self {
+        // libogc doesn't initialize all fields
+        let mut gxtexregion = MaybeUninit::zeroed();
+        let mut buf_even = Buf32::new(match size_even {
+            TexCacheSize::Large => 512 * 1024,
+            TexCacheSize::Medium => 128 * 1024,
+            _ => 32 * 1024,
+        });
+        let mut buf_odd = Buf32::new(match size_odd {
+            TexCacheSize::Large => 512 * 1024,
+            TexCacheSize::Medium => 128 * 1024,
+            _ => 32 * 1024,
+        });
+        unsafe {
+            ffi::GX_InitTexPreloadRegion(
+                gxtexregion.as_mut_ptr(),
+                buf_even.as_mut_ptr() as u32,
+                size_even as _,
+                buf_odd.as_mut_ptr() as u32,
+                size_odd as _,
+            );
+
+            TexRegion {
+                inner: gxtexregion.assume_init(),
+                buf_even,
+                buf_odd,
+            }
+        }
+    }
+
+    /// Invalidates the texture cache in Texture Memory (TMEM) described by region.
+    ///
+    /// See [GX_InvalidateTexRegion](https://libogc.devkitpro.org/gx_8h.html#a2d4ce1648e0b44b6a0958e943aedcb76) for more.
+    pub fn invalidate(&mut self) {
+        unsafe { ffi::GX_InvalidateTexRegion(&mut self.inner) }
+    }
+
+    pub fn into_inner(self) -> ffi::GXTexRegion {
+        self.inner
     }
 }
+
+
+#[repr(u32)]
+pub enum TlutFormat {
+    IA8 = ffi::GX_TL_IA8,
+    RGB565 = ffi::GX_TL_RGB565,
+    RGB5A3 = ffi::GX_TL_RGB5A3,
+}
+
+
+/// Texture Look-Up Table with an internal buffer
+pub struct Tlut {
+    inner: ffi::GXTlutObj,
+    buf: Buf32,
+}
+
+impl Tlut {
+    /// Initializes a Texture Look-Up Table (TLUT) object.
+    ///
+    /// The TLUT object describes the location of the TLUT in main memory, its format and the number
+    /// of entries. The TLUT in main memory described by this object can be loaded into a TLUT
+    /// allocated in the texture memory using the [`Gx::load_tlut()`] function.
+    ///
+    /// Parameters:
+    /// `lut`: ptr to look-up table data; must be 32B aligned
+    /// `fmt`: format of the entries in the TLUT.
+    /// `entries`: number of entries in this table; maximum is 16,384
+    pub fn new(mut lut: Buf32, fmt: TlutFormat, entries: u16) -> Self {
+        // libogc doesn't check entries is within range. unsure of consequences, so let's just
+        // play it safe.
+        assert!(entries <= 16384);
+        let mut obj = core::mem::MaybeUninit::uninit();
+        unsafe {
+            ffi::GX_InitTlutObj(obj.as_mut_ptr(), lut.as_mut_ptr().cast(), fmt as _, entries);
+            // SAFETY: per libogc source, it zeroes and then initializes obj itself.
+            Tlut {
+                inner: obj.assume_init(),
+                buf: lut,
+            }
+        }
+    }
+}
+
 
 /// Vertex attribute array type
 #[derive(Copy, Clone, Debug)]
-#[repr(u8)]
+#[repr(u32)]
 pub enum VtxAttr {
-    Null = ffi::GX_VA_NULL as _,
-    LightArray = ffi::GX_LIGHTARRAY as _,
-    NrmMtxArray = ffi::GX_NRMMTXARRAY as _,
-    PosMtxArray = ffi::GX_POSMTXARRAY as _,
-    TexMtxArray = ffi::GX_TEXMTXARRAY as _,
-    Color0 = ffi::GX_VA_CLR0 as _,
-    Color1 = ffi::GX_VA_CLR1 as _,
-    MaxAttr = ffi::GX_VA_MAXATTR as _,
+    PtnMtxIdx = ffi::GX_VA_PTNMTXIDX,
+    Tex0MtxIdx = ffi::GX_VA_TEX0MTXIDX,
+    Tex1MtxIdx = ffi::GX_VA_TEX1MTXIDX,
+    Tex2MtxIdx = ffi::GX_VA_TEX2MTXIDX,
+    Tex3MtxIdx = ffi::GX_VA_TEX3MTXIDX,
+    Tex4MtxIdx = ffi::GX_VA_TEX4MTXIDX,
+    Tex5MtxIdx = ffi::GX_VA_TEX5MTXIDX,
+    Tex6MtxIdx = ffi::GX_VA_TEX6MTXIDX,
+    Tex7MtxIdx = ffi::GX_VA_TEX7MTXIDX,
+    Pos = ffi::GX_VA_POS,
+    Nrm = ffi::GX_VA_NRM,
+    Color0 = ffi::GX_VA_CLR0,
+    Color1 = ffi::GX_VA_CLR1,
+    Tex0 = ffi::GX_VA_TEX0,
+    Tex1 = ffi::GX_VA_TEX1,
+    Tex2 = ffi::GX_VA_TEX2,
+    Tex3 = ffi::GX_VA_TEX3,
+    Tex4 = ffi::GX_VA_TEX4,
+    Tex5 = ffi::GX_VA_TEX5,
+    Tex6 = ffi::GX_VA_TEX6,
+    Tex7 = ffi::GX_VA_TEX7,
+    PosMtxArray = ffi::GX_POSMTXARRAY,
+    NrmMtxArray = ffi::GX_NRMMTXARRAY,
+    TexMtxArray = ffi::GX_TEXMTXARRAY,
+    LightArray = ffi::GX_LIGHTARRAY,
     /// Normal, binormal, tangent
-    Nbt = ffi::GX_VA_NBT as _,
-    Nrm = ffi::GX_VA_NRM as _,
-    Pos = ffi::GX_VA_POS as _,
-    PtnMtxIdx = ffi::GX_VA_PTNMTXIDX as _,
-    Tex0 = ffi::GX_VA_TEX0 as _,
-    Tex0MtxIdx = ffi::GX_VA_TEX0MTXIDX as _,
-    Tex1 = ffi::GX_VA_TEX1 as _,
-    Tex1MtxIdx = ffi::GX_VA_TEX1MTXIDX as _,
-    Tex2 = ffi::GX_VA_TEX2 as _,
-    Tex2MtxIdx = ffi::GX_VA_TEX2MTXIDX as _,
-    Tex3 = ffi::GX_VA_TEX3 as _,
-    Tex3MtxIdx = ffi::GX_VA_TEX3MTXIDX as _,
-    Tex4 = ffi::GX_VA_TEX4 as _,
-    Tex4MtxIdx = ffi::GX_VA_TEX4MTXIDX as _,
-    Tex5 = ffi::GX_VA_TEX5 as _,
-    Tex5MtxIdx = ffi::GX_VA_TEX5MTXIDX as _,
-    Tex6 = ffi::GX_VA_TEX6 as _,
-    Tex6MtxIdx = ffi::GX_VA_TEX6MTXIDX as _,
-    Tex7 = ffi::GX_VA_TEX7 as _,
-    Tex7MtxIdx = ffi::GX_VA_TEX7MTXIDX as _,
+    Nbt = ffi::GX_VA_NBT,
+    #[doc(hidden)]
+    MaxAttr = ffi::GX_VA_MAXATTR,
+    Null = ffi::GX_VA_NULL,
 }
 
-/// Structure describing how a single vertex attribute will be referenced.
-///
-/// An array of these structures can be used to describe all the attributes in a vertex. The
-/// attribute `GX_VA_NULL` should be used to mark the end of the array.
-#[derive(Clone, Copy, Debug)]
-#[repr(transparent)]
-pub struct VtxDesc(ffi::GXVtxDesc);
-
 #[derive(Copy, Clone, Debug)]
-#[repr(u8)]
+#[repr(u32)]
 pub enum ProjectionType {
-    Perspective = ffi::GX_PERSPECTIVE as _,
-    Orthographic = ffi::GX_ORTHOGRAPHIC as _,
+    Perspective = ffi::GX_PERSPECTIVE,
+    Orthographic = ffi::GX_ORTHOGRAPHIC,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -1153,6 +1732,45 @@ pub struct GpStatus {
     pub cmd_idle: bool,
     /// `true` if FIFO has reached a breakpoint and GP reads have been stopped.
     pub brkpt: bool,
+}
+
+#[derive(Debug, Clone, Copy)]
+#[repr(transparent)]
+pub struct RenderMode(GXRModeObj);
+
+impl RenderMode {
+    /// Takes a given render mode and returns a version that is reduced in size to account for overscan.
+    ///
+    /// See [GX_AdjustForOverscan](https://libogc.devkitpro.org/gx_8h.html#aa747893f4ff75886f7cacc4c40aa1206) for more.
+    pub fn adjust_for_overscan(mut self, hor: u16, ver: u16) -> Self {
+        let mut rmout = core::mem::MaybeUninit::uninit();
+        unsafe {
+            ffi::GX_AdjustForOverscan(&mut self.0, rmout.as_mut_ptr(), hor, ver);
+            RenderMode(rmout.assume_init())
+        }
+    }
+}
+
+/// Fog equation control
+#[repr(u32)]
+pub enum FogType {
+    None = ffi::GX_FOG_NONE,
+    PerspLin = ffi::GX_FOG_PERSP_LIN,
+    PerspExp = ffi::GX_FOG_PERSP_EXP,
+    PerspExp2 = ffi::GX_FOG_PERSP_EXP2,
+    PerspRevExp = ffi::GX_FOG_PERSP_REVEXP,
+    PerspRevExp2 = ffi::GX_FOG_PERSP_REVEXP2,
+    OrthoLin = ffi::GX_FOG_ORTHO_LIN,
+    OrthoExp = ffi::GX_FOG_ORTHO_EXP,
+    OrthoExp2 = ffi::GX_FOG_ORTHO_EXP2,
+    OrthoRevExp = ffi::GX_FOG_ORTHO_REVEXP,
+    OrthoRevExp2 = ffi::GX_FOG_ORTHO_REVEXP2,
+}
+
+#[repr(u32)]
+pub enum MtxType {
+    M3x4 = ffi::GX_MTX3x4,
+    M2x4 = ffi::GX_MTX2x4,
 }
 
 /// Represents the GX service.
@@ -1180,55 +1798,82 @@ impl Gx {
     /// the calling thread is the one responsible for generating graphics data. This thread will be
     /// the thread to be suspended when the FIFO gets too full. The current GX thread can be
     /// changed by calling [`Gx::set_current_gx_thread()`].
-    pub fn init(mut size: usize) -> &'static mut Fifo {
-        if size < Fifo::MIN_SIZE {
-            size = Fifo::MIN_SIZE;
+    pub fn init(size: usize) -> AtomicPtr<RawFifo> {
+        let init_fifo = INIT_FIFO.load(Ordering::Acquire);
+        
+        // check if GX has already been initialized
+        if ! init_fifo.is_null() {
+            return AtomicPtr::new(init_fifo);
         }
-
-        //TODO: keep buf around othersise can start overwritting memory
-        let mut buf = ManuallyDrop::new(crate::utils::Buf32::new(size));
+        
+        // keep buf around with ManuallyDrop, otherwise it will be deallocated
+        // by the end of the function.
+        let mut buf = ManuallyDrop::new(Buf32::new(size.max(Fifo::MIN_SIZE)));
 
         // SAFETY: all safety is ensured by Buf32.
-        unsafe {
-            let fifo = ffi::GX_Init(
-                buf.as_mut_ptr().map_addr(mem::to_uncached) as *mut _,
+        let gxfifo = unsafe {
+            ffi::GX_Init(
+                buf.as_mut_ptr().map_addr(mem::to_uncached).cast(),
                 buf.len() as u32,
-            );
-            &mut *(fifo as *mut Fifo)
+            )
+        };
+
+        // Mark GX as initialized.
+        let fifo_ptr = gxfifo.cast();
+        INIT_FIFO.store(fifo_ptr, Ordering::Release);
+        AtomicPtr::new(fifo_ptr)
+    }
+
+    /// Return a copy of the currently attached GP FIFO.
+    ///
+    /// See [GX_GetGPFifo](https://libogc.devkitpro.org/gx_8h.html#ab44a1fe8f8fc13e5d22429d144227d5a) for more.
+    pub fn get_gp_fifo() -> Option<RawFifo> {
+        if INIT_FIFO.load(Ordering::Acquire).is_null() {
+            None
+        } else {
+            let mut rawfifo: MaybeUninit<RawFifo> = MaybeUninit::zeroed();
+            unsafe {
+                ffi::GX_GetGPFifo(rawfifo.as_mut_ptr().cast());
+                Some(rawfifo.assume_init())
+            }
         }
     }
 
-    /// Attaches *fifo* to the GP.
+    /// Attaches a FIFO to the GP.
     ///
-    /// # Note
-    /// If the FIFO is also attached to the CPU, the system is in immediate-mode, and the fifo acts
-    /// like a true FIFO. In immediate-mode, graphics commands are fed directly from the CPU to the
-    /// GP, and the FIFO's high and low water marks are active. The high and low water marks
-    /// implement the flow-control mechanism between the CPU and GP. When the FIFO becomes more
-    /// full than the high water mark, the CPU will stop writing graphics commands into the FIFO.
-    /// When the FIFO empties to a point lower than the low water mark, the CPU will resume writing
-    /// graphics commands into the FIFO. The high and low water marks are set with
-    /// [`Fifo::set_limits()`].
+    /// See [GX_SetGPFifo](https://libogc.devkitpro.org/gx_8h.html#af98b3858d1d04a4bbe620b0a45d94c8c) for more.
+    pub fn set_gp_fifo(fifo: Option<&RawFifo>) {
+        let fifo_ptr = match fifo {
+            Some(fifo) => fifo,
+            None => ptr::null(),
+        };
+        unsafe { ffi::GX_SetGPFifo(fifo_ptr.cast_mut().cast()) }
+    }
+
+    /// Return a copy of the currently attached CPU FIFO.
     ///
-    /// If the FIFO is only attached to the GP, the FIFO acts like a buffer. In this case, high and
-    /// low water marks are disabled, and the GP reads the FIFO until it is empty. Before attaching
-    /// a new FIFO to the GP, you should make sure the previous FIFO is empty, using the *cmdIdle*
-    /// status returned by [`Gx::get_gp_status()`].
-    ///
-    /// The break point mechanism can be used to force the FIFO to stop reading commands at a
-    /// certain point; see [`Gx::enable_breakpt()`].
-    pub fn set_gp_fifo(fifo: &mut Fifo) {
-        unsafe { ffi::GX_SetGPFifo(&mut fifo.0) }
+    /// See [GX_GetCPUFifo](https://libogc.devkitpro.org/gx_8h.html#a43258a02791218395ef43ffc7d8ed397) for more.
+    pub fn get_cpu_fifo() -> Option<RawFifo> {
+        if INIT_FIFO.load(Ordering::Acquire).is_null() {
+            None
+        } else {
+            let mut rawfifo: MaybeUninit<RawFifo> = MaybeUninit::zeroed();
+            unsafe {
+                ffi::GX_GetCPUFifo(rawfifo.as_mut_ptr().cast());
+                Some(rawfifo.assume_init())
+            }
+        }
     }
 
     /// Attaches a FIFO to the CPU.
     ///
-    /// # Note
-    /// If the FIFO being attached is one already attached to the GP, the FIFO can be considered to
-    /// be in immediate mode. If not, the CPU can write commands, and the GP will execute them when
-    /// the GP attaches to this FIFO (multi-buffered mode).
-    pub fn set_cpu_fifo(fifo: &mut Fifo) {
-        unsafe { ffi::GX_SetCPUFifo(&mut fifo.0) }
+    /// See [GX_SetCPUFifo](https://libogc.devkitpro.org/gx_8h.html#a69852ae8a9b982556a3a37a450af30d8) for more.
+    pub fn set_cpu_fifo(fifo: Option<&RawFifo>) {
+        let fifo_ptr = match fifo {
+            Some(fifo) => fifo,
+            None => ptr::null(),
+        };
+        unsafe { ffi::GX_SetCPUFifo(fifo_ptr.cast_mut().cast()) }
     }
 
     /// Returns the current GX thread.
@@ -1273,14 +1918,13 @@ impl Gx {
 
     /// Clears the two virtual GP performance counters to zero.
     ///
-    /// # Note
-    /// The counter's function is set using [`Gx::set_gp_metric()`]; the counter's value is read
-    /// using [`Gx::read_gp_metric()`]. Consult these for more details.
+    /// When in display list mode, this is a no-op.
     ///
-    /// # Safety
-    /// This function resets CPU accessible counters, so it should **not** be used in a display list.
-    pub unsafe fn clear_gp_metric() {
-        unsafe { ffi::GX_ClearGPMetric() }
+    /// See [GX_ClearGPMetric](https://libogc.devkitpro.org/gx_8h.html#ad339961d27f13b76640ee67e553488ac) for more.
+    pub fn clear_gp_metric() {
+        if ! IN_DISPLAY_LIST.load(Ordering::Acquire) {
+            unsafe { ffi::GX_ClearGPMetric() }
+        }
     }
 
     /// Clears the Vertex Cache performance counter.
@@ -1402,23 +2046,19 @@ impl Gx {
     /// not be coherent with the CPU's cache. The application is responsible for storing the light
     /// object data from the CPU cache (using `DCStoreRange()`) before calling
     /// `Gx::load_light_idx()`.
-    pub fn load_light_idx(litobjidx: usize, litid: u8) {
-        unsafe { ffi::GX_LoadLightObjIdx(litobjidx as u32, litid) }
+    pub fn load_light_idx(litobjidx: u32, litid: u8) {
+        unsafe { ffi::GX_LoadLightObjIdx(litobjidx, litid) }
     }
 
     /// Causes the GPU to wait for the pipe to flush.
     ///
-    /// This function inserts a synchronization command into the graphics FIFO. When the GPU sees
-    /// this command it will allow the rest of the pipe to flush before continuing. This command is
-    /// useful in certain situation such as after using [`Gx::copy_tex()`] and before a primitive
-    /// that uses the copied texture.
+    /// When in a display list, this is a no-op.
     ///
-    /// # Note
-    /// The command is actually implemented by writing the control register that determines the
-    /// format of the embedded frame buffer (EFB). As a result, care should be used if this command
-    /// is placed within a display list.
+    /// See [GX_PixModeSync](https://libogc.devkitpro.org/gx_8h.html#af8a7469351ae569dd22c496f93b0fc8f) for more.
     pub fn pix_mode_sync() {
-        unsafe { ffi::GX_PixModeSync() }
+        if ! IN_DISPLAY_LIST.load(Ordering::Acquire) {
+            unsafe { ffi::GX_PixModeSync() }
+        }
     }
 
     /// Restores the write-gather pipe.
@@ -1492,22 +2132,7 @@ impl Gx {
     /// Sets color and Z value to clear the EFB to during copy operations.
     /// See [GX_SetCopyClear](https://libogc.devkitpro.org/gx_8h.html#a17265aefd7e64820de53abd9113334bc) for more.
     pub fn set_copy_clear(background: Color, z_value: u32) {
-        BPReg::PE_CLEAR_AR.load(u32::from_be_bytes([
-            0u8,
-            0u8,
-            background.0.a,
-            background.0.r,
-        ]));
-
-        BPReg::PE_CLEAR_GB.load(u32::from_be_bytes([
-            0u8,
-            0u8,
-            background.0.g,
-            background.0.b,
-        ]));
-
-        BPReg::PE_CLEAR_Z.load(z_value);
-        //unsafe { ffi::GX_SetCopyClear(background.0, z_value) };
+        unsafe { ffi::GX_SetCopyClear(background.0, z_value) };
     }
 
     /// Sets the viewport rectangle in screen coordinates.
@@ -1519,6 +2144,10 @@ impl Gx {
     /// Calculates an appropriate Y scale factor value for GX_SetDispCopyYScale() based on the height of the EFB and the height of the XFB.
     /// See [GX_GetYScaleFactor](https://libogc.devkitpro.org/gx_8h.html#a1558cf7d2eb9a6690fee4b64c4fc5a8e) for more.
     pub fn get_y_scale_factor(efb_height: u16, xfb_height: u16) -> f32 {
+        debug_assert!((2..=528).contains(&efb_height));
+        debug_assert!(efb_height.is_multiple_of(2));
+        debug_assert!((2..=1024).contains(&xfb_height));
+        debug_assert!(xfb_height >= efb_height);
         unsafe { ffi::GX_GetYScaleFactor(efb_height, xfb_height) }
     }
 
@@ -1536,104 +2165,63 @@ impl Gx {
 
     /// Sets the source parameters for the EFB to XFB copy operation.
     /// See [GX_SetDispCopySrc](https://libogc.devkitpro.org/gx_8h.html#a979d8db7abbbc2e9a267f5d1710ac588) for more.
-    pub fn set_disp_copy_src(left: u16, top: u16, wd: u16, hd: u16) {
-        assert_eq!(0, left % 2);
-        assert_eq!(0, top % 2);
-        assert_eq!(0, wd % 2);
-        assert_eq!(0, hd % 2);
-        //unsafe { ffi::GX_SetDispCopySrc(left, top, wd, hd) }
-
-        let mut top_left = 0u32;
-        top_left.set_bits(..10, left.into());
-        top_left.set_bits(10.., top.into());
-
-        let mut width_height = 0u32;
-        width_height.set_bits(..10, (wd - 1).into());
-        width_height.set_bits(10.., (hd - 1).into());
-
-        BPReg::EFB_ADDR_TOP_LEFT.load(top_left);
-        BPReg::EFB_ADDR_DIMENSIONS.load(width_height);
+    pub fn set_disp_copy_src(left: u16, top: u16, wd: u16, ht: u16) {
+        debug_assert!(left % 2 == 0, "left is not divisible by 2");
+        debug_assert!(top % 2 == 0, "top is not divisible by 2");
+        debug_assert!(wd % 2 == 0, "width is not divisible by 2");
+        debug_assert!(ht % 2 == 0, "height is not divisible by 2");
+        unsafe { ffi::GX_SetDispCopySrc(left, top, wd, ht) }
     }
 
-    /// Sets the witth and height of the display buffer in pixels.
+    /// Sets the width and height of the display buffer in pixels.
+    /// 
     /// See [GX_SetDispCopyDst](https://libogc.devkitpro.org/gx_8h.html#ab6f639059b750e57af4c593ba92982c5) for more.
-    pub fn set_disp_copy_dst(width: u16, _height: u16) {
-        assert!(width <= 0x3FF, "width isn't a valid value");
-
-        BPReg::MIPMAP_STRIDE.load(width.into());
-
-        //unsafe { ffi::GX_SetDispCopyDst(width, height) }
+    pub fn set_disp_copy_dst(width: u16, height: u16) {
+        debug_assert!(
+            width.is_multiple_of(16),
+            "width must be a multiple of 16, got {width}"
+        );
+        unsafe { ffi::GX_SetDispCopyDst(width, height) }
     }
 
     /// Sets the subpixel sample patterns and vertical filter coefficients used to filter subpixels into pixels.
     /// See [GX_SetCopyFilter](https://libogc.devkitpro.org/gx_8h.html#afd65b7e5f2040ddb3352649efde72faf) for more.
     pub fn set_copy_filter(
-        aa: bool,
-        sample_pattern: &mut [[u8; 2]; 12],
-        vf: bool,
-        v_filter: &mut [u8; 7],
+        sample_pattern: Option<[[u8; 2]; 12]>,
+        vfilter: Option<[u8; 7]>,
     ) {
-        let mut disp_copy_0 = 0x666666u32;
-        let mut disp_copy_1 = 0x666666u32;
-        let mut disp_copy_2 = 0x666666u32;
-        let mut disp_copy_3 = 0x666666u32;
-
-        let mut trgt_copy_0 = 0x595000u32;
-        let mut trgt_copy_1 = 0x000015u32;
-
-        if aa {
-            disp_copy_0.set_bits(0..4, sample_pattern[0][0].into());
-            disp_copy_0.set_bits(4..8, sample_pattern[0][1].into());
-            disp_copy_0.set_bits(8..12, sample_pattern[1][0].into());
-            disp_copy_0.set_bits(12..16, sample_pattern[1][1].into());
-            disp_copy_0.set_bits(16..20, sample_pattern[2][0].into());
-            disp_copy_0.set_bits(20..24, sample_pattern[2][1].into());
-
-            disp_copy_1.set_bits(0..4, sample_pattern[3][0].into());
-            disp_copy_1.set_bits(4..8, sample_pattern[3][1].into());
-            disp_copy_1.set_bits(8..12, sample_pattern[4][0].into());
-            disp_copy_1.set_bits(12..16, sample_pattern[4][1].into());
-            disp_copy_1.set_bits(16..20, sample_pattern[5][0].into());
-            disp_copy_1.set_bits(20..24, sample_pattern[5][1].into());
-
-            disp_copy_2.set_bits(0..4, sample_pattern[6][0].into());
-            disp_copy_2.set_bits(4..8, sample_pattern[6][1].into());
-            disp_copy_2.set_bits(8..12, sample_pattern[7][0].into());
-            disp_copy_2.set_bits(12..16, sample_pattern[7][1].into());
-            disp_copy_2.set_bits(16..20, sample_pattern[8][0].into());
-            disp_copy_2.set_bits(20..24, sample_pattern[8][1].into());
-
-            disp_copy_3.set_bits(0..4, sample_pattern[9][0].into());
-            disp_copy_3.set_bits(4..8, sample_pattern[9][1].into());
-            disp_copy_3.set_bits(8..12, sample_pattern[10][0].into());
-            disp_copy_3.set_bits(12..16, sample_pattern[10][1].into());
-            disp_copy_3.set_bits(16..20, sample_pattern[11][0].into());
-            disp_copy_3.set_bits(20..24, sample_pattern[11][1].into());
+        if let Some(sp) = sample_pattern {
+            debug_assert!(
+                sp.iter().flatten().all(|x| (1..=11).contains(x)),
+                "valid range for sample coordinate points is 1..=11, got {sp:?}"
+            );
         }
-
-        if vf {
-            trgt_copy_0.set_bits(0..6, v_filter[0].into());
-            trgt_copy_0.set_bits(6..12, v_filter[1].into());
-            trgt_copy_0.set_bits(12..18, v_filter[2].into());
-            trgt_copy_0.set_bits(18..24, v_filter[3].into());
-
-            trgt_copy_1.set_bits(0..6, v_filter[4].into());
-            trgt_copy_1.set_bits(6..12, v_filter[5].into());
-            trgt_copy_1.set_bits(12..18, v_filter[6].into());
+        if let Some(vf) = vfilter {
+            debug_assert!(
+                vf.iter().all(|x| (0..=63).contains(x)),
+                "valid range for vertical filter coefficients is 0..=63, got {vf:?}"
+            );
+            let sum: u8 = vf.iter().sum();
+            debug_assert_eq!(
+                sum,
+                64,
+                "sum of vertical filter coefficients should be 64, got {sum}"
+            );
         }
-
-        BPReg::DISP_COPY_FILT0.load(disp_copy_0);
-        BPReg::DISP_COPY_FILT1.load(disp_copy_1);
-        BPReg::DISP_COPY_FILT2.load(disp_copy_2);
-        BPReg::DISP_COPY_FILT3.load(disp_copy_3);
-
-        BPReg::TRGT_COPY_FILT0.load(trgt_copy_0);
-        BPReg::TRGT_COPY_FILT1.load(trgt_copy_1);
+        
+        unsafe {
+            ffi::GX_SetCopyFilter(
+                sample_pattern.is_some() as u8,
+                sample_pattern.unwrap_or_default().as_mut_ptr(),
+                vfilter.is_some() as u8,
+                vfilter.unwrap_or_default().as_mut_ptr()
+            )
+        }
     }
 
     /// Sets the lighting controls for a particular color channel.
     pub fn set_channel_controls(
-        channel: i32,
+        channel: ColorChannel,
         enable: bool,
         ambsrc: Source,
         matsrc: Source,
@@ -1643,7 +2231,7 @@ impl Gx {
     ) {
         unsafe {
             ffi::GX_SetChanCtrl(
-                channel,
+                channel as i32,
                 enable as u8,
                 ambsrc as u8,
                 matsrc as u8,
@@ -1663,11 +2251,7 @@ impl Gx {
     /// Sets the format of pixels in the Embedded Frame Buffer (EFB).
     /// See [GX_SetPixelFmt](https://libogc.devkitpro.org/gx_8h.html#a018d9b0359f9689ac41f44f0b2374ffb) for more.
     pub fn set_pixel_fmt(pix_fmt: PixelFormat, z_fmt: ZFormat) {
-        let pe_ctrl = PixelEngineControl::new()
-            .pixel_format(pix_fmt)
-            .z_format(z_fmt);
-
-        BPReg::PE_CTRL.load(pe_ctrl.to_u32());
+        unsafe { ffi::GX_SetPixelFmt(pix_fmt as u8, z_fmt as u8) }
     }
 
     /// Enables or disables culling of geometry based on its orientation to the viewer.
@@ -1717,7 +2301,7 @@ impl Gx {
     /// Sets the gamma correction applied to pixels during EFB to XFB copy operation.
     /// See [GX_SetDispCopyGamma](https://libogc.devkitpro.org/gx_8h.html#aa8e5bc962cc786b2049345fa698d4efa) for more.
     pub fn set_disp_copy_gamma(gamma: Gamma) {
-        unsafe { ffi::GX_SetDispCopyGamma(gamma.0) }
+        unsafe { ffi::GX_SetDispCopyGamma(gamma as _) }
     }
 
     /// Sets the attribute format (vtxattr) for a single attribute in the Vertex Attribute Table (VAT).
@@ -1751,15 +2335,35 @@ impl Gx {
         unsafe { ffi::GX_SetTevOp(tevstage, mode) }
     }
 
-    /// Specifies the texture and rasterized color that will be available as inputs to this TEV tevstage.
+    /// Specifies the texture and rasterized color that will be available as inputs to
+    /// this TEV tevstage.
+    /// 
     /// See [GX_SetTevOrder](https://libogc.devkitpro.org/gx_8h.html#ae64799e52298de39efc74bf989fc57f5) for more.
-    pub fn set_tev_order(tevstage: u8, texcoord: u8, texmap: u32, color: u8) {
-        unsafe { ffi::GX_SetTevOrder(tevstage, texcoord, texmap, color) }
+    pub fn set_tev_order(
+        tevstage: u8,
+        texcoord: Option<u8>,
+        disable_texmap_lookup: bool,
+        texmap: Option<u8>,
+        color: Option<ColorChannel>
+    ) {
+        debug_assert!(tevstage <= 15);
+        debug_assert!(if let Some(x) = texcoord { x <= 7 } else { true });
+        debug_assert!(if let Some(x) = texmap { x <= 7 } else { true });
+        let disable_flag = if disable_texmap_lookup { ffi::GX_TEXMAP_DISABLE } else { 0 };
+        unsafe {
+            ffi::GX_SetTevOrder(
+                tevstage,
+                texcoord.unwrap_or(ffi::GX_TEXCOORDNULL as u8),
+                texmap.unwrap_or(ffi::GX_TEXMAPNULL as u8) as u32 | disable_flag,
+                color.map(|ch| ch as u8).unwrap_or(ffi::GX_COLORNULL as u8)
+            )
+        }
     }
 
     /// Specifies how texture coordinates are generated.
     /// See [GX_SetTexCoordGen](https://libogc.devkitpro.org/gx_8h.html#a7d3139b693ace5587c3224e7df2d8245) for more.
     pub fn set_tex_coord_gen(texcoord: u16, tgen_typ: u32, tgen_src: u32, mtxsrc: u32) {
+        debug_assert!([30, 33, 36, 39, 42, 45, 48, 51, 54, 57, 60].contains(&mtxsrc));
         unsafe { ffi::GX_SetTexCoordGen(texcoord, tgen_typ, tgen_src, mtxsrc) }
     }
 
@@ -1789,62 +2393,14 @@ impl Gx {
     /// # Safety
     /// If the texture is a color-index texture, you **must** load the associated TLUT (using
     /// [`Gx::load_tlut()`]) before calling this function.
-    pub fn load_texture(obj: &Texture, mapid: u8) {
-        unsafe { ffi::GX_LoadTexObj(obj as *const _ as *mut _, mapid) }
+    pub fn load_texture(obj: &mut RawTexture, mapid: u8) {
+        unsafe { ffi::GX_LoadTexObj(&mut obj.inner, mapid) }
     }
 
     /// Sets the projection matrix.
     /// See [GX_LoadProjectionMtx](https://libogc.devkitpro.org/gx_8h.html#a241a1301f006ed04b7895c051959f64e) for more.
     pub fn load_projection_mtx(matrix: &Mtx44, projection: ProjectionType) {
-        let mut values: [f32; 6] = [0.0; 6];
-        values[0] = matrix[0][0];
-        values[2] = matrix[1][1];
-        values[4] = matrix[2][2];
-        values[5] = matrix[2][3];
-
-        match projection {
-            ProjectionType::Perspective => {
-                values[1] = matrix[0][2];
-                values[3] = matrix[1][2];
-            }
-            ProjectionType::Orthographic => {
-                values[1] = matrix[0][3];
-                values[3] = matrix[1][3];
-            }
-        }
-
-        let mut vals = values
-            .iter()
-            .map(|val| val.to_be_bytes())
-            .collect::<Vec<[u8; 4]>>();
-        vals.push((projection as u32).to_be_bytes());
-        XFReg::PROJ_PRM_A.load_multi(7, &vals)
-    }
-
-    ///Sets global material color 1 or 0 in gx regs.
-    pub fn set_global_mat_color(color_channel: ColorChannel, color: Color) {
-        match color_channel {
-            ColorChannel::Color0 => XFReg::MATERIAL0.load(u32::from_be_bytes([
-                color.0.a, color.0.b, color.0.g, color.0.r,
-            ])),
-            ColorChannel::Color1 => XFReg::MATERIAL1.load(u32::from_be_bytes([
-                color.0.a, color.0.b, color.0.g, color.0.r,
-            ])),
-        }
-        Gx::color_color(color);
-    }
-
-    ///Sets global ambient color 1 or 0 in gx regs.
-    pub fn set_global_ambient_color(color_channel: ColorChannel, color: Color) {
-        match color_channel {
-            ColorChannel::Color0 => XFReg::AMBIENT0.load(u32::from_be_bytes([
-                color.0.a, color.0.b, color.0.g, color.0.r,
-            ])),
-            ColorChannel::Color1 => XFReg::AMBIENT1.load(u32::from_be_bytes([
-                color.0.a, color.0.b, color.0.g, color.0.r,
-            ])),
-        }
-        Gx::color_color(color);
+        unsafe { ffi::GX_LoadProjectionMtx(matrix.as_ptr().cast_mut(), projection as u8) }
     }
 
     /// Invalidates the vertex cache.
@@ -1860,7 +2416,7 @@ impl Gx {
     /// is indexed. Direct data bypasses the vertex cache. Direct data is any attribute that is set
     /// to `GX_DIRECT` in the current vertex descriptor.
     pub fn inv_vtx_cache() {
-        GX_PIPE.write(GPCommand::InvalidateVertexCache as u8);
+        unsafe { ffi::GX_InvVtxCache() }
     }
 
     /// Clears all vertex attributes of the current vertex descriptor to `GX_NONE`.
@@ -1874,22 +2430,55 @@ impl Gx {
 
     /// Sets the type of a single attribute (attr) in the current vertex descriptor.
     /// See [GX_SetVtxDesc](https://libogc.devkitpro.org/gx_8h.html#af41b45011ae731ae5697b26b2bf97e2f) for more.
-    pub fn set_vtx_desc(attr: VtxAttr, v_type: VtxDest) {
-        unsafe { ffi::GX_SetVtxDesc(attr as u8, v_type.0) }
+    pub fn set_vtx_desc(attr: VtxAttr, v_type: VtxAttrIn) {
+        unsafe { ffi::GX_SetVtxDesc(attr as u8, v_type as _) }
     }
 
     /// Used to load a 3x4 modelview matrix mt into matrix memory at location pnidx.
     /// See [GX_LoadPosMtxImm](https://libogc.devkitpro.org/gx_8h.html#a90349e713128a1fa4fd6048dcab7b5e7) for more.
-    pub fn load_pos_mtx_imm(mt: &mut Mtx34, pnidx: u32) {
-        unsafe { ffi::GX_LoadPosMtxImm(mt as *mut _, pnidx) }
+    pub fn load_pos_mtx_imm(mut mt: Mtx34, pnidx: u32) {
+        unsafe { ffi::GX_LoadPosMtxImm(mt.as_mut_ptr(), pnidx) }
+    }
+    
+    /// Loads a 3x4 modelview matrix at index mtxidx from the array in main memory.
+    /// See [GX_LoadPosMtxIdx](https://libogc.devkitpro.org/gx_8h.html#aa0c2283cf1c213231ec7e4a46b67e5a0) for more.
+    pub fn load_pos_mtx_idx(mtxidx: u16, pnidx: u32) {
+        unsafe { ffi::GX_LoadPosMtxIdx(mtxidx, pnidx) }
     }
 
-    pub fn load_nrm_mtx_imm(mt: &mut Mtx34, pnidx: u32) {
-        unsafe { ffi::GX_LoadNrmMtxImm(mt as *mut _, pnidx) }
+    /// Used to load a normal transform matrix into matrix memory at location pnidx from
+    /// the 4x3 matrix mt.
+    /// See [GX_LoadNrmMtxImm](https://libogc.devkitpro.org/gx_8h.html#ac678f81095bfbafadcd100cf6811ec72) for more.
+    pub fn load_nrm_mtx_imm(mut mt: Mtx34, pnidx: u32) {
+        unsafe { ffi::GX_LoadNrmMtxImm(mt.as_mut_ptr(), pnidx) }
+    }
+    
+    /// Loads a 3x3 normal matrix into matrix memory at location pnidx from a 3x3 matrix
+    /// located at index mtxidx from the array in main memory.
+    /// See [GX_LoadNrmMtxIdx3x3](https://libogc.devkitpro.org/gx_8h.html#a84a37dd00a3c4d55cfad8d357bb6c2b1) for more.
+    pub fn load_nrm_mtx_idx_3x3(mtxidx: u16, pnidx: u32) {
+        unsafe { ffi::GX_LoadNrmMtxIdx3x3(mtxidx, pnidx) }
+    }
+    
+    /// Used to load a normal transform matrix into matrix memory at location pnidx from
+    /// the 3x3 matrix mt.
+    /// See [GX_LoadNrmMtxImm3x3](https://libogc.devkitpro.org/gx_8h.html#a6f9f81dad834cb3fbc437ddb21ab83c3) for more.
+    pub fn load_nrm_mtx_imm_3x3(mut mt: Mtx33, pnidx: u32) {
+        unsafe { ffi::GX_LoadNrmMtxImm3x3(mt.as_mut_ptr(), pnidx) }
     }
 
-    pub fn load_tex_mtx_imm(mt: &mut Mtx34, pnidx: u32) {
-        unsafe { ffi::GX_LoadTexMtxImm(mt as *mut _, pnidx, ffi::GX_MTX3x4 as _) }
+    /// Loads a texture matrix mt into the matrix memory at location texidx.
+    /// See [GX_LoadTexMtxImm](https://libogc.devkitpro.org/gx_8h.html#a2dae7e821ed8020450b26745e900b97b) for more.
+    pub fn load_tex_mtx_imm(mut mt: Mtx34, texidx: u32, r#type: MtxType) {
+        debug_assert!([30, 33, 36, 39, 42, 45, 48, 51, 54, 57, 60].contains(&texidx));
+        unsafe { ffi::GX_LoadTexMtxImm(mt.as_mut_ptr(), texidx, r#type as _) }
+    }
+    
+    /// Loads a texture matrix at index mtxidx from the array in main memory.
+    /// See [GX_LoadTexMtxIdx](https://libogc.devkitpro.org/gx_8h.html#aa0c2283cf1c213231ec7e4a46b67e5a0) for more.
+    pub fn load_tex_mtx_idx(mtxidx: u16, texidx: u32, r#type: MtxType) {
+        debug_assert!([30, 33, 36, 39, 42, 45, 48, 51, 54, 57, 60].contains(&texidx));
+        unsafe { ffi::GX_LoadTexMtxIdx(mtxidx, texidx, r#type as _) }
     }
 
     /// Enables or disables dithering.
@@ -1909,10 +2498,9 @@ impl Gx {
 
     /// Sends a DrawDone command to the GP and stalls until its subsequent execution.
     ///
-    /// # Note
-    /// This function is equivalent to calling [`Gx::set_draw_done()`] then
-    /// [`Gx::wait_draw_done()`].
+    /// See [GX_DrawDone](https://libogc.devkitpro.org/gx_8h.html#a00f07b60ae2124fe027a82d7d9ae64b0) for more.
     pub fn draw_done() {
+        /*
         //This should work :shrug:
         BPReg::PE_DONE.load(2);
 
@@ -1922,6 +2510,8 @@ impl Gx {
                 GX_PIPE.write(bytes);
             }
         }
+        */
+        unsafe { ffi::GX_DrawDone(); }
     }
 
     /// Sets the Z-buffer compare mode.
@@ -1955,11 +2545,15 @@ impl Gx {
 
     /// Sets the array base pointer and stride for a single attribute.
     /// See [GX_SetArray](https://libogc.devkitpro.org/gx_8h.html#a5164fc6aa2a678d792af80d94bfa1ec2) for more.
-    pub fn set_array<T>(attr: u32, array: &[T], stride: u8) {
+    pub fn set_array<T>(attr: VtxAttr, array: &[T]) {
         unsafe {
             cache::data_cache_flush(array);
+            ffi::GX_SetArray(
+                attr as _,
+                array.as_ptr() as *mut c_void,
+                core::mem::size_of::<T>().try_into().unwrap()
+            )
         }
-        unsafe { ffi::GX_SetArray(attr, array.as_ptr() as *mut c_void, stride) }
     }
 
     /// Begins drawing of a graphics primitive.
@@ -1990,304 +2584,234 @@ impl Gx {
         Gx::set_clip_mode(ffi::GX_CLIP_DISABLE as u8);
     }
 
-    /// Allows the CPU to write color directly to the Embedded Frame Buffer (EFB) at position x, y.
-    /// See [GX_PokeARGB](https://libogc.devkitpro.org/gx_8h.html#a5038d2f65e7959d64c68dcb1855353d8) for more.
-    pub fn poke_argb(x: u16, y: u16, color: Color) {
-        assert!(x < 640, "x must be less than 640, currently {x}");
-        assert!(y < 528, "y must be less than 527, currently {y}");
-        unsafe {
-            ffi::GX_PokeARGB(x, y, color.0);
-        }
-    }
-
+    /// Writes a 3D f32 position.
     #[inline]
-    pub fn position_3f32(x: f32, y: f32, z: f32) {
-        let x_bytes = x.to_be_bytes();
-        let y_bytes = y.to_be_bytes();
-        let z_bytes = z.to_be_bytes();
-        for byte in x_bytes {
-            GX_PIPE.write(byte);
-        }
-        for byte in y_bytes {
-            GX_PIPE.write(byte);
-        }
-
-        for byte in z_bytes {
-            GX_PIPE.write(byte);
-        }
-        /*
-        unsafe {
-            ffi::GX_Position3f32(x, y, z);
-        }
-        */
+    pub fn pos3_f32(x: f32, y: f32, z: f32) {
+        unsafe { ffi::GX_Position3f32(x, y, z);}
     }
 
+    /// Writes a 3D u16 position.
     #[inline]
-    pub fn position_3u16(x: u16, y: u16, z: u16) {
-        let x_bytes = x.to_be_bytes();
-        let y_bytes = y.to_be_bytes();
-        let z_bytes = z.to_be_bytes();
-        for byte in x_bytes {
-            GX_PIPE.write(byte);
-        }
-        for byte in y_bytes {
-            GX_PIPE.write(byte);
-        }
-
-        for byte in z_bytes {
-            GX_PIPE.write(byte);
-        }
+    pub fn pos3_u16(x: u16, y: u16, z: u16) {
+        unsafe { ffi::GX_Position3u16(x, y, z) }
     }
 
+    /// Writes a 3D i16 position.
     #[inline]
-    pub fn position_3i16(x: i16, y: i16, z: i16) {
-        let x_bytes = x.to_be_bytes();
-        let y_bytes = y.to_be_bytes();
-        let z_bytes = z.to_be_bytes();
-        for byte in x_bytes {
-            GX_PIPE.write(byte);
-        }
-        for byte in y_bytes {
-            GX_PIPE.write(byte);
-        }
-
-        for byte in z_bytes {
-            GX_PIPE.write(byte);
-        }
+    pub fn pos3_i16(x: i16, y: i16, z: i16) {
+        unsafe { ffi::GX_Position3s16(x, y, z) }
     }
 
+    /// Writes a 3D u8 position.
     #[inline]
-    pub fn position_3u8(x: u8, y: u8, z: u8) {
-        let x_bytes = x.to_be_bytes();
-        let y_bytes = y.to_be_bytes();
-        let z_bytes = z.to_be_bytes();
-        for byte in x_bytes {
-            GX_PIPE.write(byte);
-        }
-        for byte in y_bytes {
-            GX_PIPE.write(byte);
-        }
-
-        for byte in z_bytes {
-            GX_PIPE.write(byte);
-        }
+    pub fn pos3_u8(x: u8, y: u8, z: u8) {
+        unsafe { ffi::GX_Position3u8(x, y, z) }
     }
 
+    /// Writes a 3D i8 position.
     #[inline]
-    pub fn position_3i8(x: i8, y: i8, z: i8) {
-        let x_bytes = x.to_be_bytes();
-        let y_bytes = y.to_be_bytes();
-        let z_bytes = z.to_be_bytes();
-        for byte in x_bytes {
-            GX_PIPE.write(byte);
-        }
-        for byte in y_bytes {
-            GX_PIPE.write(byte);
-        }
-
-        for byte in z_bytes {
-            GX_PIPE.write(byte);
-        }
+    pub fn pos3_i8(x: i8, y: i8, z: i8) {
+        unsafe { ffi::GX_Position3s8(x, y, z) }
     }
 
+    /// Writes a 2D f32 position.
     #[inline]
-    pub fn position_2f32(x: f32, y: f32) {
-        let x_bytes = x.to_be_bytes();
-        let y_bytes = y.to_be_bytes();
-
-        for byte in x_bytes {
-            GX_PIPE.write(byte);
-        }
-
-        for byte in y_bytes {
-            GX_PIPE.write(byte);
-        }
+    pub fn pos2_f32(x: f32, y: f32) {
+        unsafe { ffi::GX_Position2f32(x, y);}
     }
 
+    /// Writes a 2D u16 position.
     #[inline]
-    pub fn position_2u16(x: u16, y: u16) {
-        let x_bytes = x.to_be_bytes();
-        let y_bytes = y.to_be_bytes();
-
-        for byte in x_bytes {
-            GX_PIPE.write(byte);
-        }
-
-        for byte in y_bytes {
-            GX_PIPE.write(byte);
-        }
+    pub fn pos2_u16(x: u16, y: u16) {
+        unsafe { ffi::GX_Position2u16(x, y) }
     }
 
+    /// Writes a 2D i16 position.
     #[inline]
-    pub fn position_2i16(x: i16, y: i16) {
-        let x_bytes = x.to_be_bytes();
-        let y_bytes = y.to_be_bytes();
-
-        for byte in x_bytes {
-            GX_PIPE.write(byte);
-        }
-
-        for byte in y_bytes {
-            GX_PIPE.write(byte);
-        }
+    pub fn pos2_i16(x: i16, y: i16) {
+        unsafe { ffi::GX_Position2s16(x, y) }
     }
 
+    /// Writes a 2D u8 position.
     #[inline]
-    pub fn position_2u8(x: u8, y: u8) {
-        let x_bytes = x.to_be_bytes();
-        let y_bytes = y.to_be_bytes();
-
-        for byte in x_bytes {
-            GX_PIPE.write(byte);
-        }
-
-        for byte in y_bytes {
-            GX_PIPE.write(byte);
-        }
+    pub fn pos2_u8(x: u8, y: u8) {
+        unsafe { ffi::GX_Position2u8(x, y) }
     }
 
+    /// Writes a 2D i8 position.
     #[inline]
-    pub fn position_2i8(x: i8, y: i8) {
-        let x_bytes = x.to_be_bytes();
-        let y_bytes = y.to_be_bytes();
-
-        for byte in x_bytes {
-            GX_PIPE.write(byte);
-        }
-
-        for byte in y_bytes {
-            GX_PIPE.write(byte);
-        }
+    pub fn pos2_i8(x: i8, y: i8) {
+        unsafe { ffi::GX_Position2s8(x, y) }
     }
 
+    /// Writes a u8-indexed position.
     #[inline]
-    pub fn position1x8(index: u8) {
-        let idx_bytes = index.to_be_bytes();
-        for byte in idx_bytes {
-            GX_PIPE.write(byte);
-        }
+    pub fn pos1_x8(index: u8) {
+        unsafe { ffi::GX_Position1x8(index) }
     }
 
+    /// Writes a u16-indexed position.
     #[inline]
-    pub fn position1x16(index: u16) {
-        let idx_bytes = index.to_be_bytes();
-        for byte in idx_bytes {
-            GX_PIPE.write(byte);
-        }
+    pub fn pos1_x16(index: u16) {
+        unsafe { ffi::GX_Position1x16(index) }
     }
-
+    
+    /// Writes a 3D f32 normal.
     #[inline]
-    pub fn color_4u8(r: u8, g: u8, b: u8, a: u8) {
-        let r_bytes = r.to_be_bytes();
-        let g_bytes = g.to_be_bytes();
-        let b_bytes = b.to_be_bytes();
-        let a_bytes = a.to_be_bytes();
-
-        for byte in r_bytes {
-            GX_PIPE.write(byte);
-        }
-        for byte in g_bytes {
-            GX_PIPE.write(byte);
-        }
-        for byte in b_bytes {
-            GX_PIPE.write(byte);
-        }
-        for byte in a_bytes {
-            GX_PIPE.write(byte);
-        }
+    pub fn normal3_f32(x: f32, y: f32, z: f32) {
+        unsafe { ffi::GX_Normal3f32(x, y, z) }
     }
-
+    
+    /// Writes a 3D i16 normal.
     #[inline]
-    pub fn color_3u8(r: u8, g: u8, b: u8) {
-        let r_bytes = r.to_be_bytes();
-        let g_bytes = g.to_be_bytes();
-        let b_bytes = b.to_be_bytes();
-
-        for byte in r_bytes {
-            GX_PIPE.write(byte);
-        }
-        for byte in g_bytes {
-            GX_PIPE.write(byte);
-        }
-        for byte in b_bytes {
-            GX_PIPE.write(byte);
-        }
+    pub fn normal3_i16(x: i16, y: i16, z: i16) {
+        unsafe { ffi::GX_Normal3s16(x, y, z) }
     }
-
+    
+    /// Writes a 2D i8 normal.
     #[inline]
-    pub fn color_3f32(r: f32, g: f32, b: f32) {
-        assert!((0.0..=1.0).contains(&r));
-        assert!((0.0..=1.0).contains(&g));
-        assert!((0.0..=1.0).contains(&b));
-
-        let r: u8 = (r * 255.0).round() as u8;
-        let g: u8 = (g * 255.0).round() as u8;
-        let b: u8 = (b * 255.0).round() as u8;
-
-        GX_PIPE.write(r);
-        GX_PIPE.write(g);
-        GX_PIPE.write(b);
+    pub fn normal3_i8(x: i8, y: i8, z: i8) {
+        unsafe { ffi::GX_Normal3s8(x, y, z) }
     }
-
+    
+    /// Writes a u8-indexed normal.
     #[inline]
-    pub fn color_4f32(r: f32, g: f32, b: f32, a: f32) {
-        assert!((0.0..=1.0).contains(&a));
-
-        let a = (a * 255.0).round() as u8;
-
-        Gx::color_3f32(r, g, b);
-        GX_PIPE.write(a);
+    pub fn normal1_x8(index: u8) {
+        unsafe { ffi::GX_Normal1x8(index) }
     }
-
+    
+    /// Writes a u16-indexed normal.
     #[inline]
-    pub fn color_1u32(clr: u32) {
-        let clr_bytes = clr.to_be_bytes();
-        for byte in clr_bytes {
-            GX_PIPE.write(byte);
-        }
+    pub fn normal1_x16(index: u16) {
+        unsafe { ffi::GX_Normal1x16(index) }
     }
 
+    /// Writes an RGBA color given in u8.
     #[inline]
-    pub fn color_1u16(clr: u16) {
-        let clr_bytes = clr.to_be_bytes();
-        for byte in clr_bytes {
-            GX_PIPE.write(byte);
-        }
+    pub fn color4_u8(r: u8, g: u8, b: u8, a: u8) {
+        unsafe { ffi::GX_Color4u8(r, g, b, a) }
     }
 
+    /// Writes an RGB color given in u8
     #[inline]
-    pub fn color1x8(index: u8) {
-        let idx_bytes = index.to_be_bytes();
-        for byte in idx_bytes {
-            GX_PIPE.write(byte);
-        }
+    pub fn color3_u8(r: u8, g: u8, b: u8) {
+        unsafe { ffi::GX_Color3u8(r, g, b) }
     }
 
+    /// Writes an RGB color given in f32 between 0 and 1.
     #[inline]
-    pub fn color1x16(index: u16) {
-        let idx_bytes = index.to_be_bytes();
-        for byte in idx_bytes {
-            GX_PIPE.write(byte);
-        }
+    pub fn color3_f32(r: f32, g: f32, b: f32) {
+        unsafe { ffi::GX_Color3f32(r, g, b) }
     }
 
-    ///Helper functions to just pass in a color object
-    pub fn color_color(clr: Color) {
-        Gx::color_4u8(clr.0.r, clr.0.g, clr.0.b, clr.0.a);
-    }
-
+    /// Writes a color given as a u32.
     #[inline]
-    pub fn tex_coord_2f32(s: f32, t: f32) {
-        let s_bytes = s.to_be_bytes();
-        let t_bytes = t.to_be_bytes();
+    pub fn color1_u32(clr: u32) {
+        unsafe { ffi::GX_Color1u32(clr) }
+    }
 
-        for byte in s_bytes {
-            GX_PIPE.write(byte);
-        }
+    /// Writes a color given as a u16.
+    #[inline]
+    pub fn color1_u16(clr: u16) {
+        unsafe { ffi::GX_Color1u16(clr) }
+    }
 
-        for byte in t_bytes {
-            GX_PIPE.write(byte);
-        }
+    /// Writes a color given as a u8 index.
+    #[inline]
+    pub fn color1_x8(index: u8) {
+        unsafe { ffi::GX_Color1x8(index) }
+    }
+
+    /// Writes a color given as a u16 index.
+    #[inline]
+    pub fn color1_x16(index: u16) {
+        unsafe { ffi::GX_Color1x16(index) }
+    }
+
+    /// Writes a color given as a [`Color`] object.
+    /// 
+    /// This is a convenience function and not part of libogc's interface.
+    #[inline]
+    pub fn color1_color(clr: Color) {
+        Self::color4_u8(clr.0.r, clr.0.g, clr.0.b, clr.0.a);
+    }
+
+    /// Writes a 2D texture coordinate in f32.
+    #[inline]
+    pub fn texcoord2_f32(s: f32, t: f32) {
+        unsafe { ffi::GX_TexCoord2f32(s, t) }
+    }
+
+    /// Writes a 2D texture coordinate in u32.
+    #[inline]
+    pub fn texcoord2_u16(s: u16, t: u16) {
+        unsafe { ffi::GX_TexCoord2u16(s, t) }
+    }
+
+    /// Writes a 2D texture coordinate in i16.
+    #[inline]
+    pub fn texcoord2_i16(s: i16, t: i16) {
+        unsafe { ffi::GX_TexCoord2s16(s, t) }
+    }
+
+    /// Writes a 2D texture coordinate in u8.
+    #[inline]
+    pub fn texcoord2_u8(s: u8, t: u8) {
+        unsafe { ffi::GX_TexCoord2u8(s, t) }
+    }
+
+    /// Writes a 2D texture coordinate in i8.
+    #[inline]
+    pub fn texcoord2_i8(s: i8, t: i8) {
+        unsafe { ffi::GX_TexCoord2s8(s, t) }
+    }
+
+    /// Writes a 1D texture coordinate in f32.
+    #[inline]
+    pub fn texcoord1_f32(s: f32) {
+        unsafe { ffi::GX_TexCoord1f32(s) }
+    }
+
+    /// Writes a 1D texture coordinate in u16.
+    #[inline]
+    pub fn texcoord1_u16(s: u16) {
+        unsafe { ffi::GX_TexCoord1u16(s) }
+    }
+
+    /// Writes a 1D texture coordinate in i16.
+    #[inline]
+    pub fn texcoord1_i16(s: i16) {
+        unsafe { ffi::GX_TexCoord1s16(s) }
+    }
+
+    /// Writes a 1D texture coordinate in u8.
+    #[inline]
+    pub fn texcoord1_u8(s: u8) {
+        unsafe { ffi::GX_TexCoord1u8(s) }
+    }
+
+    /// Writes a 1D texture coordinate in i8.
+    #[inline]
+    pub fn texcoord1_i8(s: i8) {
+        unsafe { ffi::GX_TexCoord1s8(s) }
+    }
+
+    /// Writes a texture coordinate indexed by a u8.
+    #[inline]
+    pub fn texcoord1_x8(index: u8) {
+        unsafe { ffi::GX_TexCoord1x8(index) }
+    }
+
+    /// Writes a texture coordinate indexed by a u16.
+    #[inline]
+    pub fn texcoord1_x16(index: u16) {
+        unsafe { ffi::GX_TexCoord1x16(index) }
+    }
+
+    /// Writes a matrix indexed by a u8.
+    #[inline]
+    pub fn matrix1_x8(index: u8) {
+        unsafe { ffi::GX_MatrixIndex1x8(index) }
     }
 
     pub fn flush() {
@@ -2299,78 +2823,494 @@ impl Gx {
         unsafe { ffi::GX_End() }
     }
 
-    pub fn preload_entire_texture() {
-        unimplemented!()
+    /// Loads a given texture from DRAM into the texture memory.
+    ///
+    /// See [GX_PreloadEntireTexture](https://libogc.devkitpro.org/gx_8h.html#a7b6d8f9cffffaf8001d12548644d7ddd) for more.
+    pub fn preload_entire_texture(obj: &RawTexture, region: &mut TexRegion) {
+        unsafe { ffi::GX_PreloadEntireTexture(&obj.inner as *const _ as *mut _, &mut region.inner) }
     }
 
-    pub fn load_tlut() {
-        unimplemented!()
+    /// Copies a Texture Look-Up Table (TLUT) from main memory to Texture Memory (TMEM).
+    ///
+    /// See [GX_LoadTlut](https://libogc.devkitpro.org/gx_8h.html#a9ebea5754b6e13996303cd4f829ebb1b) for more.
+    pub fn load_tlut(obj: &Tlut, tlut_name: u32) {
+        unsafe { ffi::GX_LoadTlut(obj as *const _ as *mut _, tlut_name) }
     }
 
-    pub fn set_draw_sync() {
-        unimplemented!()
+    /// This function sends a token into the command stream.
+    ///
+    /// See [GX_SetDrawSync](https://libogc.devkitpro.org/gx_8h.html#a537fee417b3018a0c8920770652ec813) for more.
+    pub fn set_draw_sync(token: u16) {
+        unsafe { ffi::GX_SetDrawSync(token); }
     }
 
-    pub fn get_draw_sync() {
-        unimplemented!()
+    /// Returns the value of the token register, which is written using the
+    /// [`Gx::set_draw_sync()`] function.
+    pub fn get_draw_sync() -> u16 {
+        unsafe { ffi::GX_GetDrawSync() }
     }
 
-    pub fn set_gp_metric() {
-        unimplemented!()
+    /// Sets two performance metrics to measure in the GP.
+    ///
+    /// When in display list mode, this is a no-op.
+    ///
+    /// See [GX_SetGPMetric](https://libogc.devkitpro.org/gx_8h.html#a0552fd47b766524a88db059c4d1023cc) for more.
+    pub fn set_gp_metric(perf0: Perf0, perf1: Perf1) {
+        if ! IN_DISPLAY_LIST.load(Ordering::Acquire) {
+            unsafe { ffi::GX_SetGPMetric(perf0 as _, perf1 as _) }
+        }
     }
 
-    pub fn read_gp_metric() {
-        unimplemented!()
+    /// Returns the count of the previously set performance metrics.
+    ///
+    /// When in display list mode, this returns `None`.
+    ///
+    /// See [GX_ReadGPMetric](https://libogc.devkitpro.org/gx_8h.html#af62420d12b7f50c810e3c5fb560e1176) for more.
+    pub fn read_gp_metric() -> Option<(u32, u32)> {
+        if ! IN_DISPLAY_LIST.load(Ordering::Acquire) {
+            let mut counts = (0, 0);
+            unsafe { ffi::GX_ReadGPMetric(&mut counts.0, &mut counts.1) }
+            Some(counts)
+        } else {
+            None
+        }
     }
 
-    pub fn set_vcache_metric() {
-        unimplemented!()
+    /// Sets the metric the Vertex Cache performance counter will measure.
+    ///
+    /// See [GX_SetVCacheMetric](https://libogc.devkitpro.org/gx_8h.html#ab5b888434069c7f72caebbd6f98c55a9) for more.
+    pub fn set_vcache_metric(attr: VCacheAttr) {
+        unsafe { ffi::GX_SetVCacheMetric(attr as _) }
     }
 
-    pub fn read_vcache_metric() {
-        unimplemented!()
+    /// Returns vertex cache performance counters.
+    ///
+    /// When in display list mode, this returns `None`.
+    ///
+    /// See [GX_ReadVCacheMetric](https://libogc.devkitpro.org/gx_8h.html#a19679bb36c6c27403a30f77de3cbdbc4) for more.
+    pub fn read_vcache_metric() -> Option<(u32, u32, u32)> {
+        if ! IN_DISPLAY_LIST.load(Ordering::Acquire) {
+            let (mut check, mut miss, mut stall) = (0, 0, 0);
+            unsafe { ffi::GX_ReadVCacheMetric(&mut check, &mut miss, &mut stall); }
+            Some((check, miss, stall))
+        } else {
+            None
+        }
     }
 
-    pub fn copy_tex() {
-        unimplemented!()
+    /// Copies the embedded framebuffer (EFB) to the texture image buffer _dest_
+    /// in main memory.
+    ///
+    /// This is useful when creating textures using the Graphics Processor (GP).
+    /// If the _clear_ flag is set to `true`, the EFB will be cleared to the
+    /// current color (see [`Gx::set_copy_clear()`] during the copy operation.
+    ///
+    /// Arguments:
+    /// * `dest`: pointer to the image buffer in main memory. _dest_ should be
+    ///   32B aligned.
+    /// * `clear`: flag that indicates framebuffer should be cleared if `true`.
+    pub fn copy_tex(mut dest: Buf32, clear: bool) {
+        unsafe { ffi::GX_CopyTex(dest.as_mut_ptr() as *mut _, clear as _) }
     }
 
-    pub fn redirect_write_gather_pipe() {
+    /// Sets the type of multiple attributes.
+    ///
+    /// See [GX_SetVtxDescv](https://libogc.devkitpro.org/gx_8h.html#a159810efe8391da35ea9b625c5fc70bd) for more.
+    pub fn set_vtx_descv(_attr_list: &[VtxDesc]) {
         unimplemented!()
     }
+}
 
-    pub fn set_draw_done_callback() {
-        unimplemented!()
-    }
+/// Sets the width of line primitives.
+///
+/// See [GX_SetLineWidth](https://libogc.devkitpro.org/gx_8h.html#a18e5556c0f12c84a00b631f24edb6f99) for more.
+pub fn set_line_width(width: u8, fmt: TexOffset) {
+    unsafe { ffi::GX_SetLineWidth(width, fmt as _); }
+}
 
-    pub fn set_tex_region_callback() {
-        unimplemented!()
-    }
+/// Sets the size of point primitives.
+///
+/// See [GX_SetPointSize](https://libogc.devkitpro.org/gx_8h.html#a3a1632e5897acafc1255b2d93236ddcb) for more.
+pub fn set_point_size(width: u8, fmt: TexOffset) {
+    unsafe { ffi::GX_SetPointSize(width, fmt as _); }
+}
 
-    pub fn set_tlut_region_callback() {
-        unimplemented!()
-    }
+/// Sets the fog color.
+///
+/// See [GX_SetFogColor](https://libogc.devkitpro.org/gx_8h.html#ad95ca1b8adaafba7142ed8492869cfc8) for more.
+pub fn set_fog_color(color: Color) {
+    unsafe { ffi::GX_SetFogColor(color.0); }
+}
 
-    pub fn set_vtx_descv() {
-        unimplemented!()
+/// Enables fog.
+///
+/// See [GX_SetFog](https://libogc.devkitpro.org/gx_8h.html#a16018e87043cea657379c7370c0a79d5) for more.
+pub fn set_fog(ft: FogType, startz: f32, endz: f32, nearz: f32, farz: f32, col: Color) {
+    unsafe {
+        ffi::GX_SetFog(ft as _, startz, endz, nearz, farz, col.0);
     }
+}
+
+/// Begins a display list and disables writes to the FIFO currently attached to the CPU.
+///
+/// When already in a display list, this is a no-op.
+///
+/// See [GX_BeginDispList](https://libogc.devkitpro.org/gx_8h.html#a0b7122421171545256ccb2992dccc546) for more.
+pub fn begin_display_list(list: &mut Buf32) {
+    if ! IN_DISPLAY_LIST.swap(true, Ordering::AcqRel) {
+        // TODO: we should not be allowing write access from the application to the Buf32
+        // when libogc will also be writing to it.
+        unsafe { ffi::GX_BeginDispList(list.as_mut_ptr() as *mut _, list.len() as u32) }
+    }
+}
+
+/// Ends a display list and resumes writing graphics commands to the CPU FIFO.
+///
+/// When not in a display list, this returns `None`. Otherwise, it returns the final size
+/// of the display list, which is passed to libogc when calling the display list with
+/// [`call_display_list()`].
+///
+/// See [GX_EndDispList](https://libogc.devkitpro.org/gx_8h.html#ad7103a02cdffe078062879185a094d5f) for more.
+pub fn end_display_list() -> Option<u32> {
+    if IN_DISPLAY_LIST.swap(false, Ordering::AcqRel) {
+        Some(unsafe { ffi::GX_EndDispList() })
+    } else {
+        None
+    }
+}
+
+/// Causes the GP to execute graphics commands from the display list instead of from the GP FIFO.
+///
+/// When already in a display list, this is a no-op.
+///
+/// See [GX_CallDispList](https://libogc.devkitpro.org/gx_8h.html#a20cac24818fa79957c4c8616ecc87cbe) for more.
+pub fn call_display_list(list: &Buf32, size: u32) {
+    if ! IN_DISPLAY_LIST.load(Ordering::Acquire) {
+        unsafe { ffi::GX_CallDispList(list.as_ptr() as *const _ as *mut _, size) }
+    }
+}
+
+/// Enables a special texture offset feature for points and lines.
+///
+/// For `coord`, libogc will use the lowest 3 bits for the texture slot, so its value
+/// should be between 0 and 7 inclusive.
+///
+/// See [GX_EnableTexOffsets](https://libogc.devkitpro.org/gx_8h.html#ab94bf9e5a37a3f2c374e70e0d238d3d8) for more.
+pub fn enable_tex_offsets(coord: u8, line_enable: bool, point_enable: bool) {
+    unsafe { ffi::GX_EnableTexOffsets(coord, line_enable as u8, point_enable as u8) }
+}
+
+pub fn get_overflow_count() -> u32 {
+    unsafe { ffi::GX_GetOverflowCount() }
+}
+
+/// Loads the state describing a preloaded texture into one of eight hardware register sets.
+///
+/// See [GX_LoadTexObjPreloaded](https://libogc.devkitpro.org/gx_8h.html#a1ec8217de396e4e06e5cbeca560abbc0) for more.
+pub fn load_texture_preloaded(obj: &mut RawTexture, region: &mut TexRegion, mapid: u8) {
+    unsafe { ffi::GX_LoadTexObjPreloaded(&mut obj.inner, &mut region.inner, mapid) }
+}
+
+/// Invalidates the vertex cache.
+///
+/// See [GX_InvVtxCache](https://libogc.devkitpro.org/gx_8h.html#a188bc7f388f971bc845dded41a24d1dc) for more.
+pub fn inv_vtx_cache() {
+    unsafe { ffi::GX_InvVtxCache() }
+}
+
+/// Allows the CPU to read a color value directly from the Embedded Frame Buffer (EFB) at position (x, y).
+///
+/// See [GX_PeekARGB](https://libogc.devkitpro.org/gx_8h.html#abd456222add9a17d48007664aaba2a84) for more.
+pub fn peek_argb(x: u16, y: u16) -> Color {
+    let mut color = MaybeUninit::uninit();
+    unsafe {
+        ffi::GX_PeekARGB(x, y, color.as_mut_ptr());
+        Color(color.assume_init())
+    }
+}
+
+/// Allows the CPU to read a z value directly from the Embedded Frame Buffer (EFB) at position (x, y).
+///
+/// See [GX_PeekZ](https://libogc.devkitpro.org/gx_8h.html#ab8116b7bcee951bbea04235e6448d725) for more.
+pub fn peek_z(x: u16, y: u16) -> u32 {
+    let mut z = MaybeUninit::uninit();
+    unsafe {
+        ffi::GX_PeekZ(x, y, z.as_mut_ptr());
+        z.assume_init()
+    }
+}
+
+/// Sets a threshold which is compared to the alpha of pixels written to the Embedded Frame
+/// Buffer (EFB) using the `gx::poke_*()` functions.
+///
+/// See [GX_PokeAlphaMode](https://libogc.devkitpro.org/gx_8h.html#ae14875170e444f9b331f3f51e517931e) for more.
+pub fn poke_alpha_mode(func: CmpFn, threshold: u8) {
+    unsafe { ffi::GX_PokeAlphaMode(func as u8, threshold) }
+}
+
+/// Determines value of alpha read from a frame buffer with no alpha channel
+#[repr(u32)]
+pub enum AlphaReadMode {
+    /// Always read 0x00.
+    Zero = ffi::GX_READ_00,
+    /// Always read 0xFF.
+    Max = ffi::GX_READ_FF,
+    /// Always read the real alpha value.
+    None = ffi::GX_READ_NONE,
+}
+
+/// Determines what value of alpha will be read from the Embedded Frame Buffer (EFB).
+///
+/// See [GX_PokeAlphaRead](https://libogc.devkitpro.org/gx_8h.html#a6a00dd9456e10f909a0151e3fc97e3da) for more.
+pub fn poke_alpha_read(mode: AlphaReadMode) {
+    unsafe { ffi::GX_PokeAlphaRead(mode as u8) }
+}
+
+/// Enables or disables alpha-buffer updates for `gx::poke_*()` functions.
+///
+/// See [GX_PokeAlphaUpdate](https://libogc.devkitpro.org/gx_8h.html#a716251f902a16f7701a71178338c30f6) for more.
+pub fn poke_alpha_update(enable: bool) {
+    unsafe { ffi::GX_PokeAlphaUpdate(enable as u8) }
+}
+
+/// Allows the CPU to write color directly to the Embedded Frame Buffer (EFB) at position (x, y).
+///
+/// See [GX_PokeARGB](https://libogc.devkitpro.org/gx_8h.html#a5038d2f65e7959d64c68dcb1855353d8) for more.
+pub fn poke_argb(x: u16, y: u16, color: Color) {
+    debug_assert!(x <= 640, "x must be less than 640, currently {x}");
+    debug_assert!(y <= 528, "y must be less than 528, currently {y}");
+    unsafe { ffi::GX_PokeARGB(x, y, color.0) }
+}
+
+/// Determines how the source image, is blended with the current Embedded Frame Buffer (EFB).
+///
+/// See [GX_PokeBlendMode](https://libogc.devkitpro.org/gx_8h.html#a24a9888bf4d97023577ed7e3ab178f6a) for more.
+pub fn poke_blend_mode(mode: BlendMode, src_fact: BlendCtrl, dst_fact: BlendCtrl, op: LogicOp) {
+    unsafe { ffi::GX_PokeBlendMode(mode as u8, src_fact as u8, dst_fact as u8, op as u8) }
+}
+
+/// Enables or disables color-buffer updates when writing the Embedded Frame Buffer (EFB) using the
+/// `gx::poke_*()` functions.
+///
+/// See [GX_PokeColorUpdate](https://libogc.devkitpro.org/gx_8h.html#a6c6f72b0b3c47a1e20a8456460fa83fd) for more.
+pub fn poke_color_update(enable: bool) {
+    unsafe { ffi::GX_PokeColorUpdate(enable as u8) }
+}
+
+/// Enables dithering when writing the Embedded Frame Buffer (EFB) using `gx::poke_*()` functions.
+///
+/// See [GX_PokeDither](https://libogc.devkitpro.org/gx_8h.html#a410ec93f6733856bd2e658eee088a88b) for more.
+pub fn poke_dither(enable: bool) {
+    unsafe { ffi::GX_PokeDither(enable as u8) }
+}
+
+/// Sets a constant alpha value for writing to the Embedded Frame Buffer (EFB).
+///
+/// See [GX_PokeDstAlpha](https://libogc.devkitpro.org/gx_8h.html#a62f70019a5ff3740cb077db69fea7f98) for more.
+pub fn poke_dst_alpha(enable: bool, a: u8) {
+    unsafe { ffi::GX_PokeDstAlpha(enable as u8, a) }
+}
+
+/// Allows the CPU to write a z value directly to the Embedded Frame Buffer (EFB) at position (x, y).
+///
+/// See [GX_PokeZ](https://libogc.devkitpro.org/gx_8h.html#a653e731d863deab2faae1594d15137a2) for more.
+pub fn poke_z(x: u16, y: u16, z: u32) {
+    debug_assert!(x <= 640, "x must be less than 640, currently {x}");
+    debug_assert!(y <= 528, "y must be less than 528, currently {y}");
+    unsafe { ffi::GX_PokeZ(x, y, z) }
+}
+
+/// Sets the Z-buffer compare mode when writing the Embedded Frame Buffer (EFB).
+///
+/// See [GX_PokeZMode](https://libogc.devkitpro.org/gx_8h.html#a3b3802cd88dcd0d3eeb241f9b45a1fd5) for more.
+pub fn poke_z_mode(enable_cmp: bool, cmp: CmpFn, enable_update: bool) {
+    unsafe { ffi::GX_PokeZMode(enable_cmp as u8, cmp as u8, enable_update as u8) }
+}
+
+/// Returns the bounding box of pixel coordinates that are drawn in the Embedded Framebuffer (EFB).
+///
+/// Returns a tuple `(top, bottom, left, right)` corresponding to each line.
+///
+/// See [GX_ReadBoundingBox](https://libogc.devkitpro.org/gx_8h.html#a4a51c85c25a25f1876c715a4e7913736) for more.
+pub fn read_bounding_box() -> (u16, u16, u16, u16) {
+    let (mut top, mut bottom, mut left, mut right) = (0, 0, 0, 0);
+    unsafe {
+        ffi::GX_ReadBoundingBox(&mut top, &mut bottom, &mut left, &mut right);
+    }
+    (top, bottom, left, right)
+}
+
+pub fn read_clks_per_vtx() -> u32 {
+    unsafe { ffi::GX_ReadClksPerVtx() }
+}
+
+/// Read performance metric values from the XF and RAS units.
+///
+/// See [GX_ReadXfRasMetric](https://libogc.devkitpro.org/gx_8h.html#a9018fdb77372e23f2b98157b5af6220a) for more.
+pub fn read_xf_ras_metric() -> (u32, u32, u32, u32) {
+    let (mut xfwaitin, mut xfwaitout, mut rasbusy, mut clks) = (0, 0, 0, 0);
+    unsafe { ffi::GX_ReadXfRasMetric(&mut xfwaitin, &mut xfwaitout, &mut rasbusy, &mut clks); }
+    (xfwaitin, xfwaitout, rasbusy, clks)
+}
+
+pub fn reset_overflow_count() -> u32 {
+    unsafe { ffi::GX_ResetOverflowCount() }
+}
+
+/// Sets the ambient color register for the color channel.
+///
+/// See [GX_SetChanAmbColor](https://libogc.devkitpro.org/gx_8h.html#a5097c9cfead421e0f7e492620446bcca) for more.
+pub fn set_chan_amb_color(channel: ColorChannel, color: Color) {
+    unsafe { ffi::GX_SetChanAmbColor(channel as i32, color.0) }
+}
+
+/// Sets the material color register for the color channel.
+///
+/// See [GX_SetChanMatColor](https://libogc.devkitpro.org/gx_8h.html#a477a92781b0379250c56afcfda9b603b) for more.
+pub fn set_chan_mat_color(channel: ColorChannel, color: Color) {
+    unsafe { ffi::GX_SetChanMatColor(channel as i32, color.0) }
+}
+
+/// Enables or disables coplanar triangle processing.
+///
+/// See [GX_SetCoPlanar](https://libogc.devkitpro.org/gx_8h.html#adf77d3b200df79928936301923c6805d) for more.
+pub fn set_coplanar(enable: bool) {
+    unsafe { ffi::GX_SetCoPlanar(enable as u8) }
+}
+
+bitflags::bitflags! {
+    /// XFB clamp mode flags. Use `ClampMode::empty()` for no clamping.
+    pub struct ClampMode: u32 {
+        //const NONE = ffi::GX_CLAMP_NONE; // use ClampMode::empty() instead
+        const TOP = ffi::GX_CLAMP_TOP;
+        const BOTTOM = ffi::GX_CLAMP_BOTTOM;
+    }
+}
+
+/// Sets the vertical clamping mode to use during the EFB to XFB or texture copy.
+///
+/// See [GX_SetCopyClamp](https://libogc.devkitpro.org/gx_8h.html#ac711ece8e164383667909d1dd50f002e) for more.
+pub fn set_copy_clamp(clamp: ClampMode) {
+    unsafe { ffi::GX_SetCopyClamp(clamp.bits() as u8) }
+}
+
+/// Selects a specific matrix to use for transformations.
+///
+/// See [GX_SetCurrentMtx](https://libogc.devkitpro.org/gx_8h.html#a0596dc11a15a8b039f552051b3d1b9f5) for more.
+pub fn set_current_mtx(mtx: u32) {
+    unsafe { ffi::GX_SetCurrentMtx((mtx * 3).min(ffi::GX_PNMTX9)) }
+}
+
+/// Controls whether all lines, only even lines, or only odd lines are copied from the EFB.
+#[repr(u32)]
+pub enum CopyMode {
+    Progressive = ffi::GX_COPY_PROGRESSIVE,
+    InterlacedEven = ffi::GX_COPY_INTLC_EVEN,
+    InterlacedOdd = ffi::GX_COPY_INTLC_ODD,
+}
+
+/// Determines which lines are read from the Embedded Frame Buffer (EFB) when using [`gx::copy_disp()`].
+///
+/// See [GX_SetDispCopyFrame2Field](https://libogc.devkitpro.org/gx_8h.html#a6d14fcad867bfdefc68c72f482eaa7a0) for more.
+pub fn set_disp_copy_frame_to_field(mode: CopyMode) {
+    unsafe { ffi::GX_SetDispCopyFrame2Field(mode as u8) }
+}
+
+/// Sets a constant alpha value for writing to the Embedded Frame Buffer (EFB).
+///
+/// See [GX_SetDstAlpha](https://libogc.devkitpro.org/gx_8h.html#a2c95bb677a05186ef2fc46a1b2965553) for more.
+pub fn set_dst_alpha(enable: bool, a: u8) {
+    unsafe { ffi::GX_SetDstAlpha(enable as u8, a) }
+}
+
+/// Selectively enables and disables interlacing of the frame buffer image.
+///
+/// See [GX_SetFieldMask](https://libogc.devkitpro.org/gx_8h.html#add6da60ca9cdf70f436f2c6f0264afad) for more.
+pub fn set_field_mask(even_mask: bool, odd_mask: bool) {
+    unsafe { ffi::GX_SetFieldMask(even_mask as u8, odd_mask as u8) }
+}
+
+#[repr(u32)]
+#[non_exhaustive]
+pub enum MiscToken {
+    /// External framebuffer flush?
+    XfFlush = ffi::GX_MT_XF_FLUSH,
+    /// Display list save context?
+    DlSaveCtx = ffi::GX_MT_DL_SAVE_CTX,
+}
+
+/// Sets miscellanous settings in the GP.
+///
+/// See [GX_SetMisc](https://libogc.devkitpro.org/gx_8h.html#a18a14de6b142222f7aea6c7b6c3a0a16) for more.
+pub fn set_misc(token: MiscToken, value: u32) {
+    unsafe { ffi::GX_SetMisc(token as u32, value) }
+}
+
+/// Used to set how many indirect lookups will take place.
+///
+/// See [GX_SetNumIndStages](https://libogc.devkitpro.org/gx_8h.html#a8ff9cccc4cfb803a9d924eafa108c55d) for more.
+pub fn set_num_ind_stages(nstages: u8) {
+    debug_assert!(nstages <= 4, "There are only 4 indirect stages; got {nstages}");
+    unsafe { ffi::GX_SetNumIndStages(nstages) }
+}
+
+/// Enables a consecutive number of TEV stages.
+///
+/// See [GX_SetNumTevStages](https://libogc.devkitpro.org/gx_8h.html#a408612e8fdbd9e0ff0fd78edce13e386) for more.
+pub fn set_num_tev_stages(num: u8) {
+    debug_assert!(num <= 16, "There are only 16 TEV stages; got {num}");
+    unsafe { ffi::GX_SetNumTevStages(num) }
+}
+
+/// Repositions the scissorbox rectangle within the Embedded Frame Buffer (EFB) memory space.
+///
+/// See [GX_SetScissorBoxOffset](https://libogc.devkitpro.org/gx_8h.html#a7c2c2c3f16c7c24a44ae91235278e3a9) for more.
+pub fn set_scissor_box_offset(xoffset: i32, yoffset: i32) {
+    debug_assert!(
+        (-342..=382).contains(&xoffset),
+        "x offset should be between -342 and 382 inclusive; got {xoffset}"
+    );
+    debug_assert!(
+        (-342..=494).contains(&yoffset),
+        "y offset should be between -342 and 382 inclusive; got {yoffset}"
+    );
+    unsafe { ffi::GX_SetScissorBoxOffset(xoffset, yoffset) }
+}
+
+/// Sets the viewport and adjusts the viewport's line offset for interlaced field rendering.
+///
+/// See [GX_SetViewportJitter](https://libogc.devkitpro.org/gx_8h.html#a96c5c40d63c7797d22800e6a31d6c798) for more.
+pub fn set_viewport_jitter(x_orig: f32, y_orig: f32, wd: f32, ht: f32, near_z: f32, far_z: f32, odd: bool) {
+    unsafe { ffi::GX_SetViewportJitter(x_orig, y_orig, wd, ht, near_z, far_z, odd as u32) }
+}
+
+/// Z texture operation
+#[repr(u32)]
+pub enum ZTexOp {
+    Disable = ffi::GX_ZT_DISABLE,
+    /// Add a Z texel to reference Z
+    Add = ffi::GX_ZT_ADD,
+    /// Replace reference Z with Z texel
+    Replace = ffi::GX_ZT_REPLACE,
+}
+
+/// Controls Z texture operations.
+///
+/// `fmt` should be one of the Z texture variants.
+///
+/// See [GX_SetZTexture](https://libogc.devkitpro.org/gx_8h.html#a05054d31fda1f7f2975375ad49a734d7) for more.
+pub fn set_z_texture(op: ZTexOp, fmt: TexFormat, bias: u32) {
+    unsafe { ffi::GX_SetZTexture(op as u8, fmt as u8, bias) }
 }
 
 //All the following data is found from
 // http://hitmen.c02.at/files/yagcd/yagcd/chap5.html#sec5.3
 
-//THIS IS PROBABLY NOT CORRECT IF SOMEONE COULD correct it for me that would be amazing!
+/*
+/// `display_list` slice should be 32-byte aligned and padded to the next
+/// 32-byte boundary. May want to use [`Buf32`] for this.
 fn call_display_list(display_list: &[u8]) {
     let ptr = display_list.as_ptr().map_addr(mem::to_physical);
-
-    assert!(
-        display_list.as_ptr().align_offset(32) == 0,
-        "The display list is not correctly 32 byte aligned."
-    );
-    assert!(
-        display_list.len().is_multiple_of(32),
-        "The display list is not correctly padded to 32 bytes. Please pad with GPCommand::Nop"
-    );
 
     GX_PIPE.write(GPCommand::CallDisplayList as u8);
 
@@ -2393,6 +3333,7 @@ fn draw_begin(command: GPDrawCommand, vertex_format: u8, vertex_count: u16) {
         GX_PIPE.write(byte);
     }
 }
+*/
 
 #[derive(Copy, Clone)]
 #[repr(u8)]
@@ -2421,8 +3362,832 @@ pub enum GPDrawCommand {
     DrawPoints = 0xBB,
 }
 
+/// The stub used by ogc-rs to invoke Rust functions for the breakpoint callback.
+unsafe extern "C" fn breakpt_callback_stub() {
+    let cb_ptr = BREAKPT_CB.load(Ordering::Acquire);
+    if ! cb_ptr.is_null() {
+        unsafe { (*cb_ptr)(); }
+    }
+}
+
+/// Registers `cb` as a function to be invoked when a break point is encountered.
+///
+/// `cb` is an `unsafe fn()` due to being run when interrupts are disabled. It should
+/// return as soon as possible.
+///
+/// See [GX_SetBreakPtCallback](https://libogc.devkitpro.org/gx_8h.html#a58d6aafb813095b05aa40675a9f83ed8) for more.
+pub fn set_breakpt_callback(cb: Option<unsafe fn()>) -> Option<unsafe fn()> {
+    let cb_ptr = match cb {
+        None => {
+            unsafe { ffi::GX_SetBreakPtCallback(None); }
+            ptr::null_mut()
+        }
+        Some(mut f) => {
+            unsafe { ffi::GX_SetBreakPtCallback(Some(breakpt_callback_stub)); }
+            (&mut f) as *mut unsafe fn()
+        }
+    };
+
+    let prev_cb_ptr = BREAKPT_CB.swap(cb_ptr, Ordering::AcqRel);
+
+    if prev_cb_ptr.is_null() {
+        None
+    } else {
+        // SAFETY:
+        // - pointer already checked to be non-null
+        // - we always set a valid rust function
+        Some(unsafe { *prev_cb_ptr })
+    }
+}
+
+
+/// The stub used by ogc-rs to invoke Rust functions for the DrawDone callback.
+/// 
+/// This stub is automatically set when calling [`gx::init()`].
+unsafe extern "C" fn draw_done_callback_stub() {
+    let cb_ptr = DRAW_DONE_CB.load(Ordering::Acquire);
+    if ! cb_ptr.is_null() {
+        // SAFETY:
+        // - pointer already checked to be non-null
+        // - we always set a valid rust function
+        unsafe { (*cb_ptr)(); }
+    }
+}
+
+/// Sets a Rust callback that gets invoked when the graphics pipeline encounters a
+/// DrawDone command.
+/// 
+/// The DrawDone command is sent by [`gx::set_draw_done()`].
+/// 
+/// Note that by the time the callback is invoked, the GP will already have resumed
+/// reading from the FIFO if there are any commands in it.
+pub fn set_draw_done_callback(cb: Option<fn()>) -> Option<fn()> {
+    let cb_ptr = match cb {
+        None => {
+            unsafe { ffi::GX_SetDrawDoneCallback(None); }
+            ptr::null_mut()
+        }
+        Some(mut f) => {
+            unsafe { ffi::GX_SetDrawDoneCallback(Some(draw_done_callback_stub)); }
+            (&mut f) as *mut fn()
+        }
+    };
+
+    let prev_cb_ptr = DRAW_DONE_CB.swap(cb_ptr, Ordering::AcqRel);
+
+    if prev_cb_ptr.is_null() {
+        None
+    } else {
+        // SAFETY:
+        // - pointer already checked to be non-null
+        // - we always set a valid rust function
+        Some(unsafe { *prev_cb_ptr })
+    }
+}
+
+
+/// The stub used by ogc-rs to invoke Rust functions for the DrawSync callback.
+/// 
+/// This stub is automatically set when calling [`gx::init()`].
+unsafe extern "C" fn draw_sync_callback_stub(token: u16) {
+    let cb_ptr = DRAW_SYNC_CB.load(Ordering::Acquire);
+    if ! cb_ptr.is_null() {
+        // SAFETY:
+        // - pointer already checked to be non-null
+        // - we always set a valid rust function
+        unsafe { (*cb_ptr)(token); }
+    }
+}
+
+/// Sets a Rust callback that gets invoked when the graphics pipeline encounters a
+/// `DrawSync` token.
+/// 
+/// The argument to the callback is the value of the most recently encountered token. Your
+/// code must be able to deduce if any tokens have been missed, since graphics processing
+/// doesn't stop while the callback is running.
+pub fn set_draw_sync_callback(cb: Option<fn(u16)>) -> Option<fn(u16)> {
+    let cb_ptr = match cb {
+        None => {
+            unsafe { ffi::GX_SetDrawSyncCallback(None); }
+            ptr::null_mut()
+        }
+        Some(mut f) => {
+            unsafe { ffi::GX_SetDrawSyncCallback(Some(draw_sync_callback_stub)); }
+            (&mut f) as *mut fn(u16)
+        }
+    };
+
+    let prev_cb_ptr = DRAW_SYNC_CB.swap(cb_ptr, Ordering::AcqRel);
+
+    if prev_cb_ptr.is_null() {
+        None
+    } else {
+        // SAFETY:
+        // - pointer already checked to be non-null
+        // - we always set a valid rust function
+        Some(unsafe { *prev_cb_ptr })
+    }
+}
+
+
 #[repr(u32)]
-pub enum ColorChannel {
-    Color0 = ffi::GX_COLOR0,
-    Color1 = ffi::GX_COLOR1,
+pub enum PixelFormat {
+    Rgb8Z24 = ffi::GX_PF_RGB8_Z24,
+    Rgba6Z24 = ffi::GX_PF_RGBA6_Z24,
+    Rgb565Z16 = ffi::GX_PF_RGB565_Z16,
+    Z24 = ffi::GX_PF_Z24,
+    Y8 = ffi::GX_PF_Y8,
+    U8 = ffi::GX_PF_U8,
+    V8 = ffi::GX_PF_V8,
+    Yuv420 = ffi::GX_PF_YUV420,
+}
+
+/// Vertex data input type
+#[repr(u32)]
+pub enum VtxAttrIn {
+    None = ffi::GX_NONE,
+    Direct = ffi::GX_DIRECT,
+    Index8 = ffi::GX_INDEX8,
+    Index16 = ffi::GX_INDEX16,
+}
+
+/// Gamma correction value to apply.
+#[repr(u32)]
+pub enum Gamma {
+    Mode10 = ffi::GX_GM_1_0,
+    Mode17 = ffi::GX_GM_1_7,
+    Mode22 = ffi::GX_GM_2_2,
+}
+
+
+/// Allows the sharing of a texcoord between an indirect stage and a regular TEV stage.
+/// 
+/// Scale arguments take a value between 0 and 8 inclusive, which corresponds to the power
+/// of two used for the indirect scaling. For example, to get the same behavior as using
+/// `GX_ITS_32`, use a scale value of 5.
+/// 
+/// See [GX_SetIndTexCoordScale](https://libogc.devkitpro.org/gx_8h.html#a3b1738565a2a703e16700c78c6eabfe7) for more.
+pub fn set_ind_tex_coord_scale(indtexid: u8, scale_s: u8, scale_t: u8) {
+    debug_assert!(indtexid <= 3);
+    debug_assert!(scale_s <= 8);
+    debug_assert!(scale_t <= 8);
+    unsafe { ffi::GX_SetIndTexCoordScale(indtexid, scale_s, scale_t) }
+}
+
+/// Indirect texture matrix
+#[repr(u32)]
+pub enum IndTexMat {
+    /// Specifies a matrix of all zeroes.
+    Off = ffi::GX_ITM_OFF,
+    /// Specifies indirect matrix 0, indirect scale 0.
+    Ind0 = ffi::GX_ITM_0,
+    /// Specifies indirect matrix 1, indirect scale 1.
+    Ind1 = ffi::GX_ITM_1,
+    /// Specifies indirect matrix 2, indirect scale 2.
+    Ind2 = ffi::GX_ITM_2,
+    /// Specifies dynamic S-type matrix, indirect scale 0.
+    S0 = ffi::GX_ITM_S0,
+    /// Specifies dynamic S-type matrix, indirect scale 1.
+    S1 = ffi::GX_ITM_S1,
+    /// Specifies dynamic S-type matrix, indirect scale 2.
+    S2 = ffi::GX_ITM_S2,
+    /// Specifies dynamic T-type matrix, indirect scale 0.
+    T0 = ffi::GX_ITM_T0,
+    /// Specifies dynamic T-type matrix, indirect scale 1.
+    T1 = ffi::GX_ITM_T1,
+    /// Specifies dynamic T-type matrix, indirect scale 2.
+    T2 = ffi::GX_ITM_T2,
+}
+
+/// Sets one of the three static indirect matrices and the associated scale factor.
+/// 
+/// See [GX_SetIndTexMatrix](https://libogc.devkitpro.org/gx_8h.html#ab420287ea1ba94471048ed0ef2541f15) for more.
+pub fn set_ind_tex_matrix(indtexmtx: IndTexMat, offset_mtx: [[f32; 3]; 2], scale_exp: i8) {
+    unsafe {
+        ffi::GX_SetIndTexMatrix(indtexmtx as u8, offset_mtx.as_ptr().cast_mut(), scale_exp)
+    }
+}
+
+/// Sets one of the three static indirect matrices and the associated scale factor.
+/// 
+/// See [GX_SetIndTexMatrix](https://libogc.devkitpro.org/gx_8h.html#ab420287ea1ba94471048ed0ef2541f15) for more.
+pub fn set_ind_tex_order(indtexstage: u8, texcoord: Option<u8>, texmap: Option<u8>) {
+    debug_assert!(indtexstage <= 3);
+    debug_assert!(if let Some(x) = texcoord { x <= 7 } else { true });
+    debug_assert!(if let Some(x) = texmap { x <= 7 } else { true });
+    unsafe {
+        ffi::GX_SetIndTexOrder(
+            indtexstage,
+            texcoord.unwrap_or(ffi::GX_TEXCOORDNULL as u8),
+            texmap.unwrap_or(ffi::GX_TEXMAP_NULL as u8)
+        )
+    }
+}
+
+/// TEV alpha combiner input
+#[repr(u32)]
+pub enum TevAlphaArg {
+    /// Use the alpha value from previous TEV stage
+    APrev = ffi::GX_CA_APREV,
+    /// Use the alpha value from the color/output register 0
+    A0 = ffi::GX_CA_A0,
+    /// Use the alpha value from the color/output register 1
+    A1 = ffi::GX_CA_A1,
+    /// Use the alpha value from the color/output register 2
+    A2 = ffi::GX_CA_A2,
+    /// Use the alpha value from texture
+    TexA = ffi::GX_CA_TEXA,
+    /// Use the alpha value from rasterizer
+    RasA = ffi::GX_CA_RASA,
+    Konst = ffi::GX_CA_KONST,
+    /// Use to pass zero value
+    Zero = ffi::GX_CA_ZERO,
+}
+
+/// Sets the alpha input sources for one tevstage of the Texture Environment (TEV) alpha
+/// combiner.
+/// 
+/// See [GX_SetTevAlphaIn](https://libogc.devkitpro.org/gx_8h.html#a4a9970519c90a72b0a5b161d3252bb76) for more.
+pub fn set_tev_alpha_in(
+    tevstage: u8,
+    a: TevAlphaArg,
+    b: TevAlphaArg,
+    c: TevAlphaArg,
+    d: TevAlphaArg
+) {
+    debug_assert!(tevstage < ffi::GX_MAX_TEVSTAGE as u8);
+    unsafe { ffi::GX_SetTevAlphaIn(tevstage, a as u8, b as u8, c as u8, d as u8); }
+}
+
+/// TEV combiner operator
+#[repr(u32)]
+pub enum TevOp {
+    Add = ffi::GX_TEV_ADD,
+    Sub = ffi::GX_TEV_SUB,
+    CompR8Gt = ffi::GX_TEV_COMP_R8_GT,
+    CompR8Eq = ffi::GX_TEV_COMP_R8_EQ,
+    CompGR16Gt = ffi::GX_TEV_COMP_GR16_GT,
+    CompGR16Eq = ffi::GX_TEV_COMP_GR16_EQ,
+    CompBGR24Gt = ffi::GX_TEV_COMP_BGR24_GT,
+    CompBGR24Eq = ffi::GX_TEV_COMP_BGR24_EQ,
+    /// Can also be used to compare alpha values
+    CompRGB8Gt = ffi::GX_TEV_COMP_RGB8_GT,
+    /// Can also be used to compare alpha values
+    CompRGB8Eq = ffi::GX_TEV_COMP_RGB8_EQ,
+}
+
+/// TEV bias value
+#[repr(u32)]
+pub enum TevBias {
+    Zero = ffi::GX_TB_ZERO,
+    AddHalf = ffi::GX_TB_ADDHALF,
+    SubHalf = ffi::GX_TB_SUBHALF,
+}
+
+/// TEV scale value
+#[repr(u32)]
+pub enum TevScale {
+    Scale1 = ffi::GX_CS_SCALE_1,
+    Scale2 = ffi::GX_CS_SCALE_2,
+    Scale4 = ffi::GX_CS_SCALE_4,
+    Divide2 = ffi::GX_CS_DIVIDE_2,
+}
+
+/// TEV color/output register
+#[repr(u32)]
+pub enum TevColOutReg {
+    /// Default register for passing results from one stage to another.
+    Prev = ffi::GX_TEVPREV,
+    Reg0 = ffi::GX_TEVREG0,
+    Reg1 = ffi::GX_TEVREG1,
+    Reg2 = ffi::GX_TEVREG2,
+}
+
+/// Sets the tevop, tevbias, tevscale and clamp-mode operation for the alpha combiner for
+/// this tevstage of the TEV unit.
+pub fn set_tev_alpha_op(
+    tevstage: u8,
+    tevop: TevOp,
+    tevbias: TevBias,
+    tevscale: TevScale,
+    clamp: bool,
+    tevregid: TevColOutReg
+) {
+    debug_assert!(tevstage < ffi::GX_MAX_TEVSTAGE as u8);
+    unsafe {
+        ffi::GX_SetTevAlphaOp(
+            tevstage,
+            tevop as u8,
+            tevbias as u8,
+            tevscale as u8,
+            clamp as u8,
+            tevregid as u8
+        )
+    }
+}
+
+/// Used to set one of the primary color registers in the TEV unit.
+pub fn set_tev_color(tev_regid: TevColOutReg, color: Color) {
+    debug_assert!(
+        matches!(tev_regid, TevColOutReg::Reg0 | TevColOutReg::Reg1 | TevColOutReg::Reg2)
+    );
+    unsafe { ffi::GX_SetTevColor(tev_regid as u8, color.0); }
+}
+
+/// TEV color combiner input
+#[repr(u32)]
+pub enum TevColorArg {
+    /// Use the color value from previous TEV stage
+    PrevColor = ffi::GX_CC_CPREV,
+    /// Use the alpha value from previous TEV stage
+    PrevAlpha = ffi::GX_CC_APREV,
+    /// Use the color value from the color/output register 0
+    Reg0Color = ffi::GX_CC_C0,
+    /// Use the alpha value from the color/output register 0 
+    Reg0Alpha = ffi::GX_CC_A0,
+    /// Use the color value from the color/output register 1
+    Reg1Color = ffi::GX_CC_C1,
+    /// Use the alpha value from the color/output register 1
+    Reg1Alpha = ffi::GX_CC_A1,
+    /// Use the color value from the color/output register 2
+    Reg2Color = ffi::GX_CC_C2,
+    /// Use the alpha value from the color/output register 2
+    Reg2Alpha = ffi::GX_CC_A2,
+    /// Use the color value from texture
+    TexColor = ffi::GX_CC_TEXC,
+    /// Use the alpha value from texture
+    TexAlpha = ffi::GX_CC_TEXA,
+    /// Use the color value from rasterizer
+    RasColor = ffi::GX_CC_RASC,
+    /// Use the alpha value from rasterizer
+    RasAlpha = ffi::GX_CC_RASA,
+    One = ffi::GX_CC_ONE,
+    Half = ffi::GX_CC_HALF,
+    Konst = ffi::GX_CC_KONST,
+    /// Use to pass zero value
+    Zero = ffi::GX_CC_ZERO,
+}
+
+/// Sets the color input sources for one tevstage of the Texture Environment (TEV) color
+/// combiner.
+pub fn set_tev_color_in(
+    tevstage: u8,
+    a: TevColorArg,
+    b: TevColorArg,
+    c: TevColorArg,
+    d: TevColorArg
+) {
+    debug_assert!(tevstage < ffi::GX_MAX_TEVSTAGE as u8);
+    unsafe { ffi::GX_SetTevColorIn(tevstage, a as u8, b as u8, c as u8, d as u8); }
+}
+
+/// Sets the tevop, tevbias, tevscale and clamp-mode operation for the color combiner for
+/// this tevstage of the TEV unit.
+pub fn set_tev_color_op(
+    tevstage: u8,
+    tevop: TevOp,
+    tevbias: TevBias,
+    tevscale: TevScale,
+    clamp: bool,
+    tevregid: TevColOutReg
+) {
+    debug_assert!(tevstage < ffi::GX_MAX_TEVSTAGE as u8);
+    unsafe {
+        ffi::GX_SetTevColorOp(
+            tevstage,
+            tevop as u8,
+            tevbias as u8,
+            tevscale as u8,
+            clamp as u8,
+            tevregid as u8
+        );
+    }
+}
+
+/// Used to set one of the constant color registers in the TEV unit.
+pub fn set_tev_color_s10(tev_regid: TevColOutReg, color: ColorS10) {
+    debug_assert!(
+        matches!(tev_regid, TevColOutReg::Reg0 | TevColOutReg::Reg1 | TevColOutReg::Reg2)
+    );
+    unsafe { ffi::GX_SetTevColorS10(tev_regid as u8, color.0); }
+}
+
+/// Used to turn off all indirect texture processing for the specified regular TEV stage.
+pub fn set_tev_direct(tevstage: u8) {
+    debug_assert!(tevstage < ffi::GX_MAX_TEVSTAGE as u8);
+    unsafe { ffi::GX_SetTevDirect(tevstage); }
+}
+
+/// Sets up an environment-mapped bump-mapped indirect lookup.
+/// 
+/// See [GX_SetTevIndBumpST](https://libogc.devkitpro.org/gx_8h.html#ab3f959a80b7097e5a802c398502da307) for more.
+pub fn set_tev_ind_bump_st(tevstage: u8, indtexstage: u8, mtx_sel: IndTexMat) {
+    debug_assert!(tevstage < ffi::GX_MAX_TEVSTAGE as u8);
+    debug_assert!(indtexstage < ffi::GX_MAX_INDTEXSTAGE as u8);
+    unsafe { ffi::GX_SetTevIndBumpST(tevstage, indtexstage, mtx_sel as u8); }
+}
+
+/// Sets up an environment-mapped bump-mapped indirect lookup.
+/// 
+/// See [GX_SetTevIndBumpXYZ](https://libogc.devkitpro.org/gx_8h.html#af37aa8723c7a078a2612693bb617a8ac) for more.
+pub fn set_tev_ind_bump_xyz(tevstage: u8, indtexstage: u8, mtx_sel: IndTexMat) {
+    debug_assert!(tevstage < ffi::GX_MAX_TEVSTAGE as u8);
+    debug_assert!(indtexstage < ffi::GX_MAX_INDTEXSTAGE as u8);
+    unsafe { ffi::GX_SetTevIndBumpXYZ(tevstage, indtexstage, mtx_sel as u8); }
+}
+
+/// Indirect texture format
+/// 
+/// Bits for the indirect offsets are extracted from the high end of each component byte.
+/// Bits for the bump alpha are extraced off the low end of the byte. For
+/// `IndTexFmt::EightBits`, the byte is duplicated for the offset and the bump alpha.
+#[repr(u32)]
+pub enum IndTexFmt {
+    EightBits = ffi::GX_ITF_8,
+    FiveBits = ffi::GX_ITF_5,
+    FourBits = ffi::GX_ITF_4,
+    ThreeBits = ffi::GX_ITF_3,
+}
+
+/// Indirect texture bias select
+/// 
+/// The bias is fixed at -128 for `GX_ITF_8` (TODO: what?) and +1 for the other formats.
+/// The bias happens prior to the indirect matrix multiply.
+#[repr(u32)]
+pub enum IndTexBias {
+    None = ffi::GX_ITB_NONE,
+    S = ffi::GX_ITB_S,
+    T = ffi::GX_ITB_T,
+    ST = ffi::GX_ITB_ST,
+    U = ffi::GX_ITB_U,
+    SU = ffi::GX_ITB_SU,
+    TU = ffi::GX_ITB_TU,
+    STU = ffi::GX_ITB_STU,
+}
+
+/// Indirect texture wrap value
+/// 
+/// Indicates whether the regular texture coordinate should be wrapped before being added
+/// to the offset.
+#[repr(u32)]
+pub enum IndTexWrap {
+    Off = ffi::GX_ITW_OFF,
+    Mod256 = ffi::GX_ITW_256,
+    Mod128 = ffi::GX_ITW_128,
+    Mod64 = ffi::GX_ITW_64,
+    Mod32 = ffi::GX_ITW_32,
+    Mod16 = ffi::GX_ITW_16,
+    Zero = ffi::GX_ITW_0,
+}
+
+/// Indirect texture bump alpha select
+/// 
+/// Indicates which offset component should provide the "bump" alpha output for the given
+/// TEV stage. Note that bump alpha is not available for TEV stage 0.
+#[repr(u32)]
+pub enum IndTexAlphaSel {
+    Off = ffi::GX_ITBA_OFF,
+    S = ffi::GX_ITBA_S,
+    T = ffi::GX_ITBA_T,
+    U = ffi::GX_ITBA_U,
+}
+
+/// Controls how the results from an indirect lookup will be used to modify a given
+/// regular TEV stage lookup.
+/// 
+/// See [GX_SetTevIndirect](https://libogc.devkitpro.org/gx_8h.html#a00fa37cf7924a9992978ef2263ca3e3d) for more.
+pub fn set_tev_indirect(
+    tevstage: u8,
+    indtexid: u8,
+    format: IndTexFmt,
+    bias: IndTexBias,
+    mtxid: IndTexMat,
+    wrap_s: IndTexWrap,
+    wrap_t: IndTexWrap,
+    addprev: bool,
+    utclod: bool,
+    a: IndTexAlphaSel
+) {
+    debug_assert!(tevstage < ffi::GX_MAX_TEVSTAGE as u8);
+    debug_assert!(indtexid < ffi::GX_MAX_INDTEXSTAGE as u8);
+    unsafe {
+        ffi::GX_SetTevIndirect(
+            tevstage,
+            indtexid,
+            format as u8,
+            bias as u8,
+            mtxid as u8,
+            wrap_s as u8,
+            wrap_t as u8,
+            addprev as u8,
+            utclod as u8,
+            a as u8
+        )
+    }
+}
+
+/// Set a given TEV stage to use the same texture coordinates as were computed in the
+/// previous stage.
+/// 
+/// See [GX_SetTevIndRepeat](https://libogc.devkitpro.org/gx_8h.html#af8e89d4c40c6e1c70eb724cb0dea977a) for more.
+pub fn set_tev_ind_repeat(tevstage: u8) {
+    debug_assert!(tevstage < ffi::GX_MAX_TEVSTAGE as u8);
+    unsafe { ffi::GX_SetTevIndRepeat(tevstage); }
+}
+
+/// Used to implement tiled texturing using indirect textures.
+/// 
+/// See [GX_SetTevIndTile](https://libogc.devkitpro.org/gx_8h.html#af000453c289eb7a81a7260cc8ba8b944) for more.
+pub fn set_tev_ind_tile(
+    tevstage: u8,
+    indtexid: u8,
+    tilesize_x: u16,
+    tilesize_y: u16,
+    tilespacing_x: u16,
+    tilespacing_y: u16,
+    indtexfmt: IndTexFmt,
+    indtexmtx: IndTexMat,
+    bias_sel: IndTexBias,
+    alpha_sel: IndTexAlphaSel
+) {
+    debug_assert!(tevstage < ffi::GX_MAX_TEVSTAGE as u8);
+    debug_assert!(indtexid < ffi::GX_MAX_INDTEXSTAGE as u8);
+    unsafe {
+        ffi::GX_SetTevIndTile(
+            tevstage,
+            indtexid,
+            tilesize_x,
+            tilesize_y,
+            tilespacing_x,
+            tilespacing_y,
+            indtexfmt as u8,
+            indtexmtx as u8,
+            bias_sel as u8,
+            alpha_sel as u8
+        )
+    }
+}
+
+/// Used to warp a normal texture lookup using an indirect texture map with 8-bit offsets.
+/// 
+/// See [GX_SetTevIndWarp](https://libogc.devkitpro.org/gx_8h.html#a3f7516527d627c6086a969982a962ddc) for more.
+pub fn set_tev_ind_warp(
+    tevstage: u8,
+    indtexid: u8,
+    bias_flag: bool,
+    replace_tex: bool,
+    mtxid: IndTexMat
+) {
+    debug_assert!(tevstage < ffi::GX_MAX_TEVSTAGE as u8);
+    debug_assert!(indtexid < ffi::GX_MAX_INDTEXSTAGE as u8);
+    unsafe {
+        ffi::GX_SetTevIndWarp(
+            tevstage,
+            indtexid,
+            bias_flag as u8,
+            replace_tex as u8,
+            mtxid as u8
+        )
+    }
+}
+
+/// TEV constant alpha selection
+#[repr(u32)]
+pub enum TevKAlphaSel {
+    One = ffi::GX_TEV_KASEL_1,
+    Half = ffi::GX_TEV_KASEL_1_2,
+    Fourth = ffi::GX_TEV_KASEL_1_4,
+    Eighth = ffi::GX_TEV_KASEL_1_8,
+    ThreeFourths = ffi::GX_TEV_KASEL_3_4,
+    ThreeEighths = ffi::GX_TEV_KASEL_3_8,
+    FiveEighths = ffi::GX_TEV_KASEL_5_8,
+    SevenEighths = ffi::GX_TEV_KASEL_7_8,
+    K0Alpha = ffi::GX_TEV_KASEL_K0_A,
+    K0Blue = ffi::GX_TEV_KASEL_K0_B,
+    K0Green = ffi::GX_TEV_KASEL_K0_G,
+    K0Red = ffi::GX_TEV_KASEL_K0_R,
+    K1Alpha = ffi::GX_TEV_KASEL_K1_A,
+    K1Blue = ffi::GX_TEV_KASEL_K1_B,
+    K1Green = ffi::GX_TEV_KASEL_K1_G,
+    K1Red = ffi::GX_TEV_KASEL_K1_R,
+    K2Alpha = ffi::GX_TEV_KASEL_K2_A,
+    K2Blue = ffi::GX_TEV_KASEL_K2_B,
+    K2Green = ffi::GX_TEV_KASEL_K2_G,
+    K2Red = ffi::GX_TEV_KASEL_K2_R,
+    K3Alpha = ffi::GX_TEV_KASEL_K3_A,
+    K3Blue = ffi::GX_TEV_KASEL_K3_B,
+    K3Green = ffi::GX_TEV_KASEL_K3_G,
+    K3Red = ffi::GX_TEV_KASEL_K3_R,
+}
+
+/// Selects a "konstant" alpha input to be used in a given TEV stage.
+pub fn set_tev_k_alpha_sel(tevstage: u8, sel: TevKAlphaSel) {
+    debug_assert!(tevstage < ffi::GX_MAX_TEVSTAGE as u8);
+    unsafe { ffi::GX_SetTevKAlphaSel(tevstage, sel as u8); }
+}
+
+/// Sets one of the "konstant" color registers in the TEV unit.
+/// 
+/// These registers are available to all TEV stages. They are constant in the sense that
+/// they cannot be written to the TEV itself.
+pub fn set_tev_k_color(sel: u8, col: Color) {
+    debug_assert!(sel < ffi::GX_KCOLOR_MAX as u8);
+    unsafe { ffi::GX_SetTevKColor(sel, col.0); }
+}
+
+/// Used to set one of the constant color registers in the Texture Environment (TEV) unit.
+/// 
+/// See [GX_SetTevKColorS10](https://libogc.devkitpro.org/gx_8h.html#a741c9a31532ffe78ea266eb1f8c8ce2c) for more.
+pub fn set_tev_k_color_s10(sel: u8, col: ColorS10) {
+    debug_assert!(sel < ffi::GX_KCOLOR_MAX as u8);
+    unsafe { ffi::GX_SetTevKColorS10(sel, col.0); }
+}
+
+/// TEV constant alpha selection
+#[repr(u32)]
+pub enum TevKColorSel {
+    One = ffi::GX_TEV_KCSEL_1,
+    Half = ffi::GX_TEV_KCSEL_1_2,
+    Fourth = ffi::GX_TEV_KCSEL_1_4,
+    Eighth = ffi::GX_TEV_KCSEL_1_8,
+    ThreeFourths = ffi::GX_TEV_KCSEL_3_4,
+    ThreeEighths = ffi::GX_TEV_KCSEL_3_8,
+    FiveEighths = ffi::GX_TEV_KCSEL_5_8,
+    SevenEighths = ffi::GX_TEV_KCSEL_7_8,
+    K0 = ffi::GX_TEV_KCSEL_K0,
+    K0Alpha = ffi::GX_TEV_KCSEL_K0_A,
+    K0Blue = ffi::GX_TEV_KCSEL_K0_B,
+    K0Green = ffi::GX_TEV_KCSEL_K0_G,
+    K0Red = ffi::GX_TEV_KCSEL_K0_R,
+    K1 = ffi::GX_TEV_KCSEL_K1,
+    K1Alpha = ffi::GX_TEV_KCSEL_K1_A,
+    K1Blue = ffi::GX_TEV_KCSEL_K1_B,
+    K1Green = ffi::GX_TEV_KCSEL_K1_G,
+    K1Red = ffi::GX_TEV_KCSEL_K1_R,
+    K2 = ffi::GX_TEV_KCSEL_K2,
+    K2Alpha = ffi::GX_TEV_KCSEL_K2_A,
+    K2Blue = ffi::GX_TEV_KCSEL_K2_B,
+    K2Green = ffi::GX_TEV_KCSEL_K2_G,
+    K2Red = ffi::GX_TEV_KCSEL_K2_R,
+    K3 = ffi::GX_TEV_KCSEL_K3,
+    K3Alpha = ffi::GX_TEV_KCSEL_K3_A,
+    K3Blue = ffi::GX_TEV_KCSEL_K3_B,
+    K3Green = ffi::GX_TEV_KCSEL_K3_G,
+    K3Red = ffi::GX_TEV_KCSEL_K3_R,
+}
+
+/// Selects a "konstant" color input to be used in a given TEV stage.
+/// 
+/// See [GX_SetTevKColorSel](https://libogc.devkitpro.org/gx_8h.html#a5197b7367619940d411a3d33ab572e99) for more.
+pub fn set_tev_k_color_sel(tevstage: u8, sel: TevKColorSel) {
+    debug_assert!(tevstage < ffi::GX_MAX_TEVSTAGE as u8);
+    unsafe { ffi::GX_SetTevKColorSel(tevstage, sel as u8); }
+}
+
+/// Selects a set of swap modes for the rasterized color and texture color for a given TEV
+/// stage.
+/// 
+/// `ras_sel` and `tex_sel` are numbers between 0 and 4 inclusive, representing the swap
+/// table entry to be used.
+/// 
+/// See [GX_SetTevSwapMode](https://libogc.devkitpro.org/gx_8h.html#a2b40e50b32f2f021ba5adfc93bb769c2) for more.
+pub fn set_tev_swap_mode(tevstage: u8, ras_sel: u8, tex_sel: u8) {
+    debug_assert!(tevstage < ffi::GX_MAX_TEVSTAGE as u8);
+    debug_assert!(ras_sel < ffi::GX_MAX_TEVSWAP as u8);
+    debug_assert!(tex_sel < ffi::GX_MAX_TEVSWAP as u8);
+    unsafe { ffi::GX_SetTevSwapMode(tevstage, ras_sel, tex_sel); }
+}
+
+/// Sets up the TEV color swap table.
+/// 
+/// See [GX_SetTevSwapModeTable](https://libogc.devkitpro.org/gx_8h.html#ad83fd1e72254606cf69a076015406879) for more.
+pub fn set_tev_swap_mode_table(swapid: u8, r: u8, g: u8, b: u8, a: u8) {
+    debug_assert!(swapid < ffi::GX_MAX_TEVSWAP as u8);
+    debug_assert!(r < 4 as u8);
+    debug_assert!(g < 4 as u8);
+    debug_assert!(b < 4 as u8);
+    debug_assert!(a < 4 as u8);
+    unsafe { ffi::GX_SetTevSwapModeTable(swapid, r, g, b, a); }
+}
+
+/// Sets the texture coordinate bias of a particular texture.
+/// 
+/// See [GX_SetTexCoordBias](https://libogc.devkitpro.org/gx_8h.html#a8126aeaf9971a440c799a3aeefb3ec66) for more.
+pub fn set_tex_coord_bias(texcoord: u8, s_enable: bool, t_enable: bool) {
+    debug_assert!(texcoord < ffi::GX_MAXCOORD as u8);
+    unsafe { ffi::GX_SetTexCoordBias(texcoord, s_enable as u8, t_enable as u8) }
+}
+
+pub fn set_tex_coord_cyl_wrap(texcoord: u8, s_enable: bool, t_enable: bool) {
+    debug_assert!(texcoord < ffi::GX_MAXCOORD as u8);
+    unsafe { ffi::GX_SetTexCoordCylWrap(texcoord, s_enable as u8, t_enable as u8) }
+}
+
+/// Texture coordinate generation type
+#[repr(u32)]
+pub enum TexGenType {
+    /// 3x4 matrix multiply on the input attribute and generate S,T,Q coordinates; S,T are
+    /// then divided by Q to produce the actual 2D texture coordinates.
+    Mtx3x4 = ffi::GX_TG_MTX3x4,
+    /// 2x4 matrix multiply on the input attribute and generate S,T texture coordinates.
+    Mtx2x4 = ffi::GX_TG_MTX2x4,
+    /// Use light 0 in the bump map calculation.
+    Bump0 = ffi::GX_TG_BUMP0,
+    /// Use light 1 in the bump map calculation.
+    Bump1 = ffi::GX_TG_BUMP1,
+    /// Use light 2 in the bump map calculation.
+    Bump2 = ffi::GX_TG_BUMP2,
+    /// Use light 3 in the bump map calculation.
+    Bump3 = ffi::GX_TG_BUMP3,
+    /// Use light 4 in the bump map calculation.
+    Bump4 = ffi::GX_TG_BUMP4,
+    /// Use light 5 in the bump map calculation.
+    Bump5 = ffi::GX_TG_BUMP5,
+    /// Use light 6 in the bump map calculation.
+    Bump6 = ffi::GX_TG_BUMP6,
+    /// Use light 7 in the bump map calculation.
+    Bump7 = ffi::GX_TG_BUMP7,
+    /// Coordinates generated from vertex lighting results; one of the color channel results
+    /// is converted into texture coordinates.
+    Srtg = ffi::GX_TG_SRTG,
+}
+
+/// Texture coordinate source
+#[repr(u32)]
+pub enum TexGenSrc {
+    Pos = ffi::GX_TG_POS,
+    Normal = ffi::GX_TG_NRM,
+    Binorm = ffi::GX_TG_BINRM,
+    Tangent = ffi::GX_TG_TANGENT,
+    Tex0 = ffi::GX_TG_TEX0,
+    Tex1 = ffi::GX_TG_TEX1,
+    Tex2 = ffi::GX_TG_TEX2,
+    Tex3 = ffi::GX_TG_TEX3,
+    Tex4 = ffi::GX_TG_TEX4,
+    Tex5 = ffi::GX_TG_TEX5,
+    Tex6 = ffi::GX_TG_TEX6,
+    Tex7 = ffi::GX_TG_TEX7,
+    TexCoord0 = ffi::GX_TG_TEXCOORD0,
+    TexCoord1 = ffi::GX_TG_TEXCOORD1,
+    TexCoord2 = ffi::GX_TG_TEXCOORD2,
+    TexCoord3 = ffi::GX_TG_TEXCOORD3,
+    TexCoord4 = ffi::GX_TG_TEXCOORD4,
+    TexCoord5 = ffi::GX_TG_TEXCOORD5,
+    TexCoord6 = ffi::GX_TG_TEXCOORD6,
+    Color0 = ffi::GX_TG_COLOR0,
+    Color1 = ffi::GX_TG_COLOR1,
+}
+
+/// An extension of [`gx::set_tex_coord_gen()`]. It allows one to specify additional
+/// texgen options.
+/// 
+/// See [GX_SetTexCoordGen2](https://libogc.devkitpro.org/gx_8h.html#a55a426a3ff796db584302bddd829f002) for more.
+pub fn set_tex_coord_gen_2(
+    texcoord: u8,
+    tgen_type: TexGenType,
+    tgen_src: TexGenSrc,
+    mtxsrc: u32,
+    normalize: bool,
+    postmtx: u32
+) {
+    debug_assert!(texcoord < ffi::GX_MAXCOORD as u8);
+    debug_assert!([30, 33, 36, 39, 42, 45, 48, 51, 54, 57, 60].contains(&mtxsrc));
+    unsafe {
+        ffi::GX_SetTexCoordGen2(
+            texcoord as u16,
+            tgen_type as u32,
+            tgen_src as u32,
+            mtxsrc,
+            normalize as u32,
+            postmtx
+        )
+    }
+}
+
+/// Overrides the automatic texture coordinate scaling (based upon the associated map
+/// size) and lets one manually assign the scale values that are used for a given
+/// texcoord.
+/// 
+/// See [GX_SetTexCoordScaleManually](https://libogc.devkitpro.org/gx_8h.html#a9293b94d9abfd7a8700d42d69dd4c58b) for more.
+pub fn set_tex_coord_scale_manually(texcoord: u8, enable: bool, ss: u16, ts: u16) {
+    debug_assert!(texcoord < ffi::GX_MAXCOORD as u8);
+    unsafe { ffi::GX_SetTexCoordScaleManually(texcoord, enable as u8, ss, ts) }
+}
+
+/// This function sets the width and height of the destination texture buffer in texels.
+/// 
+/// See [GX_SetTexCopyDst](https://libogc.devkitpro.org/gx_8h.html#a613bd9073b45486e7691a834d4f2a791) for more.
+pub fn set_tex_copy_dst(wd: u16, ht: u16, fmt: TexFormat, mipmap: bool) {
+    unsafe { ffi::GX_SetTexCopyDst(wd, ht, fmt as u32, mipmap as u8)}
+}
+
+/// Sets the source parameters for the Embedded Frame Buffer (EFB) to texture image copy.
+/// 
+/// See [GX_SetTexCopySrc](https://libogc.devkitpro.org/gx_8h.html#a8f5bcb4991993e8eb92f1955385e7d5f) for more.
+pub fn set_tex_copy_src(left: u16, top: u16, wd: u16, ht: u16) {
+    debug_assert!(left.is_multiple_of(2));
+    debug_assert!(top.is_multiple_of(2));
+    debug_assert!(wd.is_multiple_of(2));
+    debug_assert!(ht.is_multiple_of(2));
+    unsafe { ffi::GX_SetTexCopySrc(left, top, wd, ht) }
 }
