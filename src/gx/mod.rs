@@ -291,7 +291,7 @@ pub enum Perf0 {
     ClipRatio = ffi::GX_PERF0_CLIP_RATIO,
     /// Number of vertices that were clipped by the GP.
     ClipVtx = ffi::GX_PERF0_CLIP_VTX,
-    /// Number of GP clocks that have elapsed since the previous call to `Gx::read_gp0_metric()`.
+    /// Number of GP clocks that have elapsed since the previous call to `gx::read_gp0_metric()`.
     Clocks = ffi::GX_PERF0_CLOCKS,
     /// Disables performance measurement for perf0 and resets the counter.
     None = ffi::GX_PERF0_NONE,
@@ -363,7 +363,7 @@ pub enum Perf0 {
 pub enum Perf1 {
     /// Number of lines (32B) read from called display lists.
     CallReq = ffi::GX_PERF1_CALL_REQ,
-    /// Number of GP clocks that have elapsed since the last call to `Gx::read_gp1_metric()`.
+    /// Number of GP clocks that have elapsed since the last call to `gx::read_gp1_metric()`.
     Clocks = ffi::GX_PERF1_CLOCKS,
     /// Counts all requests (32B/request) from the GP Command Processor (CP). It should be equal to
     /// the sum of counts returned by `Perf1::FifoReq`, `Perf1::CallReq`, and `Perf1::VcMissReq`.
@@ -440,7 +440,7 @@ pub enum BlendCtrl {
 
 /// Compressed Z format.
 ///
-/// See [`Gx::set_pixel_fmt()`] for details.
+/// See [`gx::set_pixel_fmt()`] for details.
 #[derive(Copy, Clone, Debug)]
 #[repr(u32)]
 pub enum ZFormat {
@@ -578,7 +578,7 @@ impl RawFifo {
     /// Returns the current value of the Graphics FIFO read and write pointers.
     ///
     /// # Note
-    /// See `Gx::enable_breakpoint()` for an example of why you would do this.
+    /// See `gx::enable_breakpoint()` for an example of why you would do this.
     pub fn pointers(&self) -> (*const u8, *mut u8) {
         let mut rd_ptr = core::ptr::null_mut();
         let mut wt_ptr = core::ptr::null_mut();
@@ -610,8 +610,8 @@ impl RawFifo {
     /// Sets the high and low water mark for the fifo.
     ///
     /// The high and low water marks are used in *immediate-mode*, i.e. when the fifo is attached
-    /// to both the CPU and Graphics Processor (GP) (see `Gx::set_cpu_fifo()` and
-    /// `Gx::set_gp_fifo()`).
+    /// to both the CPU and Graphics Processor (GP) (see `gx::set_cpu_fifo()` and
+    /// `gx::set_gp_fifo()`).
     ///
     /// The hardware keeps track of the number of bytes between the read and write pointers. This
     /// number represents how full the FIFO is, and when it is greater than or equal to the
@@ -1773,1152 +1773,1117 @@ pub enum MtxType {
     M2x4 = ffi::GX_MTX2x4,
 }
 
-/// Represents the GX service.
-pub struct Gx;
-
-impl Gx {
-    /// Initializes the graphics processor to its initial state.
-    ///
-    /// This function sets the default state of the graphics processor and should be called before
-    /// any other GX functions. This function sets up an immediate-mode method of communicating
-    /// graphics commands from the CPU to the Graphics Processor (GP). This function will
-    /// initialize a FIFO and attach it to both the CPU and GP. The CPU will write commands to the
-    /// FIFO and the GP will read the commands. This function returns a pointer to the initialized
-    /// FIFO. The application must allocate the memory for the FIFO. The parameter `base` is a
-    /// pointer to the allocated main memory and must be aligned to 32B. `size` is the size of the
-    /// FIFO in bytes and must be a multiple of 32B. Refer to additional notes in [`Fifo`]
-    /// concerning the FIFO memory.
-    ///
-    /// # Note
-    /// It is also possible to override the default immediate-mode style and instead buffer the
-    /// graphics for frame n+1 while the GP is reading the graphics for frame n. See
-    /// [`Gx::set_cpu_fifo()`] and [`Gx::set_gp_fifo()`] for further information.
-    ///
-    /// This function also designates the calling thread as the default GX thread; i.e., it assumes
-    /// the calling thread is the one responsible for generating graphics data. This thread will be
-    /// the thread to be suspended when the FIFO gets too full. The current GX thread can be
-    /// changed by calling [`Gx::set_current_gx_thread()`].
-    pub fn init(size: usize) -> AtomicPtr<RawFifo> {
-        let init_fifo = INIT_FIFO.load(Ordering::Acquire);
-        
-        // check if GX has already been initialized
-        if ! init_fifo.is_null() {
-            return AtomicPtr::new(init_fifo);
-        }
-        
-        // keep buf around with ManuallyDrop, otherwise it will be deallocated
-        // by the end of the function.
-        let mut buf = ManuallyDrop::new(Buf32::new(size.max(Fifo::MIN_SIZE)));
-
-        // SAFETY: all safety is ensured by Buf32.
-        let gxfifo = unsafe {
-            ffi::GX_Init(
-                buf.as_mut_ptr().map_addr(mem::to_uncached).cast(),
-                buf.len() as u32,
-            )
-        };
-
-        // Mark GX as initialized.
-        let fifo_ptr = gxfifo.cast();
-        INIT_FIFO.store(fifo_ptr, Ordering::Release);
-        AtomicPtr::new(fifo_ptr)
+/// Initializes the graphics processor to its initial state.
+///
+/// This function sets the default state of the graphics processor and should be called before
+/// any other GX functions. This function sets up an immediate-mode method of communicating
+/// graphics commands from the CPU to the Graphics Processor (GP). This function will
+/// initialize a FIFO and attach it to both the CPU and GP. The CPU will write commands to the
+/// FIFO and the GP will read the commands. This function returns a pointer to the initialized
+/// FIFO. The application must allocate the memory for the FIFO. The parameter `base` is a
+/// pointer to the allocated main memory and must be aligned to 32B. `size` is the size of the
+/// FIFO in bytes and must be a multiple of 32B. Refer to additional notes in [`Fifo`]
+/// concerning the FIFO memory.
+///
+/// # Note
+/// It is also possible to override the default immediate-mode style and instead buffer the
+/// graphics for frame n+1 while the GP is reading the graphics for frame n. See
+/// [`set_cpu_fifo()`] and [`set_gp_fifo()`] for further information.
+///
+/// This function also designates the calling thread as the default GX thread; i.e., it assumes
+/// the calling thread is the one responsible for generating graphics data. This thread will be
+/// the thread to be suspended when the FIFO gets too full. The current GX thread can be
+/// changed by calling [`set_current_gx_thread()`].
+pub fn init(size: usize) -> AtomicPtr<RawFifo> {
+    let init_fifo = INIT_FIFO.load(Ordering::Acquire);
+    
+    // check if GX has already been initialized
+    if ! init_fifo.is_null() {
+        return AtomicPtr::new(init_fifo);
     }
+    
+    // keep buf around with ManuallyDrop, otherwise it will be deallocated
+    // by the end of the function.
+    let mut buf = ManuallyDrop::new(Buf32::new(size.max(Fifo::MIN_SIZE)));
 
-    /// Return a copy of the currently attached GP FIFO.
-    ///
-    /// See [GX_GetGPFifo](https://libogc.devkitpro.org/gx_8h.html#ab44a1fe8f8fc13e5d22429d144227d5a) for more.
-    pub fn get_gp_fifo() -> Option<RawFifo> {
-        if INIT_FIFO.load(Ordering::Acquire).is_null() {
-            None
-        } else {
-            let mut rawfifo: MaybeUninit<RawFifo> = MaybeUninit::zeroed();
-            unsafe {
-                ffi::GX_GetGPFifo(rawfifo.as_mut_ptr().cast());
-                Some(rawfifo.assume_init())
-            }
-        }
-    }
+    // SAFETY: all safety is ensured by Buf32.
+    let gxfifo = unsafe {
+        ffi::GX_Init(
+            buf.as_mut_ptr().map_addr(mem::to_uncached).cast(),
+            buf.len() as u32,
+        )
+    };
 
-    /// Attaches a FIFO to the GP.
-    ///
-    /// See [GX_SetGPFifo](https://libogc.devkitpro.org/gx_8h.html#af98b3858d1d04a4bbe620b0a45d94c8c) for more.
-    pub fn set_gp_fifo(fifo: Option<&RawFifo>) {
-        let fifo_ptr = match fifo {
-            Some(fifo) => fifo,
-            None => ptr::null(),
-        };
-        unsafe { ffi::GX_SetGPFifo(fifo_ptr.cast_mut().cast()) }
-    }
+    // Mark GX as initialized.
+    let fifo_ptr = gxfifo.cast();
+    INIT_FIFO.store(fifo_ptr, Ordering::Release);
+    AtomicPtr::new(fifo_ptr)
+}
 
-    /// Return a copy of the currently attached CPU FIFO.
-    ///
-    /// See [GX_GetCPUFifo](https://libogc.devkitpro.org/gx_8h.html#a43258a02791218395ef43ffc7d8ed397) for more.
-    pub fn get_cpu_fifo() -> Option<RawFifo> {
-        if INIT_FIFO.load(Ordering::Acquire).is_null() {
-            None
-        } else {
-            let mut rawfifo: MaybeUninit<RawFifo> = MaybeUninit::zeroed();
-            unsafe {
-                ffi::GX_GetCPUFifo(rawfifo.as_mut_ptr().cast());
-                Some(rawfifo.assume_init())
-            }
-        }
-    }
-
-    /// Attaches a FIFO to the CPU.
-    ///
-    /// See [GX_SetCPUFifo](https://libogc.devkitpro.org/gx_8h.html#a69852ae8a9b982556a3a37a450af30d8) for more.
-    pub fn set_cpu_fifo(fifo: Option<&RawFifo>) {
-        let fifo_ptr = match fifo {
-            Some(fifo) => fifo,
-            None => ptr::null(),
-        };
-        unsafe { ffi::GX_SetCPUFifo(fifo_ptr.cast_mut().cast()) }
-    }
-
-    /// Returns the current GX thread.
-    ///
-    /// The current GX thread should be the thread that is currently responsible
-    /// for generating graphics data. By default, the GX thread is the thread
-    /// that invoked [`Gx::init()`]; however, it may be changed by calling
-    /// [`Gx::set_current_gx_thread()`].
-    ///
-    /// # Note
-    /// When graphics data is being generated in immediate mode (that is, the
-    /// CPU FIFO = GP FIFO, and the GP is actively consuming data), the high
-    /// watermark may be triggered. When this happens, the high watermark
-    /// interrupt handler will suspend the GX thread, thus preventing any
-    /// further graphics data from being generated. The low watermark interrupt
-    /// handler will resume the thread.
-    pub fn get_current_gx_thread() -> lwp::Thread {
-        lwp::Thread::new(unsafe { ffi::GX_GetCurrentGXThread() })
-    }
-
-    /// Aborts the current frame.
-    ///
-    /// This command will reset the entire graphics pipeline, including any commands in the
-    /// graphics FIFO.
-    ///
-    /// # Note
-    /// Texture memory will not be reset, so currently loaded textures will still be valid;
-    /// however, when loading texture using [`Gx::preload_entire_texture()`] or TLUTs using
-    /// [`Gx::load_tlut()`], you must make sure the command completed. You can use the draw sync
-    /// mechanism to do this; see [`Gx::set_draw_sync()`] and [`Gx::get_draw_sync()`].
-    pub fn abort_frame() {
-        unsafe { ffi::GX_AbortFrame() }
-    }
-
-    /// Clears the bounding box values before a new image is drawn.
-    ///
-    /// The graphics hardware keeps track of a bounding box of pixel coordinates that are drawn in
-    /// the Embedded Frame Buffer (EFB).
-    pub fn clear_bounding_box() {
-        unsafe { ffi::GX_ClearBoundingBox() }
-    }
-
-    /// Clears the two virtual GP performance counters to zero.
-    ///
-    /// When in display list mode, this is a no-op.
-    ///
-    /// See [GX_ClearGPMetric](https://libogc.devkitpro.org/gx_8h.html#ad339961d27f13b76640ee67e553488ac) for more.
-    pub fn clear_gp_metric() {
-        if ! IN_DISPLAY_LIST.load(Ordering::Acquire) {
-            unsafe { ffi::GX_ClearGPMetric() }
-        }
-    }
-
-    /// Clears the Vertex Cache performance counter.
-    ///
-    /// This function clears the performance counter by sending a special clear token via the
-    /// Graphics FIFO.
-    ///
-    /// # Note
-    /// To set the metric for the counter, call [`Gx::set_vcache_metric()`]; to read the counter
-    /// value, call [`Gx::read_vcache_metric()`].
-    pub fn clear_vcache_metric() {
-        unsafe { ffi::GX_ClearVCacheMetric() }
-    }
-
-    /// Sets a breakpoint that causes the GP to halt when encountered.
-    ///
-    /// # Note
-    /// The break point feature allows the application to have two frames of graphics in the FIFO
-    /// at the same time, overlapping one frame's processing by the graphics processor with another
-    /// frame's processing by the CPU. For example, suppose you finish writing the graphics
-    /// commands for one frame and are ready to start on the next. First, execute a [`Gx::flush()`]
-    /// command to make sure all the data in the CPU write gatherer is flushed into the FIFO. This
-    /// will also align the FIFO write pointer to a 32B boundary. Next, read the value of the
-    /// current write pointer using [`Fifo::pointers()`]. Write the value of the write pointer as
-    /// the break point address using `Gx::enable_breakpt()`. When the FIFO read pointer reaches
-    /// the break point address the hardware will disable reads from the FIFO. The status `brkpt`,
-    /// returned by [`Gx::get_gp_status()`], can be polled to detect when the break point is
-    /// reached. The application can then decide when to disable the break point, using
-    /// [`Gx::disable_breakpt()`], which will allow the FIFO to resume reading graphics commands.
-    ///
-    /// FIFO reads will stall when the GP FIFO read pointer is equal to the break point address
-    /// `break_pt`. To re-enable reads of the GP FIFO, use [`Gx::disable_breakpt()`].
-    ///
-    /// Use [`Gx::set_breakpt_callback()`] to set what function runs when the breakpoint is
-    /// encountered.
-    pub fn enable_breakpt(break_pt: *mut u8) {
-        unsafe { ffi::GX_EnableBreakPt(break_pt as _) }
-    }
-
-    /// Registers `cb` as a function to be invoked when a break point is encountered.
-    ///
-    /// Passing `None` means no function will run. The return value is a pointer to the previously
-    /// registered callback, if any.
-    ///
-    /// # Safety
-    /// The callback will run with interrupts disabled, so it should terminate as quickly as
-    /// possible.
-    pub unsafe fn set_breakpt_callback(
-        cb: Option<unsafe extern "C" fn()>,
-    ) -> Option<unsafe extern "C" fn()> {
-        unsafe { ffi::GX_SetBreakPtCallback(cb) }
-    }
-
-    /// Allows reads from the FIFO currently attached to the Graphics Processor (GP) to resume.
-    ///
-    /// See [`Gx::enable_breakpt()`] for an explanation of the FIFO break point feature.
-    ///
-    /// # Note
-    /// The breakpoint applies to the FIFO currently attached to the Graphics Processor (GP) (see
-    /// [`Gx::set_gp_fifo()`]).
-    pub fn disable_breakpt() {
-        unsafe { ffi::GX_DisableBreakPt() }
-    }
-
-    /// Initialize the transformation unit (XF) rasterizer unit (RAS) to take performance
-    /// measurements.
-    ///
-    /// # Safety
-    /// This function should be avoided; use the GP performance metric functions instead.
-    pub unsafe fn init_xf_ras_metric() {
-        unsafe { ffi::GX_InitXfRasMetric() }
-    }
-
-    /// Reads the current status of the GP.
-    ///
-    /// `overhi` and `underlow` will indicate whether or not the watermarks have been reached. If
-    /// the CPU and GP FIFOs are the same, then `overhi` will indicate whether or not the current
-    /// GX thread is suspended. The value of `brkpt` can be used to determine if a breakpoint is in
-    /// progress (i.e. GP reads are suspended; they are resumed by a call to
-    /// [`Gx::disable_breakpt()`]). A callback can also be used to notify your application that
-    /// the break point has been reached. (see [`Gx::set_breakpt_callback()`])
-    pub fn get_gp_status() -> GpStatus {
-        let mut ret = (0, 0, 0, 0, 0);
+/// Return a copy of the currently attached GP FIFO.
+///
+/// See [GX_GetGPFifo](https://libogc.devkitpro.org/gx_8h.html#ab44a1fe8f8fc13e5d22429d144227d5a) for more.
+pub fn get_gp_fifo() -> Option<RawFifo> {
+    if INIT_FIFO.load(Ordering::Acquire).is_null() {
+        None
+    } else {
+        let mut rawfifo: MaybeUninit<RawFifo> = MaybeUninit::zeroed();
         unsafe {
-            ffi::GX_GetGPStatus(&mut ret.0, &mut ret.1, &mut ret.2, &mut ret.3, &mut ret.4);
-        }
-        GpStatus {
-            overhi: ret.0 != 0,
-            underlo: ret.1 != 0,
-            read_idle: ret.2 != 0,
-            cmd_idle: ret.3 != 0,
-            brkpt: ret.4 != 0,
+            ffi::GX_GetGPFifo(rawfifo.as_mut_ptr().cast());
+            Some(rawfifo.assume_init())
         }
     }
+}
 
-    /// Loads a light object into a set of hardware registers associated with a Light ID.
-    ///
-    /// This function copies the light object data into the graphics FIFO through the CPU
-    /// write-gather buffer mechanism. This guarantees that the light object is coherent with the
-    /// CPU cache.
-    ///
-    /// # Note
-    /// The light object must have been initialized first using the necessary `GX_InitLight*()`
-    /// functions.
-    ///
-    /// Another way to load a light object is with `Gx::load_light_idx()`.
-    pub fn load_light(lit_obj: &Light, lit_id: u8) {
-        unsafe { ffi::GX_LoadLightObj(&lit_obj.0, lit_id) }
-    }
+/// Attaches a FIFO to the GP.
+///
+/// See [GX_SetGPFifo](https://libogc.devkitpro.org/gx_8h.html#af98b3858d1d04a4bbe620b0a45d94c8c) for more.
+pub fn set_gp_fifo(fifo: Option<&RawFifo>) {
+    let fifo_ptr = match fifo {
+        Some(fifo) => fifo,
+        None => ptr::null(),
+    };
+    unsafe { ffi::GX_SetGPFifo(fifo_ptr.cast_mut().cast()) }
+}
 
-    /// Instructs the GP to fetch the light object at *litobjidx* from an array.
-    ///
-    /// The light object is retrieved from the array to which
-    /// `Gx::set_array(GX_VA_LIGHTARRAY, ...)` points. Then it loads the object into the hardware
-    /// register associated with Light ID.
-    ///
-    /// # Note
-    /// Data flows directly from the array in DRAM to the GP; therefore, the light object data may
-    /// not be coherent with the CPU's cache. The application is responsible for storing the light
-    /// object data from the CPU cache (using `DCStoreRange()`) before calling
-    /// `Gx::load_light_idx()`.
-    pub fn load_light_idx(litobjidx: u32, litid: u8) {
-        unsafe { ffi::GX_LoadLightObjIdx(litobjidx, litid) }
-    }
-
-    /// Causes the GPU to wait for the pipe to flush.
-    ///
-    /// When in a display list, this is a no-op.
-    ///
-    /// See [GX_PixModeSync](https://libogc.devkitpro.org/gx_8h.html#af8a7469351ae569dd22c496f93b0fc8f) for more.
-    pub fn pix_mode_sync() {
-        if ! IN_DISPLAY_LIST.load(Ordering::Acquire) {
-            unsafe { ffi::GX_PixModeSync() }
+/// Return a copy of the currently attached CPU FIFO.
+///
+/// See [GX_GetCPUFifo](https://libogc.devkitpro.org/gx_8h.html#a43258a02791218395ef43ffc7d8ed397) for more.
+pub fn get_cpu_fifo() -> Option<RawFifo> {
+    if INIT_FIFO.load(Ordering::Acquire).is_null() {
+        None
+    } else {
+        let mut rawfifo: MaybeUninit<RawFifo> = MaybeUninit::zeroed();
+        unsafe {
+            ffi::GX_GetCPUFifo(rawfifo.as_mut_ptr().cast());
+            Some(rawfifo.assume_init())
         }
     }
+}
 
-    /// Restores the write-gather pipe.
-    ///
-    /// The CPU fifo that was attached at the time [`Gx::redirect_write_gather_pipe()`] was called
-    /// will be re-attached. If there is data pending in the write gather pipe (e.g. if the amount
-    /// of data written was not a multiple of 32 bytes), the data will be padded with zeroes and
-    /// flushed out.
-    ///
-    /// # Safety
-    /// This function must be called between successive calls to [`Gx::redirect_write_gather_pipe()`].
-    pub unsafe fn restore_write_gather_pipe() {
-        unsafe { ffi::GX_RestoreWriteGatherPipe() }
+/// Attaches a FIFO to the CPU.
+///
+/// See [GX_SetCPUFifo](https://libogc.devkitpro.org/gx_8h.html#a69852ae8a9b982556a3a37a450af30d8) for more.
+pub fn set_cpu_fifo(fifo: Option<&RawFifo>) {
+    let fifo_ptr = match fifo {
+        Some(fifo) => fifo,
+        None => ptr::null(),
+    };
+    unsafe { ffi::GX_SetCPUFifo(fifo_ptr.cast_mut().cast()) }
+}
+
+/// Returns the current GX thread.
+///
+/// The current GX thread should be the thread that is currently responsible
+/// for generating graphics data. By default, the GX thread is the thread
+/// that invoked [`init()`]; however, it may be changed by calling
+/// [`set_current_gx_thread()`].
+///
+/// # Note
+/// When graphics data is being generated in immediate mode (that is, the
+/// CPU FIFO = GP FIFO, and the GP is actively consuming data), the high
+/// watermark may be triggered. When this happens, the high watermark
+/// interrupt handler will suspend the GX thread, thus preventing any
+/// further graphics data from being generated. The low watermark interrupt
+/// handler will resume the thread.
+pub fn get_current_gx_thread() -> lwp::Thread {
+    lwp::Thread::new(unsafe { ffi::GX_GetCurrentGXThread() })
+}
+
+/// Aborts the current frame.
+///
+/// This command will reset the entire graphics pipeline, including any commands in the
+/// graphics FIFO.
+///
+/// # Note
+/// Texture memory will not be reset, so currently loaded textures will still be valid;
+/// however, when loading texture using [`preload_entire_texture()`] or TLUTs using
+/// [`load_tlut()`], you must make sure the command completed. You can use the draw sync
+/// mechanism to do this; see [`set_draw_sync()`] and [`get_draw_sync()`].
+pub fn abort_frame() {
+    unsafe { ffi::GX_AbortFrame() }
+}
+
+/// Clears the bounding box values before a new image is drawn.
+///
+/// The graphics hardware keeps track of a bounding box of pixel coordinates that are drawn in
+/// the Embedded Frame Buffer (EFB).
+pub fn clear_bounding_box() {
+    unsafe { ffi::GX_ClearBoundingBox() }
+}
+
+/// Clears the two virtual GP performance counters to zero.
+///
+/// When in display list mode, this is a no-op.
+///
+/// See [GX_ClearGPMetric](https://libogc.devkitpro.org/gx_8h.html#ad339961d27f13b76640ee67e553488ac) for more.
+pub fn clear_gp_metric() {
+    if ! IN_DISPLAY_LIST.load(Ordering::Acquire) {
+        unsafe { ffi::GX_ClearGPMetric() }
     }
+}
 
-    /// Sends a DrawDone command to the GP.
-    ///
-    /// When all previous commands have been processed and the pipeline is empty, a *DrawDone*
-    /// status bit will be set, and an interrupt will occur. You can receive notification of this
-    /// event by installing a callback on the interrupt with [`Gx::set_draw_done_callback()`], or
-    /// you can poll the status bit with [`Gx::wait_draw_done()`]. This function also flushes the
-    /// write-gather FIFO in the CPU to make sure that all commands are sent to the graphics
-    /// processor.
-    ///
-    /// # Note
-    /// This function is normally used in multibuffer mode (see [`Gx::set_cpu_fifo()`]). In
-    /// immediate mode, the [`Gx::draw_done()`] command can be used, which both sends the command
-    /// and stalls until the *DrawDone* status is true.
-    pub fn set_draw_done() {
-        unsafe { ffi::GX_SetDrawDone() }
+/// Clears the Vertex Cache performance counter.
+///
+/// This function clears the performance counter by sending a special clear token via the
+/// Graphics FIFO.
+///
+/// # Note
+/// To set the metric for the counter, call [`set_vcache_metric()`]; to read the counter
+/// value, call [`read_vcache_metric()`].
+pub fn clear_vcache_metric() {
+    unsafe { ffi::GX_ClearVCacheMetric() }
+}
+
+/// Sets a breakpoint that causes the GP to halt when encountered.
+///
+/// # Note
+/// The break point feature allows the application to have two frames of graphics in the FIFO
+/// at the same time, overlapping one frame's processing by the graphics processor with another
+/// frame's processing by the CPU. For example, suppose you finish writing the graphics
+/// commands for one frame and are ready to start on the next. First, execute a [`flush()`]
+/// command to make sure all the data in the CPU write gatherer is flushed into the FIFO. This
+/// will also align the FIFO write pointer to a 32B boundary. Next, read the value of the
+/// current write pointer using [`Fifo::pointers()`]. Write the value of the write pointer as
+/// the break point address using `enable_breakpt()`. When the FIFO read pointer reaches
+/// the break point address the hardware will disable reads from the FIFO. The status `brkpt`,
+/// returned by [`get_gp_status()`], can be polled to detect when the break point is
+/// reached. The application can then decide when to disable the break point, using
+/// [`disable_breakpt()`], which will allow the FIFO to resume reading graphics commands.
+///
+/// FIFO reads will stall when the GP FIFO read pointer is equal to the break point address
+/// `break_pt`. To re-enable reads of the GP FIFO, use [`disable_breakpt()`].
+///
+/// Use [`set_breakpt_callback()`] to set what function runs when the breakpoint is
+/// encountered.
+pub fn enable_breakpt(break_pt: *mut u8) {
+    unsafe { ffi::GX_EnableBreakPt(break_pt as _) }
+}
+
+/// Allows reads from the FIFO currently attached to the Graphics Processor (GP) to resume.
+///
+/// See [`enable_breakpt()`] for an explanation of the FIFO break point feature.
+///
+/// # Note
+/// The breakpoint applies to the FIFO currently attached to the Graphics Processor (GP) (see
+/// [`set_gp_fifo()`]).
+pub fn disable_breakpt() {
+    unsafe { ffi::GX_DisableBreakPt() }
+}
+
+/// Initialize the transformation unit (XF) rasterizer unit (RAS) to take performance
+/// measurements.
+///
+/// # Safety
+/// This function should be avoided; use the GP performance metric functions instead.
+pub unsafe fn init_xf_ras_metric() {
+    unsafe { ffi::GX_InitXfRasMetric() }
+}
+
+/// Reads the current status of the GP.
+///
+/// `overhi` and `underlow` will indicate whether or not the watermarks have been reached. If
+/// the CPU and GP FIFOs are the same, then `overhi` will indicate whether or not the current
+/// GX thread is suspended. The value of `brkpt` can be used to determine if a breakpoint is in
+/// progress (i.e. GP reads are suspended; they are resumed by a call to
+/// [`disable_breakpt()`]). A callback can also be used to notify your application that
+/// the break point has been reached. (see [`set_breakpt_callback()`])
+pub fn get_gp_status() -> GpStatus {
+    let mut ret = (0, 0, 0, 0, 0);
+    unsafe {
+        ffi::GX_GetGPStatus(&mut ret.0, &mut ret.1, &mut ret.2, &mut ret.3, &mut ret.4);
     }
-
-    /// Inserts a synchronization command into the graphics FIFO. When the Graphics Processor sees
-    /// this command, it will allow the texture pipeline to flush before continuing.
-    ///
-    /// This command is necessary when changing the usage of regions of texture memory from
-    /// preloaded or TLUT to cached areas. It makes sure that the texture pipeline is finished with
-    /// that area of the texture memory prior to changing its usage. This function should be called
-    /// prior to drawing any primitives that uses the texture memory region in its new mode. It is
-    /// not necessary to call this command when changing texture memory regions from cached to
-    /// preloaded (or TLUT), since the commands to load the regions with data will cause the
-    /// necessary synchronization to happen automatically.
-    pub fn tex_mode_sync() {
-        unsafe { ffi::GX_TexModeSync() }
+    GpStatus {
+        overhi: ret.0 != 0,
+        underlo: ret.1 != 0,
+        read_idle: ret.2 != 0,
+        cmd_idle: ret.3 != 0,
+        brkpt: ret.4 != 0,
     }
+}
 
-    /// Stalls until DrawDone is encountered by the GP.
-    ///
-    /// It means all graphics commands sent before this *DrawDone* command have executed and the
-    /// last pixel has been written to the frame buffer. You may want to execute some non-graphics
-    /// operations between executing [`Gx::set_draw_done()`] and this function, but if you simply
-    /// want to wait and have nothing to execute, you can use [`Gx::draw_done()`].
-    ///
-    /// # Note
-    /// This function is normally used in immediate mode (see [`Gx::set_cpu_fifo()`]). In
-    /// multibuffer mode, sending the 'done' command is separated from polling the 'done' status
-    /// (see [`Gx::set_draw_done()`] and [`Gx::wait_draw_done()`]).
-    pub fn wait_draw_done() {
-        unsafe { ffi::GX_WaitDrawDone() }
+/// Loads a light object into a set of hardware registers associated with a Light ID.
+///
+/// This function copies the light object data into the graphics FIFO through the CPU
+/// write-gather buffer mechanism. This guarantees that the light object is coherent with the
+/// CPU cache.
+///
+/// # Note
+/// The light object must have been initialized first using the necessary `GX_InitLight*()`
+/// functions.
+///
+/// Another way to load a light object is with `gx::load_light_idx()`.
+pub fn load_light(lit_obj: &Light, lit_id: u8) {
+    unsafe { ffi::GX_LoadLightObj(&lit_obj.0, lit_id) }
+}
+
+/// Instructs the GP to fetch the light object at *litobjidx* from an array.
+///
+/// The light object is retrieved from the array to which
+/// `gx::set_array(GX_VA_LIGHTARRAY, ...)` points. Then it loads the object into the hardware
+/// register associated with Light ID.
+///
+/// # Note
+/// Data flows directly from the array in DRAM to the GP; therefore, the light object data may
+/// not be coherent with the CPU's cache. The application is responsible for storing the light
+/// object data from the CPU cache (using `DCStoreRange()`) before calling
+/// `gx::load_light_idx()`.
+pub fn load_light_idx(litobjidx: u32, litid: u8) {
+    unsafe { ffi::GX_LoadLightObjIdx(litobjidx, litid) }
+}
+
+/// Causes the GPU to wait for the pipe to flush.
+///
+/// When in a display list, this is a no-op.
+///
+/// See [GX_PixModeSync](https://libogc.devkitpro.org/gx_8h.html#af8a7469351ae569dd22c496f93b0fc8f) for more.
+pub fn pix_mode_sync() {
+    if ! IN_DISPLAY_LIST.load(Ordering::Acquire) {
+        unsafe { ffi::GX_PixModeSync() }
     }
+}
 
-    /// Sets whether Z buffering happens before or after texturing.
-    ///
-    /// Normally, Z buffering should happen before texturing, as this enables better performance by
-    /// not texturing pixels that are not visible; however, when alpha compare is used, Z buffering
-    /// must be done after texturing (see [`Gx::set_alpha_compare()`]).
-    pub fn set_zcomp_loc(before_tex: bool) {
-        unsafe { ffi::GX_SetZCompLoc(before_tex as u8) }
-    }
+/// Restores the write-gather pipe.
+///
+/// The CPU fifo that was attached at the time [`redirect_write_gather_pipe()`] was called
+/// will be re-attached. If there is data pending in the write gather pipe (e.g. if the amount
+/// of data written was not a multiple of 32 bytes), the data will be padded with zeroes and
+/// flushed out.
+///
+/// # Safety
+/// This function must be called between successive calls to [`redirect_write_gather_pipe()`].
+pub unsafe fn restore_write_gather_pipe() {
+    unsafe { ffi::GX_RestoreWriteGatherPipe() }
+}
 
-    /// Sets color and Z value to clear the EFB to during copy operations.
-    /// See [GX_SetCopyClear](https://libogc.devkitpro.org/gx_8h.html#a17265aefd7e64820de53abd9113334bc) for more.
-    pub fn set_copy_clear(background: Color, z_value: u32) {
-        unsafe { ffi::GX_SetCopyClear(background.0, z_value) };
-    }
+/// Sends a DrawDone command to the GP.
+///
+/// When all previous commands have been processed and the pipeline is empty, a *DrawDone*
+/// status bit will be set, and an interrupt will occur. You can receive notification of this
+/// event by installing a callback on the interrupt with [`set_draw_done_callback()`], or
+/// you can poll the status bit with [`wait_draw_done()`]. This function also flushes the
+/// write-gather FIFO in the CPU to make sure that all commands are sent to the graphics
+/// processor.
+///
+/// # Note
+/// This function is normally used in multibuffer mode (see [`set_cpu_fifo()`]). In
+/// immediate mode, the [`draw_done()`] command can be used, which both sends the command
+/// and stalls until the *DrawDone* status is true.
+pub fn set_draw_done() {
+    unsafe { ffi::GX_SetDrawDone() }
+}
 
-    /// Sets the viewport rectangle in screen coordinates.
-    /// See [GX_SetViewport](https://libogc.devkitpro.org/gx_8h.html#aaccd37675da5a22596fad756c73badc2) for more.
-    pub fn set_viewport(x_orig: f32, y_orig: f32, wd: f32, hd: f32, near_z: f32, far_z: f32) {
-        unsafe { ffi::GX_SetViewport(x_orig, y_orig, wd, hd, near_z, far_z) }
-    }
+/// Inserts a synchronization command into the graphics FIFO. When the Graphics Processor sees
+/// this command, it will allow the texture pipeline to flush before continuing.
+///
+/// This command is necessary when changing the usage of regions of texture memory from
+/// preloaded or TLUT to cached areas. It makes sure that the texture pipeline is finished with
+/// that area of the texture memory prior to changing its usage. This function should be called
+/// prior to drawing any primitives that uses the texture memory region in its new mode. It is
+/// not necessary to call this command when changing texture memory regions from cached to
+/// preloaded (or TLUT), since the commands to load the regions with data will cause the
+/// necessary synchronization to happen automatically.
+pub fn tex_mode_sync() {
+    unsafe { ffi::GX_TexModeSync() }
+}
 
-    /// Calculates an appropriate Y scale factor value for GX_SetDispCopyYScale() based on the height of the EFB and the height of the XFB.
-    /// See [GX_GetYScaleFactor](https://libogc.devkitpro.org/gx_8h.html#a1558cf7d2eb9a6690fee4b64c4fc5a8e) for more.
-    pub fn get_y_scale_factor(efb_height: u16, xfb_height: u16) -> f32 {
-        debug_assert!((2..=528).contains(&efb_height));
-        debug_assert!(efb_height.is_multiple_of(2));
-        debug_assert!((2..=1024).contains(&xfb_height));
-        debug_assert!(xfb_height >= efb_height);
-        unsafe { ffi::GX_GetYScaleFactor(efb_height, xfb_height) }
-    }
+/// Stalls until DrawDone is encountered by the GP.
+///
+/// It means all graphics commands sent before this *DrawDone* command have executed and the
+/// last pixel has been written to the frame buffer. You may want to execute some non-graphics
+/// operations between executing [`gx::set_draw_done()`] and this function, but if you simply
+/// want to wait and have nothing to execute, you can use [`gx::draw_done()`].
+///
+/// # Note
+/// This function is normally used in immediate mode (see [`gx::set_cpu_fifo()`]). In
+/// multibuffer mode, sending the 'done' command is separated from polling the 'done' status
+/// (see [`gx::set_draw_done()`] and [`gx::wait_draw_done()`]).
+pub fn wait_draw_done() {
+    unsafe { ffi::GX_WaitDrawDone() }
+}
 
-    /// Sets the vertical scale factor for the EFB to XFB copy operation.
-    /// See [GX_SetDispCopyYScale](https://libogc.devkitpro.org/gx_8h.html#a1a4ebb4e742f4ce2f010768e09e07c48) for more.
-    pub fn set_disp_copy_y_scale(y_scale: f32) -> u32 {
-        unsafe { ffi::GX_SetDispCopyYScale(y_scale) }
-    }
+/// Sets whether Z buffering happens before or after texturing.
+///
+/// Normally, Z buffering should happen before texturing, as this enables better performance by
+/// not texturing pixels that are not visible; however, when alpha compare is used, Z buffering
+/// must be done after texturing (see [`gx::set_alpha_compare()`]).
+pub fn set_zcomp_loc(before_tex: bool) {
+    unsafe { ffi::GX_SetZCompLoc(before_tex as u8) }
+}
 
-    /// Sets the scissor rectangle.
-    /// See [GX_SetScissor](https://libogc.devkitpro.org/gx_8h.html#a689bdd17fc74bf86a4c4f00418a2c596) for more.
-    pub fn set_scissor(x_origin: u32, y_origin: u32, wd: u32, hd: u32) {
-        unsafe { ffi::GX_SetScissor(x_origin, y_origin, wd, hd) }
-    }
+/// Sets color and Z value to clear the EFB to during copy operations.
+/// See [GX_SetCopyClear](https://libogc.devkitpro.org/gx_8h.html#a17265aefd7e64820de53abd9113334bc) for more.
+pub fn set_copy_clear(background: Color, z_value: u32) {
+    unsafe { ffi::GX_SetCopyClear(background.0, z_value) };
+}
 
-    /// Sets the source parameters for the EFB to XFB copy operation.
-    /// See [GX_SetDispCopySrc](https://libogc.devkitpro.org/gx_8h.html#a979d8db7abbbc2e9a267f5d1710ac588) for more.
-    pub fn set_disp_copy_src(left: u16, top: u16, wd: u16, ht: u16) {
-        debug_assert!(left % 2 == 0, "left is not divisible by 2");
-        debug_assert!(top % 2 == 0, "top is not divisible by 2");
-        debug_assert!(wd % 2 == 0, "width is not divisible by 2");
-        debug_assert!(ht % 2 == 0, "height is not divisible by 2");
-        unsafe { ffi::GX_SetDispCopySrc(left, top, wd, ht) }
-    }
+/// Sets the viewport rectangle in screen coordinates.
+/// See [GX_SetViewport](https://libogc.devkitpro.org/gx_8h.html#aaccd37675da5a22596fad756c73badc2) for more.
+pub fn set_viewport(x_orig: f32, y_orig: f32, wd: f32, hd: f32, near_z: f32, far_z: f32) {
+    unsafe { ffi::GX_SetViewport(x_orig, y_orig, wd, hd, near_z, far_z) }
+}
 
-    /// Sets the width and height of the display buffer in pixels.
-    /// 
-    /// See [GX_SetDispCopyDst](https://libogc.devkitpro.org/gx_8h.html#ab6f639059b750e57af4c593ba92982c5) for more.
-    pub fn set_disp_copy_dst(width: u16, height: u16) {
+/// Calculates an appropriate Y scale factor value for GX_SetDispCopyYScale() based on the height of the EFB and the height of the XFB.
+/// See [GX_GetYScaleFactor](https://libogc.devkitpro.org/gx_8h.html#a1558cf7d2eb9a6690fee4b64c4fc5a8e) for more.
+pub fn get_y_scale_factor(efb_height: u16, xfb_height: u16) -> f32 {
+    debug_assert!((2..=528).contains(&efb_height));
+    debug_assert!(efb_height.is_multiple_of(2));
+    debug_assert!((2..=1024).contains(&xfb_height));
+    debug_assert!(xfb_height >= efb_height);
+    unsafe { ffi::GX_GetYScaleFactor(efb_height, xfb_height) }
+}
+
+/// Sets the vertical scale factor for the EFB to XFB copy operation.
+/// See [GX_SetDispCopyYScale](https://libogc.devkitpro.org/gx_8h.html#a1a4ebb4e742f4ce2f010768e09e07c48) for more.
+pub fn set_disp_copy_y_scale(y_scale: f32) -> u32 {
+    unsafe { ffi::GX_SetDispCopyYScale(y_scale) }
+}
+
+/// Sets the scissor rectangle.
+/// See [GX_SetScissor](https://libogc.devkitpro.org/gx_8h.html#a689bdd17fc74bf86a4c4f00418a2c596) for more.
+pub fn set_scissor(x_origin: u32, y_origin: u32, wd: u32, hd: u32) {
+    unsafe { ffi::GX_SetScissor(x_origin, y_origin, wd, hd) }
+}
+
+/// Sets the source parameters for the EFB to XFB copy operation.
+/// See [GX_SetDispCopySrc](https://libogc.devkitpro.org/gx_8h.html#a979d8db7abbbc2e9a267f5d1710ac588) for more.
+pub fn set_disp_copy_src(left: u16, top: u16, wd: u16, ht: u16) {
+    debug_assert!(left % 2 == 0, "left is not divisible by 2");
+    debug_assert!(top % 2 == 0, "top is not divisible by 2");
+    debug_assert!(wd % 2 == 0, "width is not divisible by 2");
+    debug_assert!(ht % 2 == 0, "height is not divisible by 2");
+    unsafe { ffi::GX_SetDispCopySrc(left, top, wd, ht) }
+}
+
+/// Sets the width and height of the display buffer in pixels.
+/// 
+/// See [GX_SetDispCopyDst](https://libogc.devkitpro.org/gx_8h.html#ab6f639059b750e57af4c593ba92982c5) for more.
+pub fn set_disp_copy_dst(width: u16, height: u16) {
+    debug_assert!(
+        width.is_multiple_of(16),
+        "width must be a multiple of 16, got {width}"
+    );
+    unsafe { ffi::GX_SetDispCopyDst(width, height) }
+}
+
+/// Sets the subpixel sample patterns and vertical filter coefficients used to filter subpixels into pixels.
+/// See [GX_SetCopyFilter](https://libogc.devkitpro.org/gx_8h.html#afd65b7e5f2040ddb3352649efde72faf) for more.
+pub fn set_copy_filter(
+    sample_pattern: Option<[[u8; 2]; 12]>,
+    vfilter: Option<[u8; 7]>,
+) {
+    if let Some(sp) = sample_pattern {
         debug_assert!(
-            width.is_multiple_of(16),
-            "width must be a multiple of 16, got {width}"
+            sp.iter().flatten().all(|x| (1..=11).contains(x)),
+            "valid range for sample coordinate points is 1..=11, got {sp:?}"
         );
-        unsafe { ffi::GX_SetDispCopyDst(width, height) }
     }
-
-    /// Sets the subpixel sample patterns and vertical filter coefficients used to filter subpixels into pixels.
-    /// See [GX_SetCopyFilter](https://libogc.devkitpro.org/gx_8h.html#afd65b7e5f2040ddb3352649efde72faf) for more.
-    pub fn set_copy_filter(
-        sample_pattern: Option<[[u8; 2]; 12]>,
-        vfilter: Option<[u8; 7]>,
-    ) {
-        if let Some(sp) = sample_pattern {
-            debug_assert!(
-                sp.iter().flatten().all(|x| (1..=11).contains(x)),
-                "valid range for sample coordinate points is 1..=11, got {sp:?}"
-            );
-        }
-        if let Some(vf) = vfilter {
-            debug_assert!(
-                vf.iter().all(|x| (0..=63).contains(x)),
-                "valid range for vertical filter coefficients is 0..=63, got {vf:?}"
-            );
-            let sum: u8 = vf.iter().sum();
-            debug_assert_eq!(
-                sum,
-                64,
-                "sum of vertical filter coefficients should be 64, got {sum}"
-            );
-        }
-        
-        unsafe {
-            ffi::GX_SetCopyFilter(
-                sample_pattern.is_some() as u8,
-                sample_pattern.unwrap_or_default().as_mut_ptr(),
-                vfilter.is_some() as u8,
-                vfilter.unwrap_or_default().as_mut_ptr()
-            )
-        }
-    }
-
-    /// Sets the lighting controls for a particular color channel.
-    pub fn set_channel_controls(
-        channel: ColorChannel,
-        enable: bool,
-        ambsrc: Source,
-        matsrc: Source,
-        litmask: u8,
-        diff_fn: DiffFn,
-        attn_fn: AttnFn,
-    ) {
-        unsafe {
-            ffi::GX_SetChanCtrl(
-                channel as i32,
-                enable as u8,
-                ambsrc as u8,
-                matsrc as u8,
-                litmask,
-                diff_fn as u8,
-                attn_fn as u8,
-            );
-        }
-    }
-
-    /// Controls various rasterization and texturing parameters that relate to field-mode and double-strike rendering.
-    /// See [GX_SetFieldMode](https://libogc.devkitpro.org/gx_8h.html#a13f0df0011d04c3d986135e800fbcd21) for more.
-    pub fn set_field_mode(field_mode: bool, half_aspect_ratio: bool) {
-        unsafe { ffi::GX_SetFieldMode(field_mode as u8, half_aspect_ratio as u8) }
-    }
-
-    /// Sets the format of pixels in the Embedded Frame Buffer (EFB).
-    /// See [GX_SetPixelFmt](https://libogc.devkitpro.org/gx_8h.html#a018d9b0359f9689ac41f44f0b2374ffb) for more.
-    pub fn set_pixel_fmt(pix_fmt: PixelFormat, z_fmt: ZFormat) {
-        unsafe { ffi::GX_SetPixelFmt(pix_fmt as u8, z_fmt as u8) }
-    }
-
-    /// Enables or disables culling of geometry based on its orientation to the viewer.
-    ///
-    /// Primitives in which the vertex order is clockwise to the viewer are considered front-facing.
-    ///
-    /// See [GX_SetCullMode](https://libogc.devkitpro.org/gx_8h.html#adb4b17c39b24073c3e961458ecf02e87) for more.
-    pub fn set_cull_mode(mode: CullMode) {
-        unsafe { ffi::GX_SetCullMode(mode as u8) }
-    }
-
-    /// Sets the current GX thread to the calling thread.
-    ///
-    /// The new thread should be the thread that will be responsible for
-    /// generating graphics data. By default, the GX thread is the thread that
-    /// invoked [`Gx::init()`]; however, it may be changed by calling this
-    /// function.
-    ///
-    /// Returns the previous GX thread ID.
-    ///
-    /// # Note
-    /// It is a programming error to change GX thread while the current GX
-    /// thread is suspended by a high water mark interrupt. This indicates that
-    /// you have two threads about to generate GX data.
-    ///
-    /// When graphics data is being generated in immediate mode (that is, the
-    /// CPU FIFO = GP FIFO, and the GP is actively consuming data), the high
-    /// watermark may be triggered. When this happens, the high watermark
-    /// interrupt handler will suspend the GX thread, thus preventing any
-    /// further graphics data from being generated. The low watermark interrupt
-    /// handler will resume the thread.
-    pub fn set_current_gx_thread() -> lwp::Thread {
-        lwp::Thread::new(unsafe { ffi::GX_SetCurrentGXThread() })
-    }
-
-    /// Copies the embedded framebuffer (EFB) to the external framebuffer(XFB) in main memory.
-    ///
-    /// # Safety
-    ///
-    /// The user must ensure the dest ptr is a valid pointer,
-    ///
-    /// See [GX_CopyDisp](https://libogc.devkitpro.org/gx_8h.html#a9ed0ae3f900abb6af2e930dff7a6bc28) for more.
-    pub unsafe fn copy_disp(dest: *mut c_void, clear: bool) {
-        unsafe { ffi::GX_CopyDisp(dest, clear as u8) }
-    }
-
-    /// Sets the gamma correction applied to pixels during EFB to XFB copy operation.
-    /// See [GX_SetDispCopyGamma](https://libogc.devkitpro.org/gx_8h.html#aa8e5bc962cc786b2049345fa698d4efa) for more.
-    pub fn set_disp_copy_gamma(gamma: Gamma) {
-        unsafe { ffi::GX_SetDispCopyGamma(gamma as _) }
-    }
-
-    /// Sets the attribute format (vtxattr) for a single attribute in the Vertex Attribute Table (VAT).
-    /// See [GX_SetVtxAttrFmt](https://libogc.devkitpro.org/gx_8h.html#a87437061debcc0457b6b6dc2eb021f23) for more.
-    pub fn set_vtx_attr_fmt(vtxfmt: u8, vtxattr: VtxAttr, comptype: u32, compsize: u32, frac: u32) {
-        // this is debug_assert because libogc just uses the lowest 3 bits
+    if let Some(vf) = vfilter {
         debug_assert!(
-            vtxfmt < ffi::GX_MAXVTXFMT as u8,
-            "index out of bounds: the len is {} but the index is {}",
-            ffi::GX_MAXVTXFMT,
-            vtxfmt,
+            vf.iter().all(|x| (0..=63).contains(x)),
+            "valid range for vertical filter coefficients is 0..=63, got {vf:?}"
         );
-        unsafe { ffi::GX_SetVtxAttrFmt(vtxfmt, vtxattr as u32, comptype, compsize, frac) }
+        let sum: u8 = vf.iter().sum();
+        debug_assert_eq!(
+            sum,
+            64,
+            "sum of vertical filter coefficients should be 64, got {sum}"
+        );
     }
-
-    /// Sets the number of color channels that are output to the TEV stages.
-    /// See [GX_SetNumChans](https://libogc.devkitpro.org/gx_8h.html#a390c37e594986403c623df2bed61c2b2) for more.
-    pub fn set_num_chans(num: u8) {
-        unsafe { ffi::GX_SetNumChans(num) }
+    
+    unsafe {
+        ffi::GX_SetCopyFilter(
+            sample_pattern.is_some() as u8,
+            sample_pattern.unwrap_or_default().as_mut_ptr(),
+            vfilter.is_some() as u8,
+            vfilter.unwrap_or_default().as_mut_ptr()
+        )
     }
+}
 
-    /// Sets the number of texture coordinates that are generated and available for use in the Texture Environment TEV stages.
-    /// See [GX_SetNumTexGens](https://libogc.devkitpro.org/gx_8h.html#a55a79a1688d3a6957ee0c37d6323d159) for more.
-    pub fn set_num_tex_gens(nr: u32) {
-        unsafe { ffi::GX_SetNumTexGens(nr) }
+/// Sets the lighting controls for a particular color channel.
+pub fn set_channel_controls(
+    channel: ColorChannel,
+    enable: bool,
+    ambsrc: Source,
+    matsrc: Source,
+    litmask: u8,
+    diff_fn: DiffFn,
+    attn_fn: AttnFn,
+) {
+    unsafe {
+        ffi::GX_SetChanCtrl(
+            channel as i32,
+            enable as u8,
+            ambsrc as u8,
+            matsrc as u8,
+            litmask,
+            diff_fn as u8,
+            attn_fn as u8,
+        );
     }
+}
 
-    /// Simplified function to set various TEV parameters for this tevstage based on a predefined combiner mode.
-    /// See [GX_SetTevOp](https://libogc.devkitpro.org/gx_8h.html#a68554713cdde7b45ae4d5ce156239cf8) for more.
-    pub fn set_tev_op(tevstage: u8, mode: u8) {
-        unsafe { ffi::GX_SetTevOp(tevstage, mode) }
+/// Controls various rasterization and texturing parameters that relate to field-mode and double-strike rendering.
+/// See [GX_SetFieldMode](https://libogc.devkitpro.org/gx_8h.html#a13f0df0011d04c3d986135e800fbcd21) for more.
+pub fn set_field_mode(field_mode: bool, half_aspect_ratio: bool) {
+    unsafe { ffi::GX_SetFieldMode(field_mode as u8, half_aspect_ratio as u8) }
+}
+
+/// Sets the format of pixels in the Embedded Frame Buffer (EFB).
+/// See [GX_SetPixelFmt](https://libogc.devkitpro.org/gx_8h.html#a018d9b0359f9689ac41f44f0b2374ffb) for more.
+pub fn set_pixel_fmt(pix_fmt: PixelFormat, z_fmt: ZFormat) {
+    unsafe { ffi::GX_SetPixelFmt(pix_fmt as u8, z_fmt as u8) }
+}
+
+/// Enables or disables culling of geometry based on its orientation to the viewer.
+///
+/// Primitives in which the vertex order is clockwise to the viewer are considered front-facing.
+///
+/// See [GX_SetCullMode](https://libogc.devkitpro.org/gx_8h.html#adb4b17c39b24073c3e961458ecf02e87) for more.
+pub fn set_cull_mode(mode: CullMode) {
+    unsafe { ffi::GX_SetCullMode(mode as u8) }
+}
+
+/// Sets the current GX thread to the calling thread.
+///
+/// The new thread should be the thread that will be responsible for
+/// generating graphics data. By default, the GX thread is the thread that
+/// invoked [`gx::init()`]; however, it may be changed by calling this
+/// function.
+///
+/// Returns the previous GX thread ID.
+///
+/// # Note
+/// It is a programming error to change GX thread while the current GX
+/// thread is suspended by a high water mark interrupt. This indicates that
+/// you have two threads about to generate GX data.
+///
+/// When graphics data is being generated in immediate mode (that is, the
+/// CPU FIFO = GP FIFO, and the GP is actively consuming data), the high
+/// watermark may be triggered. When this happens, the high watermark
+/// interrupt handler will suspend the GX thread, thus preventing any
+/// further graphics data from being generated. The low watermark interrupt
+/// handler will resume the thread.
+pub fn set_current_gx_thread() -> lwp::Thread {
+    lwp::Thread::new(unsafe { ffi::GX_SetCurrentGXThread() })
+}
+
+/// Copies the embedded framebuffer (EFB) to the external framebuffer(XFB) in main memory.
+///
+/// # Safety
+///
+/// The user must ensure the dest ptr is a valid pointer,
+///
+/// See [GX_CopyDisp](https://libogc.devkitpro.org/gx_8h.html#a9ed0ae3f900abb6af2e930dff7a6bc28) for more.
+pub unsafe fn copy_disp(dest: *mut c_void, clear: bool) {
+    unsafe { ffi::GX_CopyDisp(dest, clear as u8) }
+}
+
+/// Sets the gamma correction applied to pixels during EFB to XFB copy operation.
+/// See [GX_SetDispCopyGamma](https://libogc.devkitpro.org/gx_8h.html#aa8e5bc962cc786b2049345fa698d4efa) for more.
+pub fn set_disp_copy_gamma(gamma: Gamma) {
+    unsafe { ffi::GX_SetDispCopyGamma(gamma as _) }
+}
+
+/// Sets the attribute format (vtxattr) for a single attribute in the Vertex Attribute Table (VAT).
+/// See [GX_SetVtxAttrFmt](https://libogc.devkitpro.org/gx_8h.html#a87437061debcc0457b6b6dc2eb021f23) for more.
+pub fn set_vtx_attr_fmt(vtxfmt: u8, vtxattr: VtxAttr, comptype: u32, compsize: u32, frac: u32) {
+    // this is debug_assert because libogc just uses the lowest 3 bits
+    debug_assert!(
+        vtxfmt < ffi::GX_MAXVTXFMT as u8,
+        "index out of bounds: the len is {} but the index is {}",
+        ffi::GX_MAXVTXFMT,
+        vtxfmt,
+    );
+    unsafe { ffi::GX_SetVtxAttrFmt(vtxfmt, vtxattr as u32, comptype, compsize, frac) }
+}
+
+/// Sets the number of color channels that are output to the TEV stages.
+/// See [GX_SetNumChans](https://libogc.devkitpro.org/gx_8h.html#a390c37e594986403c623df2bed61c2b2) for more.
+pub fn set_num_chans(num: u8) {
+    unsafe { ffi::GX_SetNumChans(num) }
+}
+
+/// Sets the number of texture coordinates that are generated and available for use in the Texture Environment TEV stages.
+/// See [GX_SetNumTexGens](https://libogc.devkitpro.org/gx_8h.html#a55a79a1688d3a6957ee0c37d6323d159) for more.
+pub fn set_num_tex_gens(nr: u32) {
+    unsafe { ffi::GX_SetNumTexGens(nr) }
+}
+
+/// Simplified function to set various TEV parameters for this tevstage based on a predefined combiner mode.
+/// See [GX_SetTevOp](https://libogc.devkitpro.org/gx_8h.html#a68554713cdde7b45ae4d5ce156239cf8) for more.
+pub fn set_tev_op(tevstage: u8, mode: u8) {
+    unsafe { ffi::GX_SetTevOp(tevstage, mode) }
+}
+
+/// Specifies the texture and rasterized color that will be available as inputs to
+/// this TEV tevstage.
+/// 
+/// See [GX_SetTevOrder](https://libogc.devkitpro.org/gx_8h.html#ae64799e52298de39efc74bf989fc57f5) for more.
+pub fn set_tev_order(
+    tevstage: u8,
+    texcoord: Option<u8>,
+    disable_texmap_lookup: bool,
+    texmap: Option<u8>,
+    color: Option<ColorChannel>
+) {
+    debug_assert!(tevstage <= 15);
+    debug_assert!(if let Some(x) = texcoord { x <= 7 } else { true });
+    debug_assert!(if let Some(x) = texmap { x <= 7 } else { true });
+    let disable_flag = if disable_texmap_lookup { ffi::GX_TEXMAP_DISABLE } else { 0 };
+    unsafe {
+        ffi::GX_SetTevOrder(
+            tevstage,
+            texcoord.unwrap_or(ffi::GX_TEXCOORDNULL as u8),
+            texmap.unwrap_or(ffi::GX_TEXMAPNULL as u8) as u32 | disable_flag,
+            color.map(|ch| ch as u8).unwrap_or(ffi::GX_COLORNULL as u8)
+        )
     }
+}
 
-    /// Specifies the texture and rasterized color that will be available as inputs to
-    /// this TEV tevstage.
-    /// 
-    /// See [GX_SetTevOrder](https://libogc.devkitpro.org/gx_8h.html#ae64799e52298de39efc74bf989fc57f5) for more.
-    pub fn set_tev_order(
-        tevstage: u8,
-        texcoord: Option<u8>,
-        disable_texmap_lookup: bool,
-        texmap: Option<u8>,
-        color: Option<ColorChannel>
-    ) {
-        debug_assert!(tevstage <= 15);
-        debug_assert!(if let Some(x) = texcoord { x <= 7 } else { true });
-        debug_assert!(if let Some(x) = texmap { x <= 7 } else { true });
-        let disable_flag = if disable_texmap_lookup { ffi::GX_TEXMAP_DISABLE } else { 0 };
-        unsafe {
-            ffi::GX_SetTevOrder(
-                tevstage,
-                texcoord.unwrap_or(ffi::GX_TEXCOORDNULL as u8),
-                texmap.unwrap_or(ffi::GX_TEXMAPNULL as u8) as u32 | disable_flag,
-                color.map(|ch| ch as u8).unwrap_or(ffi::GX_COLORNULL as u8)
-            )
+/// Specifies how texture coordinates are generated.
+/// See [GX_SetTexCoordGen](https://libogc.devkitpro.org/gx_8h.html#a7d3139b693ace5587c3224e7df2d8245) for more.
+pub fn set_tex_coord_gen(texcoord: u16, tgen_typ: u32, tgen_src: u32, mtxsrc: u32) {
+    debug_assert!([30, 33, 36, 39, 42, 45, 48, 51, 54, 57, 60].contains(&mtxsrc));
+    unsafe { ffi::GX_SetTexCoordGen(texcoord, tgen_typ, tgen_src, mtxsrc) }
+}
+
+/// Invalidates the current caches of the Texture Memory (TMEM).
+///
+/// It takes about 512 GP clocks to invalidate all the texture caches.
+///
+/// # Note
+/// Preloaded textures (see [`gx::preload_entire_texture()`]) are not affected.
+pub fn invalidate_tex_all() {
+    unsafe { ffi::GX_InvalidateTexAll() }
+}
+
+/// Loads the state describing a texture into one of eight hardware register sets.
+///
+/// Before this happens, the texture object *obj* should be initialized using
+/// [`Texture::new()`] or [`Texture::with_color_idx()`]. The *mapid* parameter refers to the
+/// texture map slot that is set, and takes a value between 0 and 7 inclusive. Once loaded, the
+/// texture can be used in any Texture Environment (TEV) stage using [`gx::set_tev_order()`].
+///
+/// # Note
+/// This function will call the functions set by [`gx::set_tex_region_callback()`] (and
+/// [`gx::set_tlut_region_callback()`] if the texture is color-index format) to obtain the
+/// texture regions associated with this texture object. These callbacks are set to default
+/// functions by [`gx::init()`].
+///
+/// # Safety
+/// If the texture is a color-index texture, you **must** load the associated TLUT (using
+/// [`gx::load_tlut()`]) before calling this function.
+pub fn load_texture(obj: &mut RawTexture, mapid: u8) {
+    unsafe { ffi::GX_LoadTexObj(&mut obj.inner, mapid) }
+}
+
+/// Sets the projection matrix.
+/// See [GX_LoadProjectionMtx](https://libogc.devkitpro.org/gx_8h.html#a241a1301f006ed04b7895c051959f64e) for more.
+pub fn load_projection_mtx(matrix: &Mtx44, projection: ProjectionType) {
+    unsafe { ffi::GX_LoadProjectionMtx(matrix.as_ptr().cast_mut(), projection as u8) }
+}
+
+/// Clears all vertex attributes of the current vertex descriptor to `GX_NONE`.
+///
+/// # Note
+/// The same functionality can be obtained using [`gx::set_vtx_descv()`], however using
+/// [`gx::clear_vtx_desc()`] is much more efficient.
+pub fn clear_vtx_desc() {
+    unsafe { ffi::GX_ClearVtxDesc() }
+}
+
+/// Sets the type of a single attribute (attr) in the current vertex descriptor.
+/// See [GX_SetVtxDesc](https://libogc.devkitpro.org/gx_8h.html#af41b45011ae731ae5697b26b2bf97e2f) for more.
+pub fn set_vtx_desc(attr: VtxAttr, v_type: VtxAttrIn) {
+    unsafe { ffi::GX_SetVtxDesc(attr as u8, v_type as _) }
+}
+
+/// Used to load a 3x4 modelview matrix mt into matrix memory at location pnidx.
+/// See [GX_LoadPosMtxImm](https://libogc.devkitpro.org/gx_8h.html#a90349e713128a1fa4fd6048dcab7b5e7) for more.
+pub fn load_pos_mtx_imm(mut mt: Mtx34, pnidx: u32) {
+    unsafe { ffi::GX_LoadPosMtxImm(mt.as_mut_ptr(), pnidx) }
+}
+
+/// Loads a 3x4 modelview matrix at index mtxidx from the array in main memory.
+/// See [GX_LoadPosMtxIdx](https://libogc.devkitpro.org/gx_8h.html#aa0c2283cf1c213231ec7e4a46b67e5a0) for more.
+pub fn load_pos_mtx_idx(mtxidx: u16, pnidx: u32) {
+    unsafe { ffi::GX_LoadPosMtxIdx(mtxidx, pnidx) }
+}
+
+/// Used to load a normal transform matrix into matrix memory at location pnidx from
+/// the 4x3 matrix mt.
+/// See [GX_LoadNrmMtxImm](https://libogc.devkitpro.org/gx_8h.html#ac678f81095bfbafadcd100cf6811ec72) for more.
+pub fn load_nrm_mtx_imm(mut mt: Mtx34, pnidx: u32) {
+    unsafe { ffi::GX_LoadNrmMtxImm(mt.as_mut_ptr(), pnidx) }
+}
+
+/// Loads a 3x3 normal matrix into matrix memory at location pnidx from a 3x3 matrix
+/// located at index mtxidx from the array in main memory.
+/// See [GX_LoadNrmMtxIdx3x3](https://libogc.devkitpro.org/gx_8h.html#a84a37dd00a3c4d55cfad8d357bb6c2b1) for more.
+pub fn load_nrm_mtx_idx_3x3(mtxidx: u16, pnidx: u32) {
+    unsafe { ffi::GX_LoadNrmMtxIdx3x3(mtxidx, pnidx) }
+}
+
+/// Used to load a normal transform matrix into matrix memory at location pnidx from
+/// the 3x3 matrix mt.
+/// See [GX_LoadNrmMtxImm3x3](https://libogc.devkitpro.org/gx_8h.html#a6f9f81dad834cb3fbc437ddb21ab83c3) for more.
+pub fn load_nrm_mtx_imm_3x3(mut mt: Mtx33, pnidx: u32) {
+    unsafe { ffi::GX_LoadNrmMtxImm3x3(mt.as_mut_ptr(), pnidx) }
+}
+
+/// Loads a texture matrix mt into the matrix memory at location texidx.
+/// See [GX_LoadTexMtxImm](https://libogc.devkitpro.org/gx_8h.html#a2dae7e821ed8020450b26745e900b97b) for more.
+pub fn load_tex_mtx_imm(mut mt: Mtx34, texidx: u32, r#type: MtxType) {
+    debug_assert!([30, 33, 36, 39, 42, 45, 48, 51, 54, 57, 60].contains(&texidx));
+    unsafe { ffi::GX_LoadTexMtxImm(mt.as_mut_ptr(), texidx, r#type as _) }
+}
+
+/// Loads a texture matrix at index mtxidx from the array in main memory.
+/// See [GX_LoadTexMtxIdx](https://libogc.devkitpro.org/gx_8h.html#aa0c2283cf1c213231ec7e4a46b67e5a0) for more.
+pub fn load_tex_mtx_idx(mtxidx: u16, texidx: u32, r#type: MtxType) {
+    debug_assert!([30, 33, 36, 39, 42, 45, 48, 51, 54, 57, 60].contains(&texidx));
+    unsafe { ffi::GX_LoadTexMtxIdx(mtxidx, texidx, r#type as _) }
+}
+
+/// Enables or disables dithering.
+///
+/// A 4x4 Bayer matrix is used for dithering.
+///
+/// # Note
+/// Only valid when the pixel format (see GX_SetPixelFmt()) is either `GX_PF_RGBA6_Z24` or
+/// `GX_PF_RGB565_Z16`.
+///
+/// Dithering should probably be turned off if you are planning on using the result of
+/// rendering for comparisons (e.g. outline rendering algorithm that writes IDs to the alpha
+/// channel, copies the alpha channel to a texture, and later compares the texture in the TEV).
+pub fn set_dither(dither: bool) {
+    unsafe { ffi::GX_SetDither(dither as u8) }
+}
+
+/// Sends a DrawDone command to the GP and stalls until its subsequent execution.
+///
+/// See [GX_DrawDone](https://libogc.devkitpro.org/gx_8h.html#a00f07b60ae2124fe027a82d7d9ae64b0) for more.
+pub fn draw_done() {
+    /*
+    //This should work :shrug:
+    BPReg::PE_DONE.load(2);
+
+    //THIS DIRECTLY OVERRUNS WPAR for a flush.
+    for _ in 0..8 {
+        for bytes in 0u32.to_be_bytes() {
+            GX_PIPE.write(bytes);
         }
     }
-
-    /// Specifies how texture coordinates are generated.
-    /// See [GX_SetTexCoordGen](https://libogc.devkitpro.org/gx_8h.html#a7d3139b693ace5587c3224e7df2d8245) for more.
-    pub fn set_tex_coord_gen(texcoord: u16, tgen_typ: u32, tgen_src: u32, mtxsrc: u32) {
-        debug_assert!([30, 33, 36, 39, 42, 45, 48, 51, 54, 57, 60].contains(&mtxsrc));
-        unsafe { ffi::GX_SetTexCoordGen(texcoord, tgen_typ, tgen_src, mtxsrc) }
-    }
-
-    /// Invalidates the current caches of the Texture Memory (TMEM).
-    ///
-    /// It takes about 512 GP clocks to invalidate all the texture caches.
-    ///
-    /// # Note
-    /// Preloaded textures (see [`Gx::preload_entire_texture()`]) are not affected.
-    pub fn invalidate_tex_all() {
-        unsafe { ffi::GX_InvalidateTexAll() }
-    }
-
-    /// Loads the state describing a texture into one of eight hardware register sets.
-    ///
-    /// Before this happens, the texture object *obj* should be initialized using
-    /// [`Texture::new()`] or [`Texture::with_color_idx()`]. The *mapid* parameter refers to the
-    /// texture map slot that is set, and takes a value between 0 and 7 inclusive. Once loaded, the
-    /// texture can be used in any Texture Environment (TEV) stage using [`Gx::set_tev_order()`].
-    ///
-    /// # Note
-    /// This function will call the functions set by [`Gx::set_tex_region_callback()`] (and
-    /// [`Gx::set_tlut_region_callback()`] if the texture is color-index format) to obtain the
-    /// texture regions associated with this texture object. These callbacks are set to default
-    /// functions by [`Gx::init()`].
-    ///
-    /// # Safety
-    /// If the texture is a color-index texture, you **must** load the associated TLUT (using
-    /// [`Gx::load_tlut()`]) before calling this function.
-    pub fn load_texture(obj: &mut RawTexture, mapid: u8) {
-        unsafe { ffi::GX_LoadTexObj(&mut obj.inner, mapid) }
-    }
-
-    /// Sets the projection matrix.
-    /// See [GX_LoadProjectionMtx](https://libogc.devkitpro.org/gx_8h.html#a241a1301f006ed04b7895c051959f64e) for more.
-    pub fn load_projection_mtx(matrix: &Mtx44, projection: ProjectionType) {
-        unsafe { ffi::GX_LoadProjectionMtx(matrix.as_ptr().cast_mut(), projection as u8) }
-    }
-
-    /// Invalidates the vertex cache.
-    ///
-    /// Specifically, this functions invalidates the vertex cache tags. This function should be
-    /// used whenever you relocate or modify data that is read by, or may be cached by, the vertex
-    /// cache. The invalidation is very fast, taking only two Graphics Processor (GP) clock cycles
-    /// to complete.
-    ///
-    /// # Note
-    /// The vertex cache is used to cache indexed attribute data. Any attribute that is set to
-    /// `GX_INDEX8` or `GX_INDEX16` in the current vertex descriptor (see [`Gx::set_vtx_desc()`])
-    /// is indexed. Direct data bypasses the vertex cache. Direct data is any attribute that is set
-    /// to `GX_DIRECT` in the current vertex descriptor.
-    pub fn inv_vtx_cache() {
-        unsafe { ffi::GX_InvVtxCache() }
-    }
-
-    /// Clears all vertex attributes of the current vertex descriptor to `GX_NONE`.
-    ///
-    /// # Note
-    /// The same functionality can be obtained using [`Gx::set_vtx_descv()`], however using
-    /// [`Gx::clear_vtx_desc()`] is much more efficient.
-    pub fn clear_vtx_desc() {
-        unsafe { ffi::GX_ClearVtxDesc() }
-    }
-
-    /// Sets the type of a single attribute (attr) in the current vertex descriptor.
-    /// See [GX_SetVtxDesc](https://libogc.devkitpro.org/gx_8h.html#af41b45011ae731ae5697b26b2bf97e2f) for more.
-    pub fn set_vtx_desc(attr: VtxAttr, v_type: VtxAttrIn) {
-        unsafe { ffi::GX_SetVtxDesc(attr as u8, v_type as _) }
-    }
-
-    /// Used to load a 3x4 modelview matrix mt into matrix memory at location pnidx.
-    /// See [GX_LoadPosMtxImm](https://libogc.devkitpro.org/gx_8h.html#a90349e713128a1fa4fd6048dcab7b5e7) for more.
-    pub fn load_pos_mtx_imm(mut mt: Mtx34, pnidx: u32) {
-        unsafe { ffi::GX_LoadPosMtxImm(mt.as_mut_ptr(), pnidx) }
-    }
-    
-    /// Loads a 3x4 modelview matrix at index mtxidx from the array in main memory.
-    /// See [GX_LoadPosMtxIdx](https://libogc.devkitpro.org/gx_8h.html#aa0c2283cf1c213231ec7e4a46b67e5a0) for more.
-    pub fn load_pos_mtx_idx(mtxidx: u16, pnidx: u32) {
-        unsafe { ffi::GX_LoadPosMtxIdx(mtxidx, pnidx) }
-    }
-
-    /// Used to load a normal transform matrix into matrix memory at location pnidx from
-    /// the 4x3 matrix mt.
-    /// See [GX_LoadNrmMtxImm](https://libogc.devkitpro.org/gx_8h.html#ac678f81095bfbafadcd100cf6811ec72) for more.
-    pub fn load_nrm_mtx_imm(mut mt: Mtx34, pnidx: u32) {
-        unsafe { ffi::GX_LoadNrmMtxImm(mt.as_mut_ptr(), pnidx) }
-    }
-    
-    /// Loads a 3x3 normal matrix into matrix memory at location pnidx from a 3x3 matrix
-    /// located at index mtxidx from the array in main memory.
-    /// See [GX_LoadNrmMtxIdx3x3](https://libogc.devkitpro.org/gx_8h.html#a84a37dd00a3c4d55cfad8d357bb6c2b1) for more.
-    pub fn load_nrm_mtx_idx_3x3(mtxidx: u16, pnidx: u32) {
-        unsafe { ffi::GX_LoadNrmMtxIdx3x3(mtxidx, pnidx) }
-    }
-    
-    /// Used to load a normal transform matrix into matrix memory at location pnidx from
-    /// the 3x3 matrix mt.
-    /// See [GX_LoadNrmMtxImm3x3](https://libogc.devkitpro.org/gx_8h.html#a6f9f81dad834cb3fbc437ddb21ab83c3) for more.
-    pub fn load_nrm_mtx_imm_3x3(mut mt: Mtx33, pnidx: u32) {
-        unsafe { ffi::GX_LoadNrmMtxImm3x3(mt.as_mut_ptr(), pnidx) }
-    }
-
-    /// Loads a texture matrix mt into the matrix memory at location texidx.
-    /// See [GX_LoadTexMtxImm](https://libogc.devkitpro.org/gx_8h.html#a2dae7e821ed8020450b26745e900b97b) for more.
-    pub fn load_tex_mtx_imm(mut mt: Mtx34, texidx: u32, r#type: MtxType) {
-        debug_assert!([30, 33, 36, 39, 42, 45, 48, 51, 54, 57, 60].contains(&texidx));
-        unsafe { ffi::GX_LoadTexMtxImm(mt.as_mut_ptr(), texidx, r#type as _) }
-    }
-    
-    /// Loads a texture matrix at index mtxidx from the array in main memory.
-    /// See [GX_LoadTexMtxIdx](https://libogc.devkitpro.org/gx_8h.html#aa0c2283cf1c213231ec7e4a46b67e5a0) for more.
-    pub fn load_tex_mtx_idx(mtxidx: u16, texidx: u32, r#type: MtxType) {
-        debug_assert!([30, 33, 36, 39, 42, 45, 48, 51, 54, 57, 60].contains(&texidx));
-        unsafe { ffi::GX_LoadTexMtxIdx(mtxidx, texidx, r#type as _) }
-    }
-
-    /// Enables or disables dithering.
-    ///
-    /// A 4x4 Bayer matrix is used for dithering.
-    ///
-    /// # Note
-    /// Only valid when the pixel format (see GX_SetPixelFmt()) is either `GX_PF_RGBA6_Z24` or
-    /// `GX_PF_RGB565_Z16`.
-    ///
-    /// Dithering should probably be turned off if you are planning on using the result of
-    /// rendering for comparisons (e.g. outline rendering algorithm that writes IDs to the alpha
-    /// channel, copies the alpha channel to a texture, and later compares the texture in the TEV).
-    pub fn set_dither(dither: bool) {
-        unsafe { ffi::GX_SetDither(dither as u8) }
-    }
-
-    /// Sends a DrawDone command to the GP and stalls until its subsequent execution.
-    ///
-    /// See [GX_DrawDone](https://libogc.devkitpro.org/gx_8h.html#a00f07b60ae2124fe027a82d7d9ae64b0) for more.
-    pub fn draw_done() {
-        /*
-        //This should work :shrug:
-        BPReg::PE_DONE.load(2);
-
-        //THIS DIRECTLY OVERRUNS WPAR for a flush.
-        for _ in 0..8 {
-            for bytes in 0u32.to_be_bytes() {
-                GX_PIPE.write(bytes);
-            }
-        }
-        */
-        unsafe { ffi::GX_DrawDone(); }
-    }
-
-    /// Sets the Z-buffer compare mode.
-    /// See [GX_SetZMode](https://libogc.devkitpro.org/gx_8h.html#a2af0d050f56ef45dd25d0db18909fa00) for more.
-    pub fn set_z_mode(enable: bool, func: CmpFn, update_enable: bool) {
-        unsafe { ffi::GX_SetZMode(enable as u8, func as u8, update_enable as u8) }
-    }
-
-    /// Determines how the source image, generated by the graphics processor, is blended with the Embedded Frame Buffer (EFB).
-    /// See [GX_SetBlendMode](https://libogc.devkitpro.org/gx_8h.html#a1d9c43b161f3c5a30b9fd8ea182c8eb6) for more.
-    pub fn set_blend_mode(
-        b_type: BlendMode,
-        src_fact: BlendCtrl,
-        dst_fact: BlendCtrl,
-        op: LogicOp,
-    ) {
-        unsafe { ffi::GX_SetBlendMode(b_type as u8, src_fact as u8, dst_fact as u8, op as u8) }
-    }
-
-    /// Enables or disables alpha-buffer updates of the Embedded Frame Buffer (EFB).
-    /// See [GX_SetAlphaUpdate](https://libogc.devkitpro.org/gx_8h.html#ac238051bda896c8bb11802184882a2a0) for more.
-    pub fn set_alpha_update(enable: bool) {
-        unsafe { ffi::GX_SetAlphaUpdate(enable as u8) }
-    }
-
-    /// Enables or disables color-buffer updates when rendering into the Embedded Frame Buffer (EFB).
-    /// See [GX_SetColorUpdate](https://libogc.devkitpro.org/gx_8h.html#a3978e3b08198e52d7cea411e90ece3e5) for more.
-    pub fn set_color_update(enable: bool) {
-        unsafe { ffi::GX_SetColorUpdate(enable as u8) }
-    }
-
-    /// Sets the array base pointer and stride for a single attribute.
-    /// See [GX_SetArray](https://libogc.devkitpro.org/gx_8h.html#a5164fc6aa2a678d792af80d94bfa1ec2) for more.
-    pub fn set_array<T>(attr: VtxAttr, array: &[T]) {
-        unsafe {
-            cache::data_cache_flush(array);
-            ffi::GX_SetArray(
-                attr as _,
-                array.as_ptr() as *mut c_void,
-                core::mem::size_of::<T>().try_into().unwrap()
-            )
-        }
-    }
-
-    /// Begins drawing of a graphics primitive.
-    /// See [GX_Begin](https://libogc.devkitpro.org/gx_8h.html#ac1e1239130a33d9fae1352aee8d2cab9) for more.
-    pub fn begin(primitive: Primitive, vtxfmt: u8, vtxcnt: u16) {
-        unsafe { ffi::GX_Begin(primitive as u8, vtxfmt, vtxcnt) }
-    }
-
-    /// Sets the parameters for the alpha compare function which uses the alpha output from the last active TEV stage.
-    /// See [Gx_SetAlphaCompare](https://libogc.devkitpro.org/gx_8h.html#a23ac269062a1b2c2efc8ad5aae24b26a) for more.
-    pub fn set_alpha_compare(comp0: CmpFn, ref0: u8, aop: AlphaOp, comp1: CmpFn, ref1: u8) {
-        unsafe { ffi::GX_SetAlphaCompare(comp0 as u8, ref0, aop as u8, comp1 as u8, ref1) }
-    }
-
-    /// Sets the parameters for the alpha compare function which uses the alpha output from the last active TEV stage.
-    /// See [GX_SetClipMode](https://libogc.devkitpro.org/gx_8h.html#a3d348d7af8ded25b57352e956f43d974) for more.
-    pub fn set_clip_mode(mode: u8) {
-        unsafe { ffi::GX_SetClipMode(mode) }
-    }
-
-    /// Wrapper around set_clip_mode, since its a simple enable or disbale.
-    pub fn enable_clip() {
-        Gx::set_clip_mode(ffi::GX_CLIP_ENABLE as u8);
-    }
-
-    ///Wrapper around set_clip_mode, since it a simple disable or enable.
-    pub fn disable_clip() {
-        Gx::set_clip_mode(ffi::GX_CLIP_DISABLE as u8);
-    }
-
-    /// Writes a 3D f32 position.
-    #[inline]
-    pub fn pos3_f32(x: f32, y: f32, z: f32) {
-        unsafe { ffi::GX_Position3f32(x, y, z);}
-    }
-
-    /// Writes a 3D u16 position.
-    #[inline]
-    pub fn pos3_u16(x: u16, y: u16, z: u16) {
-        unsafe { ffi::GX_Position3u16(x, y, z) }
-    }
-
-    /// Writes a 3D i16 position.
-    #[inline]
-    pub fn pos3_i16(x: i16, y: i16, z: i16) {
-        unsafe { ffi::GX_Position3s16(x, y, z) }
-    }
-
-    /// Writes a 3D u8 position.
-    #[inline]
-    pub fn pos3_u8(x: u8, y: u8, z: u8) {
-        unsafe { ffi::GX_Position3u8(x, y, z) }
-    }
-
-    /// Writes a 3D i8 position.
-    #[inline]
-    pub fn pos3_i8(x: i8, y: i8, z: i8) {
-        unsafe { ffi::GX_Position3s8(x, y, z) }
-    }
-
-    /// Writes a 2D f32 position.
-    #[inline]
-    pub fn pos2_f32(x: f32, y: f32) {
-        unsafe { ffi::GX_Position2f32(x, y);}
-    }
-
-    /// Writes a 2D u16 position.
-    #[inline]
-    pub fn pos2_u16(x: u16, y: u16) {
-        unsafe { ffi::GX_Position2u16(x, y) }
-    }
-
-    /// Writes a 2D i16 position.
-    #[inline]
-    pub fn pos2_i16(x: i16, y: i16) {
-        unsafe { ffi::GX_Position2s16(x, y) }
-    }
-
-    /// Writes a 2D u8 position.
-    #[inline]
-    pub fn pos2_u8(x: u8, y: u8) {
-        unsafe { ffi::GX_Position2u8(x, y) }
-    }
-
-    /// Writes a 2D i8 position.
-    #[inline]
-    pub fn pos2_i8(x: i8, y: i8) {
-        unsafe { ffi::GX_Position2s8(x, y) }
-    }
-
-    /// Writes a u8-indexed position.
-    #[inline]
-    pub fn pos1_x8(index: u8) {
-        unsafe { ffi::GX_Position1x8(index) }
-    }
-
-    /// Writes a u16-indexed position.
-    #[inline]
-    pub fn pos1_x16(index: u16) {
-        unsafe { ffi::GX_Position1x16(index) }
-    }
-    
-    /// Writes a 3D f32 normal.
-    #[inline]
-    pub fn normal3_f32(x: f32, y: f32, z: f32) {
-        unsafe { ffi::GX_Normal3f32(x, y, z) }
-    }
-    
-    /// Writes a 3D i16 normal.
-    #[inline]
-    pub fn normal3_i16(x: i16, y: i16, z: i16) {
-        unsafe { ffi::GX_Normal3s16(x, y, z) }
-    }
-    
-    /// Writes a 2D i8 normal.
-    #[inline]
-    pub fn normal3_i8(x: i8, y: i8, z: i8) {
-        unsafe { ffi::GX_Normal3s8(x, y, z) }
-    }
-    
-    /// Writes a u8-indexed normal.
-    #[inline]
-    pub fn normal1_x8(index: u8) {
-        unsafe { ffi::GX_Normal1x8(index) }
-    }
-    
-    /// Writes a u16-indexed normal.
-    #[inline]
-    pub fn normal1_x16(index: u16) {
-        unsafe { ffi::GX_Normal1x16(index) }
-    }
-
-    /// Writes an RGBA color given in u8.
-    #[inline]
-    pub fn color4_u8(r: u8, g: u8, b: u8, a: u8) {
-        unsafe { ffi::GX_Color4u8(r, g, b, a) }
-    }
-
-    /// Writes an RGB color given in u8
-    #[inline]
-    pub fn color3_u8(r: u8, g: u8, b: u8) {
-        unsafe { ffi::GX_Color3u8(r, g, b) }
-    }
-
-    /// Writes an RGB color given in f32 between 0 and 1.
-    #[inline]
-    pub fn color3_f32(r: f32, g: f32, b: f32) {
-        unsafe { ffi::GX_Color3f32(r, g, b) }
-    }
-
-    /// Writes a color given as a u32.
-    #[inline]
-    pub fn color1_u32(clr: u32) {
-        unsafe { ffi::GX_Color1u32(clr) }
-    }
-
-    /// Writes a color given as a u16.
-    #[inline]
-    pub fn color1_u16(clr: u16) {
-        unsafe { ffi::GX_Color1u16(clr) }
-    }
-
-    /// Writes a color given as a u8 index.
-    #[inline]
-    pub fn color1_x8(index: u8) {
-        unsafe { ffi::GX_Color1x8(index) }
-    }
-
-    /// Writes a color given as a u16 index.
-    #[inline]
-    pub fn color1_x16(index: u16) {
-        unsafe { ffi::GX_Color1x16(index) }
-    }
-
-    /// Writes a color given as a [`Color`] object.
-    /// 
-    /// This is a convenience function and not part of libogc's interface.
-    #[inline]
-    pub fn color1_color(clr: Color) {
-        Self::color4_u8(clr.0.r, clr.0.g, clr.0.b, clr.0.a);
-    }
-
-    /// Writes a 2D texture coordinate in f32.
-    #[inline]
-    pub fn texcoord2_f32(s: f32, t: f32) {
-        unsafe { ffi::GX_TexCoord2f32(s, t) }
-    }
-
-    /// Writes a 2D texture coordinate in u32.
-    #[inline]
-    pub fn texcoord2_u16(s: u16, t: u16) {
-        unsafe { ffi::GX_TexCoord2u16(s, t) }
-    }
-
-    /// Writes a 2D texture coordinate in i16.
-    #[inline]
-    pub fn texcoord2_i16(s: i16, t: i16) {
-        unsafe { ffi::GX_TexCoord2s16(s, t) }
-    }
-
-    /// Writes a 2D texture coordinate in u8.
-    #[inline]
-    pub fn texcoord2_u8(s: u8, t: u8) {
-        unsafe { ffi::GX_TexCoord2u8(s, t) }
-    }
-
-    /// Writes a 2D texture coordinate in i8.
-    #[inline]
-    pub fn texcoord2_i8(s: i8, t: i8) {
-        unsafe { ffi::GX_TexCoord2s8(s, t) }
-    }
-
-    /// Writes a 1D texture coordinate in f32.
-    #[inline]
-    pub fn texcoord1_f32(s: f32) {
-        unsafe { ffi::GX_TexCoord1f32(s) }
-    }
-
-    /// Writes a 1D texture coordinate in u16.
-    #[inline]
-    pub fn texcoord1_u16(s: u16) {
-        unsafe { ffi::GX_TexCoord1u16(s) }
-    }
-
-    /// Writes a 1D texture coordinate in i16.
-    #[inline]
-    pub fn texcoord1_i16(s: i16) {
-        unsafe { ffi::GX_TexCoord1s16(s) }
-    }
-
-    /// Writes a 1D texture coordinate in u8.
-    #[inline]
-    pub fn texcoord1_u8(s: u8) {
-        unsafe { ffi::GX_TexCoord1u8(s) }
-    }
-
-    /// Writes a 1D texture coordinate in i8.
-    #[inline]
-    pub fn texcoord1_i8(s: i8) {
-        unsafe { ffi::GX_TexCoord1s8(s) }
-    }
-
-    /// Writes a texture coordinate indexed by a u8.
-    #[inline]
-    pub fn texcoord1_x8(index: u8) {
-        unsafe { ffi::GX_TexCoord1x8(index) }
-    }
-
-    /// Writes a texture coordinate indexed by a u16.
-    #[inline]
-    pub fn texcoord1_x16(index: u16) {
-        unsafe { ffi::GX_TexCoord1x16(index) }
-    }
-
-    /// Writes a matrix indexed by a u8.
-    #[inline]
-    pub fn matrix1_x8(index: u8) {
-        unsafe { ffi::GX_MatrixIndex1x8(index) }
-    }
-
-    pub fn flush() {
-        unsafe { ffi::GX_Flush() }
-    }
-
-    #[inline]
-    pub fn end() {
-        unsafe { ffi::GX_End() }
-    }
-
-    /// Loads a given texture from DRAM into the texture memory.
-    ///
-    /// See [GX_PreloadEntireTexture](https://libogc.devkitpro.org/gx_8h.html#a7b6d8f9cffffaf8001d12548644d7ddd) for more.
-    pub fn preload_entire_texture(obj: &RawTexture, region: &mut TexRegion) {
-        unsafe { ffi::GX_PreloadEntireTexture(&obj.inner as *const _ as *mut _, &mut region.inner) }
-    }
-
-    /// Copies a Texture Look-Up Table (TLUT) from main memory to Texture Memory (TMEM).
-    ///
-    /// See [GX_LoadTlut](https://libogc.devkitpro.org/gx_8h.html#a9ebea5754b6e13996303cd4f829ebb1b) for more.
-    pub fn load_tlut(obj: &Tlut, tlut_name: u32) {
-        unsafe { ffi::GX_LoadTlut(obj as *const _ as *mut _, tlut_name) }
-    }
-
-    /// This function sends a token into the command stream.
-    ///
-    /// See [GX_SetDrawSync](https://libogc.devkitpro.org/gx_8h.html#a537fee417b3018a0c8920770652ec813) for more.
-    pub fn set_draw_sync(token: u16) {
-        unsafe { ffi::GX_SetDrawSync(token); }
-    }
-
-    /// Returns the value of the token register, which is written using the
-    /// [`Gx::set_draw_sync()`] function.
-    pub fn get_draw_sync() -> u16 {
-        unsafe { ffi::GX_GetDrawSync() }
-    }
-
-    /// Sets two performance metrics to measure in the GP.
-    ///
-    /// When in display list mode, this is a no-op.
-    ///
-    /// See [GX_SetGPMetric](https://libogc.devkitpro.org/gx_8h.html#a0552fd47b766524a88db059c4d1023cc) for more.
-    pub fn set_gp_metric(perf0: Perf0, perf1: Perf1) {
-        if ! IN_DISPLAY_LIST.load(Ordering::Acquire) {
-            unsafe { ffi::GX_SetGPMetric(perf0 as _, perf1 as _) }
-        }
-    }
-
-    /// Returns the count of the previously set performance metrics.
-    ///
-    /// When in display list mode, this returns `None`.
-    ///
-    /// See [GX_ReadGPMetric](https://libogc.devkitpro.org/gx_8h.html#af62420d12b7f50c810e3c5fb560e1176) for more.
-    pub fn read_gp_metric() -> Option<(u32, u32)> {
-        if ! IN_DISPLAY_LIST.load(Ordering::Acquire) {
-            let mut counts = (0, 0);
-            unsafe { ffi::GX_ReadGPMetric(&mut counts.0, &mut counts.1) }
-            Some(counts)
-        } else {
-            None
-        }
-    }
-
-    /// Sets the metric the Vertex Cache performance counter will measure.
-    ///
-    /// See [GX_SetVCacheMetric](https://libogc.devkitpro.org/gx_8h.html#ab5b888434069c7f72caebbd6f98c55a9) for more.
-    pub fn set_vcache_metric(attr: VCacheAttr) {
-        unsafe { ffi::GX_SetVCacheMetric(attr as _) }
-    }
-
-    /// Returns vertex cache performance counters.
-    ///
-    /// When in display list mode, this returns `None`.
-    ///
-    /// See [GX_ReadVCacheMetric](https://libogc.devkitpro.org/gx_8h.html#a19679bb36c6c27403a30f77de3cbdbc4) for more.
-    pub fn read_vcache_metric() -> Option<(u32, u32, u32)> {
-        if ! IN_DISPLAY_LIST.load(Ordering::Acquire) {
-            let (mut check, mut miss, mut stall) = (0, 0, 0);
-            unsafe { ffi::GX_ReadVCacheMetric(&mut check, &mut miss, &mut stall); }
-            Some((check, miss, stall))
-        } else {
-            None
-        }
-    }
-
-    /// Copies the embedded framebuffer (EFB) to the texture image buffer _dest_
-    /// in main memory.
-    ///
-    /// This is useful when creating textures using the Graphics Processor (GP).
-    /// If the _clear_ flag is set to `true`, the EFB will be cleared to the
-    /// current color (see [`Gx::set_copy_clear()`] during the copy operation.
-    ///
-    /// Arguments:
-    /// * `dest`: pointer to the image buffer in main memory. _dest_ should be
-    ///   32B aligned.
-    /// * `clear`: flag that indicates framebuffer should be cleared if `true`.
-    pub fn copy_tex(mut dest: Buf32, clear: bool) {
-        unsafe { ffi::GX_CopyTex(dest.as_mut_ptr() as *mut _, clear as _) }
-    }
-
-    /// Sets the type of multiple attributes.
-    ///
-    /// See [GX_SetVtxDescv](https://libogc.devkitpro.org/gx_8h.html#a159810efe8391da35ea9b625c5fc70bd) for more.
-    pub fn set_vtx_descv(_attr_list: &[VtxDesc]) {
-        unimplemented!()
-    }
+    */
+    unsafe { ffi::GX_DrawDone(); }
+}
+
+/// Sets the Z-buffer compare mode.
+/// See [GX_SetZMode](https://libogc.devkitpro.org/gx_8h.html#a2af0d050f56ef45dd25d0db18909fa00) for more.
+pub fn set_z_mode(enable: bool, func: CmpFn, update_enable: bool) {
+    unsafe { ffi::GX_SetZMode(enable as u8, func as u8, update_enable as u8) }
+}
+
+/// Determines how the source image, generated by the graphics processor, is blended with the Embedded Frame Buffer (EFB).
+/// See [GX_SetBlendMode](https://libogc.devkitpro.org/gx_8h.html#a1d9c43b161f3c5a30b9fd8ea182c8eb6) for more.
+pub fn set_blend_mode(
+    b_type: BlendMode,
+    src_fact: BlendCtrl,
+    dst_fact: BlendCtrl,
+    op: LogicOp,
+) {
+    unsafe { ffi::GX_SetBlendMode(b_type as u8, src_fact as u8, dst_fact as u8, op as u8) }
+}
+
+/// Enables or disables alpha-buffer updates of the Embedded Frame Buffer (EFB).
+/// See [GX_SetAlphaUpdate](https://libogc.devkitpro.org/gx_8h.html#ac238051bda896c8bb11802184882a2a0) for more.
+pub fn set_alpha_update(enable: bool) {
+    unsafe { ffi::GX_SetAlphaUpdate(enable as u8) }
+}
+
+/// Enables or disables color-buffer updates when rendering into the Embedded Frame Buffer (EFB).
+/// See [GX_SetColorUpdate](https://libogc.devkitpro.org/gx_8h.html#a3978e3b08198e52d7cea411e90ece3e5) for more.
+pub fn set_color_update(enable: bool) {
+    unsafe { ffi::GX_SetColorUpdate(enable as u8) }
+}
+
+/// Sets the array base pointer and stride for a single attribute.
+/// See [GX_SetArray](https://libogc.devkitpro.org/gx_8h.html#a5164fc6aa2a678d792af80d94bfa1ec2) for more.
+pub fn set_array<T>(attr: VtxAttr, array: &[T]) {
+    unsafe {
+        cache::data_cache_flush(array);
+        ffi::GX_SetArray(
+            attr as _,
+            array.as_ptr() as *mut c_void,
+            core::mem::size_of::<T>().try_into().unwrap()
+        )
+    }
+}
+
+/// Begins drawing of a graphics primitive.
+/// See [GX_Begin](https://libogc.devkitpro.org/gx_8h.html#ac1e1239130a33d9fae1352aee8d2cab9) for more.
+pub fn begin(primitive: Primitive, vtxfmt: u8, vtxcnt: u16) {
+    unsafe { ffi::GX_Begin(primitive as u8, vtxfmt, vtxcnt) }
+}
+
+/// Sets the parameters for the alpha compare function which uses the alpha output from the last active TEV stage.
+/// See [Gx_SetAlphaCompare](https://libogc.devkitpro.org/gx_8h.html#a23ac269062a1b2c2efc8ad5aae24b26a) for more.
+pub fn set_alpha_compare(comp0: CmpFn, ref0: u8, aop: AlphaOp, comp1: CmpFn, ref1: u8) {
+    unsafe { ffi::GX_SetAlphaCompare(comp0 as u8, ref0, aop as u8, comp1 as u8, ref1) }
+}
+
+/// Sets the parameters for the alpha compare function which uses the alpha output from the last active TEV stage.
+/// See [GX_SetClipMode](https://libogc.devkitpro.org/gx_8h.html#a3d348d7af8ded25b57352e956f43d974) for more.
+pub fn set_clip_mode(mode: u8) {
+    unsafe { ffi::GX_SetClipMode(mode) }
+}
+
+/// Wrapper around set_clip_mode, since its a simple enable or disbale.
+pub fn enable_clip() {
+    set_clip_mode(ffi::GX_CLIP_ENABLE as u8);
+}
+
+///Wrapper around set_clip_mode, since it a simple disable or enable.
+pub fn disable_clip() {
+    set_clip_mode(ffi::GX_CLIP_DISABLE as u8);
+}
+
+/// Writes a 3D f32 position.
+#[inline]
+pub fn pos3_f32(x: f32, y: f32, z: f32) {
+    unsafe { ffi::GX_Position3f32(x, y, z);}
+}
+
+/// Writes a 3D u16 position.
+#[inline]
+pub fn pos3_u16(x: u16, y: u16, z: u16) {
+    unsafe { ffi::GX_Position3u16(x, y, z) }
+}
+
+/// Writes a 3D i16 position.
+#[inline]
+pub fn pos3_i16(x: i16, y: i16, z: i16) {
+    unsafe { ffi::GX_Position3s16(x, y, z) }
+}
+
+/// Writes a 3D u8 position.
+#[inline]
+pub fn pos3_u8(x: u8, y: u8, z: u8) {
+    unsafe { ffi::GX_Position3u8(x, y, z) }
+}
+
+/// Writes a 3D i8 position.
+#[inline]
+pub fn pos3_i8(x: i8, y: i8, z: i8) {
+    unsafe { ffi::GX_Position3s8(x, y, z) }
+}
+
+/// Writes a 2D f32 position.
+#[inline]
+pub fn pos2_f32(x: f32, y: f32) {
+    unsafe { ffi::GX_Position2f32(x, y);}
+}
+
+/// Writes a 2D u16 position.
+#[inline]
+pub fn pos2_u16(x: u16, y: u16) {
+    unsafe { ffi::GX_Position2u16(x, y) }
+}
+
+/// Writes a 2D i16 position.
+#[inline]
+pub fn pos2_i16(x: i16, y: i16) {
+    unsafe { ffi::GX_Position2s16(x, y) }
+}
+
+/// Writes a 2D u8 position.
+#[inline]
+pub fn pos2_u8(x: u8, y: u8) {
+    unsafe { ffi::GX_Position2u8(x, y) }
+}
+
+/// Writes a 2D i8 position.
+#[inline]
+pub fn pos2_i8(x: i8, y: i8) {
+    unsafe { ffi::GX_Position2s8(x, y) }
+}
+
+/// Writes a u8-indexed position.
+#[inline]
+pub fn pos1_x8(index: u8) {
+    unsafe { ffi::GX_Position1x8(index) }
+}
+
+/// Writes a u16-indexed position.
+#[inline]
+pub fn pos1_x16(index: u16) {
+    unsafe { ffi::GX_Position1x16(index) }
+}
+
+/// Writes a 3D f32 normal.
+#[inline]
+pub fn normal3_f32(x: f32, y: f32, z: f32) {
+    unsafe { ffi::GX_Normal3f32(x, y, z) }
+}
+
+/// Writes a 3D i16 normal.
+#[inline]
+pub fn normal3_i16(x: i16, y: i16, z: i16) {
+    unsafe { ffi::GX_Normal3s16(x, y, z) }
+}
+
+/// Writes a 2D i8 normal.
+#[inline]
+pub fn normal3_i8(x: i8, y: i8, z: i8) {
+    unsafe { ffi::GX_Normal3s8(x, y, z) }
+}
+
+/// Writes a u8-indexed normal.
+#[inline]
+pub fn normal1_x8(index: u8) {
+    unsafe { ffi::GX_Normal1x8(index) }
+}
+
+/// Writes a u16-indexed normal.
+#[inline]
+pub fn normal1_x16(index: u16) {
+    unsafe { ffi::GX_Normal1x16(index) }
+}
+
+/// Writes an RGBA color given in u8.
+#[inline]
+pub fn color4_u8(r: u8, g: u8, b: u8, a: u8) {
+    unsafe { ffi::GX_Color4u8(r, g, b, a) }
+}
+
+/// Writes an RGB color given in u8
+#[inline]
+pub fn color3_u8(r: u8, g: u8, b: u8) {
+    unsafe { ffi::GX_Color3u8(r, g, b) }
+}
+
+/// Writes an RGB color given in f32 between 0 and 1.
+#[inline]
+pub fn color3_f32(r: f32, g: f32, b: f32) {
+    unsafe { ffi::GX_Color3f32(r, g, b) }
+}
+
+/// Writes a color given as a u32.
+#[inline]
+pub fn color1_u32(clr: u32) {
+    unsafe { ffi::GX_Color1u32(clr) }
+}
+
+/// Writes a color given as a u16.
+#[inline]
+pub fn color1_u16(clr: u16) {
+    unsafe { ffi::GX_Color1u16(clr) }
+}
+
+/// Writes a color given as a u8 index.
+#[inline]
+pub fn color1_x8(index: u8) {
+    unsafe { ffi::GX_Color1x8(index) }
+}
+
+/// Writes a color given as a u16 index.
+#[inline]
+pub fn color1_x16(index: u16) {
+    unsafe { ffi::GX_Color1x16(index) }
+}
+
+/// Writes a color given as a [`Color`] object.
+/// 
+/// This is a convenience function and not part of libogc's interface.
+#[inline]
+pub fn color1_color(clr: Color) {
+    color4_u8(clr.0.r, clr.0.g, clr.0.b, clr.0.a);
+}
+
+/// Writes a 2D texture coordinate in f32.
+#[inline]
+pub fn texcoord2_f32(s: f32, t: f32) {
+    unsafe { ffi::GX_TexCoord2f32(s, t) }
+}
+
+/// Writes a 2D texture coordinate in u32.
+#[inline]
+pub fn texcoord2_u16(s: u16, t: u16) {
+    unsafe { ffi::GX_TexCoord2u16(s, t) }
+}
+
+/// Writes a 2D texture coordinate in i16.
+#[inline]
+pub fn texcoord2_i16(s: i16, t: i16) {
+    unsafe { ffi::GX_TexCoord2s16(s, t) }
+}
+
+/// Writes a 2D texture coordinate in u8.
+#[inline]
+pub fn texcoord2_u8(s: u8, t: u8) {
+    unsafe { ffi::GX_TexCoord2u8(s, t) }
+}
+
+/// Writes a 2D texture coordinate in i8.
+#[inline]
+pub fn texcoord2_i8(s: i8, t: i8) {
+    unsafe { ffi::GX_TexCoord2s8(s, t) }
+}
+
+/// Writes a 1D texture coordinate in f32.
+#[inline]
+pub fn texcoord1_f32(s: f32) {
+    unsafe { ffi::GX_TexCoord1f32(s) }
+}
+
+/// Writes a 1D texture coordinate in u16.
+#[inline]
+pub fn texcoord1_u16(s: u16) {
+    unsafe { ffi::GX_TexCoord1u16(s) }
+}
+
+/// Writes a 1D texture coordinate in i16.
+#[inline]
+pub fn texcoord1_i16(s: i16) {
+    unsafe { ffi::GX_TexCoord1s16(s) }
+}
+
+/// Writes a 1D texture coordinate in u8.
+#[inline]
+pub fn texcoord1_u8(s: u8) {
+    unsafe { ffi::GX_TexCoord1u8(s) }
+}
+
+/// Writes a 1D texture coordinate in i8.
+#[inline]
+pub fn texcoord1_i8(s: i8) {
+    unsafe { ffi::GX_TexCoord1s8(s) }
+}
+
+/// Writes a texture coordinate indexed by a u8.
+#[inline]
+pub fn texcoord1_x8(index: u8) {
+    unsafe { ffi::GX_TexCoord1x8(index) }
+}
+
+/// Writes a texture coordinate indexed by a u16.
+#[inline]
+pub fn texcoord1_x16(index: u16) {
+    unsafe { ffi::GX_TexCoord1x16(index) }
+}
+
+/// Writes a matrix indexed by a u8.
+#[inline]
+pub fn matrix1_x8(index: u8) {
+    unsafe { ffi::GX_MatrixIndex1x8(index) }
+}
+
+pub fn flush() {
+    unsafe { ffi::GX_Flush() }
+}
+
+#[inline]
+pub fn end() {
+    unsafe { ffi::GX_End() }
+}
+
+/// Loads a given texture from DRAM into the texture memory.
+///
+/// See [GX_PreloadEntireTexture](https://libogc.devkitpro.org/gx_8h.html#a7b6d8f9cffffaf8001d12548644d7ddd) for more.
+pub fn preload_entire_texture(obj: &RawTexture, region: &mut TexRegion) {
+    unsafe { ffi::GX_PreloadEntireTexture(&obj.inner as *const _ as *mut _, &mut region.inner) }
+}
+
+/// Copies a Texture Look-Up Table (TLUT) from main memory to Texture Memory (TMEM).
+///
+/// See [GX_LoadTlut](https://libogc.devkitpro.org/gx_8h.html#a9ebea5754b6e13996303cd4f829ebb1b) for more.
+pub fn load_tlut(obj: &Tlut, tlut_name: u32) {
+    unsafe { ffi::GX_LoadTlut(obj as *const _ as *mut _, tlut_name) }
+}
+
+/// This function sends a token into the command stream.
+///
+/// See [GX_SetDrawSync](https://libogc.devkitpro.org/gx_8h.html#a537fee417b3018a0c8920770652ec813) for more.
+pub fn set_draw_sync(token: u16) {
+    unsafe { ffi::GX_SetDrawSync(token); }
+}
+
+/// Returns the value of the token register, which is written using the
+/// [`gx::set_draw_sync()`] function.
+pub fn get_draw_sync() -> u16 {
+    unsafe { ffi::GX_GetDrawSync() }
+}
+
+/// Sets two performance metrics to measure in the GP.
+///
+/// When in display list mode, this is a no-op.
+///
+/// See [GX_SetGPMetric](https://libogc.devkitpro.org/gx_8h.html#a0552fd47b766524a88db059c4d1023cc) for more.
+pub fn set_gp_metric(perf0: Perf0, perf1: Perf1) {
+    if ! IN_DISPLAY_LIST.load(Ordering::Acquire) {
+        unsafe { ffi::GX_SetGPMetric(perf0 as _, perf1 as _) }
+    }
+}
+
+/// Returns the count of the previously set performance metrics.
+///
+/// When in display list mode, this returns `None`.
+///
+/// See [GX_ReadGPMetric](https://libogc.devkitpro.org/gx_8h.html#af62420d12b7f50c810e3c5fb560e1176) for more.
+pub fn read_gp_metric() -> Option<(u32, u32)> {
+    if ! IN_DISPLAY_LIST.load(Ordering::Acquire) {
+        let mut counts = (0, 0);
+        unsafe { ffi::GX_ReadGPMetric(&mut counts.0, &mut counts.1) }
+        Some(counts)
+    } else {
+        None
+    }
+}
+
+/// Sets the metric the Vertex Cache performance counter will measure.
+///
+/// See [GX_SetVCacheMetric](https://libogc.devkitpro.org/gx_8h.html#ab5b888434069c7f72caebbd6f98c55a9) for more.
+pub fn set_vcache_metric(attr: VCacheAttr) {
+    unsafe { ffi::GX_SetVCacheMetric(attr as _) }
+}
+
+/// Returns vertex cache performance counters.
+///
+/// When in display list mode, this returns `None`.
+///
+/// See [GX_ReadVCacheMetric](https://libogc.devkitpro.org/gx_8h.html#a19679bb36c6c27403a30f77de3cbdbc4) for more.
+pub fn read_vcache_metric() -> Option<(u32, u32, u32)> {
+    if ! IN_DISPLAY_LIST.load(Ordering::Acquire) {
+        let (mut check, mut miss, mut stall) = (0, 0, 0);
+        unsafe { ffi::GX_ReadVCacheMetric(&mut check, &mut miss, &mut stall); }
+        Some((check, miss, stall))
+    } else {
+        None
+    }
+}
+
+/// Copies the embedded framebuffer (EFB) to the texture image buffer _dest_
+/// in main memory.
+///
+/// This is useful when creating textures using the Graphics Processor (GP).
+/// If the _clear_ flag is set to `true`, the EFB will be cleared to the
+/// current color (see [`gx::set_copy_clear()`] during the copy operation.
+///
+/// Arguments:
+/// * `dest`: pointer to the image buffer in main memory. _dest_ should be
+///   32B aligned.
+/// * `clear`: flag that indicates framebuffer should be cleared if `true`.
+pub fn copy_tex(mut dest: Buf32, clear: bool) {
+    unsafe { ffi::GX_CopyTex(dest.as_mut_ptr() as *mut _, clear as _) }
+}
+
+/// Sets the type of multiple attributes.
+///
+/// See [GX_SetVtxDescv](https://libogc.devkitpro.org/gx_8h.html#a159810efe8391da35ea9b625c5fc70bd) for more.
+pub fn set_vtx_descv(_attr_list: &[VtxDesc]) {
+    unimplemented!()
 }
 
 /// Sets the width of line primitives.
