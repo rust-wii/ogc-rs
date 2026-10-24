@@ -71,6 +71,7 @@ pub const S16: u32 = ffi::GX_S16;
 pub const F32: u32 = ffi::GX_F32;
 
 static IN_DISPLAY_LIST: AtomicBool = AtomicBool::new(false);
+static WGPIPE_REDIRECTED: AtomicBool = AtomicBool::new(false);
 
 static INIT_FIFO: AtomicPtr<RawFifo> = AtomicPtr::null();
 static BREAKPT_CB: AtomicPtr<unsafe fn()> = AtomicPtr::null();
@@ -2043,16 +2044,31 @@ pub fn pix_mode_sync() {
     }
 }
 
+/// Temporarily points the CPU's write-gather pipe at a new location.
+/// 
+/// If the pipe has already been redirected, this will return `None`. Otherwise, it will
+/// return a pointer that can be written to with `ptr::write_volatile()`, which will be
+/// sent to a destination buffer.
+/// 
+/// See [`ogc_sys::GX_RedirectWriteGatherPipe()`] for more.
+/// 
+/// # Safety
+/// **No GX commands can be called until the write-gather pipe is restored. You MUST call
+/// [`restore_write_gather_pipe()`] before calling this function again.**
+pub unsafe fn redirect_write_gather_pipe(ptr: *mut u8) -> Option<*mut u8> {
+    debug_assert!(ptr.is_aligned_to(32));
+    if ! WGPIPE_REDIRECTED.swap(true, Ordering::AcqRel) {
+        Some(unsafe { ffi::GX_RedirectWriteGatherPipe(ptr.cast()).cast() })
+    } else {
+        None
+    }
+}
+
 /// Restores the write-gather pipe.
 ///
-/// The CPU fifo that was attached at the time [`redirect_write_gather_pipe()`] was called
-/// will be re-attached. If there is data pending in the write gather pipe (e.g. if the amount
-/// of data written was not a multiple of 32 bytes), the data will be padded with zeroes and
-/// flushed out.
-///
-/// # Safety
-/// This function must be called between successive calls to [`redirect_write_gather_pipe()`].
-pub unsafe fn restore_write_gather_pipe() {
+/// See [`ogc_sys::GX_RestoreWriteGatherPipe()`] for more.
+pub fn restore_write_gather_pipe() {
+    WGPIPE_REDIRECTED.store(false, Ordering::Release);
     unsafe { ffi::GX_RestoreWriteGatherPipe() }
 }
 
