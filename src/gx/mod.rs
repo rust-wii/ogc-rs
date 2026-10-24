@@ -1548,10 +1548,30 @@ pub enum TexCacheSize {
     None = ffi::GX_TEXCACHE_NONE,
 }
 
+/// Stores information on a texture cache region.
+#[derive(Debug, Clone)]
+#[repr(transparent)]
+pub struct RawTexRegion(ffi::GXTexRegion);
+
+#[derive(Debug, Clone)]
 pub struct TexRegion {
-    inner: ffi::GXTexRegion,
+    inner: RawTexRegion,
     buf_even: Buf32,
     buf_odd: Buf32,
+}
+
+impl Deref for TexRegion {
+    type Target = RawTexRegion;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+impl DerefMut for TexRegion {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.inner
+    }
 }
 
 impl TexRegion {
@@ -1582,7 +1602,7 @@ impl TexRegion {
             );
 
             TexRegion {
-                inner: gxtexregion.assume_init(),
+                inner: RawTexRegion(gxtexregion.assume_init()),
                 buf_even,
                 buf_odd,
             }
@@ -1615,22 +1635,20 @@ impl TexRegion {
             );
 
             TexRegion {
-                inner: gxtexregion.assume_init(),
+                inner: RawTexRegion(gxtexregion.assume_init()),
                 buf_even,
                 buf_odd,
             }
         }
     }
+}
 
+impl RawTexRegion {
     /// Invalidates the texture cache in Texture Memory (TMEM) described by region.
     ///
     /// See [GX_InvalidateTexRegion](https://libogc.devkitpro.org/gx_8h.html#a2d4ce1648e0b44b6a0958e943aedcb76) for more.
     pub fn invalidate(&mut self) {
-        unsafe { ffi::GX_InvalidateTexRegion(&mut self.inner) }
-    }
-
-    pub fn into_inner(self) -> ffi::GXTexRegion {
-        self.inner
+        unsafe { ffi::GX_InvalidateTexRegion(&mut self.0) }
     }
 }
 
@@ -2807,9 +2825,9 @@ pub fn end() {
 
 /// Loads a given texture from DRAM into the texture memory.
 ///
-/// See [GX_PreloadEntireTexture](https://libogc.devkitpro.org/gx_8h.html#a7b6d8f9cffffaf8001d12548644d7ddd) for more.
-pub fn preload_entire_texture(obj: &RawTexture, region: &mut TexRegion) {
-    unsafe { ffi::GX_PreloadEntireTexture(&obj.inner as *const _ as *mut _, &mut region.inner) }
+/// See [`ogc_sys::GX_PreloadEntireTexture()`] for more.
+pub fn preload_entire_texture(obj: &RawTexture, region: &mut RawTexRegion) {
+    unsafe { ffi::GX_PreloadEntireTexture(&obj.inner as *const _ as *mut _, &mut region.0) }
 }
 
 /// Copies a Texture Look-Up Table (TLUT) from main memory to Texture Memory (TMEM).
@@ -2987,9 +3005,9 @@ pub fn get_overflow_count() -> u32 {
 
 /// Loads the state describing a preloaded texture into one of eight hardware register sets.
 ///
-/// See [GX_LoadTexObjPreloaded](https://libogc.devkitpro.org/gx_8h.html#a1ec8217de396e4e06e5cbeca560abbc0) for more.
-pub fn load_texture_preloaded(obj: &mut RawTexture, region: &mut TexRegion, mapid: u8) {
-    unsafe { ffi::GX_LoadTexObjPreloaded(&mut obj.inner, &mut region.inner, mapid) }
+/// See [`ogc_sys::GX_LoadTexObjPreloaded()`] for more.
+pub fn load_texture_preloaded(obj: &mut RawTexture, region: &mut RawTexRegion, mapid: u8) {
+    unsafe { ffi::GX_LoadTexObjPreloaded(&mut obj.inner, &mut region.0, mapid) }
 }
 
 /// Invalidates the vertex cache.
