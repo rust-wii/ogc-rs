@@ -591,14 +591,17 @@ impl RawFifo {
     
     /// Describes the area of main memory that will be used for this fifo.
     /// 
+    /// See [`ogc_sys::GX_InitFifoBase()`] for more.
+    /// 
     /// # Safety
     /// - This method should NOT be called from a `Fifo`, as it manages the internal
     ///   buffer itself.
     /// - `base` must be aligned to a 32-byte boundary.
-    /// - `base` must be at least [`Fifo::MIN_SIZE`] bytes long.
+    /// - `base` must be at least `RawFifo::MIN_SIZE` bytes long.
     /// - `base` length must be a multiple of 32.
     /// 
-    /// See [GX_InitFifoBase](https://libogc.devkitpro.org/gx_8h.html#af02173c9ee890c6d481c14a6f16184af) for more.
+    /// To meet these requirements manually, consider using [`utils::Buf32`] and
+    /// [`RawFifo::MIN_SIZE`].
     pub unsafe fn set_base(&mut self, base: &mut [u8]) {
         debug_assert!(base.as_mut_ptr().is_aligned_to(32));
         debug_assert!(base.len().is_multiple_of(32));
@@ -636,13 +639,12 @@ impl RawFifo {
 
     /// Sets the FIFO's read and write pointers.
     /// 
+    /// See [`ogc_sys::GX_InitFifoPtrs()`] for more.
+    /// 
     /// # Safety
     /// - `rd_ptr` and `wt_ptr` must be 32-byte aligned.
-    /// - `rd_ptr` and `wt_ptr` must have the same provenance as the FIFO's base pointer.
-    ///
-    /// # Note
-    /// This is normally done only during initialization of the FIFO. After that, the
-    /// graphics hardware manages the FIFO pointers.
+    /// - `rd_ptr` and `wt_ptr` must point within the same allocation as the FIFO's base
+    ///   pointer.
     pub unsafe fn set_pointers(&mut self, rd_ptr: *const u8, wt_ptr: *mut u8) {
         debug_assert!(rd_ptr.is_aligned_to(32));
         debug_assert!(wt_ptr.is_aligned_to(32));
@@ -830,6 +832,8 @@ impl Light {
     }
 
     /// Sets the color of the light in the light object.
+    /// 
+    /// See [`ogc_sys::GX_InitLightColor()`] for more.
     pub fn color(&mut self, color: Color) -> &mut Self {
         unsafe {
             ffi::GX_InitLightColor(&mut self.0, color.0);
@@ -1175,7 +1179,7 @@ impl<T> Texture<T> {
 
     /// Used to initialize or change a texture object for non-color index textures.
     ///
-    /// See [GX_InitTexObj](https://libogc.devkitpro.org/gx_8h.html#ab2813004d1e23965b1b64f77c954656e) for more.
+    /// See [`ogc_sys::GX_InitTexObj()`] for more.
     pub fn new(
         img: &[u8],
         width: u16,
@@ -1227,7 +1231,7 @@ impl<T> Texture<T> {
 
     /// Used to initialize or change a texture object when the texture is color index format.
     ///
-    /// See [GX_InitTexObjCI](https://libogc.devkitpro.org/gx_8h.html#ab2813004d1e23965b1b64f77c954656e) for more.
+    /// See [`ogc_sys::GX_InitTexObjCI()`] for more.
     pub fn with_color_idx(
         img: &[u8],
         width: u16,
@@ -1491,16 +1495,22 @@ impl RawTexture {
     }
 
     /// Sets the LOD bias for a given texture.
+    ///
+    /// See [`ogc_sys::GX_InitTexObjLODBias()`] for more.
     pub fn set_lod_bias(&mut self, lodbias: f32) {
         unsafe { ffi::GX_InitTexObjLODBias(&mut self.inner, lodbias) }
     }
 
     /// Sets the maximum anisotropic filter to use for a texture.
+    ///
+    /// See [`ogc_sys::GX_InitTexObjMaxAniso()`] for more.
     pub fn set_max_aniso(&mut self, maxaniso: u8) {
         unsafe { ffi::GX_InitTexObjMaxAniso(&mut self.inner, maxaniso) }
     }
 
     /// Sets the maximum LOD for a given texture.
+    ///
+    /// See [`ogc_sys::GX_InitTexObjMaxLOD()`] for more.
     pub fn set_max_lod(&mut self, maxlod: f32) {
         debug_assert!(
             (0.0..=10.0).contains(&maxlod),
@@ -1510,6 +1520,8 @@ impl RawTexture {
     }
 
     /// Sets the minimum LOD for a given texture.
+    ///
+    /// See [`ogc_sys::GX_InitTexObjMinLOD()`] for more.
     pub fn set_min_lod(&mut self, minlod: f32) {
         debug_assert!(
             (0.0..=10.0).contains(&minlod),
@@ -1518,12 +1530,14 @@ impl RawTexture {
         unsafe { ffi::GX_InitTexObjMinLOD(&mut self.inner, minlod) }
     }
 
-    /// Allows one to modify the TLUT that is associated with an existing texture object.
+    /// Sets the TLUT that is associated with this texture.
+    ///
+    /// See [`ogc_sys::GX_InitTexObjTlut()`] for more.
     pub fn set_tlut(&mut self, tlut_name: u32) {
         unsafe { ffi::GX_InitTexObjTlut(&mut self.inner, tlut_name) }
     }
 
-    /// Allows one to modify the texture coordinate wrap modes for an existing texture object.
+    /// Sets the texture coordinate wrap modes for this texture.
     pub fn set_wrap_mode(&mut self, wrap_s: WrapMode, wrap_t: WrapMode) {
         unsafe { ffi::GX_InitTexObjWrapMode(&mut self.inner, wrap_s as u8, wrap_t as u8) }
     }
@@ -1577,7 +1591,7 @@ impl DerefMut for TexRegion {
 impl TexRegion {
     /// Initializes a texture memory (TMEM) region object for cache.
     ///
-    /// See [GX_InitTexCacheRegion](https://libogc.devkitpro.org/gx_8h.html#aebc5bbd189eb6a366877b64622c750fa) for more.
+    /// See [`ogc_sys::GX_InitTexCacheRegion()`] for more.
     pub fn new(size_even: TexCacheSize, size_odd: TexCacheSize, is_32b_mipmap: bool) -> Self {
         // libogc doesn't initialize all fields
         let mut gxtexregion = MaybeUninit::zeroed();
@@ -1611,7 +1625,7 @@ impl TexRegion {
 
     /// Initializes a Texture Memory (TMEM) region object for preloading.
     ///
-    /// See [GX_InitTexPreloadRegion](https://libogc.devkitpro.org/gx_8h.html#a31bd62d5243c4c207ea06a5d60d7865e) for more.
+    /// See [`ogc_sys::GX_InitTexPreloadRegion()`] for more.
     pub fn new_preloaded(size_even: TexCacheSize, size_odd: TexCacheSize) -> Self {
         // libogc doesn't initialize all fields
         let mut gxtexregion = MaybeUninit::zeroed();
@@ -1646,7 +1660,7 @@ impl TexRegion {
 impl RawTexRegion {
     /// Invalidates the texture cache in Texture Memory (TMEM) described by region.
     ///
-    /// See [GX_InvalidateTexRegion](https://libogc.devkitpro.org/gx_8h.html#a2d4ce1648e0b44b6a0958e943aedcb76) for more.
+    /// See [`ogc_sys::GX_InvalidateTexRegion()`] for more.
     pub fn invalidate(&mut self) {
         unsafe { ffi::GX_InvalidateTexRegion(&mut self.0) }
     }
@@ -1670,14 +1684,7 @@ pub struct Tlut {
 impl Tlut {
     /// Initializes a Texture Look-Up Table (TLUT) object.
     ///
-    /// The TLUT object describes the location of the TLUT in main memory, its format and the number
-    /// of entries. The TLUT in main memory described by this object can be loaded into a TLUT
-    /// allocated in the texture memory using the [`Gx::load_tlut()`] function.
-    ///
-    /// Parameters:
-    /// `lut`: ptr to look-up table data; must be 32B aligned
-    /// `fmt`: format of the entries in the TLUT.
-    /// `entries`: number of entries in this table; maximum is 16,384
+/// See [`ogc_sys::GX_InitTlutObj()`] for more.
     pub fn new(mut lut: Buf32, fmt: TlutFormat, entries: u16) -> Self {
         // libogc doesn't check entries is within range. unsure of consequences, so let's just
         // play it safe.
@@ -1760,7 +1767,7 @@ pub struct RenderMode(GXRModeObj);
 impl RenderMode {
     /// Takes a given render mode and returns a version that is reduced in size to account for overscan.
     ///
-    /// See [GX_AdjustForOverscan](https://libogc.devkitpro.org/gx_8h.html#aa747893f4ff75886f7cacc4c40aa1206) for more.
+    /// See [`ogc_sys::GX_AdjustForOverscan()`] for more.
     pub fn adjust_for_overscan(mut self, hor: u16, ver: u16) -> Self {
         let mut rmout = core::mem::MaybeUninit::uninit();
         unsafe {
@@ -1841,7 +1848,7 @@ pub fn init(size: usize) -> AtomicPtr<RawFifo> {
 
 /// Return a copy of the currently attached GP FIFO.
 ///
-/// See [GX_GetGPFifo](https://libogc.devkitpro.org/gx_8h.html#ab44a1fe8f8fc13e5d22429d144227d5a) for more.
+/// See [`ogc_sys::GX_GetGPFifo()`] for more.
 pub fn get_gp_fifo() -> Option<RawFifo> {
     if INIT_FIFO.load(Ordering::Acquire).is_null() {
         None
@@ -1856,7 +1863,7 @@ pub fn get_gp_fifo() -> Option<RawFifo> {
 
 /// Attaches a FIFO to the GP.
 ///
-/// See [GX_SetGPFifo](https://libogc.devkitpro.org/gx_8h.html#af98b3858d1d04a4bbe620b0a45d94c8c) for more.
+/// See [`ogc_sys::GX_SetGPFifo()`] for more.
 pub fn set_gp_fifo(fifo: Option<&RawFifo>) {
     let fifo_ptr = match fifo {
         Some(fifo) => fifo,
@@ -1867,7 +1874,7 @@ pub fn set_gp_fifo(fifo: Option<&RawFifo>) {
 
 /// Return a copy of the currently attached CPU FIFO.
 ///
-/// See [GX_GetCPUFifo](https://libogc.devkitpro.org/gx_8h.html#a43258a02791218395ef43ffc7d8ed397) for more.
+/// See [`ogc_sys::GX_GetCPUFifo()`] for more.
 pub fn get_cpu_fifo() -> Option<RawFifo> {
     if INIT_FIFO.load(Ordering::Acquire).is_null() {
         None
@@ -1882,7 +1889,7 @@ pub fn get_cpu_fifo() -> Option<RawFifo> {
 
 /// Attaches a FIFO to the CPU.
 ///
-/// See [GX_SetCPUFifo](https://libogc.devkitpro.org/gx_8h.html#a69852ae8a9b982556a3a37a450af30d8) for more.
+/// See [`ogc_sys::GX_SetCPUFifo()`] for more.
 pub fn set_cpu_fifo(fifo: Option<&RawFifo>) {
     let fifo_ptr = match fifo {
         Some(fifo) => fifo,
@@ -1935,7 +1942,7 @@ pub fn clear_bounding_box() {
 ///
 /// When in display list mode, this is a no-op.
 ///
-/// See [GX_ClearGPMetric](https://libogc.devkitpro.org/gx_8h.html#ad339961d27f13b76640ee67e553488ac) for more.
+/// See [`ogc_sys::GX_ClearGPMetric()`] for more.
 pub fn clear_gp_metric() {
     if ! IN_DISPLAY_LIST.load(Ordering::Acquire) {
         unsafe { ffi::GX_ClearGPMetric() }
@@ -2055,7 +2062,7 @@ pub fn load_light_idx(litobjidx: u32, litid: u8) {
 ///
 /// When in a display list, this is a no-op.
 ///
-/// See [GX_PixModeSync](https://libogc.devkitpro.org/gx_8h.html#af8a7469351ae569dd22c496f93b0fc8f) for more.
+/// See [`ogc_sys::GX_PixModeSync()`] for more.
 pub fn pix_mode_sync() {
     if ! IN_DISPLAY_LIST.load(Ordering::Acquire) {
         unsafe { ffi::GX_PixModeSync() }
@@ -2132,6 +2139,8 @@ pub fn tex_mode_sync() {
 /// This function is normally used in immediate mode (see [`gx::set_cpu_fifo()`]). In
 /// multibuffer mode, sending the 'done' command is separated from polling the 'done' status
 /// (see [`gx::set_draw_done()`] and [`gx::wait_draw_done()`]).
+/// 
+/// See [`ogc_sys::GX_WaitDrawDone()`] for more.
 pub fn wait_draw_done() {
     unsafe { ffi::GX_WaitDrawDone() }
 }
@@ -2141,24 +2150,30 @@ pub fn wait_draw_done() {
 /// Normally, Z buffering should happen before texturing, as this enables better performance by
 /// not texturing pixels that are not visible; however, when alpha compare is used, Z buffering
 /// must be done after texturing (see [`gx::set_alpha_compare()`]).
+/// 
+/// See [`ogc_sys::GX_SetZCompLoc()`] for more.
 pub fn set_zcomp_loc(before_tex: bool) {
     unsafe { ffi::GX_SetZCompLoc(before_tex as u8) }
 }
 
 /// Sets color and Z value to clear the EFB to during copy operations.
-/// See [GX_SetCopyClear](https://libogc.devkitpro.org/gx_8h.html#a17265aefd7e64820de53abd9113334bc) for more.
+/// 
+/// See [`ogc_sys::GX_SetCopyClear()`] for more.
 pub fn set_copy_clear(background: Color, z_value: u32) {
     unsafe { ffi::GX_SetCopyClear(background.0, z_value) };
 }
 
 /// Sets the viewport rectangle in screen coordinates.
-/// See [GX_SetViewport](https://libogc.devkitpro.org/gx_8h.html#aaccd37675da5a22596fad756c73badc2) for more.
+/// 
+/// See [`ogc_sys::GX_SetViewport()`] for more.
 pub fn set_viewport(x_orig: f32, y_orig: f32, wd: f32, hd: f32, near_z: f32, far_z: f32) {
     unsafe { ffi::GX_SetViewport(x_orig, y_orig, wd, hd, near_z, far_z) }
 }
 
-/// Calculates an appropriate Y scale factor value for GX_SetDispCopyYScale() based on the height of the EFB and the height of the XFB.
-/// See [GX_GetYScaleFactor](https://libogc.devkitpro.org/gx_8h.html#a1558cf7d2eb9a6690fee4b64c4fc5a8e) for more.
+/// Calculates an appropriate Y scale factor value for [`set_disp_copy_y_scale()`] based
+/// on the height of the EFB and the height of the XFB.
+/// 
+/// See [`ogc_sys::GX_GetYScaleFactor()`] for more.
 pub fn get_y_scale_factor(efb_height: u16, xfb_height: u16) -> f32 {
     debug_assert!((2..=528).contains(&efb_height));
     debug_assert!(efb_height.is_multiple_of(2));
@@ -2168,19 +2183,22 @@ pub fn get_y_scale_factor(efb_height: u16, xfb_height: u16) -> f32 {
 }
 
 /// Sets the vertical scale factor for the EFB to XFB copy operation.
-/// See [GX_SetDispCopyYScale](https://libogc.devkitpro.org/gx_8h.html#a1a4ebb4e742f4ce2f010768e09e07c48) for more.
+/// 
+/// See [`ogc_sys::GX_SetDispCopyYScale()`] for more.
 pub fn set_disp_copy_y_scale(y_scale: f32) -> u32 {
     unsafe { ffi::GX_SetDispCopyYScale(y_scale) }
 }
 
 /// Sets the scissor rectangle.
-/// See [GX_SetScissor](https://libogc.devkitpro.org/gx_8h.html#a689bdd17fc74bf86a4c4f00418a2c596) for more.
+/// 
+/// See [`ogc_sys::GX_SetScissor()`] for more.
 pub fn set_scissor(x_origin: u32, y_origin: u32, wd: u32, hd: u32) {
     unsafe { ffi::GX_SetScissor(x_origin, y_origin, wd, hd) }
 }
 
 /// Sets the source parameters for the EFB to XFB copy operation.
-/// See [GX_SetDispCopySrc](https://libogc.devkitpro.org/gx_8h.html#a979d8db7abbbc2e9a267f5d1710ac588) for more.
+/// 
+/// See [`ogc_sys::GX_SetDispCopySrc()`] for more.
 pub fn set_disp_copy_src(left: u16, top: u16, wd: u16, ht: u16) {
     debug_assert!(left % 2 == 0, "left is not divisible by 2");
     debug_assert!(top % 2 == 0, "top is not divisible by 2");
@@ -2191,7 +2209,7 @@ pub fn set_disp_copy_src(left: u16, top: u16, wd: u16, ht: u16) {
 
 /// Sets the width and height of the display buffer in pixels.
 /// 
-/// See [GX_SetDispCopyDst](https://libogc.devkitpro.org/gx_8h.html#ab6f639059b750e57af4c593ba92982c5) for more.
+/// See [`ogc_sys::GX_SetDispCopyDst()`] for more.
 pub fn set_disp_copy_dst(width: u16, height: u16) {
     debug_assert!(
         width.is_multiple_of(16),
@@ -2200,8 +2218,10 @@ pub fn set_disp_copy_dst(width: u16, height: u16) {
     unsafe { ffi::GX_SetDispCopyDst(width, height) }
 }
 
-/// Sets the subpixel sample patterns and vertical filter coefficients used to filter subpixels into pixels.
-/// See [GX_SetCopyFilter](https://libogc.devkitpro.org/gx_8h.html#afd65b7e5f2040ddb3352649efde72faf) for more.
+/// Sets the subpixel sample patterns and vertical filter coefficients used to filter
+/// subpixels into pixels.
+/// 
+/// See [`ogc_sys::GX_SetCopyFilter()`] for more.
 pub fn set_copy_filter(
     sample_pattern: Option<[[u8; 2]; 12]>,
     vfilter: Option<[u8; 7]>,
@@ -2236,6 +2256,8 @@ pub fn set_copy_filter(
 }
 
 /// Sets the lighting controls for a particular color channel.
+/// 
+/// See [`ogc_sys::GX_SetChanCtrl()`] for more.
 pub fn set_channel_controls(
     channel: ColorChannel,
     enable: bool,
@@ -2258,14 +2280,17 @@ pub fn set_channel_controls(
     }
 }
 
-/// Controls various rasterization and texturing parameters that relate to field-mode and double-strike rendering.
-/// See [GX_SetFieldMode](https://libogc.devkitpro.org/gx_8h.html#a13f0df0011d04c3d986135e800fbcd21) for more.
+/// Controls various rasterization and texturing parameters that relate to field-mode and
+/// double-strike rendering.
+/// 
+/// See [`ogc_sys::GX_SetFieldMode()`] for more.
 pub fn set_field_mode(field_mode: bool, half_aspect_ratio: bool) {
     unsafe { ffi::GX_SetFieldMode(field_mode as u8, half_aspect_ratio as u8) }
 }
 
 /// Sets the format of pixels in the Embedded Frame Buffer (EFB).
-/// See [GX_SetPixelFmt](https://libogc.devkitpro.org/gx_8h.html#a018d9b0359f9689ac41f44f0b2374ffb) for more.
+/// 
+/// See [`ogc_sys::GX_SetPixelFmt()`] for more.
 pub fn set_pixel_fmt(pix_fmt: PixelFormat, z_fmt: ZFormat) {
     unsafe { ffi::GX_SetPixelFmt(pix_fmt as u8, z_fmt as u8) }
 }
@@ -2274,7 +2299,7 @@ pub fn set_pixel_fmt(pix_fmt: PixelFormat, z_fmt: ZFormat) {
 ///
 /// Primitives in which the vertex order is clockwise to the viewer are considered front-facing.
 ///
-/// See [GX_SetCullMode](https://libogc.devkitpro.org/gx_8h.html#adb4b17c39b24073c3e961458ecf02e87) for more.
+/// See [`ogc_sys::GX_SetCullMode()`] for more.
 pub fn set_cull_mode(mode: CullMode) {
     unsafe { ffi::GX_SetCullMode(mode as u8) }
 }
@@ -2299,6 +2324,8 @@ pub fn set_cull_mode(mode: CullMode) {
 /// interrupt handler will suspend the GX thread, thus preventing any
 /// further graphics data from being generated. The low watermark interrupt
 /// handler will resume the thread.
+/// 
+/// See [`ogc_sys::GX_SetCurrentGXThread()`] for more.
 pub fn set_current_gx_thread() -> lwp::Thread {
     lwp::Thread::new(unsafe { ffi::GX_SetCurrentGXThread() })
 }
@@ -2309,19 +2336,21 @@ pub fn set_current_gx_thread() -> lwp::Thread {
 ///
 /// The user must ensure the dest ptr is a valid pointer,
 ///
-/// See [GX_CopyDisp](https://libogc.devkitpro.org/gx_8h.html#a9ed0ae3f900abb6af2e930dff7a6bc28) for more.
+/// See [`ogc_sys::GX_CopyDisp()`] for more.
 pub unsafe fn copy_disp(dest: *mut c_void, clear: bool) {
     unsafe { ffi::GX_CopyDisp(dest, clear as u8) }
 }
 
 /// Sets the gamma correction applied to pixels during EFB to XFB copy operation.
-/// See [GX_SetDispCopyGamma](https://libogc.devkitpro.org/gx_8h.html#aa8e5bc962cc786b2049345fa698d4efa) for more.
+/// 
+/// See [`ogc_sys::GX_SetDispCopyGamma()`] for more.
 pub fn set_disp_copy_gamma(gamma: Gamma) {
     unsafe { ffi::GX_SetDispCopyGamma(gamma as _) }
 }
 
-/// Sets the attribute format (vtxattr) for a single attribute in the Vertex Attribute Table (VAT).
-/// See [GX_SetVtxAttrFmt](https://libogc.devkitpro.org/gx_8h.html#a87437061debcc0457b6b6dc2eb021f23) for more.
+/// Sets the attribute format for a single attribute in the Vertex Attribute Table (VAT).
+/// 
+/// See [`ogc_sys::GX_SetVtxAttrFmt()`] for more.
 pub fn set_vtx_attr_fmt(vtxfmt: u8, vtxattr: VtxAttr, comptype: u32, compsize: u32, frac: u32) {
     // this is debug_assert because libogc just uses the lowest 3 bits
     debug_assert!(
@@ -2334,19 +2363,24 @@ pub fn set_vtx_attr_fmt(vtxfmt: u8, vtxattr: VtxAttr, comptype: u32, compsize: u
 }
 
 /// Sets the number of color channels that are output to the TEV stages.
-/// See [GX_SetNumChans](https://libogc.devkitpro.org/gx_8h.html#a390c37e594986403c623df2bed61c2b2) for more.
+/// 
+/// See [`ogc_sys::GX_SetNumChans()`] for more.
 pub fn set_num_chans(num: u8) {
     unsafe { ffi::GX_SetNumChans(num) }
 }
 
-/// Sets the number of texture coordinates that are generated and available for use in the Texture Environment TEV stages.
-/// See [GX_SetNumTexGens](https://libogc.devkitpro.org/gx_8h.html#a55a79a1688d3a6957ee0c37d6323d159) for more.
+/// Sets the number of texture coordinates that are generated and available for use in the
+/// Texture Environment TEV stages.
+/// 
+/// See [`ogc_sys::GX_SetNumTexGens()`] for more.
 pub fn set_num_tex_gens(nr: u32) {
     unsafe { ffi::GX_SetNumTexGens(nr) }
 }
 
-/// Simplified function to set various TEV parameters for this tevstage based on a predefined combiner mode.
-/// See [GX_SetTevOp](https://libogc.devkitpro.org/gx_8h.html#a68554713cdde7b45ae4d5ce156239cf8) for more.
+/// Simplified function to set various TEV parameters for this tevstage based on a
+/// predefined combiner mode.
+/// 
+/// See [`ogc_sys::GX_SetTevOp()`] for more.
 pub fn set_tev_op(tevstage: u8, mode: u8) {
     unsafe { ffi::GX_SetTevOp(tevstage, mode) }
 }
@@ -2354,7 +2388,11 @@ pub fn set_tev_op(tevstage: u8, mode: u8) {
 /// Specifies the texture and rasterized color that will be available as inputs to
 /// this TEV tevstage.
 /// 
-/// See [GX_SetTevOrder](https://libogc.devkitpro.org/gx_8h.html#ae64799e52298de39efc74bf989fc57f5) for more.
+/// Instead of having `texmap` be a `u32` to account for the `GX_TEXMAP_DISABLE` flag,
+/// this function splits it into its own `bool` that can be set. If you don't use this
+/// flag, you can safely set `disable_texmap_lookup` to false.
+/// 
+/// See [`ogc_sys::GX_SetTevOrder()`] for more.
 pub fn set_tev_order(
     tevstage: u8,
     texcoord: Option<u8>,
@@ -2377,7 +2415,8 @@ pub fn set_tev_order(
 }
 
 /// Specifies how texture coordinates are generated.
-/// See [GX_SetTexCoordGen](https://libogc.devkitpro.org/gx_8h.html#a7d3139b693ace5587c3224e7df2d8245) for more.
+/// 
+/// See [`ogc_sys::GX_SetTexCoordGen()`] for more.
 pub fn set_tex_coord_gen(texcoord: u16, tgen_typ: u32, tgen_src: u32, mtxsrc: u32) {
     debug_assert!([30, 33, 36, 39, 42, 45, 48, 51, 54, 57, 60].contains(&mtxsrc));
     unsafe { ffi::GX_SetTexCoordGen(texcoord, tgen_typ, tgen_src, mtxsrc) }
@@ -2414,7 +2453,8 @@ pub fn load_texture(obj: &mut RawTexture, mapid: u8) {
 }
 
 /// Sets the projection matrix.
-/// See [GX_LoadProjectionMtx](https://libogc.devkitpro.org/gx_8h.html#a241a1301f006ed04b7895c051959f64e) for more.
+/// 
+/// See [`ogc_sys::GX_LoadProjectionMtx()`] for more.
 pub fn load_projection_mtx(matrix: &Mtx44, projection: ProjectionType) {
     unsafe { ffi::GX_LoadProjectionMtx(matrix.as_ptr().cast_mut(), projection as u8) }
 }
@@ -2428,54 +2468,62 @@ pub fn clear_vtx_desc() {
     unsafe { ffi::GX_ClearVtxDesc() }
 }
 
-/// Sets the type of a single attribute (attr) in the current vertex descriptor.
-/// See [GX_SetVtxDesc](https://libogc.devkitpro.org/gx_8h.html#af41b45011ae731ae5697b26b2bf97e2f) for more.
+/// Sets the type of a single attribute in the current vertex descriptor.
+/// 
+/// See [`ogc_sys::GX_SetVtxDesc()`] for more.
 pub fn set_vtx_desc(attr: VtxAttr, v_type: VtxAttrIn) {
     unsafe { ffi::GX_SetVtxDesc(attr as u8, v_type as _) }
 }
 
-/// Used to load a 3x4 modelview matrix mt into matrix memory at location pnidx.
-/// See [GX_LoadPosMtxImm](https://libogc.devkitpro.org/gx_8h.html#a90349e713128a1fa4fd6048dcab7b5e7) for more.
+/// Used to load a 3x4 modelview matrix into matrix memory at location `pnidx`.
+/// 
+/// See [`ogc_sys::GX_LoadPosMtxImm()`] for more.
 pub fn load_pos_mtx_imm(mut mt: Mtx34, pnidx: u32) {
     unsafe { ffi::GX_LoadPosMtxImm(mt.as_mut_ptr(), pnidx) }
 }
 
-/// Loads a 3x4 modelview matrix at index mtxidx from the array in main memory.
-/// See [GX_LoadPosMtxIdx](https://libogc.devkitpro.org/gx_8h.html#aa0c2283cf1c213231ec7e4a46b67e5a0) for more.
+/// Loads a 3x4 modelview matrix at index `mtxidx` from the array in main memory.
+/// 
+/// See [`ogc_sys::GX_LoadPosMtxIdx()`] for more.
 pub fn load_pos_mtx_idx(mtxidx: u16, pnidx: u32) {
     unsafe { ffi::GX_LoadPosMtxIdx(mtxidx, pnidx) }
 }
 
-/// Used to load a normal transform matrix into matrix memory at location pnidx from
-/// the 4x3 matrix mt.
-/// See [GX_LoadNrmMtxImm](https://libogc.devkitpro.org/gx_8h.html#ac678f81095bfbafadcd100cf6811ec72) for more.
+/// Used to load a normal transform matrix into matrix memory at location `pnidx` from
+/// the 4x3 matrix `mt`.
+/// 
+/// See [`ogc_sys::GX_LoadNrmMtxImm()`] for more.
 pub fn load_nrm_mtx_imm(mut mt: Mtx34, pnidx: u32) {
     unsafe { ffi::GX_LoadNrmMtxImm(mt.as_mut_ptr(), pnidx) }
 }
 
-/// Loads a 3x3 normal matrix into matrix memory at location pnidx from a 3x3 matrix
-/// located at index mtxidx from the array in main memory.
-/// See [GX_LoadNrmMtxIdx3x3](https://libogc.devkitpro.org/gx_8h.html#a84a37dd00a3c4d55cfad8d357bb6c2b1) for more.
+/// Loads a 3x3 normal matrix into matrix memory at location `pnidx` from a 3x3 matrix
+/// located at index `mtxidx` from the array in main memory.
+/// 
+/// See [`ogc_sys::GX_LoadNrmMtxIdx3x3()`] for more.
 pub fn load_nrm_mtx_idx_3x3(mtxidx: u16, pnidx: u32) {
     unsafe { ffi::GX_LoadNrmMtxIdx3x3(mtxidx, pnidx) }
 }
 
-/// Used to load a normal transform matrix into matrix memory at location pnidx from
-/// the 3x3 matrix mt.
-/// See [GX_LoadNrmMtxImm3x3](https://libogc.devkitpro.org/gx_8h.html#a6f9f81dad834cb3fbc437ddb21ab83c3) for more.
+/// Used to load a normal transform matrix into matrix memory at location `pnidx` from
+/// the 3x3 matrix `mt`.
+/// 
+/// See [`ogc_sys::GX_LoadNrmMtxImm3x3()`] for more.
 pub fn load_nrm_mtx_imm_3x3(mut mt: Mtx33, pnidx: u32) {
     unsafe { ffi::GX_LoadNrmMtxImm3x3(mt.as_mut_ptr(), pnidx) }
 }
 
-/// Loads a texture matrix mt into the matrix memory at location texidx.
-/// See [GX_LoadTexMtxImm](https://libogc.devkitpro.org/gx_8h.html#a2dae7e821ed8020450b26745e900b97b) for more.
+/// Loads a texture matrix `mt` into the matrix memory at location `texidx`.
+/// 
+/// See [`ogc_sys::GX_LoadTexMtxImm()`] for more.
 pub fn load_tex_mtx_imm(mut mt: Mtx34, texidx: u32, r#type: MtxType) {
     debug_assert!([30, 33, 36, 39, 42, 45, 48, 51, 54, 57, 60].contains(&texidx));
     unsafe { ffi::GX_LoadTexMtxImm(mt.as_mut_ptr(), texidx, r#type as _) }
 }
 
-/// Loads a texture matrix at index mtxidx from the array in main memory.
-/// See [GX_LoadTexMtxIdx](https://libogc.devkitpro.org/gx_8h.html#aa0c2283cf1c213231ec7e4a46b67e5a0) for more.
+/// Loads a texture matrix at index `mtxidx` from the array in main memory.
+/// 
+/// See [`ogc_sys::GX_LoadTexMtxIdx()`] for more.
 pub fn load_tex_mtx_idx(mtxidx: u16, texidx: u32, r#type: MtxType) {
     debug_assert!([30, 33, 36, 39, 42, 45, 48, 51, 54, 57, 60].contains(&texidx));
     unsafe { ffi::GX_LoadTexMtxIdx(mtxidx, texidx, r#type as _) }
@@ -2498,7 +2546,7 @@ pub fn set_dither(dither: bool) {
 
 /// Sends a DrawDone command to the GP and stalls until its subsequent execution.
 ///
-/// See [GX_DrawDone](https://libogc.devkitpro.org/gx_8h.html#a00f07b60ae2124fe027a82d7d9ae64b0) for more.
+/// See [`ogc_sys::GX_DrawDone()`] for more.
 pub fn draw_done() {
     /*
     //This should work :shrug:
@@ -2515,13 +2563,16 @@ pub fn draw_done() {
 }
 
 /// Sets the Z-buffer compare mode.
-/// See [GX_SetZMode](https://libogc.devkitpro.org/gx_8h.html#a2af0d050f56ef45dd25d0db18909fa00) for more.
+/// 
+/// See [`ogc_sys::GX_SetZMode()`] for more.
 pub fn set_z_mode(enable: bool, func: CmpFn, update_enable: bool) {
     unsafe { ffi::GX_SetZMode(enable as u8, func as u8, update_enable as u8) }
 }
 
-/// Determines how the source image, generated by the graphics processor, is blended with the Embedded Frame Buffer (EFB).
-/// See [GX_SetBlendMode](https://libogc.devkitpro.org/gx_8h.html#a1d9c43b161f3c5a30b9fd8ea182c8eb6) for more.
+/// Determines how the source image, generated by the graphics processor, is blended with
+/// the Embedded Frame Buffer (EFB).
+/// 
+/// See [`ogc_sys::GX_SetBlendMode()`] for more.
 pub fn set_blend_mode(
     b_type: BlendMode,
     src_fact: BlendCtrl,
@@ -2532,19 +2583,23 @@ pub fn set_blend_mode(
 }
 
 /// Enables or disables alpha-buffer updates of the Embedded Frame Buffer (EFB).
-/// See [GX_SetAlphaUpdate](https://libogc.devkitpro.org/gx_8h.html#ac238051bda896c8bb11802184882a2a0) for more.
+/// 
+/// See [`ogc_sys::GX_SetAlphaUpdate()`] for more.
 pub fn set_alpha_update(enable: bool) {
     unsafe { ffi::GX_SetAlphaUpdate(enable as u8) }
 }
 
-/// Enables or disables color-buffer updates when rendering into the Embedded Frame Buffer (EFB).
-/// See [GX_SetColorUpdate](https://libogc.devkitpro.org/gx_8h.html#a3978e3b08198e52d7cea411e90ece3e5) for more.
+/// Enables or disables color-buffer updates when rendering into the Embedded Frame Buffer
+/// (EFB).
+/// 
+/// See [`ogc_sys::GX_SetColorUpdate()`] for more.
 pub fn set_color_update(enable: bool) {
     unsafe { ffi::GX_SetColorUpdate(enable as u8) }
 }
 
 /// Sets the array base pointer and stride for a single attribute.
-/// See [GX_SetArray](https://libogc.devkitpro.org/gx_8h.html#a5164fc6aa2a678d792af80d94bfa1ec2) for more.
+/// 
+/// See [`ogc_sys::GX_SetArray()`] for more.
 pub fn set_array<T>(attr: VtxAttr, array: &[T]) {
     unsafe {
         cache::data_cache_flush(array);
@@ -2557,19 +2612,27 @@ pub fn set_array<T>(attr: VtxAttr, array: &[T]) {
 }
 
 /// Begins drawing of a graphics primitive.
-/// See [GX_Begin](https://libogc.devkitpro.org/gx_8h.html#ac1e1239130a33d9fae1352aee8d2cab9) for more.
+/// 
+/// See [`ogc_sys::GX_Begin()`] for more.
 pub fn begin(primitive: Primitive, vtxfmt: u8, vtxcnt: u16) {
     unsafe { ffi::GX_Begin(primitive as u8, vtxfmt, vtxcnt) }
 }
 
-/// Sets the parameters for the alpha compare function which uses the alpha output from the last active TEV stage.
-/// See [Gx_SetAlphaCompare](https://libogc.devkitpro.org/gx_8h.html#a23ac269062a1b2c2efc8ad5aae24b26a) for more.
+/// Sets the parameters for the alpha compare function which uses the alpha output from
+/// the last active TEV stage.
+/// 
+/// See [`ogc_sys::GX_SetAlphaCompare()`] for more.
 pub fn set_alpha_compare(comp0: CmpFn, ref0: u8, aop: AlphaOp, comp1: CmpFn, ref1: u8) {
     unsafe { ffi::GX_SetAlphaCompare(comp0 as u8, ref0, aop as u8, comp1 as u8, ref1) }
 }
 
-/// Sets the parameters for the alpha compare function which uses the alpha output from the last active TEV stage.
-/// See [GX_SetClipMode](https://libogc.devkitpro.org/gx_8h.html#a3d348d7af8ded25b57352e956f43d974) for more.
+/// Sets the parameters for the alpha compare function which uses the alpha output from
+/// the last active TEV stage.
+/// 
+/// It's recommended to use [`enable_clip()`] and [`disable_clip()`] instead to be more
+/// clear.
+/// 
+/// See [`ogc_sys::GX_SetClipMode()`] for more.
 pub fn set_clip_mode(mode: u8) {
     unsafe { ffi::GX_SetClipMode(mode) }
 }
@@ -2814,6 +2877,9 @@ pub fn matrix1_x8(index: u8) {
     unsafe { ffi::GX_MatrixIndex1x8(index) }
 }
 
+/// Flushes all commands to the GP.
+/// 
+/// See [`ogc_sys::GX_Flush()`] for more.
 pub fn flush() {
     unsafe { ffi::GX_Flush() }
 }
@@ -2832,14 +2898,14 @@ pub fn preload_entire_texture(obj: &RawTexture, region: &mut RawTexRegion) {
 
 /// Copies a Texture Look-Up Table (TLUT) from main memory to Texture Memory (TMEM).
 ///
-/// See [GX_LoadTlut](https://libogc.devkitpro.org/gx_8h.html#a9ebea5754b6e13996303cd4f829ebb1b) for more.
+/// See [`ogc_sys::GX_LoadTlut()`] for more.
 pub fn load_tlut(obj: &Tlut, tlut_name: u32) {
     unsafe { ffi::GX_LoadTlut(obj as *const _ as *mut _, tlut_name) }
 }
 
 /// This function sends a token into the command stream.
 ///
-/// See [GX_SetDrawSync](https://libogc.devkitpro.org/gx_8h.html#a537fee417b3018a0c8920770652ec813) for more.
+/// See [`ogc_sys::GX_SetDrawSync()`] for more.
 pub fn set_draw_sync(token: u16) {
     unsafe { ffi::GX_SetDrawSync(token); }
 }
@@ -2854,7 +2920,7 @@ pub fn get_draw_sync() -> u16 {
 ///
 /// When in display list mode, this is a no-op.
 ///
-/// See [GX_SetGPMetric](https://libogc.devkitpro.org/gx_8h.html#a0552fd47b766524a88db059c4d1023cc) for more.
+/// See [`ogc_sys::GX_SetGPMetric()`] for more.
 pub fn set_gp_metric(perf0: Perf0, perf1: Perf1) {
     if ! IN_DISPLAY_LIST.load(Ordering::Acquire) {
         unsafe { ffi::GX_SetGPMetric(perf0 as _, perf1 as _) }
@@ -2865,7 +2931,7 @@ pub fn set_gp_metric(perf0: Perf0, perf1: Perf1) {
 ///
 /// When in display list mode, this returns `None`.
 ///
-/// See [GX_ReadGPMetric](https://libogc.devkitpro.org/gx_8h.html#af62420d12b7f50c810e3c5fb560e1176) for more.
+/// See [`ogc_sys::GX_ReadGPMetric()`] for more.
 pub fn read_gp_metric() -> Option<(u32, u32)> {
     if ! IN_DISPLAY_LIST.load(Ordering::Acquire) {
         let mut counts = (0, 0);
@@ -2878,7 +2944,7 @@ pub fn read_gp_metric() -> Option<(u32, u32)> {
 
 /// Sets the metric the Vertex Cache performance counter will measure.
 ///
-/// See [GX_SetVCacheMetric](https://libogc.devkitpro.org/gx_8h.html#ab5b888434069c7f72caebbd6f98c55a9) for more.
+/// See [`ogc_sys::GX_SetVCacheMetric()`] for more.
 pub fn set_vcache_metric(attr: VCacheAttr) {
     unsafe { ffi::GX_SetVCacheMetric(attr as _) }
 }
@@ -2887,7 +2953,7 @@ pub fn set_vcache_metric(attr: VCacheAttr) {
 ///
 /// When in display list mode, this returns `None`.
 ///
-/// See [GX_ReadVCacheMetric](https://libogc.devkitpro.org/gx_8h.html#a19679bb36c6c27403a30f77de3cbdbc4) for more.
+/// See [`ogc_sys::GX_ReadVCacheMetric()`] for more.
 pub fn read_vcache_metric() -> Option<(u32, u32, u32)> {
     if ! IN_DISPLAY_LIST.load(Ordering::Acquire) {
         let (mut check, mut miss, mut stall) = (0, 0, 0);
@@ -2913,37 +2979,30 @@ pub fn copy_tex(mut dest: Buf32, clear: bool) {
     unsafe { ffi::GX_CopyTex(dest.as_mut_ptr() as *mut _, clear as _) }
 }
 
-/// Sets the type of multiple attributes.
-///
-/// See [GX_SetVtxDescv](https://libogc.devkitpro.org/gx_8h.html#a159810efe8391da35ea9b625c5fc70bd) for more.
-pub fn set_vtx_descv(_attr_list: &[VtxDesc]) {
-    unimplemented!()
-}
-
 /// Sets the width of line primitives.
 ///
-/// See [GX_SetLineWidth](https://libogc.devkitpro.org/gx_8h.html#a18e5556c0f12c84a00b631f24edb6f99) for more.
+/// See [`ogc_sys::GX_SetLineWidth()`] for more.
 pub fn set_line_width(width: u8, fmt: TexOffset) {
     unsafe { ffi::GX_SetLineWidth(width, fmt as _); }
 }
 
 /// Sets the size of point primitives.
 ///
-/// See [GX_SetPointSize](https://libogc.devkitpro.org/gx_8h.html#a3a1632e5897acafc1255b2d93236ddcb) for more.
+/// See [`ogc_sys::GX_SetPointSize()`] for more.
 pub fn set_point_size(width: u8, fmt: TexOffset) {
     unsafe { ffi::GX_SetPointSize(width, fmt as _); }
 }
 
 /// Sets the fog color.
 ///
-/// See [GX_SetFogColor](https://libogc.devkitpro.org/gx_8h.html#ad95ca1b8adaafba7142ed8492869cfc8) for more.
+/// See [`ogc_sys::GX_SetFogColor()`] for more.
 pub fn set_fog_color(color: Color) {
     unsafe { ffi::GX_SetFogColor(color.0); }
 }
 
 /// Enables fog.
 ///
-/// See [GX_SetFog](https://libogc.devkitpro.org/gx_8h.html#a16018e87043cea657379c7370c0a79d5) for more.
+/// See [`ogc_sys::GX_SetFog()`] for more.
 pub fn set_fog(ft: FogType, startz: f32, endz: f32, nearz: f32, farz: f32, col: Color) {
     unsafe {
         ffi::GX_SetFog(ft as _, startz, endz, nearz, farz, col.0);
@@ -2954,7 +3013,7 @@ pub fn set_fog(ft: FogType, startz: f32, endz: f32, nearz: f32, farz: f32, col: 
 ///
 /// When already in a display list, this is a no-op.
 ///
-/// See [GX_BeginDispList](https://libogc.devkitpro.org/gx_8h.html#a0b7122421171545256ccb2992dccc546) for more.
+/// See [`ogc_sys::GX_BeginDispList()`] for more.
 pub fn begin_display_list(list: &mut Buf32) {
     if ! IN_DISPLAY_LIST.swap(true, Ordering::AcqRel) {
         // TODO: we should not be allowing write access from the application to the Buf32
@@ -2969,7 +3028,7 @@ pub fn begin_display_list(list: &mut Buf32) {
 /// of the display list, which is passed to libogc when calling the display list with
 /// [`call_display_list()`].
 ///
-/// See [GX_EndDispList](https://libogc.devkitpro.org/gx_8h.html#ad7103a02cdffe078062879185a094d5f) for more.
+/// See [`ogc_sys::GX_EndDispList()`] for more.
 pub fn end_display_list() -> Option<u32> {
     if IN_DISPLAY_LIST.swap(false, Ordering::AcqRel) {
         Some(unsafe { ffi::GX_EndDispList() })
@@ -2982,7 +3041,7 @@ pub fn end_display_list() -> Option<u32> {
 ///
 /// When already in a display list, this is a no-op.
 ///
-/// See [GX_CallDispList](https://libogc.devkitpro.org/gx_8h.html#a20cac24818fa79957c4c8616ecc87cbe) for more.
+/// See [`ogc_sys::GX_CallDispList()`] for more.
 pub fn call_display_list(list: &Buf32, size: u32) {
     if ! IN_DISPLAY_LIST.load(Ordering::Acquire) {
         unsafe { ffi::GX_CallDispList(list.as_ptr() as *const _ as *mut _, size) }
@@ -2994,7 +3053,7 @@ pub fn call_display_list(list: &Buf32, size: u32) {
 /// For `coord`, libogc will use the lowest 3 bits for the texture slot, so its value
 /// should be between 0 and 7 inclusive.
 ///
-/// See [GX_EnableTexOffsets](https://libogc.devkitpro.org/gx_8h.html#ab94bf9e5a37a3f2c374e70e0d238d3d8) for more.
+/// See [`ogc_sys::GX_EnableTexOffsets()`] for more.
 pub fn enable_tex_offsets(coord: u8, line_enable: bool, point_enable: bool) {
     unsafe { ffi::GX_EnableTexOffsets(coord, line_enable as u8, point_enable as u8) }
 }
@@ -3012,14 +3071,14 @@ pub fn load_texture_preloaded(obj: &mut RawTexture, region: &mut RawTexRegion, m
 
 /// Invalidates the vertex cache.
 ///
-/// See [GX_InvVtxCache](https://libogc.devkitpro.org/gx_8h.html#a188bc7f388f971bc845dded41a24d1dc) for more.
-pub fn inv_vtx_cache() {
+/// See [`ogc_sys::GX_InvVtxCache()`] for more.
+pub fn invalidate_vtx_cache() {
     unsafe { ffi::GX_InvVtxCache() }
 }
 
 /// Allows the CPU to read a color value directly from the Embedded Frame Buffer (EFB) at position (x, y).
 ///
-/// See [GX_PeekARGB](https://libogc.devkitpro.org/gx_8h.html#abd456222add9a17d48007664aaba2a84) for more.
+/// See [`ogc_sys::GX_PeekARGB()`] for more.
 pub fn peek_argb(x: u16, y: u16) -> Color {
     let mut color = MaybeUninit::uninit();
     unsafe {
@@ -3030,7 +3089,7 @@ pub fn peek_argb(x: u16, y: u16) -> Color {
 
 /// Allows the CPU to read a z value directly from the Embedded Frame Buffer (EFB) at position (x, y).
 ///
-/// See [GX_PeekZ](https://libogc.devkitpro.org/gx_8h.html#ab8116b7bcee951bbea04235e6448d725) for more.
+/// See [`ogc_sys::GX_PeekZ()`] for more.
 pub fn peek_z(x: u16, y: u16) -> u32 {
     let mut z = MaybeUninit::uninit();
     unsafe {
@@ -3042,7 +3101,7 @@ pub fn peek_z(x: u16, y: u16) -> u32 {
 /// Sets a threshold which is compared to the alpha of pixels written to the Embedded Frame
 /// Buffer (EFB) using the `gx::poke_*()` functions.
 ///
-/// See [GX_PokeAlphaMode](https://libogc.devkitpro.org/gx_8h.html#ae14875170e444f9b331f3f51e517931e) for more.
+/// See [`ogc_sys::GX_PokeAlphaMode()`] for more.
 pub fn poke_alpha_mode(func: CmpFn, threshold: u8) {
     unsafe { ffi::GX_PokeAlphaMode(func as u8, threshold) }
 }
@@ -3060,21 +3119,21 @@ pub enum AlphaReadMode {
 
 /// Determines what value of alpha will be read from the Embedded Frame Buffer (EFB).
 ///
-/// See [GX_PokeAlphaRead](https://libogc.devkitpro.org/gx_8h.html#a6a00dd9456e10f909a0151e3fc97e3da) for more.
+/// See [`ogc_sys::GX_PokeAlphaRead()`] for more.
 pub fn poke_alpha_read(mode: AlphaReadMode) {
     unsafe { ffi::GX_PokeAlphaRead(mode as u8) }
 }
 
 /// Enables or disables alpha-buffer updates for `gx::poke_*()` functions.
 ///
-/// See [GX_PokeAlphaUpdate](https://libogc.devkitpro.org/gx_8h.html#a716251f902a16f7701a71178338c30f6) for more.
+/// See [`ogc_sys::GX_PokeAlphaUpdate()`] for more.
 pub fn poke_alpha_update(enable: bool) {
     unsafe { ffi::GX_PokeAlphaUpdate(enable as u8) }
 }
 
 /// Allows the CPU to write color directly to the Embedded Frame Buffer (EFB) at position (x, y).
 ///
-/// See [GX_PokeARGB](https://libogc.devkitpro.org/gx_8h.html#a5038d2f65e7959d64c68dcb1855353d8) for more.
+/// See [`ogc_sys::GX_PokeARGB()`] for more.
 pub fn poke_argb(x: u16, y: u16, color: Color) {
     debug_assert!(x <= 640, "x must be less than 640, currently {x}");
     debug_assert!(y <= 528, "y must be less than 528, currently {y}");
@@ -3083,7 +3142,7 @@ pub fn poke_argb(x: u16, y: u16, color: Color) {
 
 /// Determines how the source image, is blended with the current Embedded Frame Buffer (EFB).
 ///
-/// See [GX_PokeBlendMode](https://libogc.devkitpro.org/gx_8h.html#a24a9888bf4d97023577ed7e3ab178f6a) for more.
+/// See [`ogc_sys::GX_PokeBlendMode()`] for more.
 pub fn poke_blend_mode(mode: BlendMode, src_fact: BlendCtrl, dst_fact: BlendCtrl, op: LogicOp) {
     unsafe { ffi::GX_PokeBlendMode(mode as u8, src_fact as u8, dst_fact as u8, op as u8) }
 }
@@ -3091,28 +3150,28 @@ pub fn poke_blend_mode(mode: BlendMode, src_fact: BlendCtrl, dst_fact: BlendCtrl
 /// Enables or disables color-buffer updates when writing the Embedded Frame Buffer (EFB) using the
 /// `gx::poke_*()` functions.
 ///
-/// See [GX_PokeColorUpdate](https://libogc.devkitpro.org/gx_8h.html#a6c6f72b0b3c47a1e20a8456460fa83fd) for more.
+/// See [`ogc_sys::GX_PokeColorUpdate()`] for more.
 pub fn poke_color_update(enable: bool) {
     unsafe { ffi::GX_PokeColorUpdate(enable as u8) }
 }
 
 /// Enables dithering when writing the Embedded Frame Buffer (EFB) using `gx::poke_*()` functions.
 ///
-/// See [GX_PokeDither](https://libogc.devkitpro.org/gx_8h.html#a410ec93f6733856bd2e658eee088a88b) for more.
+/// See [`ogc_sys::GX_PokeDither()`] for more.
 pub fn poke_dither(enable: bool) {
     unsafe { ffi::GX_PokeDither(enable as u8) }
 }
 
 /// Sets a constant alpha value for writing to the Embedded Frame Buffer (EFB).
 ///
-/// See [GX_PokeDstAlpha](https://libogc.devkitpro.org/gx_8h.html#a62f70019a5ff3740cb077db69fea7f98) for more.
+/// See [`ogc_sys::GX_PokeDstAlpha()`] for more.
 pub fn poke_dst_alpha(enable: bool, a: u8) {
     unsafe { ffi::GX_PokeDstAlpha(enable as u8, a) }
 }
 
 /// Allows the CPU to write a z value directly to the Embedded Frame Buffer (EFB) at position (x, y).
 ///
-/// See [GX_PokeZ](https://libogc.devkitpro.org/gx_8h.html#a653e731d863deab2faae1594d15137a2) for more.
+/// See [`ogc_sys::GX_PokeZ()`] for more.
 pub fn poke_z(x: u16, y: u16, z: u32) {
     debug_assert!(x <= 640, "x must be less than 640, currently {x}");
     debug_assert!(y <= 528, "y must be less than 528, currently {y}");
@@ -3121,7 +3180,7 @@ pub fn poke_z(x: u16, y: u16, z: u32) {
 
 /// Sets the Z-buffer compare mode when writing the Embedded Frame Buffer (EFB).
 ///
-/// See [GX_PokeZMode](https://libogc.devkitpro.org/gx_8h.html#a3b3802cd88dcd0d3eeb241f9b45a1fd5) for more.
+/// See [`ogc_sys::GX_PokeZMode()`] for more.
 pub fn poke_z_mode(enable_cmp: bool, cmp: CmpFn, enable_update: bool) {
     unsafe { ffi::GX_PokeZMode(enable_cmp as u8, cmp as u8, enable_update as u8) }
 }
@@ -3130,7 +3189,7 @@ pub fn poke_z_mode(enable_cmp: bool, cmp: CmpFn, enable_update: bool) {
 ///
 /// Returns a tuple `(top, bottom, left, right)` corresponding to each line.
 ///
-/// See [GX_ReadBoundingBox](https://libogc.devkitpro.org/gx_8h.html#a4a51c85c25a25f1876c715a4e7913736) for more.
+/// See [`ogc_sys::GX_ReadBoundingBox()`] for more.
 pub fn read_bounding_box() -> (u16, u16, u16, u16) {
     let (mut top, mut bottom, mut left, mut right) = (0, 0, 0, 0);
     unsafe {
@@ -3145,7 +3204,7 @@ pub fn read_clks_per_vtx() -> u32 {
 
 /// Read performance metric values from the XF and RAS units.
 ///
-/// See [GX_ReadXfRasMetric](https://libogc.devkitpro.org/gx_8h.html#a9018fdb77372e23f2b98157b5af6220a) for more.
+/// See [`ogc_sys::GX_ReadXfRasMetric()`] for more.
 pub fn read_xf_ras_metric() -> (u32, u32, u32, u32) {
     let (mut xfwaitin, mut xfwaitout, mut rasbusy, mut clks) = (0, 0, 0, 0);
     unsafe { ffi::GX_ReadXfRasMetric(&mut xfwaitin, &mut xfwaitout, &mut rasbusy, &mut clks); }
@@ -3158,21 +3217,21 @@ pub fn reset_overflow_count() -> u32 {
 
 /// Sets the ambient color register for the color channel.
 ///
-/// See [GX_SetChanAmbColor](https://libogc.devkitpro.org/gx_8h.html#a5097c9cfead421e0f7e492620446bcca) for more.
+/// See [`ogc_sys::GX_SetChanAmbColor()`] for more.
 pub fn set_chan_amb_color(channel: ColorChannel, color: Color) {
     unsafe { ffi::GX_SetChanAmbColor(channel as i32, color.0) }
 }
 
 /// Sets the material color register for the color channel.
 ///
-/// See [GX_SetChanMatColor](https://libogc.devkitpro.org/gx_8h.html#a477a92781b0379250c56afcfda9b603b) for more.
+/// See [`ogc_sys::GX_SetChanMatColor()`] for more.
 pub fn set_chan_mat_color(channel: ColorChannel, color: Color) {
     unsafe { ffi::GX_SetChanMatColor(channel as i32, color.0) }
 }
 
 /// Enables or disables coplanar triangle processing.
 ///
-/// See [GX_SetCoPlanar](https://libogc.devkitpro.org/gx_8h.html#adf77d3b200df79928936301923c6805d) for more.
+/// See [`ogc_sys::GX_SetCoPlanar()`] for more.
 pub fn set_coplanar(enable: bool) {
     unsafe { ffi::GX_SetCoPlanar(enable as u8) }
 }
@@ -3188,14 +3247,14 @@ bitflags::bitflags! {
 
 /// Sets the vertical clamping mode to use during the EFB to XFB or texture copy.
 ///
-/// See [GX_SetCopyClamp](https://libogc.devkitpro.org/gx_8h.html#ac711ece8e164383667909d1dd50f002e) for more.
+/// See [`ogc_sys::GX_SetCopyClamp()`] for more.
 pub fn set_copy_clamp(clamp: ClampMode) {
     unsafe { ffi::GX_SetCopyClamp(clamp.bits() as u8) }
 }
 
 /// Selects a specific matrix to use for transformations.
 ///
-/// See [GX_SetCurrentMtx](https://libogc.devkitpro.org/gx_8h.html#a0596dc11a15a8b039f552051b3d1b9f5) for more.
+/// See [`ogc_sys::GX_SetCurrentMtx()`] for more.
 pub fn set_current_mtx(mtx: u32) {
     unsafe { ffi::GX_SetCurrentMtx((mtx * 3).min(ffi::GX_PNMTX9)) }
 }
@@ -3210,21 +3269,21 @@ pub enum CopyMode {
 
 /// Determines which lines are read from the Embedded Frame Buffer (EFB) when using [`gx::copy_disp()`].
 ///
-/// See [GX_SetDispCopyFrame2Field](https://libogc.devkitpro.org/gx_8h.html#a6d14fcad867bfdefc68c72f482eaa7a0) for more.
+/// See [`ogc_sys::GX_SetDispCopyFrame2Field()`] for more.
 pub fn set_disp_copy_frame_to_field(mode: CopyMode) {
     unsafe { ffi::GX_SetDispCopyFrame2Field(mode as u8) }
 }
 
 /// Sets a constant alpha value for writing to the Embedded Frame Buffer (EFB).
 ///
-/// See [GX_SetDstAlpha](https://libogc.devkitpro.org/gx_8h.html#a2c95bb677a05186ef2fc46a1b2965553) for more.
+/// See [`ogc_sys::GX_SetDstAlpha()`] for more.
 pub fn set_dst_alpha(enable: bool, a: u8) {
     unsafe { ffi::GX_SetDstAlpha(enable as u8, a) }
 }
 
 /// Selectively enables and disables interlacing of the frame buffer image.
 ///
-/// See [GX_SetFieldMask](https://libogc.devkitpro.org/gx_8h.html#add6da60ca9cdf70f436f2c6f0264afad) for more.
+/// See [`ogc_sys::GX_SetFieldMask()`] for more.
 pub fn set_field_mask(even_mask: bool, odd_mask: bool) {
     unsafe { ffi::GX_SetFieldMask(even_mask as u8, odd_mask as u8) }
 }
@@ -3240,14 +3299,14 @@ pub enum MiscToken {
 
 /// Sets miscellanous settings in the GP.
 ///
-/// See [GX_SetMisc](https://libogc.devkitpro.org/gx_8h.html#a18a14de6b142222f7aea6c7b6c3a0a16) for more.
+/// See [`ogc_sys::GX_SetMisc()`] for more.
 pub fn set_misc(token: MiscToken, value: u32) {
     unsafe { ffi::GX_SetMisc(token as u32, value) }
 }
 
 /// Used to set how many indirect lookups will take place.
 ///
-/// See [GX_SetNumIndStages](https://libogc.devkitpro.org/gx_8h.html#a8ff9cccc4cfb803a9d924eafa108c55d) for more.
+/// See [`ogc_sys::GX_SetNumIndStages()`] for more.
 pub fn set_num_ind_stages(nstages: u8) {
     debug_assert!(nstages <= 4, "There are only 4 indirect stages; got {nstages}");
     unsafe { ffi::GX_SetNumIndStages(nstages) }
@@ -3255,7 +3314,7 @@ pub fn set_num_ind_stages(nstages: u8) {
 
 /// Enables a consecutive number of TEV stages.
 ///
-/// See [GX_SetNumTevStages](https://libogc.devkitpro.org/gx_8h.html#a408612e8fdbd9e0ff0fd78edce13e386) for more.
+/// See [`ogc_sys::GX_SetNumTevStages()`] for more.
 pub fn set_num_tev_stages(num: u8) {
     debug_assert!(num <= 16, "There are only 16 TEV stages; got {num}");
     unsafe { ffi::GX_SetNumTevStages(num) }
@@ -3263,7 +3322,7 @@ pub fn set_num_tev_stages(num: u8) {
 
 /// Repositions the scissorbox rectangle within the Embedded Frame Buffer (EFB) memory space.
 ///
-/// See [GX_SetScissorBoxOffset](https://libogc.devkitpro.org/gx_8h.html#a7c2c2c3f16c7c24a44ae91235278e3a9) for more.
+/// See [`ogc_sys::GX_SetScissorBoxOffset()`] for more.
 pub fn set_scissor_box_offset(xoffset: i32, yoffset: i32) {
     debug_assert!(
         (-342..=382).contains(&xoffset),
@@ -3278,7 +3337,7 @@ pub fn set_scissor_box_offset(xoffset: i32, yoffset: i32) {
 
 /// Sets the viewport and adjusts the viewport's line offset for interlaced field rendering.
 ///
-/// See [GX_SetViewportJitter](https://libogc.devkitpro.org/gx_8h.html#a96c5c40d63c7797d22800e6a31d6c798) for more.
+/// See [`ogc_sys::GX_SetViewportJitter()`] for more.
 pub fn set_viewport_jitter(x_orig: f32, y_orig: f32, wd: f32, ht: f32, near_z: f32, far_z: f32, odd: bool) {
     unsafe { ffi::GX_SetViewportJitter(x_orig, y_orig, wd, ht, near_z, far_z, odd as u32) }
 }
@@ -3297,7 +3356,7 @@ pub enum ZTexOp {
 ///
 /// `fmt` should be one of the Z texture variants.
 ///
-/// See [GX_SetZTexture](https://libogc.devkitpro.org/gx_8h.html#a05054d31fda1f7f2975375ad49a734d7) for more.
+/// See [`ogc_sys::GX_SetZTexture()`] for more.
 pub fn set_z_texture(op: ZTexOp, fmt: TexFormat, bias: u32) {
     unsafe { ffi::GX_SetZTexture(op as u8, fmt as u8, bias) }
 }
@@ -3371,10 +3430,11 @@ unsafe extern "C" fn breakpt_callback_stub() {
 
 /// Registers `cb` as a function to be invoked when a break point is encountered.
 ///
-/// `cb` is an `unsafe fn()` due to being run when interrupts are disabled. It should
-/// return as soon as possible.
+/// See [`ogc_sys::GX_SetBreakPtCallback()`] for more.
 ///
-/// See [GX_SetBreakPtCallback](https://libogc.devkitpro.org/gx_8h.html#a58d6aafb813095b05aa40675a9f83ed8) for more.
+/// # Safety
+/// The callback is marked unsafe due to running when interrupts are disabled. It should
+/// return as soon as possible.
 pub fn set_breakpt_callback(cb: Option<unsafe fn()>) -> Option<unsafe fn()> {
     let cb_ptr = match cb {
         None => {
@@ -3525,7 +3585,7 @@ pub enum Gamma {
 /// of two used for the indirect scaling. For example, to get the same behavior as using
 /// `GX_ITS_32`, use a scale value of 5.
 /// 
-/// See [GX_SetIndTexCoordScale](https://libogc.devkitpro.org/gx_8h.html#a3b1738565a2a703e16700c78c6eabfe7) for more.
+/// See [`ogc_sys::GX_SetIndTexCoordScale()`] for more.
 pub fn set_ind_tex_coord_scale(indtexid: u8, scale_s: u8, scale_t: u8) {
     debug_assert!(indtexid <= 3);
     debug_assert!(scale_s <= 8);
@@ -3560,7 +3620,7 @@ pub enum IndTexMat {
 
 /// Sets one of the three static indirect matrices and the associated scale factor.
 /// 
-/// See [GX_SetIndTexMatrix](https://libogc.devkitpro.org/gx_8h.html#ab420287ea1ba94471048ed0ef2541f15) for more.
+/// See [`ogc_sys::GX_SetIndTexMatrix()`] for more.
 pub fn set_ind_tex_matrix(indtexmtx: IndTexMat, offset_mtx: [[f32; 3]; 2], scale_exp: i8) {
     unsafe {
         ffi::GX_SetIndTexMatrix(indtexmtx as u8, offset_mtx.as_ptr().cast_mut(), scale_exp)
@@ -3569,7 +3629,7 @@ pub fn set_ind_tex_matrix(indtexmtx: IndTexMat, offset_mtx: [[f32; 3]; 2], scale
 
 /// Sets one of the three static indirect matrices and the associated scale factor.
 /// 
-/// See [GX_SetIndTexMatrix](https://libogc.devkitpro.org/gx_8h.html#ab420287ea1ba94471048ed0ef2541f15) for more.
+/// See [`ogc_sys::GX_SetIndTexMatrix()`] for more.
 pub fn set_ind_tex_order(indtexstage: u8, texcoord: Option<u8>, texmap: Option<u8>) {
     debug_assert!(indtexstage <= 3);
     debug_assert!(if let Some(x) = texcoord { x <= 7 } else { true });
@@ -3606,7 +3666,7 @@ pub enum TevAlphaArg {
 /// Sets the alpha input sources for one tevstage of the Texture Environment (TEV) alpha
 /// combiner.
 /// 
-/// See [GX_SetTevAlphaIn](https://libogc.devkitpro.org/gx_8h.html#a4a9970519c90a72b0a5b161d3252bb76) for more.
+/// See [`ogc_sys::GX_SetTevAlphaIn()`] for more.
 pub fn set_tev_alpha_in(
     tevstage: u8,
     a: TevAlphaArg,
@@ -3664,6 +3724,8 @@ pub enum TevColOutReg {
 
 /// Sets the tevop, tevbias, tevscale and clamp-mode operation for the alpha combiner for
 /// this tevstage of the TEV unit.
+/// 
+/// See [`ogc_sys::GX_SetTevAlphaOp()`] for more.
 pub fn set_tev_alpha_op(
     tevstage: u8,
     tevop: TevOp,
@@ -3686,6 +3748,8 @@ pub fn set_tev_alpha_op(
 }
 
 /// Used to set one of the primary color registers in the TEV unit.
+/// 
+/// See [`ogc_sys::GX_SetTevColor()`] for more.
 pub fn set_tev_color(tev_regid: TevColOutReg, color: Color) {
     debug_assert!(
         matches!(tev_regid, TevColOutReg::Reg0 | TevColOutReg::Reg1 | TevColOutReg::Reg2)
@@ -3729,6 +3793,8 @@ pub enum TevColorArg {
 
 /// Sets the color input sources for one tevstage of the Texture Environment (TEV) color
 /// combiner.
+/// 
+/// See [`ogc_sys::GX_SetTevColorIn()`] for more.
 pub fn set_tev_color_in(
     tevstage: u8,
     a: TevColorArg,
@@ -3742,6 +3808,8 @@ pub fn set_tev_color_in(
 
 /// Sets the tevop, tevbias, tevscale and clamp-mode operation for the color combiner for
 /// this tevstage of the TEV unit.
+/// 
+/// See [`ogc_sys::GX_SetTevColorOp()`] for more.
 pub fn set_tev_color_op(
     tevstage: u8,
     tevop: TevOp,
@@ -3764,6 +3832,8 @@ pub fn set_tev_color_op(
 }
 
 /// Used to set one of the constant color registers in the TEV unit.
+/// 
+/// See [`ogc_sys::GX_SetTevColorS10()`] for more.
 pub fn set_tev_color_s10(tev_regid: TevColOutReg, color: ColorS10) {
     debug_assert!(
         matches!(tev_regid, TevColOutReg::Reg0 | TevColOutReg::Reg1 | TevColOutReg::Reg2)
@@ -3772,6 +3842,8 @@ pub fn set_tev_color_s10(tev_regid: TevColOutReg, color: ColorS10) {
 }
 
 /// Used to turn off all indirect texture processing for the specified regular TEV stage.
+/// 
+/// See [`ogc_sys::GX_SetTevDirect()`] for more.
 pub fn set_tev_direct(tevstage: u8) {
     debug_assert!(tevstage < ffi::GX_MAX_TEVSTAGE as u8);
     unsafe { ffi::GX_SetTevDirect(tevstage); }
@@ -3779,7 +3851,7 @@ pub fn set_tev_direct(tevstage: u8) {
 
 /// Sets up an environment-mapped bump-mapped indirect lookup.
 /// 
-/// See [GX_SetTevIndBumpST](https://libogc.devkitpro.org/gx_8h.html#ab3f959a80b7097e5a802c398502da307) for more.
+/// See [`ogc_sys::GX_SetTevIndBumpST()`] for more.
 pub fn set_tev_ind_bump_st(tevstage: u8, indtexstage: u8, mtx_sel: IndTexMat) {
     debug_assert!(tevstage < ffi::GX_MAX_TEVSTAGE as u8);
     debug_assert!(indtexstage < ffi::GX_MAX_INDTEXSTAGE as u8);
@@ -3788,7 +3860,7 @@ pub fn set_tev_ind_bump_st(tevstage: u8, indtexstage: u8, mtx_sel: IndTexMat) {
 
 /// Sets up an environment-mapped bump-mapped indirect lookup.
 /// 
-/// See [GX_SetTevIndBumpXYZ](https://libogc.devkitpro.org/gx_8h.html#af37aa8723c7a078a2612693bb617a8ac) for more.
+/// See [`ogc_sys::GX_SetTevIndBumpXYZ()`] for more.
 pub fn set_tev_ind_bump_xyz(tevstage: u8, indtexstage: u8, mtx_sel: IndTexMat) {
     debug_assert!(tevstage < ffi::GX_MAX_TEVSTAGE as u8);
     debug_assert!(indtexstage < ffi::GX_MAX_INDTEXSTAGE as u8);
@@ -3854,7 +3926,7 @@ pub enum IndTexAlphaSel {
 /// Controls how the results from an indirect lookup will be used to modify a given
 /// regular TEV stage lookup.
 /// 
-/// See [GX_SetTevIndirect](https://libogc.devkitpro.org/gx_8h.html#a00fa37cf7924a9992978ef2263ca3e3d) for more.
+/// See [`ogc_sys::GX_SetTevIndirect()`] for more.
 pub fn set_tev_indirect(
     tevstage: u8,
     indtexid: u8,
@@ -3888,7 +3960,7 @@ pub fn set_tev_indirect(
 /// Set a given TEV stage to use the same texture coordinates as were computed in the
 /// previous stage.
 /// 
-/// See [GX_SetTevIndRepeat](https://libogc.devkitpro.org/gx_8h.html#af8e89d4c40c6e1c70eb724cb0dea977a) for more.
+/// See [`ogc_sys::GX_SetTevIndRepeat()`] for more.
 pub fn set_tev_ind_repeat(tevstage: u8) {
     debug_assert!(tevstage < ffi::GX_MAX_TEVSTAGE as u8);
     unsafe { ffi::GX_SetTevIndRepeat(tevstage); }
@@ -3896,7 +3968,7 @@ pub fn set_tev_ind_repeat(tevstage: u8) {
 
 /// Used to implement tiled texturing using indirect textures.
 /// 
-/// See [GX_SetTevIndTile](https://libogc.devkitpro.org/gx_8h.html#af000453c289eb7a81a7260cc8ba8b944) for more.
+/// See [`ogc_sys::GX_SetTevIndTile()`] for more.
 pub fn set_tev_ind_tile(
     tevstage: u8,
     indtexid: u8,
@@ -3929,7 +4001,7 @@ pub fn set_tev_ind_tile(
 
 /// Used to warp a normal texture lookup using an indirect texture map with 8-bit offsets.
 /// 
-/// See [GX_SetTevIndWarp](https://libogc.devkitpro.org/gx_8h.html#a3f7516527d627c6086a969982a962ddc) for more.
+/// See [`ogc_sys::GX_SetTevIndWarp()`] for more.
 pub fn set_tev_ind_warp(
     tevstage: u8,
     indtexid: u8,
@@ -3980,6 +4052,8 @@ pub enum TevKAlphaSel {
 }
 
 /// Selects a "konstant" alpha input to be used in a given TEV stage.
+/// 
+/// See [`ogc_sys::GX_SetTevKAlphaSel()`] for more.
 pub fn set_tev_k_alpha_sel(tevstage: u8, sel: TevKAlphaSel) {
     debug_assert!(tevstage < ffi::GX_MAX_TEVSTAGE as u8);
     unsafe { ffi::GX_SetTevKAlphaSel(tevstage, sel as u8); }
@@ -3989,6 +4063,8 @@ pub fn set_tev_k_alpha_sel(tevstage: u8, sel: TevKAlphaSel) {
 /// 
 /// These registers are available to all TEV stages. They are constant in the sense that
 /// they cannot be written to the TEV itself.
+/// 
+/// See [`ogc_sys::GX_SetTevKColor()`] for more.
 pub fn set_tev_k_color(sel: u8, col: Color) {
     debug_assert!(sel < ffi::GX_KCOLOR_MAX as u8);
     unsafe { ffi::GX_SetTevKColor(sel, col.0); }
@@ -3996,7 +4072,7 @@ pub fn set_tev_k_color(sel: u8, col: Color) {
 
 /// Used to set one of the constant color registers in the Texture Environment (TEV) unit.
 /// 
-/// See [GX_SetTevKColorS10](https://libogc.devkitpro.org/gx_8h.html#a741c9a31532ffe78ea266eb1f8c8ce2c) for more.
+/// See [`ogc_sys::GX_SetTevKColorS10()`] for more.
 pub fn set_tev_k_color_s10(sel: u8, col: ColorS10) {
     debug_assert!(sel < ffi::GX_KCOLOR_MAX as u8);
     unsafe { ffi::GX_SetTevKColorS10(sel, col.0); }
@@ -4037,7 +4113,7 @@ pub enum TevKColorSel {
 
 /// Selects a "konstant" color input to be used in a given TEV stage.
 /// 
-/// See [GX_SetTevKColorSel](https://libogc.devkitpro.org/gx_8h.html#a5197b7367619940d411a3d33ab572e99) for more.
+/// See [`ogc_sys::GX_SetTevKColorSel()`] for more.
 pub fn set_tev_k_color_sel(tevstage: u8, sel: TevKColorSel) {
     debug_assert!(tevstage < ffi::GX_MAX_TEVSTAGE as u8);
     unsafe { ffi::GX_SetTevKColorSel(tevstage, sel as u8); }
@@ -4049,7 +4125,7 @@ pub fn set_tev_k_color_sel(tevstage: u8, sel: TevKColorSel) {
 /// `ras_sel` and `tex_sel` are numbers between 0 and 4 inclusive, representing the swap
 /// table entry to be used.
 /// 
-/// See [GX_SetTevSwapMode](https://libogc.devkitpro.org/gx_8h.html#a2b40e50b32f2f021ba5adfc93bb769c2) for more.
+/// See [`ogc_sys::GX_SetTevSwapMode()`] for more.
 pub fn set_tev_swap_mode(tevstage: u8, ras_sel: u8, tex_sel: u8) {
     debug_assert!(tevstage < ffi::GX_MAX_TEVSTAGE as u8);
     debug_assert!(ras_sel < ffi::GX_MAX_TEVSWAP as u8);
@@ -4059,7 +4135,7 @@ pub fn set_tev_swap_mode(tevstage: u8, ras_sel: u8, tex_sel: u8) {
 
 /// Sets up the TEV color swap table.
 /// 
-/// See [GX_SetTevSwapModeTable](https://libogc.devkitpro.org/gx_8h.html#ad83fd1e72254606cf69a076015406879) for more.
+/// See [`ogc_sys::GX_SetTevSwapModeTable()`] for more.
 pub fn set_tev_swap_mode_table(swapid: u8, r: u8, g: u8, b: u8, a: u8) {
     debug_assert!(swapid < ffi::GX_MAX_TEVSWAP as u8);
     debug_assert!(r < 4 as u8);
@@ -4071,7 +4147,7 @@ pub fn set_tev_swap_mode_table(swapid: u8, r: u8, g: u8, b: u8, a: u8) {
 
 /// Sets the texture coordinate bias of a particular texture.
 /// 
-/// See [GX_SetTexCoordBias](https://libogc.devkitpro.org/gx_8h.html#a8126aeaf9971a440c799a3aeefb3ec66) for more.
+/// See [`ogc_sys::GX_SetTexCoordBias()`] for more.
 pub fn set_tex_coord_bias(texcoord: u8, s_enable: bool, t_enable: bool) {
     debug_assert!(texcoord < ffi::GX_MAXCOORD as u8);
     unsafe { ffi::GX_SetTexCoordBias(texcoord, s_enable as u8, t_enable as u8) }
@@ -4140,7 +4216,7 @@ pub enum TexGenSrc {
 /// An extension of [`gx::set_tex_coord_gen()`]. It allows one to specify additional
 /// texgen options.
 /// 
-/// See [GX_SetTexCoordGen2](https://libogc.devkitpro.org/gx_8h.html#a55a426a3ff796db584302bddd829f002) for more.
+/// See [`ogc_sys::GX_SetTexCoordGen2()`] for more.
 pub fn set_tex_coord_gen_2(
     texcoord: u8,
     tgen_type: TexGenType,
@@ -4167,7 +4243,7 @@ pub fn set_tex_coord_gen_2(
 /// size) and lets one manually assign the scale values that are used for a given
 /// texcoord.
 /// 
-/// See [GX_SetTexCoordScaleManually](https://libogc.devkitpro.org/gx_8h.html#a9293b94d9abfd7a8700d42d69dd4c58b) for more.
+/// See [`ogc_sys::GX_SetTexCoordScaleManually()`] for more.
 pub fn set_tex_coord_scale_manually(texcoord: u8, enable: bool, ss: u16, ts: u16) {
     debug_assert!(texcoord < ffi::GX_MAXCOORD as u8);
     unsafe { ffi::GX_SetTexCoordScaleManually(texcoord, enable as u8, ss, ts) }
@@ -4175,14 +4251,14 @@ pub fn set_tex_coord_scale_manually(texcoord: u8, enable: bool, ss: u16, ts: u16
 
 /// This function sets the width and height of the destination texture buffer in texels.
 /// 
-/// See [GX_SetTexCopyDst](https://libogc.devkitpro.org/gx_8h.html#a613bd9073b45486e7691a834d4f2a791) for more.
+/// See [`ogc_sys::GX_SetTexCopyDst()`] for more.
 pub fn set_tex_copy_dst(wd: u16, ht: u16, fmt: TexFormat, mipmap: bool) {
     unsafe { ffi::GX_SetTexCopyDst(wd, ht, fmt as u32, mipmap as u8)}
 }
 
 /// Sets the source parameters for the Embedded Frame Buffer (EFB) to texture image copy.
 /// 
-/// See [GX_SetTexCopySrc](https://libogc.devkitpro.org/gx_8h.html#a8f5bcb4991993e8eb92f1955385e7d5f) for more.
+/// See [`ogc_sys::GX_SetTexCopySrc()`] for more.
 pub fn set_tex_copy_src(left: u16, top: u16, wd: u16, ht: u16) {
     debug_assert!(left.is_multiple_of(2));
     debug_assert!(top.is_multiple_of(2));
