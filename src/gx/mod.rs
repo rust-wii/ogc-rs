@@ -690,7 +690,7 @@ impl RawFifo {
     /// - `base` must be at least `RawFifo::MIN_SIZE` bytes long.
     /// - `base` length must be a multiple of 32.
     /// 
-    /// To meet these requirements manually, consider using [`utils::Buf32`] and
+    /// To meet these requirements manually, consider using [`Buf32`] and
     /// [`RawFifo::MIN_SIZE`].
     pub unsafe fn set_base(&mut self, base: &mut [u8]) {
         debug_assert!(base.as_mut_ptr().is_aligned_to(32));
@@ -1238,15 +1238,14 @@ impl<T> Texture<T> {
 
     /// Returns a reference to the texture data.
     pub fn buf(&self) -> &Buf32 {
-        //unsafe { ffi::GX_GetTexObjData(&self.inner) }
         &self.img
     }
 
     /// Returns a mutable reference to the texture data.
     ///
     /// Make sure to flush the cache after modifying the data by calling
-    /// [`TexRegion::invalidate()`] on the corresponding region for this texture, or
-    /// [`gx::invalidate_tex_all()`] to invalidate all texture caches.
+    /// [`RawTexRegion::invalidate()`] on the corresponding region for this texture, or
+    /// [`invalidate_tex_all()`] to invalidate all texture caches.
     pub fn buf_mut(&mut self) -> &mut Buf32 {
         &mut self.img
     }
@@ -1343,7 +1342,7 @@ impl RawTexture {
     /// Allows one to modify the image data pointer for an existing texture object.
     ///
     /// # Safety
-    /// * This should not be called from a `Texture`, as it already uses an internal
+    /// * This should NOT be called from a `Texture`, as it already uses an internal
     ///   buffer to manage image data.
     /// * The size and format of the new data must agree with those of this texture.
     /// * `img_ptr` must be 32-byte aligned.
@@ -1354,7 +1353,7 @@ impl RawTexture {
 
     /// Enables bias clamping for texture LOD.
     ///
-    /// If set to `true`, the sum of LOD and `lodbias` (given in [`Texture::set_lod_bias()`])
+    /// If set to `true`, the sum of LOD and `lodbias` (given in [`RawTexture::set_lod_bias()`])
     /// is clamped so that it is never less than the minimum extent of the pixel projected in
     /// texture space. This prevents over-biasing the LOD when the polygon is perpendicular to the
     /// view direction.
@@ -1366,8 +1365,8 @@ impl RawTexture {
     ///
     /// When set to `true`, the LOD is computed using adjacent texels; when `false`, diagonal
     /// texels are used instead. This should be set to `true` if you use bias clamping (see
-    /// [`Texture::set_bias_clamp()`]) or anisotropic filtering (`GX_ANISO_2` or `GX_ANISO_4` for
-    /// [`Texture::set_max_aniso()`] argument).
+    /// [`RawTexture::set_bias_clamp()`]) or anisotropic filtering (`GX_ANISO_2` or `GX_ANISO_4` for
+    /// [`RawTexture::set_max_aniso()`] argument).
     pub fn set_edge_lod(&mut self, enable: bool) {
         unsafe { ffi::GX_InitTexObjEdgeLOD(&mut self.inner, enable as u8) }
     }
@@ -1907,7 +1906,7 @@ pub fn enable_breakpt(break_pt: *mut u8) {
 
 /// Allows reads from the FIFO currently attached to the Graphics Processor (GP) to resume.
 ///
-/// See [`ogc_sys::GX_DisableBreakpt()`] for more.
+/// See [`ogc_sys::GX_DisableBreakPt()`] for more.
 pub fn disable_breakpt() {
     unsafe { ffi::GX_DisableBreakPt() }
 }
@@ -2007,16 +2006,6 @@ pub fn tex_mode_sync() {
 }
 
 /// Stalls until DrawDone is encountered by the GP.
-///
-/// It means all graphics commands sent before this *DrawDone* command have executed and the
-/// last pixel has been written to the frame buffer. You may want to execute some non-graphics
-/// operations between executing [`gx::set_draw_done()`] and this function, but if you simply
-/// want to wait and have nothing to execute, you can use [`gx::draw_done()`].
-///
-/// # Note
-/// This function is normally used in immediate mode (see [`gx::set_cpu_fifo()`]). In
-/// multibuffer mode, sending the 'done' command is separated from polling the 'done' status
-/// (see [`gx::set_draw_done()`] and [`gx::wait_draw_done()`]).
 /// 
 /// See [`ogc_sys::GX_WaitDrawDone()`] for more.
 pub fn wait_draw_done() {
@@ -2027,7 +2016,7 @@ pub fn wait_draw_done() {
 ///
 /// Normally, Z buffering should happen before texturing, as this enables better performance by
 /// not texturing pixels that are not visible; however, when alpha compare is used, Z buffering
-/// must be done after texturing (see [`gx::set_alpha_compare()`]).
+/// must be done after texturing (see [`set_alpha_compare()`]).
 /// 
 /// See [`ogc_sys::GX_SetZCompLoc()`] for more.
 pub fn set_zcomp_loc(before_tex: bool) {
@@ -2186,7 +2175,7 @@ pub fn set_cull_mode(mode: CullMode) {
 ///
 /// The new thread should be the thread that will be responsible for
 /// generating graphics data. By default, the GX thread is the thread that
-/// invoked [`gx::init()`]; however, it may be changed by calling this
+/// invoked [`init()`]; however, it may be changed by calling this
 /// function.
 ///
 /// Returns the previous GX thread ID.
@@ -2379,9 +2368,9 @@ pub fn load_nrm_mtx_imm_3x3(mut mt: Mtx33, pnidx: u32) {
 /// Loads a texture matrix `mt` into the matrix memory at location `texidx`.
 /// 
 /// See [`ogc_sys::GX_LoadTexMtxImm()`] for more.
-pub fn load_tex_mtx_imm(mut mt: Mtx34, texidx: u32, r#type: MtxType) {
+pub fn load_tex_mtx_imm(mut mt: Mtx34, texidx: u32, m_type: MtxType) {
     debug_assert!([30, 33, 36, 39, 42, 45, 48, 51, 54, 57, 60].contains(&texidx));
-    unsafe { ffi::GX_LoadTexMtxImm(mt.as_mut_ptr(), texidx, r#type as _) }
+    unsafe { ffi::GX_LoadTexMtxImm(mt.as_mut_ptr(), texidx, m_type as _) }
 }
 
 /// Loads a texture matrix at index `mtxidx` from the array in main memory.
@@ -2403,17 +2392,6 @@ pub fn set_dither(dither: bool) {
 ///
 /// See [`ogc_sys::GX_DrawDone()`] for more.
 pub fn draw_done() {
-    /*
-    //This should work :shrug:
-    BPReg::PE_DONE.load(2);
-
-    //THIS DIRECTLY OVERRUNS WPAR for a flush.
-    for _ in 0..8 {
-        for bytes in 0u32.to_be_bytes() {
-            GX_PIPE.write(bytes);
-        }
-    }
-    */
     unsafe { ffi::GX_DrawDone(); }
 }
 
@@ -3133,7 +3111,7 @@ pub enum CopyMode {
     InterlacedOdd = ffi::GX_COPY_INTLC_ODD,
 }
 
-/// Determines which lines are read from the Embedded Frame Buffer (EFB) when using [`gx::copy_disp()`].
+/// Determines which lines are read from the Embedded Frame Buffer (EFB) when using [`copy_disp()`].
 ///
 /// See [`ogc_sys::GX_SetDispCopyFrame2Field()`] for more.
 pub fn set_disp_copy_frame_to_field(mode: CopyMode) {
@@ -3227,64 +3205,6 @@ pub fn set_z_texture(op: ZTexOp, fmt: TexFormat, bias: u32) {
     unsafe { ffi::GX_SetZTexture(op as u8, fmt as u8, bias) }
 }
 
-//All the following data is found from
-// http://hitmen.c02.at/files/yagcd/yagcd/chap5.html#sec5.3
-
-/*
-/// `display_list` slice should be 32-byte aligned and padded to the next
-/// 32-byte boundary. May want to use [`Buf32`] for this.
-fn call_display_list(display_list: &[u8]) {
-    let ptr = display_list.as_ptr().map_addr(mem::to_physical);
-
-    GX_PIPE.write(GPCommand::CallDisplayList as u8);
-
-    for byte in ptr.addr().to_be_bytes() {
-        GX_PIPE.write(byte);
-    }
-
-    for byte in (display_list.len() as u32).to_be_bytes() {
-        GX_PIPE.write(byte);
-    }
-}
-
-//Currently doesnt check dirty state
-fn draw_begin(command: GPDrawCommand, vertex_format: u8, vertex_count: u16) {
-    assert!(vertex_format <= 7, "Incorrect vertex format");
-    let gp_cmd = (command as u8) | (vertex_format & 7);
-
-    GX_PIPE.write(gp_cmd);
-    for byte in vertex_count.to_be_bytes() {
-        GX_PIPE.write(byte);
-    }
-}
-*/
-
-#[derive(Copy, Clone)]
-#[repr(u8)]
-pub enum GPCommand {
-    Nop = 0x00,
-    LoadCPReg = 0x08,
-    LoadXFReg = 0x10,
-    LoadPosIndexed = 0x20,
-    LoadNormalIndexed = 0x28,
-    LoadTexureIndexed = 0x30,
-    LoadLightIndexed = 0x38,
-    CallDisplayList = 0x40,
-    InvalidateVertexCache = 0x48,
-    LoadBPReg = 0x61,
-}
-
-#[derive(Copy, Clone)]
-#[repr(u8)]
-pub enum GPDrawCommand {
-    DrawQuads = 0x80,
-    DrawTriangles = 0x90,
-    DrawTriangleStrip = 0x98,
-    DrawTriangleFan = 0xA0,
-    DrawLines = 0xA8,
-    DrawLineStrip = 0xB0,
-    DrawPoints = 0xBB,
-}
 
 /// The stub used by ogc-rs to invoke Rust functions for the breakpoint callback.
 unsafe extern "C" fn breakpt_callback_stub() {
@@ -3342,7 +3262,7 @@ unsafe extern "C" fn draw_done_callback_stub() {
 /// Sets a Rust callback that gets invoked when the graphics pipeline encounters a
 /// DrawDone command.
 /// 
-/// The DrawDone command is sent by [`gx::set_draw_done()`].
+/// The DrawDone command is sent by [`set_draw_done()`].
 /// 
 /// Note that by the time the callback is invoked, the GP will already have resumed
 /// reading from the FIFO if there are any commands in it.
