@@ -587,7 +587,7 @@ pub struct RawFifo(ffi::GXFifoObj);
 
 /// First-In, First-Out (FIFO) data structure with an internal buffer for queuing
 /// graphics commands.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Fifo {
     inner: RawFifo,
     buf: Buf32,
@@ -732,8 +732,8 @@ impl RawFifo {
     pub fn set_limits(&mut self, hiwatermark: u32, lowatermark: u32) {
         debug_assert!(hiwatermark.is_multiple_of(32));
         debug_assert!(lowatermark.is_multiple_of(32));
-        // assert!(hiwatermark < self.len());
-        // assert!(lowatermark < self.len());
+        debug_assert!(hiwatermark < self.len() as u32);
+        debug_assert!(lowatermark < self.len() as u32);
         unsafe { ffi::GX_InitFifoLimits(&mut self.0, hiwatermark, lowatermark) }
     }
 
@@ -1239,6 +1239,7 @@ impl From<u32> for TexFormat {
 }
 
 /// Texture offset value
+#[derive(Debug, Clone, Copy)]
 #[repr(u32)]
 pub enum TexOffset {
     ToZero = ffi::GX_TO_ZERO,
@@ -1496,6 +1497,7 @@ impl RawTexture {
     /// * The size and format of the new data must agree with those of this texture.
     /// * `img_ptr` must be 32-byte aligned.
     pub unsafe fn set_data_ptr(&mut self, img_ptr: *const u8) {
+        debug_assert!(img_ptr.is_aligned_to(32));
         unsafe { ffi::GX_InitTexObjData(&mut self.inner, img_ptr.cast_mut().cast()) }
     }
 
@@ -1782,6 +1784,7 @@ pub enum TlutFormat {
 
 
 /// Texture Look-Up Table with an internal buffer
+#[derive(Debug, Clone)]
 pub struct Tlut {
     inner: ffi::GXTlutObj,
     buf: Buf32,
