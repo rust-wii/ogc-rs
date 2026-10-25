@@ -593,19 +593,24 @@ pub struct Fifo {
     buf: Buf32,
 }
 
-impl AsRef<RawFifo> for Fifo {
-    fn as_ref(&self) -> &RawFifo {
+impl Deref for Fifo {
+    type Target = RawFifo;
+    
+    fn deref(&self) -> &Self::Target {
         &self.inner
     }
 }
 
-impl Fifo {
-    /// The minimum allowed size for a FIFO.
-    pub const MIN_SIZE: usize = ffi::GX_FIFO_MINSIZE as usize;
+impl DerefMut for Fifo {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.inner
+    }
+}
 
+impl Fifo {
     /// Constructs a new `Fifo` with the minimum size.
     pub fn new() -> Self {
-        Self::with_size(Self::MIN_SIZE)
+        Self::with_size(RawFifo::MIN_SIZE)
     }
 
     /// Constructs a new `Fifo` with the given size.
@@ -613,7 +618,7 @@ impl Fifo {
     /// If the given size is less than the minimum, the minimum size is used.
     pub fn with_size(size: usize) -> Self {
         let mut fifo = core::mem::MaybeUninit::zeroed();
-        let mut buf = Buf32::new(size.max(Fifo::MIN_SIZE));
+        let mut buf = Buf32::new(size.max(RawFifo::MIN_SIZE));
 
         // SAFETY:
         // + original libogc source suggests that available init functions don't
@@ -635,6 +640,9 @@ impl Fifo {
 }
 
 impl RawFifo {
+    /// The minimum allowed size for a FIFO.
+    pub const MIN_SIZE: usize = ffi::GX_FIFO_MINSIZE as usize;
+    
     /// Get the base address for a given *fifo*.
     pub fn base(&self) -> *mut u8 {
         unsafe { ffi::GX_GetFifoBase(self as *const _ as *mut _) as *mut _ }
@@ -697,7 +705,7 @@ impl RawFifo {
     pub unsafe fn set_base(&mut self, base: &mut [u8]) {
         debug_assert!(base.as_mut_ptr().is_aligned_to(32));
         debug_assert!(base.len().is_multiple_of(32));
-        debug_assert!(base.len() >= Fifo::MIN_SIZE);
+        debug_assert!(base.len() >= Self::MIN_SIZE);
         unsafe {
             ffi::GX_InitFifoBase(&mut self.0, base.as_mut_ptr().cast(), base.len() as u32)
         }
@@ -1263,14 +1271,6 @@ pub struct Texture<U = !> {
 }
 
 impl<T> Texture<T> {
-    /// Returns the amount of memory in bytes needed to store a texture of the given size
-    /// and format.
-    ///
-    /// See [GX_GetTexBufferSize](https://libogc.devkitpro.org/gx_8h.html#a6fe8373aae06bd72cb9974c2990f8223) for more.
-    pub fn get_buffer_size(wd: u16, ht: u16, fmt: u32, mipmap: bool, maxlod: u8) -> usize {
-        unsafe { ffi::GX_GetTexBufferSize(wd, ht, fmt, mipmap as u8, maxlod) as usize }
-    }
-
     /// Used to initialize or change a texture object for non-color index textures.
     ///
     /// See [`ogc_sys::GX_InitTexObj()`] for more.
@@ -1430,6 +1430,14 @@ impl<T> DerefMut for Texture<T> {
 }
 
 impl RawTexture {
+    /// Returns the amount of memory in bytes needed to store a texture of the given size
+    /// and format.
+    ///
+    /// See [`ogc_sys::GX_GetTexBufferSize()`] for more.
+    pub fn get_buffer_size(wd: u16, ht: u16, fmt: u32, mipmap: bool, maxlod: u8) -> usize {
+        unsafe { ffi::GX_GetTexBufferSize(wd, ht, fmt, mipmap as u8, maxlod) as usize }
+    }
+    
     /// Returns a physical pointer to the texture data.
     pub fn data_ptr(&self) -> *const u8 {
         unsafe { ffi::GX_GetTexObjData(&self.inner).cast() }
@@ -1918,7 +1926,7 @@ pub fn init(size: usize) -> AtomicPtr<RawFifo> {
     
     // keep buf around with ManuallyDrop, otherwise it will be deallocated
     // by the end of the function.
-    let mut buf = ManuallyDrop::new(Buf32::new(size.max(Fifo::MIN_SIZE)));
+    let mut buf = ManuallyDrop::new(Buf32::new(size.max(RawFifo::MIN_SIZE)));
 
     // SAFETY: all safety is ensured by Buf32.
     let gxfifo = unsafe {
