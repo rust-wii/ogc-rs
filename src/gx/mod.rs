@@ -1902,6 +1902,34 @@ pub enum FogType {
     OrthoRevExp2 = ffi::GX_FOG_ORTHO_REVEXP2,
 }
 
+/// Fog range adjustment parameter table.
+/// 
+/// This stores an array of 10 range points in `u4.8` fixed-point format.
+#[derive(Clone, Copy, Debug)]
+#[repr(transparent)]
+pub struct FogAdjTable(ffi::GXFogAdjTbl);
+
+impl FogAdjTable {
+    /// Generates the standard range adjustment table.
+    /// 
+    /// See [`ogc_sys::GX_InitFogAdjTable()`] for more.
+    pub fn new(width: u16, mut projmtx: [[f32; 4]; 4]) -> Self {
+        let mut table = MaybeUninit::uninit();
+        unsafe {
+            ffi::GX_InitFogAdjTable(table.as_mut_ptr(), width, projmtx.as_mut_ptr());
+            FogAdjTable(table.assume_init())
+        }
+    }
+    
+    pub fn as_array(&self) -> &[u16; 10] {
+        &self.0.r
+    }
+    
+    pub fn as_array_mut(&mut self) -> &mut [u16; 10] {
+        &mut self.0.r
+    }
+}
+
 #[repr(u32)]
 pub enum MtxType {
     M3x4 = ffi::GX_MTX3x4,
@@ -3109,6 +3137,13 @@ pub fn set_fog(ft: FogType, startz: f32, endz: f32, nearz: f32, farz: f32, col: 
     unsafe {
         ffi::GX_SetFog(ft as _, startz, endz, nearz, farz, col.0);
     }
+}
+
+/// Enables or disables horizontal fog-range adjustment.
+/// 
+/// See [`ogc_sys::GX_SetFogRangeAdj()`] for more.
+pub fn set_fog_range_adj(enable: bool, center: u16, mut table: FogAdjTable) {
+    unsafe { ffi::GX_SetFogRangeAdj(enable as u8, center, &mut table.0) }
 }
 
 /// Begins a display list and disables writes to the FIFO currently attached to the CPU.
