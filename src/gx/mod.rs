@@ -1717,6 +1717,7 @@ impl RenderMode {
 }
 
 /// Fog equation control
+#[derive(Clone, Copy, Debug)]
 #[repr(u32)]
 pub enum FogType {
     None = ffi::GX_FOG_NONE,
@@ -1760,6 +1761,8 @@ impl FogAdjTable {
     }
 }
 
+/// Specifies dimensions of a texture matrix
+#[derive(Clone, Copy, Debug)]
 #[repr(u32)]
 pub enum MtxType {
     M3x4 = ffi::GX_MTX3x4,
@@ -3426,6 +3429,7 @@ pub enum PixelFormat {
 }
 
 /// Vertex data input type
+#[derive(Clone, Copy, Debug)]
 #[repr(u32)]
 pub enum VtxAttrIn {
     None = ffi::GX_NONE,
@@ -3435,6 +3439,7 @@ pub enum VtxAttrIn {
 }
 
 /// Gamma correction value to apply.
+#[derive(Clone, Copy, Debug)]
 #[repr(u32)]
 pub enum Gamma {
     Mode10 = ffi::GX_GM_1_0,
@@ -3458,6 +3463,7 @@ pub fn set_ind_tex_coord_scale(indtexid: u8, scale_s: u8, scale_t: u8) {
 }
 
 /// Indirect texture matrix
+#[derive(Clone, Copy, Debug)]
 #[repr(u32)]
 pub enum IndTexMat {
     /// Specifies a matrix of all zeroes.
@@ -3508,6 +3514,7 @@ pub fn set_ind_tex_order(indtexstage: u8, texcoord: Option<u8>, texmap: Option<u
 }
 
 /// TEV alpha combiner input
+#[derive(Clone, Copy, Debug)]
 #[repr(u32)]
 pub enum TevAlphaArg {
     /// Use the alpha value from previous TEV stage
@@ -3543,6 +3550,7 @@ pub fn set_tev_alpha_in(
 }
 
 /// TEV combiner operator
+#[derive(Clone, Copy, Debug)]
 #[repr(u32)]
 pub enum TevOp {
     Add = ffi::GX_TEV_ADD,
@@ -3560,6 +3568,7 @@ pub enum TevOp {
 }
 
 /// TEV bias value
+#[derive(Clone, Copy, Debug)]
 #[repr(u32)]
 pub enum TevBias {
     Zero = ffi::GX_TB_ZERO,
@@ -3568,6 +3577,7 @@ pub enum TevBias {
 }
 
 /// TEV scale value
+#[derive(Clone, Copy, Debug)]
 #[repr(u32)]
 pub enum TevScale {
     Scale1 = ffi::GX_CS_SCALE_1,
@@ -3577,6 +3587,7 @@ pub enum TevScale {
 }
 
 /// TEV color/output register
+#[derive(Clone, Copy, Debug)]
 #[repr(u32)]
 pub enum TevColOutReg {
     /// Default register for passing results from one stage to another.
@@ -3622,6 +3633,7 @@ pub fn set_tev_color(tev_regid: TevColOutReg, color: Color) {
 }
 
 /// TEV color combiner input
+#[derive(Clone, Copy, Debug)]
 #[repr(u32)]
 pub enum TevColorArg {
     /// Use the color value from previous TEV stage
@@ -3736,6 +3748,7 @@ pub fn set_tev_ind_bump_xyz(tevstage: u8, indtexstage: u8, mtx_sel: IndTexMat) {
 /// Bits for the indirect offsets are extracted from the high end of each component byte.
 /// Bits for the bump alpha are extraced off the low end of the byte. For
 /// `IndTexFmt::EightBits`, the byte is duplicated for the offset and the bump alpha.
+#[derive(Clone, Copy, Debug)]
 #[repr(u32)]
 pub enum IndTexFmt {
     EightBits = ffi::GX_ITF_8,
@@ -3748,6 +3761,7 @@ pub enum IndTexFmt {
 /// 
 /// The bias is fixed at -128 for `GX_ITF_8` (TODO: what?) and +1 for the other formats.
 /// The bias happens prior to the indirect matrix multiply.
+#[derive(Clone, Copy, Debug)]
 #[repr(u32)]
 pub enum IndTexBias {
     None = ffi::GX_ITB_NONE,
@@ -3764,6 +3778,7 @@ pub enum IndTexBias {
 /// 
 /// Indicates whether the regular texture coordinate should be wrapped before being added
 /// to the offset.
+#[derive(Clone, Copy, Debug)]
 #[repr(u32)]
 pub enum IndTexWrap {
     Off = ffi::GX_ITW_OFF,
@@ -3779,6 +3794,7 @@ pub enum IndTexWrap {
 /// 
 /// Indicates which offset component should provide the "bump" alpha output for the given
 /// TEV stage. Note that bump alpha is not available for TEV stage 0.
+#[derive(Clone, Copy, Debug)]
 #[repr(u32)]
 pub enum IndTexAlphaSel {
     Off = ffi::GX_ITBA_OFF,
@@ -3887,6 +3903,7 @@ pub fn set_tev_ind_warp(
 }
 
 /// TEV constant alpha selection
+#[derive(Clone, Copy, Debug)]
 #[repr(u32)]
 pub enum TevKAlphaSel {
     One = ffi::GX_TEV_KASEL_1,
@@ -3943,6 +3960,7 @@ pub fn set_tev_k_color_s10(sel: u8, col: ColorS10) {
 }
 
 /// TEV constant alpha selection
+#[derive(Clone, Copy, Debug)]
 #[repr(u32)]
 pub enum TevKColorSel {
     One = ffi::GX_TEV_KCSEL_1,
@@ -4023,6 +4041,7 @@ pub fn set_tex_coord_cyl_wrap(texcoord: u8, s_enable: bool, t_enable: bool) {
 }
 
 /// Texture coordinate generation type
+#[derive(Clone, Copy, Debug)]
 #[repr(u32)]
 pub enum TexGenType {
     /// 3x4 matrix multiply on the input attribute and generate S,T,Q coordinates; S,T are
@@ -4052,6 +4071,7 @@ pub enum TexGenType {
 }
 
 /// Texture coordinate source
+#[derive(Clone, Copy, Debug)]
 #[repr(u32)]
 pub enum TexGenSrc {
     Pos = ffi::GX_TG_POS,
