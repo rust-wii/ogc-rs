@@ -1,7 +1,9 @@
-//! Provides an OpenGL-like interface for rendering on the Wii.
+//! Provides an OpenGL-like interface for rendering on the console.
 //!
-//! This module implements a safe wrapper around the graphics functions found
-//! in `gx.h`.
+//! For brevity, only the differences between this library and its `ogc_sys` equivalent
+//! (if any) will be documented, along with any safety invariants to keep in mind. Any
+//! behavior related to libogc itself will be linked to at the end of the item's
+//! description.
 
 use core::ffi::c_void;
 use core::mem::{ManuallyDrop, MaybeUninit};
@@ -47,27 +49,69 @@ pub use crate::ffi::GXDrawSyncCallback as RawDrawSyncCallback;
 pub const WG_PIPE: VolAddress<WGPipe, (), Safe> = unsafe { VolAddress::new(0xCC00_8000) };
 
 // Number of components in an attribute
+
+/// Specifies the number of components of an attribute. Used in the third argument of
+/// [`set_vtx_attr_fmt()`].
 pub const CLR_RGB: u32 = ffi::GX_CLR_RGB;
+/// Specifies the number of components of an attribute. Used in the third argument of
+/// [`set_vtx_attr_fmt()`].
 pub const CLR_RGBA: u32 = ffi::GX_CLR_RGBA;
+/// Specifies the number of components of an attribute. Used in the third argument of
+/// [`set_vtx_attr_fmt()`].
 pub const NRM_NBT: u32 = ffi::GX_NRM_NBT;
+/// Specifies the number of components of an attribute. Used in the third argument of
+/// [`set_vtx_attr_fmt()`].
 pub const NRM_NBT3: u32 = ffi::GX_NRM_NBT3;
+/// Specifies the number of components of an attribute. Used in the third argument of
+/// [`set_vtx_attr_fmt()`].
 pub const NRM_XYZ: u32 = ffi::GX_NRM_XYZ;
+/// Specifies the number of components of an attribute. Used in the third argument of
+/// [`set_vtx_attr_fmt()`].
 pub const POS_XY: u32 = ffi::GX_POS_XY;
+/// Specifies the number of components of an attribute. Used in the third argument of
+/// [`set_vtx_attr_fmt()`].
 pub const POS_XYZ: u32 = ffi::GX_POS_XYZ;
+/// Specifies the number of components of an attribute. Used in the third argument of
+/// [`set_vtx_attr_fmt()`].
 pub const TEX_S: u32 = ffi::GX_TEX_S;
+/// Specifies the number of components of an attribute. Used in the third argument of
+/// [`set_vtx_attr_fmt()`].
 pub const TEX_ST: u32 = ffi::GX_TEX_ST;
 
 // Attribute component types
+
+/// Specifies the type of an attribute. Used in the fourth argument of
+/// [`set_vtx_attr_fmt()`].
 pub const RGB565: u32 = ffi::GX_RGB565;
+/// Specifies the type of an attribute. Used in the fourth argument of
+/// [`set_vtx_attr_fmt()`].
 pub const RGB8: u32 = ffi::GX_RGB8;
+/// Specifies the type of an attribute. Used in the fourth argument of
+/// [`set_vtx_attr_fmt()`].
 pub const RGBA4: u32 = ffi::GX_RGBA4;
+/// Specifies the type of an attribute. Used in the fourth argument of
+/// [`set_vtx_attr_fmt()`].
 pub const RGBA6: u32 = ffi::GX_RGBA6;
+/// Specifies the type of an attribute. Used in the fourth argument of
+/// [`set_vtx_attr_fmt()`].
 pub const RGBA8: u32 = ffi::GX_RGBA8;
+/// Specifies the type of an attribute. Used in the fourth argument of
+/// [`set_vtx_attr_fmt()`].
 pub const RGBX8: u32 = ffi::GX_RGBX8;
+/// Specifies the type of an attribute. Used in the fourth argument of
+/// [`set_vtx_attr_fmt()`].
 pub const U8: u32 = ffi::GX_U8;
+/// Specifies the type of an attribute. Used in the fourth argument of
+/// [`set_vtx_attr_fmt()`].
 pub const U16: u32 = ffi::GX_U16;
+/// Specifies the type of an attribute. Used in the fourth argument of
+/// [`set_vtx_attr_fmt()`].
 pub const S8: u32 = ffi::GX_S8;
+/// Specifies the type of an attribute. Used in the fourth argument of
+/// [`set_vtx_attr_fmt()`].
 pub const S16: u32 = ffi::GX_S16;
+/// Specifies the type of an attribute. Used in the fourth argument of
+/// [`set_vtx_attr_fmt()`].
 pub const F32: u32 = ffi::GX_F32;
 
 static IN_DISPLAY_LIST: AtomicBool = AtomicBool::new(false);
@@ -81,18 +125,24 @@ static DRAW_SYNC_CB: AtomicPtr<fn(u16)> = AtomicPtr::null();
 mod regs;
 pub mod types;
 
+/// Stores 8 bits for each red, green, blue, and alpha component.
 #[derive(Copy, Clone, Debug)]
 #[repr(transparent)]
 pub struct Color(ffi::GXColor);
 
 impl Color {
+    /// Opaque black.
     pub const BLACK: Self = Self::new(0, 0, 0);
+    /// Opaque white.
     pub const WHITE: Self = Self::new(255, 255, 255);
     
+    /// Takes a byte for red, green, and blue, and returns a color. Defaults to an alpha
+    /// value of 255.
     pub const fn new(r: u8, g: u8, b: u8) -> Self {
         Self::with_alpha(r, g, b, 255)
     }
 
+    /// Takes a byte for red, green, blue, and alpha, and returns a color.
     pub const fn with_alpha(r: u8, g: u8, b: u8, a: u8) -> Self {
         Self(ffi::GXColor { r, g, b, a })
     }
@@ -102,15 +152,19 @@ impl Color {
     }
 }
 
+/// Stores 10 bits for each red, green, blue, and alpha component.
 #[derive(Copy, Clone, Debug)]
 #[repr(transparent)]
 pub struct ColorS10(ffi::GXColorS10);
 
 impl ColorS10 {
+    /// Takes a byte for red, green, and blue, and returns a color. Defaults to an alpha
+    /// value of 255.
     pub const fn new(r: i16, g: i16, b: i16) -> Self {
         Self::with_alpha(r, g, b, 255)
     }
 
+    /// Takes a byte for red, green, blue, and alpha, and returns a color.
     pub const fn with_alpha(r: i16, g: i16, b: i16, a: i16) -> Self {
         Self(ffi::GXColorS10 { r, g, b, a })
     }
@@ -120,16 +174,45 @@ impl ColorS10 {
     }
 }
 
+/// Color channel ID
+/// 
+/// `Color0` and `Alpha0` are controlled separately for lighting, but they are rasterized
+/// together as one RGBA color, `Color0A0`. Same for `Color1A1`. Since there's only one
+/// rasterizer for color in the GP, one color must be chosen for each stage in the TEV
+/// unit by using [`set_tev_order()`].
+/// 
+/// By default, if only one color is enabled in the current vertex descriptor (either
+/// `VtxAttr::Color0` or `VtxAttr::Color1`), it will be directed to the `Color0A0`
+/// channel. To use `Color1A1`, both color attributes must be enabled.
+/// 
+/// `AlphaBump` and `AlphaBumpN` allow using the bump-alpha component from an indirect
+/// texture unit as a rasterized color input. Since bump-alpha only contains 5 bits of
+/// data, `AlphaBump` shifts them to the higher bits, giving a range of 0-248, whereas
+/// `AlphaBumpN` can normalize this to a range of 0-255. See [`set_tev_indirect()`] for
+/// how to configure bump-alpha.
+#[derive(Copy, Clone, Debug)]
 #[repr(u32)]
 pub enum ColorChannel {
+    /// RGB portion of the rasterized color.
     Color0 = ffi::GX_COLOR0,
+    /// RGB portion of the second rasterized color, if any.
     Color1 = ffi::GX_COLOR1,
+    /// Alpha portion of the rasterized color.
     Alpha0 = ffi::GX_ALPHA0,
+    /// Alpha portion of the second rasterized color, if any.
     Alpha1 = ffi::GX_ALPHA1,
+    /// Complete RGBA rasterized color.
     Color0A0 = ffi::GX_COLOR0A0,
+    /// Complete RGBA of the second rasterized color, if any.
     Color1A1 = ffi::GX_COLOR1A1,
+    
+    /// Always get zero as a rasterized color.
     ColorZero = ffi::GX_COLORZERO,
+    /// Uses bump-alpha component from indirect texture unit as a rasterized color input.
+    /// Gives a value range of 0-248.
     AlphaBump = ffi::GX_ALPHA_BUMP,
+    /// Uses bump alpha component from indirect texture unit as rasterized color input.
+    /// This normalizes the values of `AlphaBump`, giving a range of 0-255.
     AlphaBumpN = ffi::GX_ALPHA_BUMPN,
 }
 
@@ -153,7 +236,7 @@ pub enum CullMode {
     All = ffi::GX_CULL_ALL,
 }
 
-/// Comparison functions.
+/// Comparison relations used when comparing Z buffer values.
 #[derive(Copy, Clone, Debug)]
 #[repr(u32)]
 pub enum CmpFn {
@@ -229,7 +312,7 @@ pub enum BlendMode {
     Subtract = ffi::GX_BM_SUBTRACT,
 }
 
-/// Destination (`dst`) acquires the value of one of these operations, given in Rust syntax.
+/// Destination (`dst`) acquires the value of one of these operations.
 #[derive(Copy, Clone, Debug)]
 #[repr(u32)]
 pub enum LogicOp {
@@ -292,7 +375,7 @@ pub enum Perf0 {
     ClipRatio = ffi::GX_PERF0_CLIP_RATIO,
     /// Number of vertices that were clipped by the GP.
     ClipVtx = ffi::GX_PERF0_CLIP_VTX,
-    /// Number of GP clocks that have elapsed since the previous call to `gx::read_gp0_metric()`.
+    /// Number of GP clocks that have elapsed since the previous call to [`read_gp_metric()`].
     Clocks = ffi::GX_PERF0_CLOCKS,
     /// Disables performance measurement for perf0 and resets the counter.
     None = ffi::GX_PERF0_NONE,
@@ -364,7 +447,7 @@ pub enum Perf0 {
 pub enum Perf1 {
     /// Number of lines (32B) read from called display lists.
     CallReq = ffi::GX_PERF1_CALL_REQ,
-    /// Number of GP clocks that have elapsed since the last call to `gx::read_gp1_metric()`.
+    /// Number of GP clocks that have elapsed since the last call to [`read_gp_metric()`].
     Clocks = ffi::GX_PERF1_CLOCKS,
     /// Counts all requests (32B/request) from the GP Command Processor (CP). It should be equal to
     /// the sum of counts returned by `Perf1::FifoReq`, `Perf1::CallReq`, and `Perf1::VcMissReq`.
@@ -400,6 +483,8 @@ pub enum Perf1 {
     Vertices = ffi::GX_PERF1_VERTICES,
 }
 
+/// Vertex cache performance counter
+#[derive(Copy, Clone, Debug)]
 #[repr(u32)]
 pub enum VCacheAttr {
     Position = ffi::GX_VC_POS,
@@ -417,6 +502,8 @@ pub enum VCacheAttr {
     All = ffi::GX_VC_ALL,
 }
 
+/// Blending control
+/// 
 /// Each pixel (source or destination) is multiplied by any of these controls.
 #[derive(Copy, Clone, Debug)]
 #[repr(u32)]
@@ -441,7 +528,7 @@ pub enum BlendCtrl {
 
 /// Compressed Z format.
 ///
-/// See [`gx::set_pixel_fmt()`] for details.
+/// See [`set_pixel_fmt()`] for details.
 #[derive(Copy, Clone, Debug)]
 #[repr(u32)]
 pub enum ZFormat {
@@ -451,14 +538,17 @@ pub enum ZFormat {
     Far = ffi::GX_ZC_FAR,
 }
 
+/// Color channel source
+/// 
 /// Specifies whether the input source color for a color channel comes from a register or a vertex.
 #[derive(Copy, Clone, Debug)]
 #[repr(u32)]
-pub enum Source {
+pub enum ColorChanSrc {
     Register = ffi::GX_SRC_REG,
     Vertex = ffi::GX_SRC_VTX,
 }
 
+/// Diffuse function for lights in a color channel
 #[derive(Copy, Clone, Debug)]
 #[repr(u32)]
 pub enum DiffFn {
@@ -467,6 +557,7 @@ pub enum DiffFn {
     Clamp = ffi::GX_DF_CLAMP,
 }
 
+/// Attenuation function for lights in a color channel
 #[derive(Copy, Clone, Debug)]
 #[repr(u32)]
 pub enum AttnFn {
@@ -478,22 +569,23 @@ pub enum AttnFn {
     Spot = ffi::GX_AF_SPOT,
 }
 
-/// Raw First-In, First-Out data structure (FIFO) for queuing graphics commands.
+/// Raw GX FIFO for queuing graphics commands.
 ///
 /// The Graphics FIFO is the mechanism used to communicate graphics commands from the CPU to the
 /// Graphics Processor (GP). The FIFO base pointer is 32-byte aligned and the size must be a
 /// multiple of 32 bytes.
 ///
-/// The CPU's write-gather pipe is used to write data to the FIFO. Therefore, the FIFO memory
-/// area must be forced out of the CPU cache prior to being used. `DCInvalidateRange()` may be
-/// used for this purpose. Due to the mechanics of flushing the write-gather pipe, the FIFO
-/// memory area should be at least 32 bytes larger than the maximum expected amount of data
-/// stored. Up to 32 NOPs may be written at the end during flushing.
-#[derive(Debug)]
+/// The CPU's write-gather pipe is used to write data to the FIFO. Therefore, the FIFO
+/// memory area must be forced out of the CPU cache prior to being used.
+/// [`cache::dc_invalidate_range()`] may be used for this purpose. Due to the mechanics of
+/// flushing the write-gather pipe, the FIFO memory area should be at least 32 bytes larger
+/// than the maximum expected amount of data stored. Up to 32 NOPs may be written at the end
+/// during flushing.
+#[derive(Debug, Clone, Copy)]
 #[repr(transparent)]
 pub struct RawFifo(ffi::GXFifoObj);
 
-/// First-In, First-Out data structure (FIFO) with an internal buffer for queuing
+/// First-In, First-Out (FIFO) data structure with an internal buffer for queuing
 /// graphics commands.
 #[derive(Debug)]
 pub struct Fifo {
@@ -652,7 +744,7 @@ impl RawFifo {
     }
 }
 
-/// Object containing information on a light.
+/// Stores data about a light
 #[derive(Clone, Debug)]
 #[repr(transparent)]
 pub struct Light(ffi::GXLightObj);
@@ -770,7 +862,9 @@ impl Light {
     /// approximate the function `(N*H)^shininess`. Since the attenuation equation is only a ratio
     /// of quadratics, a true exponential function is not possible. To enable the specular
     /// calculation, you must set the attenuation parameter of the lighting channel to
-    /// `AttnFn::Spec` using [`Gx::set_channel_controls()`].
+    /// `AttnFn::Spec` using [`set_channel_controls()`].
+    /// 
+    /// This is a reimplementation of the `GX_InitLightShininess()` macro function in libogc.
     pub fn shininess(&mut self, shininess: f32) -> &mut Self {
         self.attn(0.0, 0.0, 1.0, shininess / 2.0, 0.0, 1.0 - shininess / 2.0)
     }
@@ -1031,7 +1125,7 @@ impl From<u8> for WrapMode {
 
 /// Texture formats that are supported.
 ///
-/// For more information, see [https://wiki.tockdom.com/wiki/Image_Formats](https://wiki.tockdom.com/wiki/Image_Formats)
+/// For more information, see the [Image Formats page on the Custom Mario Kart Wiiki](https://mkwiiki.org/wiki/Image_Formats)
 #[derive(Copy, Clone, Debug)]
 #[repr(u32)]
 pub enum TexFormat {
@@ -1147,7 +1241,7 @@ pub enum TexOffset {
     ToOne = ffi::GX_TO_ONE,
 }
 
-/// Texture without a managed buffer.
+/// Raw GX texture without a managed buffer.
 #[derive(Debug, Clone)]
 #[repr(transparent)]
 pub struct RawTexture {
@@ -1551,6 +1645,8 @@ impl RawTexture {
     }
 }
 
+/// Size of texture cache regions.
+#[derive(Debug, Clone, Copy)]
 #[repr(u32)]
 pub enum TexCacheSize {
     /// 32 kilobytes
@@ -1567,6 +1663,7 @@ pub enum TexCacheSize {
 #[repr(transparent)]
 pub struct RawTexRegion(ffi::GXTexRegion);
 
+/// A texture cache region with managed internal buffers
 #[derive(Debug, Clone)]
 pub struct TexRegion {
     inner: RawTexRegion,
@@ -1666,7 +1763,8 @@ impl RawTexRegion {
     }
 }
 
-
+/// Format of the entries in the TLUT
+#[derive(Debug, Clone, Copy)]
 #[repr(u32)]
 pub enum TlutFormat {
     IA8 = ffi::GX_TL_IA8,
@@ -1684,7 +1782,7 @@ pub struct Tlut {
 impl Tlut {
     /// Initializes a Texture Look-Up Table (TLUT) object.
     ///
-/// See [`ogc_sys::GX_InitTlutObj()`] for more.
+    /// See [`ogc_sys::GX_InitTlutObj()`] for more.
     pub fn new(mut lut: Buf32, fmt: TlutFormat, entries: u16) -> Self {
         // libogc doesn't check entries is within range. unsure of consequences, so let's just
         // play it safe.
@@ -1800,26 +1898,16 @@ pub enum MtxType {
 }
 
 /// Initializes the graphics processor to its initial state.
+/// 
+/// This function takes a size for the FIFO buffer, and returns an atomic pointer to a
+/// raw FIFO that uses that buffer. It will initialize a `Buf32`, wrap it with
+/// `ManuallyDrop`, pass it to libogc, and wrap the FIFO pointer it returns in an
+/// `AtomicPtr`. This is due to the FIFO being in static memory, which requires atomics
+/// for safe access.
+/// 
+/// If this function has already been called, it just returns the same pointer again.
 ///
-/// This function sets the default state of the graphics processor and should be called before
-/// any other GX functions. This function sets up an immediate-mode method of communicating
-/// graphics commands from the CPU to the Graphics Processor (GP). This function will
-/// initialize a FIFO and attach it to both the CPU and GP. The CPU will write commands to the
-/// FIFO and the GP will read the commands. This function returns a pointer to the initialized
-/// FIFO. The application must allocate the memory for the FIFO. The parameter `base` is a
-/// pointer to the allocated main memory and must be aligned to 32B. `size` is the size of the
-/// FIFO in bytes and must be a multiple of 32B. Refer to additional notes in [`Fifo`]
-/// concerning the FIFO memory.
-///
-/// # Note
-/// It is also possible to override the default immediate-mode style and instead buffer the
-/// graphics for frame n+1 while the GP is reading the graphics for frame n. See
-/// [`set_cpu_fifo()`] and [`set_gp_fifo()`] for further information.
-///
-/// This function also designates the calling thread as the default GX thread; i.e., it assumes
-/// the calling thread is the one responsible for generating graphics data. This thread will be
-/// the thread to be suspended when the FIFO gets too full. The current GX thread can be
-/// changed by calling [`set_current_gx_thread()`].
+/// See [`ogc_sys::GX_Init()`] for more.
 pub fn init(size: usize) -> AtomicPtr<RawFifo> {
     let init_fifo = INIT_FIFO.load(Ordering::Acquire);
     
@@ -2261,8 +2349,8 @@ pub fn set_copy_filter(
 pub fn set_channel_controls(
     channel: ColorChannel,
     enable: bool,
-    ambsrc: Source,
-    matsrc: Source,
+    ambsrc: ColorChanSrc,
+    matsrc: ColorChanSrc,
     litmask: u8,
     diff_fn: DiffFn,
     attn_fn: AttnFn,
@@ -2333,7 +2421,6 @@ pub fn set_current_gx_thread() -> lwp::Thread {
 /// Copies the embedded framebuffer (EFB) to the external framebuffer(XFB) in main memory.
 ///
 /// # Safety
-///
 /// The user must ensure the dest ptr is a valid pointer,
 ///
 /// See [`ogc_sys::GX_CopyDisp()`] for more.
@@ -2447,7 +2534,7 @@ pub fn invalidate_tex_all() {
 ///
 /// # Safety
 /// If the texture is a color-index texture, you **must** load the associated TLUT (using
-/// [`gx::load_tlut()`]) before calling this function.
+/// [`load_tlut()`]) before calling this function.
 pub fn load_texture(obj: &mut RawTexture, mapid: u8) {
     unsafe { ffi::GX_LoadTexObj(&mut obj.inner, mapid) }
 }
@@ -2459,7 +2546,7 @@ pub fn load_projection_mtx(matrix: &Mtx44, projection: ProjectionType) {
     unsafe { ffi::GX_LoadProjectionMtx(matrix.as_ptr().cast_mut(), projection as u8) }
 }
 
-/// Clears all vertex attributes of the current vertex descriptor to `GX_NONE`.
+/// Clears all vertex attributes of the current vertex descriptor to `VtxAttrIn::None`.
 ///
 /// # Note
 /// The same functionality can be obtained using [`gx::set_vtx_descv()`], however using
@@ -2637,241 +2724,249 @@ pub fn set_clip_mode(mode: u8) {
     unsafe { ffi::GX_SetClipMode(mode) }
 }
 
-/// Wrapper around set_clip_mode, since its a simple enable or disbale.
+/// Enables clip mode. See [`set_clip_mode()`].
 pub fn enable_clip() {
     set_clip_mode(ffi::GX_CLIP_ENABLE as u8);
 }
 
-///Wrapper around set_clip_mode, since it a simple disable or enable.
+/// Disable clip mode. See [`set_clip_mode()`].
 pub fn disable_clip() {
     set_clip_mode(ffi::GX_CLIP_DISABLE as u8);
 }
 
-/// Writes a 3D f32 position.
+/// Writes a 3D position encoded as three `f32`s.
 #[inline]
 pub fn pos3_f32(x: f32, y: f32, z: f32) {
     unsafe { ffi::GX_Position3f32(x, y, z);}
 }
 
-/// Writes a 3D u16 position.
+/// Writes a 3D position encoded as three `u16`s.
 #[inline]
 pub fn pos3_u16(x: u16, y: u16, z: u16) {
     unsafe { ffi::GX_Position3u16(x, y, z) }
 }
 
-/// Writes a 3D i16 position.
+/// Writes a 3D position encoded as three `i16`s.
 #[inline]
 pub fn pos3_i16(x: i16, y: i16, z: i16) {
     unsafe { ffi::GX_Position3s16(x, y, z) }
 }
 
-/// Writes a 3D u8 position.
+/// Writes a 3D position encoded as three `u8`s.
 #[inline]
 pub fn pos3_u8(x: u8, y: u8, z: u8) {
     unsafe { ffi::GX_Position3u8(x, y, z) }
 }
 
-/// Writes a 3D i8 position.
+/// Writes a 3D position encoded as three `i8`s.
 #[inline]
 pub fn pos3_i8(x: i8, y: i8, z: i8) {
     unsafe { ffi::GX_Position3s8(x, y, z) }
 }
 
-/// Writes a 2D f32 position.
+/// Writes a 2D position encoded as two `f32`s.
 #[inline]
 pub fn pos2_f32(x: f32, y: f32) {
     unsafe { ffi::GX_Position2f32(x, y);}
 }
 
-/// Writes a 2D u16 position.
+/// Writes a 2D position encoded as two `u16`s.
 #[inline]
 pub fn pos2_u16(x: u16, y: u16) {
     unsafe { ffi::GX_Position2u16(x, y) }
 }
 
-/// Writes a 2D i16 position.
+/// Writes a 2D position encoded as two `i16`s.
 #[inline]
 pub fn pos2_i16(x: i16, y: i16) {
     unsafe { ffi::GX_Position2s16(x, y) }
 }
 
-/// Writes a 2D u8 position.
+/// Writes a 2D position encoded as two `u8`s.
 #[inline]
 pub fn pos2_u8(x: u8, y: u8) {
     unsafe { ffi::GX_Position2u8(x, y) }
 }
 
-/// Writes a 2D i8 position.
+/// Writes a 2D position encoded as two `i8`s.
 #[inline]
 pub fn pos2_i8(x: i8, y: i8) {
     unsafe { ffi::GX_Position2s8(x, y) }
 }
 
-/// Writes a u8-indexed position.
+/// Writes a `u8` index to a position.
 #[inline]
 pub fn pos1_x8(index: u8) {
     unsafe { ffi::GX_Position1x8(index) }
 }
 
-/// Writes a u16-indexed position.
+/// Writes a `u16` index to a position.
 #[inline]
 pub fn pos1_x16(index: u16) {
     unsafe { ffi::GX_Position1x16(index) }
 }
 
-/// Writes a 3D f32 normal.
+/// Writes a normal encoded as three `f32`s.
 #[inline]
 pub fn normal3_f32(x: f32, y: f32, z: f32) {
     unsafe { ffi::GX_Normal3f32(x, y, z) }
 }
 
-/// Writes a 3D i16 normal.
+/// Writes a normal encoded as three `i16`s.
 #[inline]
 pub fn normal3_i16(x: i16, y: i16, z: i16) {
     unsafe { ffi::GX_Normal3s16(x, y, z) }
 }
 
-/// Writes a 2D i8 normal.
+/// Writes a normal encoded as three `i8`s.
 #[inline]
 pub fn normal3_i8(x: i8, y: i8, z: i8) {
     unsafe { ffi::GX_Normal3s8(x, y, z) }
 }
 
-/// Writes a u8-indexed normal.
+/// Writes a `u8` index to a normal.
 #[inline]
 pub fn normal1_x8(index: u8) {
     unsafe { ffi::GX_Normal1x8(index) }
 }
 
-/// Writes a u16-indexed normal.
+/// Writes a `u16` index to a normal.
 #[inline]
 pub fn normal1_x16(index: u16) {
     unsafe { ffi::GX_Normal1x16(index) }
 }
 
-/// Writes an RGBA color given in u8.
+/// Writes an RGBA color encoded as four `u8`s.
 #[inline]
 pub fn color4_u8(r: u8, g: u8, b: u8, a: u8) {
     unsafe { ffi::GX_Color4u8(r, g, b, a) }
 }
 
-/// Writes an RGB color given in u8
+/// Writes an RGB color encoded as three `u8`s.
 #[inline]
 pub fn color3_u8(r: u8, g: u8, b: u8) {
     unsafe { ffi::GX_Color3u8(r, g, b) }
 }
 
-/// Writes an RGB color given in f32 between 0 and 1.
+/// Writes an RGB color encoded as three `f32`s between 0 and 1.
 #[inline]
 pub fn color3_f32(r: f32, g: f32, b: f32) {
     unsafe { ffi::GX_Color3f32(r, g, b) }
 }
 
-/// Writes a color given as a u32.
+/// Writes a color encoded as a `u32`.
 #[inline]
 pub fn color1_u32(clr: u32) {
     unsafe { ffi::GX_Color1u32(clr) }
 }
 
-/// Writes a color given as a u16.
+/// Writes a color encoded as a `u16`.
 #[inline]
 pub fn color1_u16(clr: u16) {
     unsafe { ffi::GX_Color1u16(clr) }
 }
 
-/// Writes a color given as a u8 index.
+/// Writes a `u8` index to a color.
 #[inline]
 pub fn color1_x8(index: u8) {
     unsafe { ffi::GX_Color1x8(index) }
 }
 
-/// Writes a color given as a u16 index.
+/// Writes a `u16` index to a color.
 #[inline]
 pub fn color1_x16(index: u16) {
     unsafe { ffi::GX_Color1x16(index) }
 }
 
-/// Writes a color given as a [`Color`] object.
+/// Writes an RGBA color given as a [`Color`] object.
 /// 
-/// This is a convenience function and not part of libogc's interface.
+/// This is a convenience function and not part of libogc itself.
 #[inline]
-pub fn color1_color(clr: Color) {
+pub fn color1_rgba(clr: Color) {
     color4_u8(clr.0.r, clr.0.g, clr.0.b, clr.0.a);
 }
 
-/// Writes a 2D texture coordinate in f32.
+/// Writes an RGB color given as a [`Color`] object.
+/// 
+/// This is a convenience function and not part of libogc itself.
+#[inline]
+pub fn color1_rgb(clr: Color) {
+    color3_u8(clr.0.r, clr.0.g, clr.0.b);
+}
+
+/// Writes a 2D texture coordinate encoded as two `f32`s.
 #[inline]
 pub fn texcoord2_f32(s: f32, t: f32) {
     unsafe { ffi::GX_TexCoord2f32(s, t) }
 }
 
-/// Writes a 2D texture coordinate in u32.
+/// Writes a 2D texture coordinate encoded as two `u16`s.
 #[inline]
 pub fn texcoord2_u16(s: u16, t: u16) {
     unsafe { ffi::GX_TexCoord2u16(s, t) }
 }
 
-/// Writes a 2D texture coordinate in i16.
+/// Writes a 2D texture coordinate encoded as two `i16`s.
 #[inline]
 pub fn texcoord2_i16(s: i16, t: i16) {
     unsafe { ffi::GX_TexCoord2s16(s, t) }
 }
 
-/// Writes a 2D texture coordinate in u8.
+/// Writes a 2D texture coordinate encoded as two `u8`s.
 #[inline]
 pub fn texcoord2_u8(s: u8, t: u8) {
     unsafe { ffi::GX_TexCoord2u8(s, t) }
 }
 
-/// Writes a 2D texture coordinate in i8.
+/// Writes a 2D texture coordinate encoded as two `i8`s.
 #[inline]
 pub fn texcoord2_i8(s: i8, t: i8) {
     unsafe { ffi::GX_TexCoord2s8(s, t) }
 }
 
-/// Writes a 1D texture coordinate in f32.
+/// Writes a 1D texture coordinate encoded as a `f32`.
 #[inline]
 pub fn texcoord1_f32(s: f32) {
     unsafe { ffi::GX_TexCoord1f32(s) }
 }
 
-/// Writes a 1D texture coordinate in u16.
+/// Writes a 1D texture coordinate encoded as a `u16`.
 #[inline]
 pub fn texcoord1_u16(s: u16) {
     unsafe { ffi::GX_TexCoord1u16(s) }
 }
 
-/// Writes a 1D texture coordinate in i16.
+/// Writes a 1D texture coordinate encoded as a `i16`.
 #[inline]
 pub fn texcoord1_i16(s: i16) {
     unsafe { ffi::GX_TexCoord1s16(s) }
 }
 
-/// Writes a 1D texture coordinate in u8.
+/// Writes a 1D texture coordinate encoded as a `u8`.
 #[inline]
 pub fn texcoord1_u8(s: u8) {
     unsafe { ffi::GX_TexCoord1u8(s) }
 }
 
-/// Writes a 1D texture coordinate in i8.
+/// Writes a 1D texture coordinate encoded as a `i8`.
 #[inline]
 pub fn texcoord1_i8(s: i8) {
     unsafe { ffi::GX_TexCoord1s8(s) }
 }
 
-/// Writes a texture coordinate indexed by a u8.
+/// Writes a `u8` index to a texture coordinate.
 #[inline]
 pub fn texcoord1_x8(index: u8) {
     unsafe { ffi::GX_TexCoord1x8(index) }
 }
 
-/// Writes a texture coordinate indexed by a u16.
+/// Writes a `u16` index to a texture coordinate.
 #[inline]
 pub fn texcoord1_x16(index: u16) {
     unsafe { ffi::GX_TexCoord1x16(index) }
 }
 
-/// Writes a matrix indexed by a u8.
+/// Writes a `u8` index to a matrix.
 #[inline]
 pub fn matrix1_x8(index: u8) {
     unsafe { ffi::GX_MatrixIndex1x8(index) }
@@ -2911,7 +3006,7 @@ pub fn set_draw_sync(token: u16) {
 }
 
 /// Returns the value of the token register, which is written using the
-/// [`gx::set_draw_sync()`] function.
+/// [`set_draw_sync()`] function.
 pub fn get_draw_sync() -> u16 {
     unsafe { ffi::GX_GetDrawSync() }
 }
@@ -2964,17 +3059,13 @@ pub fn read_vcache_metric() -> Option<(u32, u32, u32)> {
     }
 }
 
-/// Copies the embedded framebuffer (EFB) to the texture image buffer _dest_
-/// in main memory.
+/// Copies the embedded framebuffer (EFB) to the texture image buffer `dest` in main
+/// memory.
+/// 
+/// Since `dest` should be 32-byte aligned, this function takes a `Buf32` to meet that
+/// requirement. Make sure it's big enough to hold the EFB!
 ///
-/// This is useful when creating textures using the Graphics Processor (GP).
-/// If the _clear_ flag is set to `true`, the EFB will be cleared to the
-/// current color (see [`gx::set_copy_clear()`] during the copy operation.
-///
-/// Arguments:
-/// * `dest`: pointer to the image buffer in main memory. _dest_ should be
-///   32B aligned.
-/// * `clear`: flag that indicates framebuffer should be cleared if `true`.
+/// See [`ogc_sys::GX_CopyTex()`] for more.
 pub fn copy_tex(mut dest: Buf32, clear: bool) {
     unsafe { ffi::GX_CopyTex(dest.as_mut_ptr() as *mut _, clear as _) }
 }
@@ -4213,7 +4304,7 @@ pub enum TexGenSrc {
     Color1 = ffi::GX_TG_COLOR1,
 }
 
-/// An extension of [`gx::set_tex_coord_gen()`]. It allows one to specify additional
+/// An extension of `set_tex_coord_gen()`. It allows one to specify additional
 /// texgen options.
 /// 
 /// See [`ogc_sys::GX_SetTexCoordGen2()`] for more.
