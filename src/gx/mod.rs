@@ -2243,12 +2243,35 @@ pub fn set_num_tex_gens(nr: u32) {
     unsafe { ffi::GX_SetNumTexGens(nr) }
 }
 
+/// Color/Alpha combiner modes for [`set_tev_op()`].
+/// 
+/// For these equations, Cv is the output color for the stage, Cr is the output color of
+/// previous stage, and Ct is the texture color. Av is the output alpha for a stage, Ar
+/// is the output alpha of previous stage, and At is the texture alpha. As a special case,
+/// rasterized color (`TevColorArg::RasColor`) is used as Cr and rasterized alpha
+/// (`TevAlphaArg::RasA`) is used as Ar at the first TEV stage because there is no
+/// previous stage.
+#[derive(Clone, Copy, Debug)]
+#[repr(u32)]
+pub enum TevMode {
+    /// Cv=CrCt; Av=ArAt
+    Modulate = ffi::GX_MODULATE,
+    /// Cv=(1-At)Cr + AtCt; Av=Ar
+    Decal = ffi::GX_DECAL,
+    /// Cv=(1-Ct)Cr + Ct; Av=AtAr
+    Blend = ffi::GX_BLEND,
+    /// Cv=Ct; Ar=At
+    Replace = ffi::GX_REPLACE,
+    /// Cv=Cr; Av=Ar
+    PassColor = ffi::GX_PASSCLR,
+}
+
 /// Simplified function to set various TEV parameters for this tevstage based on a
 /// predefined combiner mode.
 /// 
 /// See [`ogc_sys::GX_SetTevOp()`] for more.
-pub fn set_tev_op(tevstage: u8, mode: u8) {
-    unsafe { ffi::GX_SetTevOp(tevstage, mode) }
+pub fn set_tev_op(tevstage: u8, mode: TevMode) {
+    unsafe { ffi::GX_SetTevOp(tevstage, mode as u8) }
 }
 
 /// Specifies the texture and rasterized color that will be available as inputs to
