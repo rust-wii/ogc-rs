@@ -2430,16 +2430,26 @@ pub fn set_color_update(enable: bool) {
     unsafe { ffi::GX_SetColorUpdate(enable as u8) }
 }
 
-/// Sets the array base pointer and stride for a single attribute.
+/// Sets the array for a single attribute.
+/// 
+/// This calls [`set_array_with_stride()`] with a stride equal to the size of the array's
+/// element. It will panic if the stride is too big to fit in a `u8`.
+/// 
+/// This `set_array()` is a convenience function and not part of libogc's interface.
+pub fn set_array<T>(attr: VtxAttr, array: &[T]) {
+    set_array_with_stride(attr, array, size_of::<T>().try_into().unwrap());
+}
+
+/// Sets the array and stride for a single attribute.
 /// 
 /// See [`ogc_sys::GX_SetArray()`] for more.
-pub fn set_array<T>(attr: VtxAttr, array: &[T]) {
+pub fn set_array_with_stride<T>(attr: VtxAttr, array: &[T], stride: u8) {
     unsafe {
         cache::data_cache_flush(array);
         ffi::GX_SetArray(
             attr as _,
             array.as_ptr() as *mut c_void,
-            core::mem::size_of::<T>().try_into().unwrap()
+            stride
         )
     }
 }
