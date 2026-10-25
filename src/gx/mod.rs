@@ -650,9 +650,7 @@ impl RawFifo {
 
     /// Returns number of cache lines in the FIFO.
     ///
-    /// # Note
-    /// The count is incorrect if an overflow has occurred (i.e. you have written more data than
-    /// the size of the fifo), as the hardware cannot detect an overflow in general.
+    /// See [`ogc_sys::GX_GetFifoCount()`] for more.
     pub fn cache_lines(&self) -> usize {
         unsafe { ffi::GX_GetFifoCount(&self.0) as usize }
     }
@@ -662,24 +660,16 @@ impl RawFifo {
         unsafe { ffi::GX_GetFifoSize(&self.0) as usize }
     }
 
-    /// Returns a non-zero value if the write pointer has passed the TOP of the FIFO.
+    /// Returns a non-zero value if the write pointer has passed the top of the FIFO.
     ///
-    /// Returns true only if the FIFO is attached to the CPU and the FIFO write pointer has passed
-    /// the top of the FIFO. Use the return value to detect whether or not an overflow has occured
-    /// by initializing the FIFO's write pointer to the base of the FIFO before sending any
-    /// commands to the FIFO.
-    ///
-    /// # Note
-    /// If the FIFO write pointer is not explicitly set to the base of the FIFO, you cannot rely on
-    /// this function to detect overflows.
+    /// See [`ogc_sys::GX_GetFifoWrap()`] for more.
     pub fn wrap_status(&self) -> u8 {
         unsafe { ffi::GX_GetFifoWrap(&self.0) }
     }
 
     /// Returns the current value of the Graphics FIFO read and write pointers.
     ///
-    /// # Note
-    /// See `gx::enable_breakpoint()` for an example of why you would do this.
+    /// See [`ogc_sys::GX_GetFifoPtrs()`] for more.
     pub fn pointers(&self) -> (*const u8, *mut u8) {
         let mut rd_ptr = core::ptr::null_mut();
         let mut wt_ptr = core::ptr::null_mut();
@@ -713,22 +703,7 @@ impl RawFifo {
     
     /// Sets the high and low water mark for the fifo.
     ///
-    /// The high and low water marks are used in *immediate-mode*, i.e. when the fifo is attached
-    /// to both the CPU and Graphics Processor (GP) (see `gx::set_cpu_fifo()` and
-    /// `gx::set_gp_fifo()`).
-    ///
-    /// The hardware keeps track of the number of bytes between the read and write pointers. This
-    /// number represents how full the FIFO is, and when it is greater than or equal to the
-    /// *hiwatermark*, the hardware issues an interrupt. The GX API will suspend sending graphics
-    /// to the Graphics FIFO until it has emptied to a certain point. The *lowatermark* is used to
-    /// set the point at which the FIFO is empty enough to resume sending graphics commands to the
-    /// FIFO. Both *hiwatermark* and *lowatermark* should be in multiples of 32B. The count for
-    /// *lowatermark* should be less than *hiwatermark*. Of course, *hiwatermark* and *lowatermark*
-    /// must be less than the size of the FIFO.
-    ///
-    /// # Note
-    /// When the FIFO is only attached to the CPU or only attached to the GP, the high and low
-    /// watermark interrupts are disabled.
+    /// See [`ogc_sys::GX_InitFifoLimits()`] for more.
     pub fn set_limits(&mut self, hiwatermark: u32, lowatermark: u32) {
         debug_assert!(hiwatermark.is_multiple_of(32));
         debug_assert!(lowatermark.is_multiple_of(32));
@@ -829,31 +804,8 @@ impl Light {
     }
 
     /// Sets coefficients used in the lighting attenuation calculation in a given light object.
-    ///
-    /// The parameters `a0`, `a1`, and `a2` are used for angular (spotlight) attenuation. The
-    /// coefficients `k0`, `k1`, and `k2` are used for distance attenuation. The attenuation
-    /// function is:
-    ///
-    /// `atten = clamp0(a2^2 * aattn^2 + a1 * aattn + a0) / (k2 * d^2 + k1 * d + k0)`
-    ///
-    /// where `aattn` is the cosine of the angle between the light direction and the vector from
-    /// the light position to the vertex, and `d` is the distance from the light position to the
-    /// vertex when the channel attenuation function is `AttnFn::Spot`. The light color will be
-    /// multiplied by the `atten` factor when the attenuation function for the color channel
-    /// referencing this light is set to `AttnFn::Spot` (see [`Gx::set_channel_controls()`]).
-    ///
-    /// # Note
-    /// The convenience function [`Light::spot_attn()`] can be used to set the angle
-    /// attenuation coefficents based on several spot light types. The convenience function
-    /// [`Light::dist_attn()`] can be used to set the distance attenuation coefficients
-    /// using one of several common attenuation functions.
-    ///
-    /// The convenience macro [`Light::shininess()`] can be used to set the attenuation
-    /// parameters for specular lights.
-    ///
-    /// When the channel attenuation function is set to `AttnFn::Spec`, the `aattn` and `d`
-    /// parameter are equal to the dot product of the eye-space vertex normal and the half-angle
-    /// vector set by [`Light::specular_dir()`].
+    /// 
+    /// See [`ogc_sys::GX_InitLightAttn()`] for more.
     pub fn attn(&mut self, a0: f32, a1: f32, a2: f32, k0: f32, k1: f32, k2: f32) -> &mut Self {
         unsafe {
             ogc_sys::GX_InitLightAttn(&mut self.0, a0, a1, a2, k0, k1, k2);
@@ -879,25 +831,8 @@ impl Light {
 
     /// Sets coefficients used in the lighting angle attenuation calculation in a given light
     /// object.
-    ///
-    /// The parameters `a0`, `a1`, and `a2` are used for angular (spotlight) attenuation. The
-    /// attenuation function is:
-    ///
-    /// `atten = clamp0(a2^2 * cos(theta)^2 + a1 * cos(theta) + a0) / (k2 * d^2 + k1 * d + k0)`
-    ///
-    /// where `cos(theta)` is the cosine of the angle between the light normal and the vector from
-    /// the light position to the vertex, and `d` is the distance from the light position to the
-    /// vertex. The `k0-2` coefficients can be set using [`Light::attn_k()`]. You can set
-    /// both the `a0-2` and `k0-2` coefficients can be set using [`Light::attn()`]. The
-    /// light color will be multiplied by the atten factor when the attenuation function for the
-    /// color channel referencing this light is set to `AttnFn::Spot` (see
-    /// [`Gx::set_channel_controls()`]).
-    ///
-    /// # Note
-    /// The convenience function [`Light::spot_attn()`] can be used to set the angle
-    /// attenuation coefficents based on several spot light types. The convenience function
-    /// [`Light::dist_attn()`] can be used to set the distance attenuation coefficients
-    /// using one of several common attenuation functions.
+    /// 
+    /// See [`ogc_sys::GX_InitLightAttnA()`] for more.
     pub fn attn_a(&mut self, a0: f32, a1: f32, a2: f32) -> &mut Self {
         unsafe {
             ffi::GX_InitLightAttnA(&mut self.0, a0, a1, a2);
@@ -907,25 +842,8 @@ impl Light {
 
     /// Sets coefficients used in the lighting distance attenuation calculation in a given light
     /// object.
-    ///
-    /// The coefficients `k0`, `k1`, and `k2` are used for distance attenuation. The attenuation
-    /// function is:
-    ///
-    /// `atten = clamp0(a2^2 * cos(theta)^2 + a1 * cos(theta) + a0) / (k2 * d^2 + k1 * d + k0)`
-    ///
-    /// where `cos(theta)` is the cosine of the angle between the light normal and the vector from
-    /// the light position to the vertex, and `d` is the distance from the light position to the
-    /// vertex. The `a0-2` coefficients can be set using [`Light::attn_a()`]. You can set
-    /// both the `a0-2` and `k0-2` coefficients can be set using [`Light::attn()`]. The
-    /// light color will be multiplied by the atten factor when the attenuation function for the
-    /// color channel referencing this light is set to `AttnFn::Spot` (see
-    /// [`Gx::set_channel_controls()`]).
-    ///
-    /// # Note
-    /// The convenience function [`Light::spot_attn()`] can be used to set the angle attenuation
-    /// coefficents based on several spot light types. The convenience function
-    /// [`Light::dist_attn()`] can be used to set the distance attenuation coefficients using one
-    /// of several common attenuation functions.
+    /// 
+    /// See [`ogc_sys::GX_InitLightAttnK()`] for more.
     pub fn attn_k(&mut self, k0: f32, k1: f32, k2: f32) -> &mut Self {
         unsafe {
             ffi::GX_InitLightAttnK(&mut self.0, k0, k1, k2);
@@ -944,17 +862,8 @@ impl Light {
     }
 
     /// Sets the direction of a light in the light object.
-    ///
-    /// This direction is used when the light object is used as spotlight or a specular light (see
-    /// the `attn_fn` parameter of [`Gx::set_channel_controls()`]).
-    ///
-    /// # Note
-    /// The coordinate space of the light normal should be consistent with a vertex normal
-    /// transformed by a normal matrix; i.e., it should be transformed to view space.
-    ///
-    /// This function does not set the direction of parallel directional diffuse lights. If you
-    /// want parallel diffuse lights, you may put the light position very far from every objects to
-    /// be lit. (See [`Light::pos()`] and [`Gx::set_channel_controls()`])
+    /// 
+    /// See [`ogc_sys::GX_InitLightDir()`] for more.
     pub fn dir(&mut self, nx: f32, ny: f32, nz: f32) -> &mut Self {
         unsafe {
             ffi::GX_InitLightDir(&mut self.0, nx, ny, nz);
@@ -963,24 +872,8 @@ impl Light {
     }
 
     /// Sets coefficients for distance attenuation in a light object.
-    ///
-    /// This function uses three easy-to-control parameters instead of `k0`, `k1`, and `k2` in
-    /// [`Light::attn()`].
-    ///
-    /// In this function, you can specify the brightness on an assumed reference point. The
-    /// parameter `ref_dist` is distance between the light and the reference point. The parameter
-    /// `ref_brite` specifies ratio of the brightness on the reference point. The value for
-    /// `ref_dist` should be greater than 0 and that for ref_brite should be within
-    /// `0 < ref_brite < 1`, otherwise distance attenuation feature is turned off. The parameter
-    /// `dist_fn` defines type of the brightness decreasing curve by distance; `DistFn::Off` turns
-    /// distance attenuation feature off.
-    ///
-    /// # Note
-    /// If you want more flexible control, it is better to use [`Light::attn()`] and calculate
-    /// appropriate coefficients.
-    ///
-    /// This function sets parameters only for distance attenuation. Parameters for angular
-    /// attenuation should be set by using [`Light::spot_attn()`] or [`Light::attn_a()`].
+    /// 
+    /// See [`ogc_sys::GX_InitLightDistAttn()`] for more.
     pub fn dist_attn(&mut self, ref_dist: f32, ref_brite: f32, dist_fn: DistFn) -> &mut Self {
         unsafe {
             ffi::GX_InitLightDistAttn(&mut self.0, ref_dist, ref_brite, dist_fn as u8);
@@ -989,15 +882,8 @@ impl Light {
     }
 
     /// Sets the position of the light in the light object.
-    ///
-    /// The GameCube graphics hardware supports local diffuse lights. The position of the light
-    /// should be in the same space as a transformed vertex position (i.e., view space).
-    ///
-    /// # Note
-    /// Although the hardware doesn't support parallel directional diffuse lights, it is possible
-    /// to get "almost parallel" lights by setting sufficient large values to position parameters
-    /// (x, y and z) which makes the light position very far away from objects to be lit and all
-    /// rays considered almost parallel.
+    /// 
+    /// See [`ogc_sys::GX_InitLightPos()`] for more.
     pub fn pos(&mut self, x: f32, y: f32, z: f32) -> &mut Self {
         unsafe {
             ffi::GX_InitLightPos(&mut self.0, x, y, z);
@@ -1006,25 +892,8 @@ impl Light {
     }
 
     /// Sets coefficients for angular (spotlight) attenuation in light object.
-    ///
-    /// This function uses two easy-to-control parameters instead of `a0`, `a1`, and `a2` on
-    /// [`Light::attn()`].
-    ///
-    /// The parameter `cut_off` specifies cutoff angle of the spotlight by degree. The spotlight
-    /// works while the angle between the ray for a vertex and the light direction given by
-    /// [`Light::dir()`] is smaller than this cutoff angle. The value for `cut_off` should be
-    /// within `0 < cut_off <= 90.0`, otherwise given light object doesn't become a spotlight.
-    ///
-    /// The parameter `spotfn` defines type of the illumination distribution within cutoff angle.
-    /// The value `SpotFn::Off` turns spotlight feature off even if color channel setting is using
-    /// `AttnFn::Spot` (see [`Gx::set_channel_controls()`]).
-    ///
-    /// # Note
-    /// This function can generate only some kind of simple spotlights. If you want more flexible
-    /// control, it is better to use [`Light::attn()`] and calculate appropriate coefficients.
-    ///
-    /// This function sets parameters only for angular attenuation. Parameters for distance
-    /// attenuation should be set by using [`Light::dist_attn()`] or [`Light::attn_k()`].
+    /// 
+    /// See [`ogc_sys::GX_InitLightSpot()`] for more.
     pub fn spot_attn(&mut self, cut_off: f32, spotfn: SpotFn) -> &mut Self {
         unsafe {
             ffi::GX_InitLightSpot(&mut self.0, cut_off, spotfn as u8);
@@ -1033,20 +902,8 @@ impl Light {
     }
 
     /// Sets the direction of a specular light in the light object.
-    ///
-    /// This direction is used when the light object is used only as specular light. The coordinate
-    /// space of the light normal should be consistent with a vertex normal transformed by a normal
-    /// matrix; i.e., it should be transformed to view space.
-    ///
-    /// # Note
-    /// This function should be used if and only if the light object is used as specular light. One
-    /// specifies a specular light in [`Gx::set_channel_controls()`] by setting the [attenuation
-    /// function](`AttnFn`) to `AttnFn::Spec`. Furthermore, one must not use [`Light::dir()`] or
-    /// [`Light::pos()`] to set up a light object which will be used as a specular light since
-    /// these functions will destroy the information set by [`Light::specular_dir()`]. In contrast
-    /// to diffuse lights (including spotlights) that are considered local lights, a specular light
-    /// is a parallel light (i.e. the specular light is infinitely far away such that all the rays
-    /// of the light are parallel), and thus one can only specify directional information.
+    /// 
+    /// See [`ogc_sys::GX_InitSpecularDir()`] for more.
     pub fn specular_dir(&mut self, nx: f32, ny: f32, nz: f32) -> &mut Self {
         unsafe {
             ffi::GX_InitSpecularDir(&mut self.0, nx, ny, nz);
@@ -1055,14 +912,8 @@ impl Light {
     }
 
     /// Sets the direction and half-angle vector of a specular light in the light object.
-    ///
-    /// These vectors are used when the light object is used only as specular light. In contrast to
-    /// [`Light::specular_dir()`], which caclulates half-angle vector automatically by
-    /// assuming the view vector as (0, 0, 1), this function allows users to specify half-angle
-    /// vector directly as input arguments. It is useful to do detailed control for orientation of
-    /// highlights.
-    ///
-    /// See also [`Light::specular_dir()`].
+    /// 
+    /// See [`ogc_sys::GX_InitSpecularDirHA()`] for more.
     pub fn specular_dir_ha(
         &mut self,
         nx: f32,
@@ -1523,9 +1374,7 @@ impl RawTexture {
 
     /// Sets the filter mode for a texture.
     ///
-    /// When the ratio of texels for this texture to pixels is not 1:1, the filter type for
-    /// `minfilt` or `magfilt` is used. `minfilt` is used when the texel/pixel ratio is >= 1.0.
-    /// `magfilt` is used when the texel/pixel ratio is < 1.0; needs to be `Near` or `Linear`.
+    /// See [`ogc_sys::GX_InitTexObjFilterMode()`] for more.
     pub fn set_filter_mode(&mut self, minfilt: TexFilter, magfilt: TexFilter) {
         debug_assert!(
             matches!(magfilt, TexFilter::Near | TexFilter::Linear),
@@ -1536,27 +1385,7 @@ impl RawTexture {
 
     /// Sets texture Level Of Detail (LOD) controls explicitly for a texture object.
     ///
-    /// It is the application's responsibility to provide memory for a texture object. When
-    /// initializing a texture object using [`Texture::new()`] or [`Texture::with_color_idx()`],
-    /// this information is set to default values based on the mipmap flag. This function allows
-    /// the programmer to override those defaults.
-    ///
-    /// # Note
-    /// This function should be called after [`Texture::new()`] or [`Texture::with_color_idx()`]
-    /// for a particular texture object.
-    ///
-    /// Setting `biasclamp` prevents over-biasing the LOD when the polygon is perpendicular to the
-    /// view direction.
-    ///
-    /// `edgelod` should be set if `biasclamp` is set or `maxaniso` is set to `GX_ANISO_2` or
-    /// `GX_ANISO_4`.
-    ///
-    /// Theoretically, there is no performance difference amongst various
-    /// magnification/minification filter settings except `GX_LIN_MIP_LIN` filter with
-    /// `GX_TF_RGBA8` texture format which takes twice as much as other formats. However, this
-    /// argument is assuming an environment where texture cache always hits. On real environments,
-    /// you will see some performance differences by changing filter modes (especially minification
-    /// filter) because cache-hit ratio changes according to which filter mode is being used.
+    /// See [`ogc_sys::GX_InitTexObjLOD()`] for more.
     pub fn set_lod(
         &mut self,
         filters: (TexFilter, TexFilter),
@@ -1847,6 +1676,7 @@ pub enum VtxAttr {
     Null = ffi::GX_VA_NULL,
 }
 
+/// Specifies which perspective type to use
 #[derive(Copy, Clone, Debug)]
 #[repr(u32)]
 pub enum ProjectionType {
@@ -2026,33 +1856,15 @@ pub fn set_cpu_fifo(fifo: Option<&RawFifo>) {
 }
 
 /// Returns the current GX thread.
-///
-/// The current GX thread should be the thread that is currently responsible
-/// for generating graphics data. By default, the GX thread is the thread
-/// that invoked [`init()`]; however, it may be changed by calling
-/// [`set_current_gx_thread()`].
-///
-/// # Note
-/// When graphics data is being generated in immediate mode (that is, the
-/// CPU FIFO = GP FIFO, and the GP is actively consuming data), the high
-/// watermark may be triggered. When this happens, the high watermark
-/// interrupt handler will suspend the GX thread, thus preventing any
-/// further graphics data from being generated. The low watermark interrupt
-/// handler will resume the thread.
+/// 
+/// See [`ogc_sys::GX_GetCurrentGXThread()`] for more.
 pub fn get_current_gx_thread() -> lwp::Thread {
     lwp::Thread::new(unsafe { ffi::GX_GetCurrentGXThread() })
 }
 
 /// Aborts the current frame.
-///
-/// This command will reset the entire graphics pipeline, including any commands in the
-/// graphics FIFO.
-///
-/// # Note
-/// Texture memory will not be reset, so currently loaded textures will still be valid;
-/// however, when loading texture using [`preload_entire_texture()`] or TLUTs using
-/// [`load_tlut()`], you must make sure the command completed. You can use the draw sync
-/// mechanism to do this; see [`set_draw_sync()`] and [`get_draw_sync()`].
+/// 
+/// See [`ogc_sys::GX_AbortFrame()`] for more.
 pub fn abort_frame() {
     unsafe { ffi::GX_AbortFrame() }
 }
@@ -2077,49 +1889,22 @@ pub fn clear_gp_metric() {
 }
 
 /// Clears the Vertex Cache performance counter.
-///
-/// This function clears the performance counter by sending a special clear token via the
-/// Graphics FIFO.
-///
-/// # Note
-/// To set the metric for the counter, call [`set_vcache_metric()`]; to read the counter
-/// value, call [`read_vcache_metric()`].
+/// 
+/// See [`ogc_sys::GX_ClearVCacheMetric()`] for more.
 pub fn clear_vcache_metric() {
     unsafe { ffi::GX_ClearVCacheMetric() }
 }
 
 /// Sets a breakpoint that causes the GP to halt when encountered.
 ///
-/// # Note
-/// The break point feature allows the application to have two frames of graphics in the FIFO
-/// at the same time, overlapping one frame's processing by the graphics processor with another
-/// frame's processing by the CPU. For example, suppose you finish writing the graphics
-/// commands for one frame and are ready to start on the next. First, execute a [`flush()`]
-/// command to make sure all the data in the CPU write gatherer is flushed into the FIFO. This
-/// will also align the FIFO write pointer to a 32B boundary. Next, read the value of the
-/// current write pointer using [`Fifo::pointers()`]. Write the value of the write pointer as
-/// the break point address using `enable_breakpt()`. When the FIFO read pointer reaches
-/// the break point address the hardware will disable reads from the FIFO. The status `brkpt`,
-/// returned by [`get_gp_status()`], can be polled to detect when the break point is
-/// reached. The application can then decide when to disable the break point, using
-/// [`disable_breakpt()`], which will allow the FIFO to resume reading graphics commands.
-///
-/// FIFO reads will stall when the GP FIFO read pointer is equal to the break point address
-/// `break_pt`. To re-enable reads of the GP FIFO, use [`disable_breakpt()`].
-///
-/// Use [`set_breakpt_callback()`] to set what function runs when the breakpoint is
-/// encountered.
+/// See [`ogc_sys::GX_EnableBreakPt()`] for more.
 pub fn enable_breakpt(break_pt: *mut u8) {
     unsafe { ffi::GX_EnableBreakPt(break_pt as _) }
 }
 
 /// Allows reads from the FIFO currently attached to the Graphics Processor (GP) to resume.
 ///
-/// See [`enable_breakpt()`] for an explanation of the FIFO break point feature.
-///
-/// # Note
-/// The breakpoint applies to the FIFO currently attached to the Graphics Processor (GP) (see
-/// [`set_gp_fifo()`]).
+/// See [`ogc_sys::GX_DisableBreakpt()`] for more.
 pub fn disable_breakpt() {
     unsafe { ffi::GX_DisableBreakPt() }
 }
@@ -2134,13 +1919,8 @@ pub unsafe fn init_xf_ras_metric() {
 }
 
 /// Reads the current status of the GP.
-///
-/// `overhi` and `underlow` will indicate whether or not the watermarks have been reached. If
-/// the CPU and GP FIFOs are the same, then `overhi` will indicate whether or not the current
-/// GX thread is suspended. The value of `brkpt` can be used to determine if a breakpoint is in
-/// progress (i.e. GP reads are suspended; they are resumed by a call to
-/// [`disable_breakpt()`]). A callback can also be used to notify your application that
-/// the break point has been reached. (see [`set_breakpt_callback()`])
+/// 
+/// See [`ogc_sys::GX_GetGPStatus()`] for more.
 pub fn get_gp_status() -> GpStatus {
     let mut ret = (0, 0, 0, 0, 0);
     unsafe {
@@ -2157,30 +1937,14 @@ pub fn get_gp_status() -> GpStatus {
 
 /// Loads a light object into a set of hardware registers associated with a Light ID.
 ///
-/// This function copies the light object data into the graphics FIFO through the CPU
-/// write-gather buffer mechanism. This guarantees that the light object is coherent with the
-/// CPU cache.
-///
-/// # Note
-/// The light object must have been initialized first using the necessary `GX_InitLight*()`
-/// functions.
-///
-/// Another way to load a light object is with `gx::load_light_idx()`.
+/// See [`ogc_sys::GX_LoadLightObj()`] for more.
 pub fn load_light(lit_obj: &Light, lit_id: u8) {
     unsafe { ffi::GX_LoadLightObj(&lit_obj.0, lit_id) }
 }
 
 /// Instructs the GP to fetch the light object at *litobjidx* from an array.
 ///
-/// The light object is retrieved from the array to which
-/// `gx::set_array(GX_VA_LIGHTARRAY, ...)` points. Then it loads the object into the hardware
-/// register associated with Light ID.
-///
-/// # Note
-/// Data flows directly from the array in DRAM to the GP; therefore, the light object data may
-/// not be coherent with the CPU's cache. The application is responsible for storing the light
-/// object data from the CPU cache (using `DCStoreRange()`) before calling
-/// `gx::load_light_idx()`.
+/// See [`ogc_sys::GX_LoadLightObjIdx()`] for more.
 pub fn load_light_idx(litobjidx: u32, litid: u8) {
     unsafe { ffi::GX_LoadLightObjIdx(litobjidx, litid) }
 }
@@ -2226,17 +1990,7 @@ pub fn restore_write_gather_pipe() {
 
 /// Sends a DrawDone command to the GP.
 ///
-/// When all previous commands have been processed and the pipeline is empty, a *DrawDone*
-/// status bit will be set, and an interrupt will occur. You can receive notification of this
-/// event by installing a callback on the interrupt with [`set_draw_done_callback()`], or
-/// you can poll the status bit with [`wait_draw_done()`]. This function also flushes the
-/// write-gather FIFO in the CPU to make sure that all commands are sent to the graphics
-/// processor.
-///
-/// # Note
-/// This function is normally used in multibuffer mode (see [`set_cpu_fifo()`]). In
-/// immediate mode, the [`draw_done()`] command can be used, which both sends the command
-/// and stalls until the *DrawDone* status is true.
+/// See [`ogc_sys::GX_SetDrawDone()`] for more.
 pub fn set_draw_done() {
     unsafe { ffi::GX_SetDrawDone() }
 }
@@ -2244,13 +1998,7 @@ pub fn set_draw_done() {
 /// Inserts a synchronization command into the graphics FIFO. When the Graphics Processor sees
 /// this command, it will allow the texture pipeline to flush before continuing.
 ///
-/// This command is necessary when changing the usage of regions of texture memory from
-/// preloaded or TLUT to cached areas. It makes sure that the texture pipeline is finished with
-/// that area of the texture memory prior to changing its usage. This function should be called
-/// prior to drawing any primitives that uses the texture memory region in its new mode. It is
-/// not necessary to call this command when changing texture memory regions from cached to
-/// preloaded (or TLUT), since the commands to load the regions with data will cause the
-/// necessary synchronization to happen automatically.
+/// See [`ogc_sys::GX_TexModeSync()`] for more.
 pub fn tex_mode_sync() {
     unsafe { ffi::GX_TexModeSync() }
 }
@@ -2550,26 +2298,14 @@ pub fn set_tex_coord_gen(texcoord: u16, tgen_typ: u32, tgen_src: u32, mtxsrc: u3
 
 /// Invalidates the current caches of the Texture Memory (TMEM).
 ///
-/// It takes about 512 GP clocks to invalidate all the texture caches.
-///
-/// # Note
-/// Preloaded textures (see [`gx::preload_entire_texture()`]) are not affected.
+/// See [`ogc_sys::GX_InvalidateTexAll()`] for more.
 pub fn invalidate_tex_all() {
     unsafe { ffi::GX_InvalidateTexAll() }
 }
 
 /// Loads the state describing a texture into one of eight hardware register sets.
 ///
-/// Before this happens, the texture object *obj* should be initialized using
-/// [`Texture::new()`] or [`Texture::with_color_idx()`]. The *mapid* parameter refers to the
-/// texture map slot that is set, and takes a value between 0 and 7 inclusive. Once loaded, the
-/// texture can be used in any Texture Environment (TEV) stage using [`gx::set_tev_order()`].
-///
-/// # Note
-/// This function will call the functions set by [`gx::set_tex_region_callback()`] (and
-/// [`gx::set_tlut_region_callback()`] if the texture is color-index format) to obtain the
-/// texture regions associated with this texture object. These callbacks are set to default
-/// functions by [`gx::init()`].
+/// See [`ogc_sys::GX_LoadTexObj()`] for more.
 ///
 /// # Safety
 /// If the texture is a color-index texture, you **must** load the associated TLUT (using
@@ -2587,9 +2323,7 @@ pub fn load_projection_mtx(matrix: &Mtx44, projection: ProjectionType) {
 
 /// Clears all vertex attributes of the current vertex descriptor to `VtxAttrIn::None`.
 ///
-/// # Note
-/// The same functionality can be obtained using [`gx::set_vtx_descv()`], however using
-/// [`gx::clear_vtx_desc()`] is much more efficient.
+/// See [`ogc_sys::GX_ClearVtxDesc()`] for more.
 pub fn clear_vtx_desc() {
     unsafe { ffi::GX_ClearVtxDesc() }
 }
@@ -2657,15 +2391,7 @@ pub fn load_tex_mtx_idx(mtxidx: u16, texidx: u32, r#type: MtxType) {
 
 /// Enables or disables dithering.
 ///
-/// A 4x4 Bayer matrix is used for dithering.
-///
-/// # Note
-/// Only valid when the pixel format (see GX_SetPixelFmt()) is either `GX_PF_RGBA6_Z24` or
-/// `GX_PF_RGB565_Z16`.
-///
-/// Dithering should probably be turned off if you are planning on using the result of
-/// rendering for comparisons (e.g. outline rendering algorithm that writes IDs to the alpha
-/// channel, copies the alpha channel to a texture, and later compares the texture in the TEV).
+/// See [`ogc_sys::GX_SetDither()`] for more.
 pub fn set_dither(dither: bool) {
     unsafe { ffi::GX_SetDither(dither as u8) }
 }
@@ -3685,7 +3411,8 @@ pub fn set_draw_sync_callback(cb: Option<fn(u16)>) -> Option<fn(u16)> {
     }
 }
 
-
+/// Specifies the pixel format of the embedded frame buffer.
+#[derive(Clone, Copy, Debug)]
 #[repr(u32)]
 pub enum PixelFormat {
     Rgb8Z24 = ffi::GX_PF_RGB8_Z24,
