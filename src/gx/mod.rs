@@ -123,7 +123,7 @@ static DRAW_DONE_CB: AtomicPtr<fn()> = AtomicPtr::null();
 static DRAW_SYNC_CB: AtomicPtr<fn(u16)> = AtomicPtr::null();
 
 mod regs;
-pub mod types;
+mod types;
 
 /// Stores 8 bits for each red, green, blue, and alpha component.
 #[derive(Copy, Clone, Debug)]
