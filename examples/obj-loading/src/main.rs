@@ -3,16 +3,14 @@
 
 mod obj;
 use core::f32::consts::PI;
-use core::mem::ManuallyDrop;
 use ogc_rs::gu::RotationAxis;
 use ogc_rs::input::{Button, ControllerPort, ControllerType, Input};
 use ogc_rs::{alloc_aligned_buffer, print};
 
 use ogc_rs::{
-    ffi::{GX_COLOR0A0, GX_MODULATE, GX_TEXCOORD0, GX_TEXMAP0, GX_TF_CMPR},
     gu::Gu,
     gx::{
-        self, VtxAttrIn, CmpFn, Color, CullMode, Gx, Primitive, ProjectionType, TexFilter,
+        self, VtxAttrIn, CmpFn, Color, CullMode, Primitive, ProjectionType, TexFilter,
         Texture, VtxAttr, WrapMode,
     },
     println,
@@ -48,11 +46,11 @@ extern "C" fn main(_argc: isize, _argv: *const *const u8) -> isize {
     Video::set_black(false);
     Video::flush();
 
-    let _fifo = ManuallyDrop::new(Gx::init(256 * 1024));
+    let _fifo = gx::init(256 * 1024);
     // Set values to use when video is flipped / cleared
-    Gx::set_copy_clear(Color::new(0x00, 0x00, 0x00), 0x00_FF_FF_FF);
+    gx::set_copy_clear(Color::BLACK, 0x00_FF_FF_FF);
 
-    Gx::set_viewport(
+    gx::set_viewport(
         0.0,
         0.0,
         config.framebuffer_width.into(),
@@ -60,43 +58,43 @@ extern "C" fn main(_argc: isize, _argv: *const *const u8) -> isize {
         0.,
         1.,
     );
-    Gx::set_disp_copy_y_scale(1.0);
-    Gx::set_scissor(
+    gx::set_disp_copy_y_scale(1.0);
+    gx::set_scissor(
         0,
         0,
         config.framebuffer_width.into(),
         config.embed_framebuffer_height.into(),
     );
-    Gx::set_disp_copy_src(
+    gx::set_disp_copy_src(
         0,
         0,
         config.framebuffer_width,
         config.embed_framebuffer_height,
     );
-    Gx::set_disp_copy_dst(config.framebuffer_width, config.extern_framebuffer_height);
-    Gx::set_copy_filter(
+    gx::set_disp_copy_dst(config.framebuffer_width, config.extern_framebuffer_height);
+    gx::set_copy_filter(
         (config.anti_aliasing != 0).then_some(config.sample_pattern),
         Some(config.v_filter),
     );
 
     let val = config.vi_height != 2 * config.extern_framebuffer_height;
 
-    Gx::set_field_mode(config.field_rendering != 0, val);
-    Gx::set_cull_mode(CullMode::None);
-    unsafe { Gx::copy_disp(vi.framebuffer, true) };
+    gx::set_field_mode(config.field_rendering != 0, val);
+    gx::set_cull_mode(CullMode::None);
+    unsafe { gx::copy_disp(vi.framebuffer, true) };
 
     let mut mat = [[0.; 4]; 4];
     Gu::perspective(&mut mat, 60., 4. / 3., 1., 1000.);
-    Gx::load_projection_mtx(&mat, ProjectionType::Perspective);
+    gx::load_projection_mtx(&mat, ProjectionType::Perspective);
 
-    Gx::inv_vtx_cache();
-    Gx::clear_vtx_desc();
-    Gx::set_vtx_desc(VtxAttr::Pos, VtxAttrIn::Index16);
-    Gx::set_vtx_desc(VtxAttr::Nrm, VtxAttrIn::Index8);
-    Gx::set_vtx_desc(VtxAttr::Tex0, VtxAttrIn::Index8);
-    Gx::set_vtx_attr_fmt(0, VtxAttr::Pos, gx::POS_XYZ, gx::F32, 0);
-    Gx::set_vtx_attr_fmt(0, VtxAttr::Nrm, gx::NRM_XYZ, gx::F32, 0);
-    Gx::set_vtx_attr_fmt(0, VtxAttr::Tex0, gx::TEX_ST, gx::F32, 0);
+    gx::invalidate_vtx_cache();
+    gx::clear_vtx_desc();
+    gx::set_vtx_desc(VtxAttr::Pos, VtxAttrIn::Index16);
+    gx::set_vtx_desc(VtxAttr::Nrm, VtxAttrIn::Index8);
+    gx::set_vtx_desc(VtxAttr::Tex0, VtxAttrIn::Index8);
+    gx::set_vtx_attr_fmt(0, VtxAttr::Pos, gx::POS_XYZ, gx::F32, 0);
+    gx::set_vtx_attr_fmt(0, VtxAttr::Nrm, gx::NRM_XYZ, gx::F32, 0);
+    gx::set_vtx_attr_fmt(0, VtxAttr::Tex0, gx::TEX_ST, gx::F32, 0);
 
     let indices: Vec<(usize, Option<usize>, Option<usize>)> = obj
         .indices()
@@ -114,9 +112,9 @@ extern "C" fn main(_argc: isize, _argv: *const *const u8) -> isize {
 
     let tex: Vec<[f32; 2]> = obj.texcoords().unwrap().collect::<Vec<[f32; 2]>>();
 
-    Gx::set_array(VtxAttr::Pos, &positions);
-    Gx::set_array(VtxAttr::Nrm, &normals);
-    Gx::set_array(VtxAttr::Tex0, &tex);
+    gx::set_array(VtxAttr::Pos, &positions);
+    gx::set_array(VtxAttr::Nrm, &normals);
+    gx::set_array(VtxAttr::Tex0, &tex);
 
     let header = minipng::decode_png_header(WHITE_BYTES).unwrap();
     let mut work_buf = alloc::vec![0; header.required_bytes_rgba8bpc()];
@@ -138,31 +136,32 @@ extern "C" fn main(_argc: isize, _argv: *const *const u8) -> isize {
 
     let buf = alloc_aligned_buffer(&texture_bytes);
 
-    let mut texr = Texture::new(
+    let mut texr = Texture::<!>::new(
         &buf,
         header.width().try_into().unwrap(),
         header.height().try_into().unwrap(),
-        GX_TF_CMPR.try_into().unwrap(),
+        gx::TexFormat::CMPR,
         (WrapMode::Clamp, WrapMode::Clamp),
         false,
     );
     texr.set_filter_mode(TexFilter::Near, TexFilter::Near);
-    Gx::load_texture(&mut texr, GX_TEXMAP0.try_into().unwrap());
+    gx::load_texture(&mut texr, 0);
 
-    Gx::set_num_chans(1);
-    Gx::set_num_tex_gens(1);
+    gx::set_num_chans(1);
+    gx::set_num_tex_gens(1);
 
-    Gx::set_tev_order(
+    gx::set_tev_order(
         0,
-        GX_TEXCOORD0.try_into().unwrap(),
-        GX_TEXMAP0,
-        GX_COLOR0A0.try_into().unwrap(),
+        Some(0),
+        false,
+        Some(0),
+        Some(gx::ColorChannel::Color0A0),
     );
-    Gx::set_tev_op(0, GX_MODULATE.try_into().unwrap());
+    gx::set_tev_op(0, gx::TevMode::Modulate);
 
     println!("Finished Setup");
 
-    Gx::flush();
+    gx::flush();
     let mut i: u16 = 0;
 
     Input::init(ControllerType::Gamecube);
@@ -175,12 +174,12 @@ extern "C" fn main(_argc: isize, _argv: *const *const u8) -> isize {
             break 0;
         }
 
-        Gx::inv_vtx_cache();
-        Gx::invalidate_tex_all();
+        gx::invalidate_vtx_cache();
+        gx::invalidate_tex_all();
 
-        Gx::load_texture(&mut texr, GX_TEXMAP0.try_into().unwrap());
+        gx::load_texture(&mut texr, 0);
 
-        Gx::set_viewport(
+        gx::set_viewport(
             0.0,
             0.0,
             config.framebuffer_width.into(),
@@ -205,34 +204,34 @@ extern "C" fn main(_argc: isize, _argv: *const *const u8) -> isize {
         Gu::mtx_translation_apply(&mut mdl2_mtx, &mut mdl_mtx, (0., 0., -10.0));
 
         // Load Model
-        Gx::load_pos_mtx_imm(&mut mdl_mtx, 0);
-        Gx::set_cull_mode(CullMode::None);
-        Gx::begin(Primitive::Triangles, 0, indices.len().try_into().unwrap());
+        gx::load_pos_mtx_imm(mdl_mtx, 0);
+        gx::set_cull_mode(CullMode::None);
+        gx::begin(Primitive::Triangles, 0, indices.len().try_into().unwrap());
         // v / vt / vn
         for index in indices.iter() {
-            Gx::pos1_x16(u16::try_from(index.0).unwrap());
+            gx::pos1_x16(u16::try_from(index.0).unwrap());
             // let [x, y, z] = positions[*index];
-            // Gx::position_3f32(x, y, z);
+            // gx::position_3f32(x, y, z);
             if let Some(idx) = index.2 {
-                Gx::pos1_x8(idx.try_into().unwrap());
+                gx::pos1_x8(idx.try_into().unwrap());
             } else {
                 panic!()
             }
 
             if let Some(idx) = index.1 {
-                Gx::pos1_x8(idx.try_into().unwrap());
+                gx::pos1_x8(idx.try_into().unwrap());
             } else {
                 panic!()
             }
         }
 
-        Gx::end();
+        gx::end();
 
-        Gx::draw_done();
-        Gx::set_z_mode(true, CmpFn::LessEq, true);
-        Gx::set_color_update(true);
-        unsafe { Gx::copy_disp(vi.framebuffer, true) };
-        Gx::flush();
+        gx::draw_done();
+        gx::set_z_mode(true, CmpFn::LessEq, true);
+        gx::set_color_update(true);
+        unsafe { gx::copy_disp(vi.framebuffer, true) };
+        gx::flush();
 
         Video::wait_vsync();
         i = i.wrapping_add(1);

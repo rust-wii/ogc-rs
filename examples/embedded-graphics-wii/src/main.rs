@@ -14,6 +14,7 @@ use embedded_graphics::{
 };
 
 use ogc_rs::prelude::*;
+use ogc_rs::gx;
 
 #[no_mangle]
 extern "C" fn main(_argc: isize, _argv: *const *const u8) -> isize {
@@ -59,7 +60,7 @@ extern "C" fn main(_argc: isize, _argv: *const *const u8) -> isize {
         if wii_ctrl.is_button_down(Button::Home) {
             break 0;
         }
-        Gx::set_viewport(
+        gx::set_viewport(
             0.0,
             0.0,
             video.render_config.framebuffer_width as f32,

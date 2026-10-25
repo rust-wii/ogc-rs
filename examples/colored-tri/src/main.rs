@@ -2,9 +2,8 @@
 #![no_main]
 
 use ogc_rs::{
-    ffi::{GX_PASSCLR, GX_TEXCOORDNULL, GX_TEXMAP_NULL},
     gu::{Gu, RotationAxis},
-    gx::{self, CmpFn, Color, CullMode, Gx, Primitive, ProjectionType, VtxAttr, VtxAttrIn},
+    gx::{self, CmpFn, Color, CullMode, Primitive, ProjectionType, VtxAttr, VtxAttrIn},
     video::Video,
 };
 
@@ -27,11 +26,11 @@ extern "C" fn main(_argc: isize, _argv: *const *const u8) -> isize {
     Video::set_black(false);
     Video::flush();
 
-    let _fifo = Gx::init(256 * 1024);
+    let _fifo = gx::init(256 * 1024);
     // Set values to use when video is flipped / cleared
-    Gx::set_copy_clear(Color::new(0x00, 0x00, 0x00), 0x00_FF_FF_FF);
+    gx::set_copy_clear(Color::new(0x00, 0x00, 0x00), 0x00_FF_FF_FF);
 
-    Gx::set_viewport(
+    gx::set_viewport(
         0.0,
         0.0,
         config.framebuffer_width.into(),
@@ -39,56 +38,57 @@ extern "C" fn main(_argc: isize, _argv: *const *const u8) -> isize {
         0.,
         1.,
     );
-    Gx::set_disp_copy_y_scale(1.0);
-    Gx::set_scissor(
+    gx::set_disp_copy_y_scale(1.0);
+    gx::set_scissor(
         0,
         0,
         config.framebuffer_width.into(),
         config.embed_framebuffer_height.into(),
     );
-    Gx::set_disp_copy_src(
+    gx::set_disp_copy_src(
         0,
         0,
         config.framebuffer_width,
         config.embed_framebuffer_height,
     );
-    Gx::set_disp_copy_dst(config.framebuffer_width, config.extern_framebuffer_height);
-    Gx::set_copy_filter(
+    gx::set_disp_copy_dst(config.framebuffer_width, config.extern_framebuffer_height);
+    gx::set_copy_filter(
         (config.anti_aliasing != 0).then_some(config.sample_pattern),
         Some(config.v_filter),
     );
 
     let val = config.vi_height != 2 * config.extern_framebuffer_height;
 
-    Gx::set_field_mode(config.field_rendering != 0, val);
-    Gx::set_cull_mode(CullMode::None);
-    unsafe { Gx::copy_disp(vi.framebuffer, true) };
+    gx::set_field_mode(config.field_rendering != 0, val);
+    gx::set_cull_mode(CullMode::None);
+    unsafe { gx::copy_disp(vi.framebuffer, true) };
 
     let mut mat = [[0.; 4]; 4];
     Gu::perspective(&mut mat, 60., 4. / 3., 10., 300.);
-    Gx::load_projection_mtx(&mat, ProjectionType::Perspective);
-    Gx::clear_vtx_desc();
-    Gx::set_vtx_desc(VtxAttr::Pos, VtxAttrIn::Index8);
-    Gx::set_vtx_desc(VtxAttr::Color0, VtxAttrIn::Index8);
-    Gx::set_vtx_attr_fmt(0, VtxAttr::Pos, gx::POS_XYZ, gx::S16, 0);
-    Gx::set_vtx_attr_fmt(0, VtxAttr::Color0, gx::CLR_RGBA, gx::RGBA8, 0);
+    gx::load_projection_mtx(&mat, ProjectionType::Perspective);
+    gx::clear_vtx_desc();
+    gx::set_vtx_desc(VtxAttr::Pos, VtxAttrIn::Index8);
+    gx::set_vtx_desc(VtxAttr::Color0, VtxAttrIn::Index8);
+    gx::set_vtx_attr_fmt(0, VtxAttr::Pos, gx::POS_XYZ, gx::S16, 0);
+    gx::set_vtx_attr_fmt(0, VtxAttr::Color0, gx::CLR_RGBA, gx::RGBA8, 0);
 
     let positions: [[i16; 3]; 3] = [[0, 15, 0], [-15, -15, 0], [15, -15, 0]];
     let colors: [[u8; 4]; 3] = [[255, 0, 0, 255], [0, 255, 0, 255], [0, 0, 255, 255]];
 
-    Gx::set_array(VtxAttr::Pos, &positions);
-    Gx::set_array(VtxAttr::Color0, &colors);
+    gx::set_array(VtxAttr::Pos, &positions);
+    gx::set_array(VtxAttr::Color0, &colors);
 
-    Gx::set_num_chans(1);
-    Gx::set_num_tex_gens(0);
+    gx::set_num_chans(1);
+    gx::set_num_tex_gens(0);
 
-    Gx::set_tev_order(
+    gx::set_tev_order(
         0,
-        GX_TEXCOORDNULL.try_into().unwrap(),
-        GX_TEXMAP_NULL,
-        (gx::ColorChannel::Color0A0 as u32).try_into().unwrap(),
+        None,
+        false,
+        None,
+        Some(gx::ColorChannel::Color0A0),
     );
-    Gx::set_tev_op(0, GX_PASSCLR.try_into().unwrap());
+    gx::set_tev_op(0, gx::TevMode::PassColor);
 
     let mut i: u16 = 0;
     loop {
@@ -111,31 +111,31 @@ extern "C" fn main(_argc: isize, _argv: *const *const u8) -> isize {
         // Rotation + Translation = Model;
         Gu::mtx_translation_apply(&mut mdl2_mtx, &mut mdl_mtx, (0., 0., -50.));
         // Load Model
-        Gx::load_pos_mtx_imm(&mut mdl_mtx, 0);
+        gx::load_pos_mtx_imm(mdl_mtx, 0);
 
-        Gx::begin(Primitive::Triangles, 0, 3);
-        Gx::pos1_x8(0);
-        Gx::color1_x8(0);
-        Gx::pos1_x8(1);
-        Gx::color1_x8(1);
-        Gx::pos1_x8(2);
-        Gx::color1_x8(2);
+        gx::begin(Primitive::Triangles, 0, 3);
+        gx::pos1_x8(0);
+        gx::color1_x8(0);
+        gx::pos1_x8(1);
+        gx::color1_x8(1);
+        gx::pos1_x8(2);
+        gx::color1_x8(2);
 
         /*
-                Gx::position_3i16(0, 15, 0);
-                Gx::color_4u8(255, 0, 0, 255);
-                Gx::position_3i16(-15, -15, 0);
-                Gx::color_4u8(0, 255, 0, 255);
-                Gx::position_3i16(15, -15, 0);
-                Gx::color_4u8(0, 0, 255, 255);
+                gx::position_3i16(0, 15, 0);
+                gx::color_4u8(255, 0, 0, 255);
+                gx::position_3i16(-15, -15, 0);
+                gx::color_4u8(0, 255, 0, 255);
+                gx::position_3i16(15, -15, 0);
+                gx::color_4u8(0, 0, 255, 255);
         */
-        Gx::end();
+        gx::end();
 
-        Gx::draw_done();
-        Gx::set_z_mode(true, CmpFn::LessEq, true);
-        Gx::set_color_update(true);
-        unsafe { Gx::copy_disp(vi.framebuffer, true) };
-        Gx::flush();
+        gx::draw_done();
+        gx::set_z_mode(true, CmpFn::LessEq, true);
+        gx::set_color_update(true);
+        unsafe { gx::copy_disp(vi.framebuffer, true) };
+        gx::flush();
 
         Video::wait_vsync();
         i += 1;
