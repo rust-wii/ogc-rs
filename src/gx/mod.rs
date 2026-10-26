@@ -3968,16 +3968,30 @@ pub fn set_tev_swap_mode(tevstage: u8, ras_sel: u8, tex_sel: u8) {
     unsafe { ffi::GX_SetTevSwapMode(tevstage, ras_sel, tex_sel); }
 }
 
+/// Specifies the color channel to use in the swap mode table
+#[derive(Clone, Copy, Debug)]
+#[repr(u32)]
+pub enum TevColorChan {
+    Red = ffi::GX_CH_RED,
+    Green = ffi::GX_CH_GREEN,
+    Blue = ffi::GX_CH_BLUE,
+    Alpha = ffi::GX_CH_ALPHA,
+}
+
 /// Sets up the TEV color swap table.
 /// 
+/// `swapid` is the number corresponding to the swap table entry being defined.
+/// 
 /// See [`ogc_sys::GX_SetTevSwapModeTable()`] for more.
-pub fn set_tev_swap_mode_table(swapid: u8, r: u8, g: u8, b: u8, a: u8) {
+pub fn set_tev_swap_mode_table(
+    swapid: u8,
+    r: TevColorChan,
+    g: TevColorChan,
+    b: TevColorChan,
+    a: TevColorChan
+) {
     debug_assert!(swapid < ffi::GX_MAX_TEVSWAP as u8);
-    debug_assert!(r < 4 as u8);
-    debug_assert!(g < 4 as u8);
-    debug_assert!(b < 4 as u8);
-    debug_assert!(a < 4 as u8);
-    unsafe { ffi::GX_SetTevSwapModeTable(swapid, r, g, b, a); }
+    unsafe { ffi::GX_SetTevSwapModeTable(swapid, r as u8, g as u8, b as u8, a as u8) }
 }
 
 /// Sets the texture coordinate bias of a particular texture.
