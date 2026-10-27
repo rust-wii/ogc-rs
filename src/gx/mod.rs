@@ -663,7 +663,7 @@ impl RawFifo {
         // information the RawFifo already has.
         unsafe {
             let base = ffi::GX_GetFifoBase(self.as_ptr().cast_mut().cast());
-            slice::from_raw_parts(base.cast(), self.len())
+            slice::from_raw_parts(base.cast(), self.size())
         }
     }
     
@@ -675,7 +675,7 @@ impl RawFifo {
         // information the RawFifo already has.
         unsafe {
             let base = ffi::GX_GetFifoBase(self.as_ptr().cast_mut().cast());
-            slice::from_raw_parts_mut(base.cast(), self.len())
+            slice::from_raw_parts_mut(base.cast(), self.size())
         }
     }
 
@@ -687,7 +687,7 @@ impl RawFifo {
     }
 
     /// Get the size of a given FIFO.
-    pub fn len(&self) -> usize {
+    pub fn size(&self) -> usize {
         unsafe { ffi::GX_GetFifoSize(&self.0) as usize }
     }
 
@@ -738,8 +738,8 @@ impl RawFifo {
     pub fn set_limits(&mut self, hiwatermark: u32, lowatermark: u32) {
         debug_assert!(hiwatermark.is_multiple_of(32));
         debug_assert!(lowatermark.is_multiple_of(32));
-        debug_assert!(hiwatermark < self.len() as u32);
-        debug_assert!(lowatermark < self.len() as u32);
+        debug_assert!(hiwatermark < self.size() as u32);
+        debug_assert!(lowatermark < self.size() as u32);
         unsafe { ffi::GX_InitFifoLimits(&mut self.0, hiwatermark, lowatermark) }
     }
 
@@ -1582,7 +1582,11 @@ impl TexRegion {
     /// Initializes a texture memory (TMEM) region object for cache.
     ///
     /// See [`ogc_sys::GX_InitTexCacheRegion()`] for more.
-    pub fn new(size_even: TexCacheSize, size_odd: TexCacheSize, is_32b_mipmap: bool) -> Self {
+    pub fn new_cache(
+        size_even: TexCacheSize,
+        size_odd: TexCacheSize,
+        is_32b_mipmap: bool
+    ) -> Self {
         // libogc doesn't initialize all fields
         let mut gxtexregion = MaybeUninit::zeroed();
         let mut buf_even = Buf32::new(match size_even {
@@ -1614,28 +1618,22 @@ impl TexRegion {
     }
 
     /// Initializes a Texture Memory (TMEM) region object for preloading.
+    /// 
+    /// `size_even` and `size_odd` will be rounded up to the nearest multiple of 32 bytes.
     ///
     /// See [`ogc_sys::GX_InitTexPreloadRegion()`] for more.
-    pub fn new_preloaded(size_even: TexCacheSize, size_odd: TexCacheSize) -> Self {
+    pub fn new_preload(size_even: usize, size_odd: usize) -> Self {
         // libogc doesn't initialize all fields
         let mut gxtexregion = MaybeUninit::zeroed();
-        let mut buf_even = Buf32::new(match size_even {
-            TexCacheSize::Large => 512 * 1024,
-            TexCacheSize::Medium => 128 * 1024,
-            _ => 32 * 1024,
-        });
-        let mut buf_odd = Buf32::new(match size_odd {
-            TexCacheSize::Large => 512 * 1024,
-            TexCacheSize::Medium => 128 * 1024,
-            _ => 32 * 1024,
-        });
+        let mut buf_even = Buf32::new(size_even);
+        let mut buf_odd = Buf32::new(size_odd);
         unsafe {
             ffi::GX_InitTexPreloadRegion(
                 gxtexregion.as_mut_ptr(),
                 buf_even.as_mut_ptr() as u32,
-                size_even as _,
+                buf_even.len() as u32,
                 buf_odd.as_mut_ptr() as u32,
-                size_odd as _,
+                buf_odd.len() as u32,
             );
 
             TexRegion {
