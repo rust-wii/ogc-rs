@@ -8,7 +8,7 @@
 use core::ffi::c_void;
 use core::mem::{ManuallyDrop, MaybeUninit};
 use core::ops::{Deref, DerefMut};
-use core::ptr;
+use core::{ptr, slice};
 use core::sync::atomic::{AtomicBool, AtomicPtr, Ordering};
 
 use ogc_sys::GXRModeObj;
@@ -655,9 +655,28 @@ impl RawFifo {
     /// The minimum allowed size for a FIFO.
     pub const MIN_SIZE: usize = ffi::GX_FIFO_MINSIZE as usize;
     
-    /// Get the base address for a given *fifo*.
-    pub fn base(&self) -> *mut u8 {
-        unsafe { ffi::GX_GetFifoBase(self as *const _ as *mut _) as *mut _ }
+    /// Returns a slice to the base buffer used by this FIFO.
+    ///
+    /// This provides a more ergonomic version of [`ogc_sys::GX_GetFifoBase()`].
+    pub fn base(&self) -> &[u8] {
+        // SAFETY: this should reconstruct the buffer given to RawFifo::set_base() from
+        // information the RawFifo already has.
+        unsafe {
+            let base = ffi::GX_GetFifoBase(self.as_ptr().cast_mut().cast());
+            slice::from_raw_parts(base.cast(), self.len())
+        }
+    }
+    
+    /// Returns a mutable slice to the base buffer used by this FIFO.
+    ///
+    /// This provides a more ergonomic version of [`ogc_sys::GX_GetFifoBase()`].
+    pub fn base_mut(&mut self) -> &mut [u8] {
+        // SAFETY: this should reconstruct the buffer given to RawFifo::set_base() from
+        // information the RawFifo already has.
+        unsafe {
+            let base = ffi::GX_GetFifoBase(self.as_ptr().cast_mut().cast());
+            slice::from_raw_parts_mut(base.cast(), self.len())
+        }
     }
 
     /// Returns number of cache lines in the FIFO.
@@ -736,6 +755,14 @@ impl RawFifo {
         debug_assert!(rd_ptr.is_aligned_to(32));
         debug_assert!(wt_ptr.is_aligned_to(32));
         unsafe { ffi::GX_InitFifoPtrs(&mut self.0, rd_ptr as *mut _, wt_ptr as *mut _) }
+    }
+    
+    pub(crate) fn as_ptr(&self) -> *const Self {
+        self as *const Self
+    }
+    
+    pub(crate) fn as_mut_ptr(&mut self) -> *mut Self {
+        self as *mut Self
     }
 }
 
