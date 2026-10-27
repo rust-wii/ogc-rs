@@ -587,7 +587,7 @@ pub struct RawFifo(ffi::GXFifoObj);
 
 /// First-In, First-Out (FIFO) data structure with an internal buffer for queuing
 /// graphics commands.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Fifo {
     inner: RawFifo,
     buf: Buf32,
@@ -604,6 +604,18 @@ impl Deref for Fifo {
 impl DerefMut for Fifo {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.inner
+    }
+}
+
+impl Clone for Fifo {
+    fn clone(&self) -> Self {
+        let mut inner = self.inner.clone();
+        let mut buf = self.buf.clone();
+        
+        // make sure new raw fifo points to the new buffer
+        unsafe { inner.set_base(&mut buf); }
+        
+        Fifo { inner, buf }
     }
 }
 
@@ -1115,7 +1127,7 @@ pub struct RawTexture {
 /// in place of a `&[u8]`, for example.
 /// 
 /// User data can also be stored in this texture with `set_user_data()`.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Texture<U = !> {
     inner: RawTexture,
     img: Buf32,
@@ -1263,6 +1275,22 @@ impl<T> Texture<T> {
     /// Sets the user data stored in this texture.
     pub fn set_user_data(&mut self, t: T) {
         self.user = Some(t);
+    }
+}
+
+impl<T: Clone> Clone for Texture<T> {
+    fn clone(&self) -> Self {
+        let buf = self.img.clone();
+        let mut inner = self.inner.clone();
+        
+        // make sure the new raw texture points to the new buffer
+        unsafe { inner.set_data_ptr(buf.as_ptr()); }
+        
+        Texture {
+            inner,
+            img: buf,
+            user: self.user.clone()
+        }
     }
 }
 
@@ -1502,7 +1530,7 @@ pub enum TexCacheSize {
 pub struct RawTexRegion(ffi::GXTexRegion);
 
 /// A texture cache region with managed internal buffers
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct TexRegion {
     inner: RawTexRegion,
     buf_even: Buf32,
