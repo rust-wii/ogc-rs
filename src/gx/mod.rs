@@ -2894,12 +2894,15 @@ pub fn read_vcache_metric() -> Option<(u32, u32, u32)> {
 /// Copies the embedded framebuffer (EFB) to the texture image buffer `dest` in main
 /// memory.
 /// 
-/// Since `dest` should be 32-byte aligned, this function takes a `Buf32` to meet that
-/// requirement. Make sure it's big enough to hold the EFB!
+/// Since `dest` must be 32-byte aligned, this function takes a [`Buf32`] to meet that
+/// requirement. Make sure the buffer is big enough to store the texture by either
+/// re-using a [`Texture`]'s buffer with the same size and format (see
+/// [`Texture::buf_mut()`]), or calling [`RawTexture::get_buffer_size()`] and allocating a
+/// new `Buf32` at least as big.
 ///
 /// See [`ogc_sys::GX_CopyTex()`] for more.
-pub fn copy_tex(mut dest: Buf32, clear: bool) {
-    unsafe { ffi::GX_CopyTex(dest.as_mut_ptr() as *mut _, clear as _) }
+pub fn copy_tex(dest: &mut Buf32, clear: bool) {
+    unsafe { ffi::GX_CopyTex(dest.as_mut_ptr().cast(), clear as _) }
 }
 
 /// Sets the width of line primitives.
