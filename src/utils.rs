@@ -153,6 +153,37 @@ impl Buf32 {
             None
         }
     }
+    
+    /// Shrink the size of the buffer with a lower bound.
+    /// 
+    /// `min_size` is rounded up to the next multiple of 32. If that is equal to the
+    /// current size, this is a no-op. If it's bigger than the buffer's current size, this
+    /// panics.
+    pub fn shrink_to(&mut self, mut min_size: usize) {
+        min_size = min_size.next_multiple_of(Self::ALIGN);
+        
+        assert!(min_size <= self.len(), "Tried shrinking to a larger size");
+        
+        if self.len() == min_size { return }
+        
+        let new_layout;
+        let alloc_result = unsafe {
+            // SAFETY: align is 32 (power of two, non-zero), min_size is less than
+            // self.len() above.
+            new_layout = Layout::from_size_align_unchecked(min_size, Self::ALIGN);
+            // SAFETY: self.0 is allocated, current layout fits, new layout is smaller.
+            alloc::alloc::Global.shrink(
+                self.0.as_non_null_ptr(),
+                Layout::from_size_align_unchecked(self.len(), Self::ALIGN),
+                new_layout
+            )
+        };
+        
+        match alloc_result {
+            Ok(ptr) => self.0 = ptr,
+            Err(_) => alloc::alloc::handle_alloc_error(new_layout),
+        }
+    }
 
     /// Extracts a slice of the entire buffer.
     pub fn as_slice(&self) -> &[u8] {

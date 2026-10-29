@@ -9,7 +9,7 @@ use core::ffi::c_void;
 use core::mem::{ManuallyDrop, MaybeUninit};
 use core::ops::{Deref, DerefMut};
 use core::{ptr, slice};
-use core::sync::atomic::{AtomicBool, AtomicPtr, Ordering};
+use core::sync::atomic::{AtomicBool, AtomicPtr, AtomicUsize, Ordering};
 
 use ogc_sys::GXRModeObj;
 use voladdress::{Safe, VolAddress};
@@ -118,6 +118,8 @@ static IN_DISPLAY_LIST: AtomicBool = AtomicBool::new(false);
 static WGPIPE_REDIRECTED: AtomicBool = AtomicBool::new(false);
 
 static INIT_FIFO: AtomicPtr<RawFifo> = AtomicPtr::null();
+static DISPLAY_LIST_PTR: AtomicPtr<u8> = AtomicPtr::null();
+static DISPLAY_LIST_LEN: AtomicUsize = AtomicUsize::new(0);
 static BREAKPT_CB: AtomicPtr<unsafe fn()> = AtomicPtr::null();
 static DRAW_DONE_CB: AtomicPtr<fn()> = AtomicPtr::null();
 static DRAW_SYNC_CB: AtomicPtr<fn(u16)> = AtomicPtr::null();
@@ -2942,42 +2944,100 @@ pub fn set_fog_range_adj(enable: bool, center: u16, mut table: FogAdjTable) {
     unsafe { ffi::GX_SetFogRangeAdj(enable as u8, center, &mut table.0) }
 }
 
+/// Errors given when trying to create a display list.
+#[derive(Clone, Debug)]
+pub enum DisplayListError {
+    /// There is already an active display list.
+    AlreadyActive,
+    /// No display list is currently active.
+    NotActive,
+    /// The given buffer was not large enough to contain the display list.
+    Overflow(Buf32),
+}
+
 /// Begins a display list and disables writes to the FIFO currently attached to the CPU.
+/// 
+/// This takes ownership of a [`Buf32`] to use as the display list buffer. It is returned
+/// by [`end_display_list()`] when called.
 ///
-/// When already in a display list, this is a no-op.
+/// When already in a display list, this is a no-op and returns
+/// [`DisplayListError::AlreadyActive`].
 ///
 /// See [`ogc_sys::GX_BeginDispList()`] for more.
-pub fn begin_display_list(list: &mut Buf32) {
-    if ! IN_DISPLAY_LIST.swap(true, Ordering::AcqRel) {
-        // TODO: we should not be allowing write access from the application to the Buf32
-        // when libogc will also be writing to it.
-        unsafe { ffi::GX_BeginDispList(list.as_mut_ptr() as *mut _, list.len() as u32) }
+#[must_use]
+pub fn begin_display_list(list: Buf32) -> Result<(), DisplayListError> {
+    if IN_DISPLAY_LIST.swap(true, Ordering::AcqRel) {
+        return Err(DisplayListError::AlreadyActive);
     }
+    
+    // don't drop the buffer at the end
+    let mut list = ManuallyDrop::new(list);
+    
+    // store info about Buf32
+    DISPLAY_LIST_PTR.store(list.as_mut_ptr(), Ordering::Release);
+    DISPLAY_LIST_LEN.store(list.len(), Ordering::Release);
+    
+    let result = unsafe {
+        Ok(ffi::GX_BeginDispList(list.as_mut_ptr().cast(), list.len() as u32))
+    };
+    
+    result
 }
 
 /// Ends a display list and resumes writing graphics commands to the CPU FIFO.
 ///
-/// When not in a display list, this returns `None`. Otherwise, it returns the final size
-/// of the display list, which is passed to libogc when calling the display list with
-/// [`call_display_list()`].
+/// When not in a display list, this returns `Err(NotActive)`. If the buffer was not large
+/// enough, this returns `Err(Overflow(buf))` with the buffer that was used. Otherwise, it
+/// returns `Ok(Buf32)`. This value can be passed to [`call_display_list()`] to execute
+/// its graphics commands.
 ///
 /// See [`ogc_sys::GX_EndDispList()`] for more.
-pub fn end_display_list() -> Option<u32> {
-    if IN_DISPLAY_LIST.swap(false, Ordering::AcqRel) {
-        Some(unsafe { ffi::GX_EndDispList() })
+pub fn end_display_list() -> Result<Buf32, DisplayListError> {
+    // not currently in a display list
+    if ! IN_DISPLAY_LIST.swap(false, Ordering::AcqRel) {
+        return Err(DisplayListError::NotActive);
+    }
+    
+    let size = unsafe { ffi::GX_EndDispList() };
+    
+    // reconstruct buf32
+    let ptr = DISPLAY_LIST_PTR.load(Ordering::Acquire);
+    let len = DISPLAY_LIST_LEN.load(Ordering::Acquire);
+    // SAFETY: ptr and len are from a valid Buf32 when beginning the display list
+    let mut buf = unsafe { Buf32::from_ptr_len_unchecked(ptr, len) };
+    
+    if size == 0 {
+        // return err and the buf32 for the application to manage
+        Err(DisplayListError::Overflow(buf))
     } else {
-        None
+        // the size returned by libogc may be smaller than the buffer's original size,
+        // so we can shrink it to save space. libogc docs state that it will be a
+        // multiple of 32, which satisfies the requirements of Buf32. however, there
+        // is a bug where using a buffer with the exact right size results in a large
+        // and incorrect value, so check it beforehand.
+        if size < len as u32 {
+            buf.shrink_to(size as usize);
+        }
+        
+        Ok(buf)
     }
 }
 
-/// Causes the GP to execute graphics commands from the display list instead of from the GP FIFO.
+/// Causes the GP to execute graphics commands from the display list instead of from the
+/// GP FIFO.
+/// 
+/// This should ONLY be called with a valid display list buffer returned by
+/// [`end_display_list()`].
 ///
 /// When already in a display list, this is a no-op.
 ///
 /// See [`ogc_sys::GX_CallDispList()`] for more.
-pub fn call_display_list(list: &Buf32, size: u32) {
+pub fn call_display_list(list: &Buf32) {
     if ! IN_DISPLAY_LIST.load(Ordering::Acquire) {
-        unsafe { ffi::GX_CallDispList(list.as_ptr() as *const _ as *mut _, size) }
+        unsafe { ffi::GX_CallDispList(
+            list.as_ptr().cast_mut().cast(),
+            list.len() as u32
+        )}
     }
 }
 
