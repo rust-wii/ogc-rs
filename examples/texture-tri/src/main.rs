@@ -1,18 +1,11 @@
 #![no_std]
 #![no_main]
 
-use core::mem::ManuallyDrop;
-
 use ogc_rs::{
-    ffi::{
-        GX_CLR_RGBA, GX_COLOR0A0, GX_MODULATE, GX_PASSCLR, GX_POS_XYZ, GX_REPLACE, GX_RGBA8,
-        GX_S16, GX_TEXCOORD0, GX_TEXMAP0, GX_TEX_ST, GX_TF_CMPR, GX_TF_RGBA8, GX_U8, GX_VA_CLR0,
-        GX_VA_POS, GX_VA_TEX0,
-    },
     gu::{Gu, RotationAxis},
     gx::{
-        types::VtxDest, CmpFn, Color, CullMode, Gx, Primitive, ProjectionType, TexFilter, Texture,
-        VtxAttr, WrapMode,
+        self, VtxAttrIn, CmpFn, Color, CullMode, Primitive, ProjectionType, TexFilter,
+        Texture, VtxAttr, WrapMode,
     },
     print, println,
     video::Video,
@@ -39,11 +32,11 @@ extern "C" fn main(_argc: isize, _argv: *const *const u8) -> isize {
     Video::set_black(false);
     Video::flush();
 
-    let fifo = ManuallyDrop::new(Gx::init(256 * 1024));
+    let _fifo = gx::init(256 * 1024);
     // Set values to use when video is flipped / cleared
-    Gx::set_copy_clear(Color::new(0x00, 0x00, 0x00), 0x00_FF_FF_FF);
+    gx::set_copy_clear(Color::new(0x00, 0x00, 0x00), 0x00_FF_FF_FF);
 
-    Gx::set_viewport(
+    gx::set_viewport(
         0.0,
         0.0,
         config.framebuffer_width.into(),
@@ -51,44 +44,39 @@ extern "C" fn main(_argc: isize, _argv: *const *const u8) -> isize {
         0.,
         1.,
     );
-    Gx::set_disp_copy_y_scale(1.0);
-    Gx::set_scissor(
+    gx::set_disp_copy_y_scale(1.0);
+    gx::set_scissor(
         0,
         0,
         config.framebuffer_width.into(),
         config.embed_framebuffer_height.into(),
     );
-    Gx::set_disp_copy_src(
+    gx::set_disp_copy_src(
         0,
         0,
         config.framebuffer_width,
         config.embed_framebuffer_height,
     );
-    Gx::set_disp_copy_dst(config.framebuffer_width, config.extern_framebuffer_height);
-    Gx::set_copy_filter(
-        config.anti_aliasing != 0,
-        &mut config.sample_pattern,
-        true,
-        &mut config.v_filter,
+    gx::set_disp_copy_dst(config.framebuffer_width, config.extern_framebuffer_height);
+    gx::set_copy_filter(
+        (config.anti_aliasing != 0).then_some(config.sample_pattern),
+        Some(config.v_filter),
     );
 
-    let val = if config.vi_height == 2 * config.extern_framebuffer_height {
-        false
-    } else {
-        true
-    };
-
-    Gx::set_field_mode(config.field_rendering != 0, val);
-    Gx::set_cull_mode(CullMode::None);
-    unsafe { Gx::copy_disp(vi.framebuffer, true) };
+    gx::set_field_mode(
+        config.field_rendering != 0,
+        config.vi_height != 2 * config.extern_framebuffer_height
+    );
+    gx::set_cull_mode(CullMode::None);
+    unsafe { gx::copy_disp(vi.framebuffer, true) };
 
     let mut mat = [[0.; 4]; 4];
     Gu::perspective(&mut mat, 60., 4. / 3., 10., 300.);
-    Gx::load_projection_mtx(&mat, ProjectionType::Perspective);
-    Gx::clear_vtx_desc();
-    Gx::set_vtx_desc(VtxAttr::Pos, VtxDest::INDEX8);
-    Gx::set_vtx_desc(VtxAttr::Color0, VtxDest::INDEX8);
-    Gx::set_vtx_desc(VtxAttr::Tex0, VtxDest::INDEX8);
+    gx::load_projection_mtx(&mat, ProjectionType::Perspective);
+    gx::clear_vtx_desc();
+    gx::set_vtx_desc(VtxAttr::Pos, VtxAttrIn::Index8);
+    gx::set_vtx_desc(VtxAttr::Color0, VtxAttrIn::Index8);
+    gx::set_vtx_desc(VtxAttr::Tex0, VtxAttrIn::Index8);
 
     let header = minipng::decode_png_header(WHITE_BYTES).unwrap();
     let mut work_buf = vec![0u8; header.required_bytes_rgba8bpc()];
@@ -108,51 +96,38 @@ extern "C" fn main(_argc: isize, _argv: *const *const u8) -> isize {
         header.height(),
     );
 
-    let mut texr = Texture::new(
+    let mut texr = Texture::<!>::new(
         &texture_bytes,
         header.width().try_into().unwrap(),
         header.height().try_into().unwrap(),
-        GX_TF_CMPR.try_into().unwrap(),
-        WrapMode::Clamp,
-        WrapMode::Clamp,
+        gx::TexFormat::CMPR,
+        (WrapMode::Clamp, WrapMode::Clamp),
         false,
     );
     texr.set_filter_mode(TexFilter::Near, TexFilter::Near);
 
-    Gx::load_texture(&texr, GX_TEXMAP0.try_into().unwrap());
+    gx::load_texture(&mut texr, 0);
 
-    Gx::set_vtx_attr_fmt(0, VtxAttr::Pos, GX_POS_XYZ, GX_S16, 0);
-    Gx::set_vtx_attr_fmt(0, VtxAttr::Color0, GX_CLR_RGBA, GX_RGBA8, 0);
-    Gx::set_vtx_attr_fmt(0, VtxAttr::Tex0, GX_TEX_ST, GX_U8, 0);
+    gx::set_vtx_attr_fmt(0, VtxAttr::Pos, gx::POS_XYZ, gx::S16, 0);
+    gx::set_vtx_attr_fmt(0, VtxAttr::Color0, gx::CLR_RGBA, gx::RGBA8, 0);
+    gx::set_vtx_attr_fmt(0, VtxAttr::Tex0, gx::TEX_ST, gx::U8, 0);
     let positions: [[i16; 3]; 3] = [[0, 15, 0], [-15, -15, 0], [15, -15, 0]];
     let colors: [[u8; 4]; 3] = [[255, 0, 0, 255], [0, 255, 0, 255], [0, 0, 255, 255]];
     let tex: [[u8; 2]; 3] = [[0, 1], [1, 0], [1, 1]];
-    Gx::set_array(
-        GX_VA_POS,
-        &positions,
-        core::mem::size_of::<[i16; 3]>().try_into().unwrap(),
-    );
+    gx::set_array(VtxAttr::Pos, &positions);
+    gx::set_array(VtxAttr::Color0, &colors);
+    gx::set_array(VtxAttr::Tex0, &tex);
+    gx::set_num_chans(1);
+    gx::set_num_tex_gens(1);
 
-    Gx::set_array(
-        GX_VA_CLR0,
-        &colors,
-        core::mem::size_of::<[u8; 4]>().try_into().unwrap(),
-    );
-    Gx::set_array(
-        GX_VA_TEX0,
-        &tex,
-        core::mem::size_of::<[u8; 2]>().try_into().unwrap(),
-    );
-    Gx::set_num_chans(1);
-    Gx::set_num_tex_gens(1);
-
-    Gx::set_tev_order(
+    gx::set_tev_order(
         0,
-        GX_TEXCOORD0.try_into().unwrap(),
-        GX_TEXMAP0,
-        GX_COLOR0A0.try_into().unwrap(),
+        Some(0),
+        false,
+        Some(0),
+        Some(gx::ColorChannel::Color0A0)
     );
-    Gx::set_tev_op(0, GX_MODULATE.try_into().unwrap());
+    gx::set_tev_op(0, gx::TevMode::Modulate);
 
     println!("Finished Setup");
 
@@ -177,34 +152,34 @@ extern "C" fn main(_argc: isize, _argv: *const *const u8) -> isize {
         // Rotation + Translation = Model;
         Gu::mtx_translation_apply(&mut mdl2_mtx, &mut mdl_mtx, (0., 0., -50.));
         // Load Model
-        Gx::load_pos_mtx_imm(&mut mdl_mtx, 0);
+        gx::load_pos_mtx_imm(mdl_mtx, 0);
 
-        Gx::begin(Primitive::Triangles, 0, 3);
-        Gx::position1x8(0);
-        Gx::color1x8(0);
-        Gx::position1x8(0);
-        Gx::position1x8(1);
-        Gx::color1x8(1);
-        Gx::position1x8(1);
-        Gx::position1x8(2);
-        Gx::color1x8(2);
-        Gx::position1x8(2);
+        gx::begin(Primitive::Triangles, 0, 3);
+        gx::pos1_x8(0);
+        gx::color1_x8(0);
+        gx::pos1_x8(0);
+        gx::pos1_x8(1);
+        gx::color1_x8(1);
+        gx::pos1_x8(1);
+        gx::pos1_x8(2);
+        gx::color1_x8(2);
+        gx::pos1_x8(2);
 
         /*
-                Gx::position_3i16(0, 15, 0);
-                Gx::color_4u8(255, 0, 0, 255);
-                Gx::position_3i16(-15, -15, 0);
-                Gx::color_4u8(0, 255, 0, 255);
-                Gx::position_3i16(15, -15, 0);
-                Gx::color_4u8(0, 0, 255, 255);
+                gx::position_3i16(0, 15, 0);
+                gx::color_4u8(255, 0, 0, 255);
+                gx::position_3i16(-15, -15, 0);
+                gx::color_4u8(0, 255, 0, 255);
+                gx::position_3i16(15, -15, 0);
+                gx::color_4u8(0, 0, 255, 255);
         */
-        Gx::end();
+        gx::end();
 
-        Gx::draw_done();
-        Gx::set_z_mode(true, CmpFn::LessEq, true);
-        Gx::set_color_update(true);
-        unsafe { Gx::copy_disp(vi.framebuffer, true) };
-        Gx::flush();
+        gx::draw_done();
+        gx::set_z_mode(true, CmpFn::LessEq, true);
+        gx::set_color_update(true);
+        unsafe { gx::copy_disp(vi.framebuffer, true) };
+        gx::flush();
 
         Video::wait_vsync();
         i += 1;

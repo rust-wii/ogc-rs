@@ -106,22 +106,19 @@ pub fn alloc_aligned_buffer(buffer: &[u8]) -> Vec<u8> {
 pub struct Buf32(NonNull<[u8]>);
 
 impl Buf32 {
+    const ALIGN: usize = 32;
+
     /// Allocates a new buffer at least `min_len` bytes long. Rounds up the size
     /// to the next multiple of 32.
     ///
     /// # Panics
-    /// Panics if rounding up `min_len` to the next multiple of 32 would
-    /// overflow.
+    /// Panics if rounding up `min_len` to the next multiple of 32 would overflow
+    /// `isize::MAX`, or surpass the allocator's maximum size.
     pub fn new(min_len: usize) -> Self {
-        // round len to lowest multiple of 32
-        let padding = (32 - min_len % 32) % 32;
-        min_len.checked_add(padding).expect("length overflow");
+        // round to next lowest multiple of 32
+        let len = min_len.next_multiple_of(Self::ALIGN);
 
-        // SAFETY:
-        // * align is non-zero and a power of two.
-        // * `min_len` is checked above to not overflow `usize::MAX` after rounding up
-        //   for alignment.
-        let layout = unsafe { Layout::from_size_align_unchecked(min_len, 32) };
+        let layout = Layout::from_size_align(len, Self::ALIGN).unwrap();
 
         let block = match alloc::alloc::Global.allocate_zeroed(layout) {
             Ok(block) => block,
@@ -129,6 +126,63 @@ impl Buf32 {
         };
 
         Buf32(block)
+    }
+
+    pub(crate) unsafe fn from_ptr_len_unchecked(ptr: *mut u8, len: usize) -> Self {
+        let nonnull_ptr = unsafe { NonNull::new_unchecked(ptr) };
+        Self(NonNull::slice_from_raw_parts(nonnull_ptr, len))
+    }
+
+    /// Forms a `Buf32` slice from a pointer and a length if both are considered valid.
+    ///
+    /// In general:
+    /// * `ptr` must be:
+    ///   * allocated,
+    ///   * non-null,
+    ///   * aligned to a 32-byte boundary.
+    /// * `len` must be:
+    ///   * a multiple of 32 bytes,
+    ///   * less than the allocator's maximum size.
+    #[allow(clippy::not_unsafe_ptr_arg_deref)]
+    pub fn from_ptr_len(ptr: *mut u8, len: usize) -> Option<Self> {
+        if !ptr.is_null()
+        && ptr.is_aligned_to(32)
+        && len % 32 == 0 {
+            Some(unsafe { Self::from_ptr_len_unchecked(ptr, len) })
+        } else {
+            None
+        }
+    }
+    
+    /// Shrink the size of the buffer with a lower bound.
+    /// 
+    /// `min_size` is rounded up to the next multiple of 32. If that is equal to the
+    /// current size, this is a no-op. If it's bigger than the buffer's current size, this
+    /// panics.
+    pub fn shrink_to(&mut self, mut min_size: usize) {
+        min_size = min_size.next_multiple_of(Self::ALIGN);
+        
+        assert!(min_size <= self.len(), "Tried shrinking to a larger size");
+        
+        if self.len() == min_size { return }
+        
+        let new_layout;
+        let alloc_result = unsafe {
+            // SAFETY: align is 32 (power of two, non-zero), min_size is less than
+            // self.len() above.
+            new_layout = Layout::from_size_align_unchecked(min_size, Self::ALIGN);
+            // SAFETY: self.0 is allocated, current layout fits, new layout is smaller.
+            alloc::alloc::Global.shrink(
+                self.0.as_non_null_ptr(),
+                Layout::from_size_align_unchecked(self.len(), Self::ALIGN),
+                new_layout
+            )
+        };
+        
+        match alloc_result {
+            Ok(ptr) => self.0 = ptr,
+            Err(_) => alloc::alloc::handle_alloc_error(new_layout),
+        }
     }
 
     /// Extracts a slice of the entire buffer.
@@ -145,6 +199,11 @@ impl Buf32 {
         //         enforces aliasing rules by binding the reference's lifetime
         //         to that of `&mut self`.
         unsafe { self.0.as_mut() }
+    }
+
+    /// Returns a raw pointer to the slice’s buffer.
+    pub fn as_mut_ptr(&mut self) -> *mut u8 {
+        self.0.as_mut_ptr()
     }
 }
 
