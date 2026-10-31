@@ -342,14 +342,14 @@ impl FileStats {
     /// File size in bytes
     #[must_use]
     pub fn size(&self) -> usize {
-        debug_assert!(core::mem::size_of::<usize>() == core::mem::size_of::<u32>());
+        debug_assert_eq!(core::mem::size_of::<usize>(), core::mem::size_of::<u32>());
         self.file_size as usize
     }
 
     /// File seek offset from start of file
     #[must_use]
     pub fn offset(&self) -> usize {
-        debug_assert!(core::mem::size_of::<usize>() == core::mem::size_of::<u32>());
+        debug_assert_eq!(core::mem::size_of::<usize>(), core::mem::size_of::<u32>());
         self.file_seek_position as usize
     }
 }

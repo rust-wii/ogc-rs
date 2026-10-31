@@ -87,7 +87,7 @@ pub fn ic_unfreeze() {
 /// Flushes `T` to memory from the data cache.
 pub unsafe fn data_cache_flush<T: ?Sized>(ptr: *const T) {
     let mut addr = ptr.addr() - (ptr.addr() % 32);
-    let size = core::mem::size_of_val(unsafe { ptr.as_ref().unwrap() }).next_multiple_of(32) / 32;
+    let size = core::mem::size_of_val(unsafe { ptr.as_ref().unwrap() }).div_ceil(32);
 
     for _ in 0..size {
         unsafe {

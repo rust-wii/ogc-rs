@@ -2977,11 +2977,12 @@ pub fn begin_display_list(list: Buf32) -> Result<(), DisplayListError> {
     DISPLAY_LIST_PTR.store(list.as_mut_ptr(), Ordering::Release);
     DISPLAY_LIST_LEN.store(list.len(), Ordering::Release);
     
-    let result = unsafe {
-        Ok(ffi::GX_BeginDispList(list.as_mut_ptr().cast(), list.len() as u32))
-    };
     
-    result
+    
+    unsafe {
+        ffi::GX_BeginDispList(list.as_mut_ptr().cast(), list.len() as u32);
+        Ok(())
+    }
 }
 
 /// Ends a display list and resumes writing graphics commands to the CPU FIFO.
