@@ -457,9 +457,9 @@ pub fn get_owned_titles(title_count: u32) -> Result<Vec<u64>, ios::Error> {
 
     // TODO: Avoid allocation
     out_buf
-        .chunks_exact(core::mem::size_of::<u64>())
+        .as_chunks::<{ core::mem::size_of::<u64>() }>().0.iter()
         .map(|bytes| {
-            if let Ok(bytes) = bytes.try_into() {
+            if let Ok(bytes) = (*bytes).try_into() {
                 Ok(u64::from_be_bytes(bytes))
             } else {
                 Err(ios::Error::Invalid)
@@ -501,9 +501,9 @@ pub fn get_titles(title_count: u32) -> Result<Vec<u64>, ios::Error> {
 
     // TODO: Avoid allocation
     out_buf
-        .chunks_exact(core::mem::size_of::<u64>())
+        .as_chunks::<{ core::mem::size_of::<u64>() }>().0.iter()
         .map(|bytes| {
-            if let Ok(bytes) = bytes.try_into() {
+            if let Ok(bytes) = (*bytes).try_into() {
                 Ok(u64::from_be_bytes(bytes))
             } else {
                 Err(ios::Error::Invalid)
@@ -553,9 +553,9 @@ pub fn get_title_contents(title_id: u64, content_count: u32) -> Result<Vec<u32>,
 
     //TODO: avoid allocation
     out_buf
-        .chunks_exact(core::mem::size_of::<u32>())
+        .as_chunks::<{ core::mem::size_of::<u32>() }>().0.iter()
         .map(|bytes| {
-            if let Ok(bytes) = bytes.try_into() {
+            if let Ok(bytes) = (*bytes).try_into() {
                 Ok(u32::from_be_bytes(bytes))
             } else {
                 Err(ios::Error::Invalid)
@@ -1247,9 +1247,10 @@ pub fn get_stored_contents(title_id: u64, content_count: u32) -> Result<Vec<u32>
     let _ = ios::close(es);
 
     content_ids
-        .chunks_exact(4)
+        .as_chunks::<4>().0.iter()
         .map(|bytes| {
-            if let Ok(bytes) = bytes.try_into() {
+            if let Ok(bytes) = (*bytes).try_into() {
+            
                 Ok(u32::from_be_bytes(bytes))
             } else {
                 Err(ios::Error::Invalid)

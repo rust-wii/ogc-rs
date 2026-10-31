@@ -1,5 +1,5 @@
 use glam::{Mat4, Vec4};
-use libm::tanf;
+use num_traits::Float;
 
 pub trait GxProjection {
     fn orthographic_rh_gx(
@@ -46,7 +46,7 @@ impl GxProjection for Mat4 {
     }
 
     fn perspective_rh_gx(fov_y_radians: f32, aspect_ratio: f32, z_near: f32, z_far: f32) -> Self {
-        let cot = 1.0 / tanf(fov_y_radians);
+        let cot = 1.0 / fov_y_radians.tan();
         let inv_fn = 1.0 / (z_far - z_near);
 
         Self::from_cols(

@@ -19,11 +19,12 @@
 #![no_std]
 #![allow(dead_code)]
 #![feature(alloc_error_handler)]
-#![feature(allocator_api)]
-#![feature(atomic_ptr_null)]
-#![feature(generic_const_exprs)]
-#![feature(pointer_is_aligned_to)]
 #![feature(slice_ptr_get)]
+#![feature(pointer_is_aligned_to)]
+#![feature(atomic_ptr_null)]
+#![feature(generic_const_items)]
+#![feature(gca_min_const_items)]
+#![feature(gca_const_items)]
 
 extern crate alloc;
 

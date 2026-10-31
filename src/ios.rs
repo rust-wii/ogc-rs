@@ -322,9 +322,9 @@ pub fn ioctlv<
     buf_outs: &mut [&mut [u8]],
 ) -> Result<i32, Error> {
     type Ioctlv = ogc_sys::_ioctlv;
-    debug_assert!(buf_ins.len() == COUNT_IN);
-    debug_assert!(buf_outs.len() == COUNT_OUT);
-    debug_assert!(COUNT_IN + COUNT_OUT == COUNT_IN_OUT);
+    debug_assert_eq!(buf_ins.len(), COUNT_IN);
+    debug_assert_eq!(buf_outs.len(), COUNT_OUT);
+    debug_assert_eq!(COUNT_IN + COUNT_OUT, COUNT_IN_OUT);
 
     let mut ioctls = [Ioctlv {
         data: core::ptr::null_mut(),
@@ -393,9 +393,9 @@ pub fn ioctlv_reboot<
     buf_outs: &mut [&mut [u8]],
 ) -> Result<(), Error> {
     type Ioctlv = ogc_sys::_ioctlv;
-    debug_assert!(buf_ins.len() == COUNT_IN);
-    debug_assert!(buf_outs.len() == COUNT_OUT);
-    debug_assert!(COUNT_IN + COUNT_OUT == COUNT_IN_OUT);
+    debug_assert_eq!(buf_ins.len(), COUNT_IN);
+    debug_assert_eq!(buf_outs.len(), COUNT_OUT);
+    debug_assert_eq!(COUNT_IN + COUNT_OUT, COUNT_IN_OUT);
 
     let mut ioctls = [Ioctlv {
         data: core::ptr::null_mut(),
@@ -464,9 +464,9 @@ pub fn ioctlv_reboot_background<
     buf_outs: &mut [&mut [u8]],
 ) -> Result<(), Error> {
     type Ioctlv = ogc_sys::_ioctlv;
-    debug_assert!(buf_ins.len() == COUNT_IN);
-    debug_assert!(buf_outs.len() == COUNT_OUT);
-    debug_assert!(COUNT_IN + COUNT_OUT == COUNT_IN_OUT);
+    debug_assert_eq!(buf_ins.len(), COUNT_IN);
+    debug_assert_eq!(buf_outs.len(), COUNT_OUT);
+    debug_assert_eq!(COUNT_IN + COUNT_OUT, COUNT_IN_OUT);
 
     let mut ioctls = [Ioctlv {
         data: core::ptr::null_mut(),
