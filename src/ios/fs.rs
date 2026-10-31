@@ -174,6 +174,8 @@ pub struct ReadDirectory {
     file_count: u32,
 }
 
+const DIRECTORY_BUFFER_SIZE<const N: usize>: usize = 13 * N;
+
 //TODO: Find a way to avoid allocation
 /// Read the directory specified by `directory_path` reading up to `MAX_FILE_COUNT` entries
 /// # Errors
@@ -181,8 +183,6 @@ pub struct ReadDirectory {
 pub fn read_directory<const MAX_FILE_COUNT: usize>(
     directory_path: &str,
 ) -> Result<ReadDirectory, ios::Error>
-where
-    [(); 13 * MAX_FILE_COUNT]:,
 {
     let filesystem = ios::open(DEV_FS, Mode::ReadWrite)?;
 
@@ -194,7 +194,7 @@ where
     let path_len = directory_path.len();
     path[0..path_len].copy_from_slice(directory_path.as_bytes());
 
-    let mut file_list_buf = [0u8; 13 * MAX_FILE_COUNT];
+    let mut file_list_buf = [0u8; core::gca!(DIRECTORY_BUFFER_SIZE::<MAX_FILE_COUNT>)];
     let mut file_count_buf = [0u8; 4];
 
     ios::ioctlv::<2, 2, 4>(
