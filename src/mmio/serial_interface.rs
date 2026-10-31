@@ -194,7 +194,7 @@ pub(crate) mod types {
     }
 
     impl InputBufferHigh {
-        /// Returns a new empty instance of [`InputbufferHigh`]
+        /// Returns a new empty instance of [`InputBufferHigh`]
         #[must_use]
         pub fn new() -> Self {
             Self(0)
