@@ -9,4 +9,7 @@ dev = { panic = "abort" }
 release = { panic = "abort", lto = true, codegen-units = 1, strip = "symbols", opt-level = "s" }
 
 [dependencies]
-ogc-rs = { path = "../../", features = ["ffi"] } 
+ogc-rs = {
+    git = "https://github.com/rust-wii/ogc-rs/",
+    features = ["ffi"]
+}

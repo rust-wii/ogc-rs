@@ -11,4 +11,7 @@ release = { panic = "abort", lto = true, codegen-units = 1, strip = "symbols", o
 [dependencies]
 gctex = {path = "./vendor/gctex", default-features = false }
 minipng = { version = "0.1.1", default-features = false }
-ogc-rs = { path = "../../", features = ["ffi", "default_panic_handler"] } 
+ogc-rs = {
+    git = "https://github.com/rust-wii/ogc-rs/",
+    features = ["ffi", "default_panic_handler"]
+}
