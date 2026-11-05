@@ -208,6 +208,24 @@ impl<'a> Device<'a> {
         }
         Ok(())
     }
+    
+    pub fn write_ios_msg(&mut self, endpoint: u8, packet_buffers: &[&Buf32]) -> Result<Buf32, i32> {
+        let mut packet_sizes = Vec::with_capacity(packet_buffers.len());
+        let mut w_len = 0usize;
+        for buffer in packet_buffers {
+            packet_sizes.push(u16::try_from(buffer.len()).unwrap());
+            w_len += buffer.len();
+        }
+
+        let mut response = Buf32::new(w_len);
+        let result = unsafe {
+              crate::ffi::USB_WriteIsoMsg(self.fd, endpoint, u8::try_from(packet_buffers.len()).unwrap(), packet_sizes.as_ptr().cast_mut(), response.as_mut_ptr().cast())
+        };
+        if result != i32::try_from(crate::ffi::USB_OK).unwrap() {
+            return Err(result);
+        }
+        Ok(response) 
+    }
 
     pub fn read_intr_msg(&self, endpoint: u8, buffer: &mut [u8]) -> Result<(), i32> {
         let mut response = Buf32::new(buffer.len());
@@ -226,6 +244,18 @@ impl<'a> Device<'a> {
         Ok(())
     }
 
+    pub fn write_intr_msg(&mut self, endpoint: u8, buffer: &[u8]) -> Result<Buf32, i32> {
+        let mut response = Buf32::new(buffer.len());
+        response.copy_from_slice(buffer);
+        let result = unsafe {
+            crate::ffi::USB_WriteIntrMsg(self.fd, endpoint, u16::try_from(buffer.len()).unwrap(), response.as_mut_ptr().cast())
+        };
+        if result != i32::try_from(crate::ffi::USB_OK).unwrap() {
+            return Err(result);
+        }
+        Ok(response)
+    }
+
     pub fn read_blk_msg(&self, endpoint: u8, buffer: &mut [u8]) -> Result<(), i32> {
         let mut response = Buf32::new(buffer.len());
         let result = unsafe {
@@ -241,6 +271,18 @@ impl<'a> Device<'a> {
         }
         buffer.copy_from_slice(response.as_slice());
         Ok(())
+    }
+
+    pub fn write_blk_msg(&mut self, endpoint: u8, buffer: &[u8]) -> Result<Buf32, i32> {
+        let mut response = Buf32::new(buffer.len());
+        response.copy_from_slice(buffer);
+        let result = unsafe {
+            crate::ffi::USB_WriteBlkMsg(self.fd, endpoint, u16::try_from(buffer.len()).unwrap(), response.as_mut_ptr().cast())
+        };
+        if result != i32::try_from(crate::ffi::USB_OK).unwrap() {
+            return Err(result);
+        }
+        Ok(response)
     }
 
     pub fn read_ctrl_msg(&self, request_type: u8, request: u8, w_value: u16, w_index: u16, buffer: &mut [u8]) -> Result<(), i32> {
@@ -261,6 +303,26 @@ impl<'a> Device<'a> {
         }
         buffer.copy_from_slice(response.as_slice());
         Ok(())
+    }
+
+    pub fn write_ctrl_msg(&mut self, request_type: u8, request: u8, w_value: u16, w_index: u16, buffer: &[u8]) -> Result<Buf32, i32> {
+        let mut response = Buf32::new(buffer.len()); 
+        response.copy_from_slice(buffer);
+        let result = unsafe {
+            crate::ffi::USB_ReadCtrlMsg(
+                self.fd,
+                request_type,
+                request,
+                w_value,
+                w_index,
+                u16::try_from(response.len()).unwrap(),
+                response.as_mut_ptr().cast(),
+            )
+        };
+        if result != i32::try_from(crate::ffi::USB_OK).unwrap() {
+            return Err(result);
+        }
+        Ok(response)
     }
 
 }
