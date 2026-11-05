@@ -20,6 +20,11 @@ pub mod fs;
 /// `/dev/es` device hellper functions.
 pub mod es;
 
+/// USB IOS Subsystem;
+///
+/// '/dev/usb/*' device helper functions 
+pub mod usb;
+
 #[repr(u32)]
 /// Interprocess Control / IOS File Mode
 pub enum Mode {
