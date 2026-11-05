@@ -15,6 +15,7 @@ pub struct DeviceDescriptor(pub crate::ffi::usb_devdesc);
 pub struct Descriptor(Box<[u8]>);
 pub struct HidDescriptor(pub crate::ffi::usb_hiddesc);
 pub struct Description(pub crate::ffi::usb_devdesc);
+pub struct DeviceEntry(pub crate::ffi::usb_device_entry);
 
 impl Usb {
     pub fn new() -> Result<Self, i32> {
@@ -32,6 +33,35 @@ impl Usb {
             return Err(result);
         }
         Ok(Device { usb: self, fd: fd })
+    }
+
+    pub fn get_devices(&self, interface_class: u8) -> Result<Box<[DeviceEntry]>, i32> {
+        let mut devices = Vec::with_capacity(8);
+        let mut response = Buf32::new(core::mem::size_of::<crate::ffi::usb_device_entry>() * 8);
+        let mut device_count = 0u8;
+        let result = unsafe {
+            crate::ffi::USB_GetDeviceList(
+                response.as_mut_ptr().cast(),
+                8,
+                interface_class,
+                &mut device_count,
+            )
+        };
+        if result != i32::try_from(crate::ffi::USB_OK).unwrap() {
+            return Err(result);
+        }
+
+        for buf in response
+            .as_slice()
+            .chunks_exact(core::mem::size_of::<crate::ffi::usb_device_entry>())
+            .take(device_count.into())
+        {
+            // Cast underyling bytes back into struct
+            devices.push(DeviceEntry(unsafe {
+                buf.as_ptr().cast::<crate::ffi::usb_device_entry>().read()
+            }))
+        }
+        Ok(devices.into_boxed_slice())
     }
 }
 
@@ -199,16 +229,17 @@ impl<'a> Device<'a> {
         if result != i32::try_from(crate::ffi::USB_OK).unwrap() {
             return Err(result);
         }
-        
+
         let mut cursor = 0;
         for (i, buffer) in packet_buffers.iter_mut().enumerate() {
             let length = usize::from(packet_sizes[i]);
-            buffer.as_mut_slice()[..length].copy_from_slice(&response.as_slice()[cursor..cursor+length]);
+            buffer.as_mut_slice()[..length]
+                .copy_from_slice(&response.as_slice()[cursor..cursor + length]);
             cursor += length;
         }
         Ok(())
     }
-    
+
     pub fn write_ios_msg(&mut self, endpoint: u8, packet_buffers: &[&Buf32]) -> Result<Buf32, i32> {
         let mut packet_sizes = Vec::with_capacity(packet_buffers.len());
         let mut w_len = 0usize;
@@ -219,12 +250,18 @@ impl<'a> Device<'a> {
 
         let mut response = Buf32::new(w_len);
         let result = unsafe {
-              crate::ffi::USB_WriteIsoMsg(self.fd, endpoint, u8::try_from(packet_buffers.len()).unwrap(), packet_sizes.as_ptr().cast_mut(), response.as_mut_ptr().cast())
+            crate::ffi::USB_WriteIsoMsg(
+                self.fd,
+                endpoint,
+                u8::try_from(packet_buffers.len()).unwrap(),
+                packet_sizes.as_ptr().cast_mut(),
+                response.as_mut_ptr().cast(),
+            )
         };
         if result != i32::try_from(crate::ffi::USB_OK).unwrap() {
             return Err(result);
         }
-        Ok(response) 
+        Ok(response)
     }
 
     pub fn read_intr_msg(&self, endpoint: u8, buffer: &mut [u8]) -> Result<(), i32> {
@@ -248,7 +285,12 @@ impl<'a> Device<'a> {
         let mut response = Buf32::new(buffer.len());
         response.copy_from_slice(buffer);
         let result = unsafe {
-            crate::ffi::USB_WriteIntrMsg(self.fd, endpoint, u16::try_from(buffer.len()).unwrap(), response.as_mut_ptr().cast())
+            crate::ffi::USB_WriteIntrMsg(
+                self.fd,
+                endpoint,
+                u16::try_from(buffer.len()).unwrap(),
+                response.as_mut_ptr().cast(),
+            )
         };
         if result != i32::try_from(crate::ffi::USB_OK).unwrap() {
             return Err(result);
@@ -277,7 +319,12 @@ impl<'a> Device<'a> {
         let mut response = Buf32::new(buffer.len());
         response.copy_from_slice(buffer);
         let result = unsafe {
-            crate::ffi::USB_WriteBlkMsg(self.fd, endpoint, u16::try_from(buffer.len()).unwrap(), response.as_mut_ptr().cast())
+            crate::ffi::USB_WriteBlkMsg(
+                self.fd,
+                endpoint,
+                u16::try_from(buffer.len()).unwrap(),
+                response.as_mut_ptr().cast(),
+            )
         };
         if result != i32::try_from(crate::ffi::USB_OK).unwrap() {
             return Err(result);
@@ -285,7 +332,14 @@ impl<'a> Device<'a> {
         Ok(response)
     }
 
-    pub fn read_ctrl_msg(&self, request_type: u8, request: u8, w_value: u16, w_index: u16, buffer: &mut [u8]) -> Result<(), i32> {
+    pub fn read_ctrl_msg(
+        &self,
+        request_type: u8,
+        request: u8,
+        w_value: u16,
+        w_index: u16,
+        buffer: &mut [u8],
+    ) -> Result<(), i32> {
         let mut response = Buf32::new(buffer.len());
         let result = unsafe {
             crate::ffi::USB_ReadCtrlMsg(
@@ -305,8 +359,15 @@ impl<'a> Device<'a> {
         Ok(())
     }
 
-    pub fn write_ctrl_msg(&mut self, request_type: u8, request: u8, w_value: u16, w_index: u16, buffer: &[u8]) -> Result<Buf32, i32> {
-        let mut response = Buf32::new(buffer.len()); 
+    pub fn write_ctrl_msg(
+        &mut self,
+        request_type: u8,
+        request: u8,
+        w_value: u16,
+        w_index: u16,
+        buffer: &[u8],
+    ) -> Result<Buf32, i32> {
+        let mut response = Buf32::new(buffer.len());
         response.copy_from_slice(buffer);
         let result = unsafe {
             crate::ffi::USB_ReadCtrlMsg(
@@ -325,4 +386,61 @@ impl<'a> Device<'a> {
         Ok(response)
     }
 
+    pub fn get_configuration(&self) -> Result<u8, i32> {
+        let mut configuration: MaybeUninit<u8> = MaybeUninit::uninit();
+        let result =
+            unsafe { crate::ffi::USB_GetConfiguration(self.fd, configuration.as_mut_ptr().cast()) };
+        if result != i32::try_from(crate::ffi::USB_OK).unwrap() {
+            return Err(result);
+        }
+        Ok(unsafe { configuration.assume_init() })
+    }
+
+    pub fn set_configuration(&mut self, conf: u8) -> Result<(), i32> {
+        let result = unsafe { crate::ffi::USB_SetConfiguration(self.fd, conf) };
+        if result != i32::try_from(crate::ffi::USB_OK).unwrap() {
+            return Err(result);
+        }
+        Ok(())
+    }
+
+    pub fn clear_halt(&mut self, endpoint: u8) -> Result<(), i32> {
+        let result = unsafe { crate::ffi::USB_ClearHalt(self.fd, endpoint) };
+        if result != i32::try_from(crate::ffi::USB_OK).unwrap() {
+            return Err(result);
+        }
+        Ok(())
+    }
+
+    pub fn set_alt_interface(&mut self, interface: u8, alt_setting: u8) -> Result<(), i32> {
+        let result =
+            unsafe { crate::ffi::USB_SetAlternativeInterface(self.fd, interface, alt_setting) };
+        if result != i32::try_from(crate::ffi::USB_OK).unwrap() {
+            return Err(result);
+        }
+        Ok(())
+    }
+
+    pub fn get_ascii_string(
+        &self,
+        index: u8,
+        w_lang_id: u16,
+        buffer: &mut [u8],
+    ) -> Result<(), i32> {
+        let mut response = Buf32::new(buffer.len());
+        let result = unsafe {
+            crate::ffi::USB_GetAsciiString(
+                self.fd,
+                index,
+                w_lang_id,
+                u16::try_from(response.len()).unwrap(),
+                response.as_mut_ptr().cast(),
+            )
+        };
+        if result != i32::try_from(crate::ffi::USB_OK).unwrap() {
+            return Err(result);
+        }
+        buffer.copy_from_slice(response.as_slice());
+        Ok(())
+    }
 }
