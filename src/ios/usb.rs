@@ -4,20 +4,41 @@ use alloc::{boxed::Box, vec::Vec};
 
 use crate::Buf32;
 
+/// USB System marker
+///
+/// Keep this around otherwise `USB_Deinitialize` is called
 pub struct Usb(());
 
+/// USB Device 
+///
+/// Keep this around otherwise `USB_CloseDevice` is called
+#[derive(Clone)]
 pub struct Device<'a> {
     usb: &'a Usb,
     fd: i32,
 }
 
+/// USB device descriptor
+/// 
+/// Keep a hold of thise otherwise `USB_FreeDescriptors` is called
 pub struct DeviceDescriptor(pub crate::ffi::usb_devdesc);
+
+/// USB generic descriptor
 pub struct Descriptor(Box<[u8]>);
+
+/// USB HID descriptor
 pub struct HidDescriptor(pub crate::ffi::usb_hiddesc);
+
+/// USB device description
 pub struct Description(pub crate::ffi::usb_devdesc);
+
+/// USB device entry
+///
+/// This is returned from `Usb::get_devices`
 pub struct DeviceEntry(pub crate::ffi::usb_device_entry);
 
 impl Usb {
+    /// 
     pub fn new() -> Result<Self, i32> {
         let result = unsafe { crate::ffi::USB_Initialize() };
         if result != i32::try_from(crate::ffi::USB_OK).unwrap() {
