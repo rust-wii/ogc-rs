@@ -9,7 +9,7 @@ use crate::Buf32;
 /// Keep this around otherwise `USB_Deinitialize` is called
 pub struct Usb(());
 
-/// USB Device 
+/// USB Device
 ///
 /// Keep this around otherwise `USB_CloseDevice` is called
 #[derive(Clone)]
@@ -19,7 +19,7 @@ pub struct Device<'a> {
 }
 
 /// USB device descriptor
-/// 
+///
 /// Keep a hold of thise otherwise `USB_FreeDescriptors` is called
 pub struct DeviceDescriptor(pub crate::ffi::usb_devdesc);
 
@@ -38,7 +38,7 @@ pub struct Description(pub crate::ffi::usb_devdesc);
 pub struct DeviceEntry(pub crate::ffi::usb_device_entry);
 
 impl Usb {
-    /// 
+    /// Initialize Usb systems.
     pub fn new() -> Result<Self, i32> {
         let result = unsafe { crate::ffi::USB_Initialize() };
         if result != i32::try_from(crate::ffi::USB_OK).unwrap() {
@@ -46,7 +46,7 @@ impl Usb {
         }
         Ok(Self(()))
     }
-
+    /// Open new USB device
     pub fn open_device(&self, device_id: i32, vid: u16, pid: u16) -> Result<Device<'_>, i32> {
         let mut fd = i32::MAX;
         let result = unsafe { crate::ffi::USB_OpenDevice(device_id, vid, pid, &mut fd) };
@@ -56,6 +56,7 @@ impl Usb {
         Ok(Device { usb: self, fd: fd })
     }
 
+    /// Get currently connected usb devices in the device class
     pub fn get_devices(&self, interface_class: u8) -> Result<Box<[DeviceEntry]>, i32> {
         let mut devices = Vec::with_capacity(8);
         let mut response = Buf32::new(core::mem::size_of::<crate::ffi::usb_device_entry>() * 8);
@@ -111,6 +112,7 @@ impl Drop for DeviceDescriptor {
 }
 
 impl<'a> Device<'a> {
+    /// Get associated usb device descriptor
     pub fn get_device_descriptor(&self) -> Result<DeviceDescriptor, i32> {
         let mut descriptor = MaybeUninit::<crate::ffi::usb_devdesc>::uninit();
         let result = unsafe { crate::ffi::USB_GetDescriptors(self.fd, descriptor.as_mut_ptr()) };
@@ -120,6 +122,7 @@ impl<'a> Device<'a> {
         Ok(DeviceDescriptor(unsafe { descriptor.assume_init() }))
     }
 
+    /// Get generic descriptor
     pub fn get_generic_descriptor(
         &self,
         kind: u8,
@@ -149,6 +152,7 @@ impl<'a> Device<'a> {
         Ok(Descriptor(descriptor.into_boxed_slice()))
     }
 
+    /// Get HID descriptor
     pub fn get_hid_descriptor(&self, interface: u8) -> Result<HidDescriptor, i32> {
         let hid_descriptor_size: u32 = crate::ffi::USB_DT_HID_SIZE;
         let mut hid_descriptor = MaybeUninit::<crate::ffi::usb_hiddesc>::uninit();
@@ -166,6 +170,9 @@ impl<'a> Device<'a> {
         Ok(HidDescriptor(unsafe { hid_descriptor.assume_init() }))
     }
 
+    /// Get report descriptor size.
+    ///
+    /// Recommend just using `get_report_descriptor`
     pub fn get_report_descriptor_size(&self, interface: u8) -> Result<i32, i32> {
         let result = unsafe { crate::ffi::USB_GetReportDescriptorSize(self.fd, interface) };
         if result < i32::try_from(crate::ffi::USB_OK).unwrap() {
@@ -174,6 +181,7 @@ impl<'a> Device<'a> {
         Ok(result)
     }
 
+    /// Get report descriptor
     pub fn get_report_descriptor(&self, interface: u8) -> Result<Descriptor, i32> {
         let mut descriptor = Vec::with_capacity(
             usize::try_from(self.get_report_descriptor_size(interface)?).unwrap(),
@@ -195,6 +203,7 @@ impl<'a> Device<'a> {
         Ok(Descriptor(descriptor.into_boxed_slice()))
     }
 
+    /// Get associated usb device description
     pub fn get_device_description(&self) -> Result<Description, i32> {
         let mut description = MaybeUninit::<crate::ffi::usb_devdesc>::uninit();
         let result = unsafe {
@@ -205,11 +214,32 @@ impl<'a> Device<'a> {
         }
         Ok(Description(unsafe { description.assume_init() }))
     }
+    // TODO:
+    // Needs more thought and less generics
+    //
+    // pub fn device_removal_notify_async<Func, Args, Ret>(&self, func: Func, args: Args) -> Result<(), i32> where Func: FnOnce(Args) -> Ret {
+    //     struct Userdata<Func, Args, Ret> where Func: FnOnce(Args) -> Ret {
+    //         func: Func,
+    //         args: Args,
+    //         ret: (MaybeUninit<Ret>, bool)
+    //     }
+    //     let data = Userdata { func, args, ret: (MaybeUninit::uninit(), false) };
+    //     unsafe extern "C" fn thunk<Func, Args, Ret>(_fd: i32, userdata: *mut core::ffi::c_void) -> i32 where Func: FnOnce(Args) -> Ret {
+    //         let Userdata { func, args, mut ret } = unsafe { userdata.cast::<Userdata<Func, Args, Ret>>().read() };
+    //         ret.0.write(func(args));
+    //         ret.1 = true;
+    //         return crate::ffi::USB_OK as i32;
+    //
+    //     }
+    //
+    //     let result = unsafe { crate::ffi::USB_DeviceRemovalNotifyAsync(self.fd, Some(thunk::<Func, Args, Ret>), Box::into_raw(Box::new(data)).cast()) };
+    //     if result != i32::try_from(crate::ffi::USB_OK).unwrap() {
+    //         return Err(result);
+    //     }
+    //     Ok(())
+    // }
 
-    //TODO:
-    // crate::ffi::USB_DeviceRemovalNotifyAsync
-    // crate::ffi::USB_DeviceChangeNotifyAsync
-
+    /// Suspend associated usb device
     pub fn suspend(&self) -> Result<(), i32> {
         let result = unsafe { crate::ffi::USB_SuspendDevice(self.fd) };
         if result != i32::try_from(crate::ffi::USB_OK).unwrap() {
@@ -218,6 +248,7 @@ impl<'a> Device<'a> {
         Ok(())
     }
 
+    /// Resume associated usb device
     pub fn resume(&self) -> Result<(), i32> {
         let result = unsafe { crate::ffi::USB_ResumeDevice(self.fd) };
         if result != i32::try_from(crate::ffi::USB_OK).unwrap() {
@@ -226,6 +257,7 @@ impl<'a> Device<'a> {
         Ok(())
     }
 
+    /// Read isochronous message from endpoint writing the data back into the packet buffers
     pub fn read_iso_msg(&self, endpoint: u8, packet_buffers: &mut [&mut Buf32]) -> Result<(), i32> {
         let mut packet_sizes = Vec::with_capacity(packet_buffers.len());
         let mut w_len = 0usize;
@@ -261,6 +293,7 @@ impl<'a> Device<'a> {
         Ok(())
     }
 
+    /// Write isochronous message using the data from packet_buffers
     pub fn write_ios_msg(&mut self, endpoint: u8, packet_buffers: &[&Buf32]) -> Result<Buf32, i32> {
         let mut packet_sizes = Vec::with_capacity(packet_buffers.len());
         let mut w_len = 0usize;
@@ -285,6 +318,7 @@ impl<'a> Device<'a> {
         Ok(response)
     }
 
+    /// Read interrupt message writing data into buffer
     pub fn read_intr_msg(&self, endpoint: u8, buffer: &mut [u8]) -> Result<(), i32> {
         let mut response = Buf32::new(buffer.len());
         let result = unsafe {
@@ -302,6 +336,7 @@ impl<'a> Device<'a> {
         Ok(())
     }
 
+    /// Write interrupt message to endpoint using data from buffer
     pub fn write_intr_msg(&mut self, endpoint: u8, buffer: &[u8]) -> Result<Buf32, i32> {
         let mut response = Buf32::new(buffer.len());
         response.copy_from_slice(buffer);
@@ -319,6 +354,7 @@ impl<'a> Device<'a> {
         Ok(response)
     }
 
+    /// Read bulk message writing data into buffer
     pub fn read_blk_msg(&self, endpoint: u8, buffer: &mut [u8]) -> Result<(), i32> {
         let mut response = Buf32::new(buffer.len());
         let result = unsafe {
@@ -336,6 +372,7 @@ impl<'a> Device<'a> {
         Ok(())
     }
 
+    /// Write bulk message to endpoint using data from buffer
     pub fn write_blk_msg(&mut self, endpoint: u8, buffer: &[u8]) -> Result<Buf32, i32> {
         let mut response = Buf32::new(buffer.len());
         response.copy_from_slice(buffer);
@@ -353,6 +390,7 @@ impl<'a> Device<'a> {
         Ok(response)
     }
 
+    /// Read ctrl message writing data into buffer
     pub fn read_ctrl_msg(
         &self,
         request_type: u8,
@@ -380,6 +418,7 @@ impl<'a> Device<'a> {
         Ok(())
     }
 
+    /// Write bulk message to endpoint using data from buffer
     pub fn write_ctrl_msg(
         &mut self,
         request_type: u8,
@@ -407,6 +446,7 @@ impl<'a> Device<'a> {
         Ok(response)
     }
 
+    /// Get USB configuration
     pub fn get_configuration(&self) -> Result<u8, i32> {
         let mut configuration: MaybeUninit<u8> = MaybeUninit::uninit();
         let result =
@@ -417,6 +457,7 @@ impl<'a> Device<'a> {
         Ok(unsafe { configuration.assume_init() })
     }
 
+    /// Set USB configuration
     pub fn set_configuration(&mut self, conf: u8) -> Result<(), i32> {
         let result = unsafe { crate::ffi::USB_SetConfiguration(self.fd, conf) };
         if result != i32::try_from(crate::ffi::USB_OK).unwrap() {
@@ -425,6 +466,7 @@ impl<'a> Device<'a> {
         Ok(())
     }
 
+    /// Clear halt on endpoint
     pub fn clear_halt(&mut self, endpoint: u8) -> Result<(), i32> {
         let result = unsafe { crate::ffi::USB_ClearHalt(self.fd, endpoint) };
         if result != i32::try_from(crate::ffi::USB_OK).unwrap() {
@@ -433,6 +475,7 @@ impl<'a> Device<'a> {
         Ok(())
     }
 
+    /// Set alternative setting on interface
     pub fn set_alt_interface(&mut self, interface: u8, alt_setting: u8) -> Result<(), i32> {
         let result =
             unsafe { crate::ffi::USB_SetAlternativeInterface(self.fd, interface, alt_setting) };
@@ -442,6 +485,7 @@ impl<'a> Device<'a> {
         Ok(())
     }
 
+    /// Get associated string descriptor and string
     pub fn get_ascii_string(
         &self,
         index: u8,
