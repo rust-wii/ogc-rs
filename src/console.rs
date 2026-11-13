@@ -2,7 +2,7 @@
 //!
 //! This module implements a safe wrapper around the console functions.
 
-use crate::{OgcError, Result, ffi, video::Video};
+use crate::{OgcError, Result, ffi, utils::Buf32, video::RenderConfig};
 use alloc::string::String;
 use core::ptr;
 
@@ -13,16 +13,16 @@ pub struct Console;
 
 /// Implementation of the console service.
 impl Console {
-    /// Initializes the console subsystem with video.
-    pub fn init(video: &Video) -> Self {
+    /// Initializes the console subsystem with the given framebuffer and render config.
+    pub fn init(mut fb: Buf32, render_config: &RenderConfig) -> Self {
         unsafe {
             ffi::CON_Init(
-                video.framebuffer,
+                fb.as_mut_ptr().cast(),
                 20,
                 20,
-                video.render_config.framebuffer_width as i32,
-                video.render_config.extern_framebuffer_height as i32,
-                (video.render_config.framebuffer_width * 2) as i32,
+                render_config.fb_width as i32,
+                render_config.xfb_height as i32,
+                (render_config.fb_width * 2) as i32,
             );
         }
 
