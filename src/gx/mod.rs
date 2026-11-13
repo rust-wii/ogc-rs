@@ -2235,13 +2235,16 @@ pub fn set_current_gx_thread() -> lwp::Thread {
 }
 
 /// Copies the embedded framebuffer (EFB) to the external framebuffer(XFB) in main memory.
-///
-/// # Safety
-/// The user must ensure the dest ptr is a valid pointer,
+/// 
+/// Since `dest` must be 32-byte aligned, this function takes a [`Buf32`] to meet that
+/// requirement. Make sure the buffer is big enough to store the framebuffer by either
+/// using [`System::allocate_framebuffer()`](crate::system::System::allocate_framebuffer),
+/// or calling [`video::get_framebuffer_size()`](crate::video::get_framebuffer_size) and
+/// allocating a new `Buf32` at least as big.
 ///
 /// See [`ogc_sys::GX_CopyDisp()`] for more.
-pub unsafe fn copy_disp(dest: *mut c_void, clear: bool) {
-    unsafe { ffi::GX_CopyDisp(dest, clear as u8) }
+pub fn copy_disp(dest: &mut Buf32, clear: bool) {
+    unsafe { ffi::GX_CopyDisp(dest.as_mut_ptr().cast(), clear as u8) }
 }
 
 /// Sets the gamma correction applied to pixels during EFB to XFB copy operation.
