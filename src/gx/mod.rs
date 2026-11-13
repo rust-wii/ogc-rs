@@ -11,7 +11,6 @@ use core::ops::{Deref, DerefMut};
 use core::{ptr, slice};
 use core::sync::atomic::{AtomicBool, AtomicPtr, AtomicUsize, Ordering};
 
-use ogc_sys::GXRModeObj;
 use voladdress::{Safe, VolAddress};
 
 use crate::ffi;
@@ -1751,23 +1750,6 @@ pub struct GpStatus {
     pub cmd_idle: bool,
     /// `true` if FIFO has reached a breakpoint and GP reads have been stopped.
     pub brkpt: bool,
-}
-
-#[derive(Debug, Clone, Copy)]
-#[repr(transparent)]
-pub struct RenderMode(GXRModeObj);
-
-impl RenderMode {
-    /// Takes a given render mode and returns a version that is reduced in size to account for overscan.
-    ///
-    /// See [`ogc_sys::GX_AdjustForOverscan()`] for more.
-    pub fn adjust_for_overscan(mut self, hor: u16, ver: u16) -> Self {
-        let mut rmout = core::mem::MaybeUninit::uninit();
-        unsafe {
-            ffi::GX_AdjustForOverscan(&mut self.0, rmout.as_mut_ptr(), hor, ver);
-            RenderMode(rmout.assume_init())
-        }
-    }
 }
 
 /// Fog equation control
