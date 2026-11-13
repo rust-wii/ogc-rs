@@ -2,7 +2,7 @@
 //!
 //! This module implements a safe wrapper around the OS functions found in ``system.h``.
 
-use crate::{OgcError, Result, ffi, video::RenderConfig};
+use crate::{Buf32, OgcError, Result, ffi, mem::to_uncached, video::RenderConfig};
 use alloc::boxed::Box;
 use core::{ffi::c_void, mem, ptr, time::Duration};
 use num_enum::IntoPrimitive;
@@ -102,8 +102,16 @@ impl System {
     ///
     /// This function returns a pointer to the framebuffer's startaddress which
     /// is aligned to a 32 byte boundary.
-    pub fn allocate_framebuffer(render_mode: &RenderConfig) -> *mut c_void {
-        unsafe { ffi::SYS_AllocateFramebuffer(render_mode.into()) }
+    pub fn allocate_framebuffer(render_mode: &RenderConfig) -> Buf32 {
+        let mut rmode = render_mode.into();
+        let len = crate::video::get_framebuffer_size(render_mode);
+        // SAFETY: ptr is valid for the framebuffer's format, len is calculated in the
+        // same way as libogc.
+        unsafe {
+            let ptr = ffi::SYS_AllocateFramebuffer(&mut rmode)
+                .map_addr(to_uncached);
+            Buf32::from_ptr_len_unchecked(ptr.cast(), len)
+        }
     }
 
     /// Create and initialize sysalarm structure.

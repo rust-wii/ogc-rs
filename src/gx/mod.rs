@@ -11,7 +11,6 @@ use core::ops::{Deref, DerefMut};
 use core::{ptr, slice};
 use core::sync::atomic::{AtomicBool, AtomicPtr, AtomicUsize, Ordering};
 
-use ogc_sys::GXRModeObj;
 use voladdress::{Safe, VolAddress};
 
 use crate::ffi;
@@ -1753,23 +1752,6 @@ pub struct GpStatus {
     pub brkpt: bool,
 }
 
-#[derive(Debug, Clone, Copy)]
-#[repr(transparent)]
-pub struct RenderMode(GXRModeObj);
-
-impl RenderMode {
-    /// Takes a given render mode and returns a version that is reduced in size to account for overscan.
-    ///
-    /// See [`ogc_sys::GX_AdjustForOverscan()`] for more.
-    pub fn adjust_for_overscan(mut self, hor: u16, ver: u16) -> Self {
-        let mut rmout = core::mem::MaybeUninit::uninit();
-        unsafe {
-            ffi::GX_AdjustForOverscan(&mut self.0, rmout.as_mut_ptr(), hor, ver);
-            RenderMode(rmout.assume_init())
-        }
-    }
-}
-
 /// Fog equation control
 #[derive(Clone, Copy, Debug)]
 #[repr(u32)]
@@ -2253,13 +2235,16 @@ pub fn set_current_gx_thread() -> lwp::Thread {
 }
 
 /// Copies the embedded framebuffer (EFB) to the external framebuffer(XFB) in main memory.
-///
-/// # Safety
-/// The user must ensure the dest ptr is a valid pointer,
+/// 
+/// Since `dest` must be 32-byte aligned, this function takes a [`Buf32`] to meet that
+/// requirement. Make sure the buffer is big enough to store the framebuffer by either
+/// using [`System::allocate_framebuffer()`](crate::system::System::allocate_framebuffer),
+/// or calling [`video::get_framebuffer_size()`](crate::video::get_framebuffer_size) and
+/// allocating a new `Buf32` at least as big.
 ///
 /// See [`ogc_sys::GX_CopyDisp()`] for more.
-pub unsafe fn copy_disp(dest: *mut c_void, clear: bool) {
-    unsafe { ffi::GX_CopyDisp(dest, clear as u8) }
+pub fn copy_disp(dest: &mut Buf32, clear: bool) {
+    unsafe { ffi::GX_CopyDisp(dest.as_mut_ptr().cast(), clear as u8) }
 }
 
 /// Sets the gamma correction applied to pixels during EFB to XFB copy operation.
