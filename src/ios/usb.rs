@@ -430,7 +430,7 @@ impl<'a> Device<'a> {
         let mut response = Buf32::new(buffer.len());
         response.copy_from_slice(buffer);
         let result = unsafe {
-            crate::ffi::USB_ReadCtrlMsg(
+            crate::ffi::USB_WriteCtrlMsg(
                 self.fd,
                 request_type,
                 request,
